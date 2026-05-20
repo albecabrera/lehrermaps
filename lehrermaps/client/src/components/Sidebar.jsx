@@ -16,6 +16,7 @@ export default function Sidebar({
   const [draggingId, setDraggingId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
   const [fileDropTargetId, setFileDropTargetId] = useState(null);
+  const [draggingFileName, setDraggingFileName] = useState('');
   const accent = subject.color;
 
   const handleDragStart = (e, folderId) => {
@@ -27,6 +28,7 @@ export default function Sidebar({
     const fileId = e.dataTransfer.getData('text/x-lm-file-id');
     if (fileId) {
       e.preventDefault();
+      setDraggingFileName(e.dataTransfer.getData('text/plain') || '');
       setFileDropTargetId(folderId);
       return;
     }
@@ -39,24 +41,24 @@ export default function Sidebar({
     const fileId = Number(e.dataTransfer.getData('text/x-lm-file-id'));
     if (Number.isInteger(fileId) && fileId > 0) {
       if (fileDropTargetId) await onMoveFileToFolder?.(fileId, fileDropTargetId);
-      setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null);
+      setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); setDraggingFileName('');
       return;
     }
     if (!draggingId || !dropTargetId || draggingId === dropTargetId) {
-      setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); return;
+      setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); setDraggingFileName(''); return;
     }
     const groupFolders = folders.filter((f) => f.group_name === groupName);
     const from = groupFolders.findIndex((f) => f.id === draggingId);
     const to = groupFolders.findIndex((f) => f.id === dropTargetId);
-    if (from === -1 || to === -1) { setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); return; }
+    if (from === -1 || to === -1) { setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); setDraggingFileName(''); return; }
     const reordered = [...groupFolders];
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
     onReorderFolders?.(reordered.map((f) => f.id));
-    setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null);
+    setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); setDraggingFileName('');
   };
 
-  const handleDragEnd = () => { setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); };
+  const handleDragEnd = () => { setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); setDraggingFileName(''); };
 
   return (
     <div style={{
@@ -79,7 +81,7 @@ export default function Sidebar({
         )}
         <button
           onClick={() => setCollapsed((c) => !c)}
-          title={collapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}
+          title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
           style={{
             width: 26, height: 26, border: 'none', borderRadius: 6,
             background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer',
@@ -138,6 +140,8 @@ export default function Sidebar({
                     onDrop={(e) => handleDrop(e, g.name)}
                     onDragEnd={handleDragEnd}
                     onToggleFavorite={() => onToggleFavorite?.(f.id)}
+                    draggingFileName={draggingFileName}
+                    t={t}
                   />
                 );
               })}
@@ -215,7 +219,7 @@ function GroupHeader({ group, accent, onAdd, t }) {
 }
 
 function FolderRow({ folder, on, collapsed, accent, groupName, onClick, onMenu, onToggleFavorite,
-  isDragging, isDropTarget, isFileDropTarget, onDragStart, onDragOver, onDrop, onDragEnd }) {
+  isDragging, isDropTarget, isFileDropTarget, onDragStart, onDragOver, onDrop, onDragEnd, draggingFileName, t }) {
   const [hovered, setHovered] = useState(false);
   const isFav = !!folder.is_favorite;
 
@@ -226,10 +230,22 @@ function FolderRow({ folder, on, collapsed, accent, groupName, onClick, onMenu, 
       onMouseLeave={() => setHovered(false)}
     >
       {(isDropTarget || isFileDropTarget) && !collapsed && (
-        <div style={{
-          position: 'absolute', top: 0, left: 16, right: 16, height: 2,
-          background: isFileDropTarget ? '#22C55E' : accent, borderRadius: 1, zIndex: 2, pointerEvents: 'none',
-        }} />
+        <>
+          <div style={{
+            position: 'absolute', top: 0, left: 16, right: 16, height: 2,
+            background: isFileDropTarget ? '#22C55E' : accent, borderRadius: 1, zIndex: 2, pointerEvents: 'none',
+          }} />
+          {isFileDropTarget && (
+            <div style={{
+              position: 'absolute', right: 8, top: -8, zIndex: 3,
+              fontSize: 10, fontWeight: 700, color: '#166534',
+              background: 'rgba(34,197,94,0.18)', border: '1px solid rgba(34,197,94,0.35)',
+              padding: '2px 6px', borderRadius: 999,
+            }}>
+              {t('sidebar.drop_to_move', { file: draggingFileName || '…' })}
+            </div>
+          )}
+        </>
       )}
       <button
         onClick={onClick}
@@ -280,7 +296,7 @@ function FolderRow({ folder, on, collapsed, accent, groupName, onClick, onMenu, 
         }}>
           <button
             onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); onToggleFavorite?.(); }}
-            title={isFav ? 'Aus Favoriten entfernen' : 'Als Favorit markieren'}
+            title={isFav ? t('sidebar.unpin') : t('sidebar.pin')}
             style={{
               width: 22, height: 22, border: 'none', borderRadius: 5,
               background: isFav ? 'rgba(245,158,11,0.15)' : 'var(--c-hover)',

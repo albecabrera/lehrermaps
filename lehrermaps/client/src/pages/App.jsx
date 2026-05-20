@@ -6,6 +6,7 @@ import UploadModal from '../components/UploadModal';
 import NewFolderModal from '../components/NewFolderModal';
 import Breadcrumb from '../components/Breadcrumb';
 import ConfirmModal from '../components/ConfirmModal';
+import DeadlineModal from '../components/DeadlineModal';
 import GlobalSearch from '../components/GlobalSearch';
 import Schedule from '../components/Schedule';
 import { SUBJECTS } from '../constants/structure';
@@ -42,6 +43,8 @@ export default function App({ onLogout }) {
   const [filesView, setFilesView] = useState('list');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
+  const [deadlineModal, setDeadlineModal] = useState(null);
+  const [toast, setToast] = useState(null);
   const [viewMode, setViewMode] = useState('subjects');
   const [dropOver, setDropOver] = useState(false);
   const [dropFiles, setDropFiles] = useState(null);
@@ -49,12 +52,18 @@ export default function App({ onLogout }) {
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, reload: reloadFolders } = useFolders();
-  const { files, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
+  const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const tmr = setTimeout(() => setToast(null), 2200);
+    return () => clearTimeout(tmr);
+  }, [toast]);
 
   // Keyboard shortcuts: Cmd/Ctrl+K, j/k navigation, space preview toggle
   useEffect(() => {
@@ -164,9 +173,14 @@ export default function App({ onLogout }) {
   };
 
   const handleUpload = async (file, onProgress) => {
-    const newFile = await upload(file, onProgress);
-    reloadFolders();
-    return newFile;
+    try {
+      const newFile = await upload(file, onProgress);
+      reloadFolders();
+      return newFile;
+    } catch (e) {
+      setToast({ type: 'error', msg: t('toast.upload_error') });
+      throw e;
+    }
   };
 
   const handleDirectDropUpload = useCallback(async (incomingFiles) => {
@@ -189,6 +203,12 @@ export default function App({ onLogout }) {
     }
 
     reloadFolders();
+    setToast({
+      type: failed ? 'error' : 'success',
+      msg: failed
+        ? t('toast.drop_done_error', { done, total: filesToUpload.length, failed })
+        : t('toast.drop_done', { n: done }),
+    });
     setTimeout(() => setDropUploading(null), 900);
   }, [activeFolder, reloadFolders, upload]);
 
@@ -228,23 +248,15 @@ export default function App({ onLogout }) {
     if (activeFile?.id === id) setActiveFile(updated);
   };
 
-  const handleSetFolderDeadline = async () => {
+  const openFolderDeadlineModal = () => {
     if (!activeFolder) return;
     const current = activeFolder.due_at ? new Date(activeFolder.due_at).toISOString().slice(0, 10) : '';
-    const value = window.prompt(t('prompt.folder_deadline'), current);
-    if (value === null) return;
-    const due_at = value.trim() ? `${value.trim()} 23:59:59` : null;
-    const updated = await setFolderDeadline(activeFolder.id, due_at);
-    setActiveFolder(updated);
+    setDeadlineModal({ type: 'folder', id: activeFolder.id, initialDate: current });
   };
 
   const handleSetFileDeadline = async (file) => {
     const current = file?.due_at ? new Date(file.due_at).toISOString().slice(0, 10) : '';
-    const value = window.prompt(t('prompt.file_deadline'), current);
-    if (value === null) return;
-    const due_at = value.trim() ? `${value.trim()} 23:59:59` : null;
-    const updated = await setFileDeadline(file.id, due_at);
-    if (activeFile?.id === file.id) setActiveFile(updated);
+    setDeadlineModal({ type: 'file', id: file.id, initialDate: current });
   };
 
   const handleBulkDeleteFiles = async (selectedFiles) => {
@@ -306,9 +318,15 @@ export default function App({ onLogout }) {
 
   const handleMoveFileToFolder = async (fileId, targetFolderId) => {
     if (!activeFolder || activeFolder.id === targetFolderId) return;
-    await moveFileHook(fileId, targetFolderId);
-    if (activeFile?.id === fileId) setActiveFile(null);
-    reloadFolders();
+    try {
+      await moveFileHook(fileId, targetFolderId);
+      if (activeFile?.id === fileId) setActiveFile(null);
+      reloadFolders();
+      const targetFolder = folders.find((f) => f.id === targetFolderId);
+      setToast({ type: 'success', msg: t('toast.file_moved', { folder: targetFolder?.name || '—' }) });
+    } catch {
+      setToast({ type: 'error', msg: t('toast.file_move_error') });
+    }
   };
 
   const accent = subject.color;
@@ -624,7 +642,7 @@ export default function App({ onLogout }) {
                       ZIP
                     </a>
                     <button
-                      onClick={handleSetFolderDeadline}
+                      onClick={openFolderDeadlineModal}
                       style={{
                         marginLeft: 8, height: 26, padding: '0 10px',
                         border: '1px solid var(--c-border)', borderRadius: 6,
@@ -685,7 +703,9 @@ export default function App({ onLogout }) {
               <div style={{ flex: 1, minHeight: 0, overflow: folderTab === 'files' ? 'auto' : 'hidden' }}>
                 {folderTab === 'files' ? (
                   <div style={{ padding: '18px 28px' }}>
-                    {filesView === 'gallery' ? (
+                    {filesLoading ? (
+                      <FilesSkeleton />
+                    ) : filesView === 'gallery' ? (
                       <FolderGallery
                         files={files}
                         activeFileId={activeFile?.id}
@@ -825,6 +845,54 @@ export default function App({ onLogout }) {
         onClose={() => setGlobalSearchOpen(false)}
         onNavigate={handleGlobalNavigate}
       />
+      <DeadlineModal
+        open={!!deadlineModal}
+        title={deadlineModal?.type === 'folder' ? t('modal.deadline.folder_title') : t('modal.deadline.file_title')}
+        initialDate={deadlineModal?.initialDate}
+        accent={accent}
+        onClose={() => setDeadlineModal(null)}
+        onSave={async (value) => {
+          if (!deadlineModal) return;
+          const due_at = value?.trim() ? `${value.trim()} 23:59:59` : null;
+          try {
+            if (deadlineModal.type === 'folder') {
+              const updated = await setFolderDeadline(deadlineModal.id, due_at);
+              setActiveFolder(updated);
+              setToast({ type: 'success', msg: t('toast.deadline_saved') });
+            } else {
+              const updated = await setFileDeadline(deadlineModal.id, due_at);
+              if (activeFile?.id === deadlineModal.id) setActiveFile(updated);
+              setToast({ type: 'success', msg: t('toast.deadline_saved') });
+            }
+          } catch {
+            setToast({ type: 'error', msg: t('toast.deadline_error') });
+          } finally {
+            setDeadlineModal(null);
+          }
+        }}
+      />
+      {toast && (
+        <div style={{
+          position: 'fixed', right: 18, bottom: 18, zIndex: 1300,
+          minWidth: 220, maxWidth: 360, padding: '10px 12px',
+          borderRadius: 8, border: '1px solid var(--c-border-soft)',
+          background: toast.type === 'error' ? 'var(--c-danger-bg)' : 'var(--c-surface)',
+          color: toast.type === 'error' ? 'var(--c-danger-text)' : 'var(--c-text)',
+          boxShadow: 'var(--c-shadow-pop)', fontSize: 12, fontWeight: 600,
+        }}>
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FilesSkeleton() {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 8, padding: 8 }}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} style={{ height: 64, borderRadius: 10, border: '1px solid var(--c-border)', background: 'var(--c-surface-2)' }} />
+      ))}
     </div>
   );
 }

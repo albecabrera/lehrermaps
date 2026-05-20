@@ -52,6 +52,9 @@ export const translations = {
     // Sidebar
     'sidebar.new_folder': 'Neuer Ordner',
     'sidebar.create_in': 'Ordner in {{group}} erstellen',
+    'sidebar.expand': 'Sidebar ausklappen',
+    'sidebar.collapse': 'Sidebar einklappen',
+    'sidebar.drop_to_move': 'Datei hierhin bewegen',
 
     // File table
     'table.col_size': 'Größe',
@@ -133,6 +136,10 @@ export const translations = {
     'modal.upload.progress': '{{n}}% hochgeladen…',
     'modal.upload.formats': 'Unterstützte Formate',
     'modal.upload.max': 'Max. 50 MB pro Datei · alle Daten bleiben lokal',
+    'modal.deadline.folder_title': 'Ordner-Deadline',
+    'modal.deadline.file_title': 'Datei-Deadline',
+    'modal.deadline.hint': 'Leer lassen, um die Deadline zu entfernen.',
+    'modal.deadline.clear': 'Deadline entfernen',
 
     // Global search
     'search.placeholder': 'Dateien, Ordner suchen…',
@@ -184,6 +191,13 @@ export const translations = {
     'student.shared_badge': 'Freigegeben',
     'student.copy_link': 'Schüler-Link kopieren',
     'student.exit': 'Lehrer-Modus',
+    'toast.upload_error': 'Upload fehlgeschlagen.',
+    'toast.drop_done': '{{n}} Datei(en) hochgeladen.',
+    'toast.drop_done_error': '{{done}}/{{total}} hochgeladen · {{failed}} Fehler',
+    'toast.file_moved': 'Datei verschoben nach {{folder}}.',
+    'toast.file_move_error': 'Datei konnte nicht verschoben werden.',
+    'toast.deadline_saved': 'Deadline gespeichert.',
+    'toast.deadline_error': 'Deadline konnte nicht gespeichert werden.',
     'prompt.folder_deadline': 'Ordner-Deadline (YYYY-MM-DD). Leer zum Entfernen:',
     'prompt.file_deadline': 'Datei-Deadline (YYYY-MM-DD). Leer zum Entfernen:',
   },
@@ -241,6 +255,9 @@ export const translations = {
     // Sidebar
     'sidebar.new_folder': 'Nueva carpeta',
     'sidebar.create_in': 'Crear carpeta en {{group}}',
+    'sidebar.expand': 'Expandir barra lateral',
+    'sidebar.collapse': 'Contraer barra lateral',
+    'sidebar.drop_to_move': 'Mover archivo aquí',
 
     // File table
     'table.col_size': 'Tamaño',
@@ -322,6 +339,10 @@ export const translations = {
     'modal.upload.progress': '{{n}}% subido…',
     'modal.upload.formats': 'Formatos admitidos',
     'modal.upload.max': 'Máx. 50 MB por archivo · todos los datos son locales',
+    'modal.deadline.folder_title': 'Fecha límite de carpeta',
+    'modal.deadline.file_title': 'Fecha límite de archivo',
+    'modal.deadline.hint': 'Dejá vacío para quitar la fecha límite.',
+    'modal.deadline.clear': 'Quitar fecha límite',
 
     // Global search
     'search.placeholder': 'Buscar archivos, carpetas…',
@@ -373,6 +394,13 @@ export const translations = {
     'student.shared_badge': 'Compartido',
     'student.copy_link': 'Copiar link alumnos',
     'student.exit': 'Modo docente',
+    'toast.upload_error': 'Error al subir archivos.',
+    'toast.drop_done': '{{n}} archivo(s) subidos.',
+    'toast.drop_done_error': '{{done}}/{{total}} subidos · {{failed}} error(es)',
+    'toast.file_moved': 'Archivo movido a {{folder}}.',
+    'toast.file_move_error': 'No se pudo mover el archivo.',
+    'toast.deadline_saved': 'Fecha límite guardada.',
+    'toast.deadline_error': 'No se pudo guardar la fecha límite.',
     'prompt.folder_deadline': 'Fecha límite carpeta (YYYY-MM-DD). Vacío para quitar:',
     'prompt.file_deadline': 'Fecha límite archivo (YYYY-MM-DD). Vacío para quitar:',
   },
