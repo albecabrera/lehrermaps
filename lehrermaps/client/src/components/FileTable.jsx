@@ -93,7 +93,7 @@ export default function FileTable({
       )}
 
       {sorted.length === 0 ? (
-        <EmptyState query={query} accent={accent} onUpload={onUpload} t={t} />
+        <EmptyState query={query} accent={accent} onUpload={onUpload} onAddLink={onAddLink} t={t} />
       ) : (
         <div style={{
           background: 'var(--c-surface)', border: '1px solid var(--c-border)',
@@ -302,7 +302,7 @@ export default function FileTable({
   );
 }
 
-function EmptyState({ query, accent, onUpload, t }) {
+function EmptyState({ query, accent, onUpload, onAddLink, t }) {
   return (
     <div style={{
       padding: '60px 24px', textAlign: 'center',
@@ -328,18 +328,35 @@ function EmptyState({ query, accent, onUpload, t }) {
           <div style={{ fontSize: 13, color: 'var(--c-text-2)', marginBottom: 20 }}>
             {t('table.empty_hint')}
           </div>
-          {onUpload && (
-            <button
-              onClick={onUpload}
-              style={{
-                height: 36, padding: '0 20px', border: 'none', borderRadius: 8,
-                background: accent, color: '#fff', fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}
-            >
-              {t('table.upload_file')}
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {onUpload && (
+              <button
+                onClick={onUpload}
+                style={{
+                  height: 36, padding: '0 20px', border: 'none', borderRadius: 8,
+                  background: accent, color: '#fff', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {t('table.upload_file')}
+              </button>
+            )}
+            {onAddLink && (
+              <button
+                onClick={onAddLink}
+                style={{
+                  height: 36, padding: '0 16px', border: '1px solid var(--c-border)', borderRadius: 8,
+                  background: 'var(--c-surface-2)', color: 'var(--c-text)', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {t('table.add_link')}
+              </button>
+            )}
+          </div>
+          <div style={{ marginTop: 10, fontSize: 11, color: 'var(--c-text-3)' }}>
+            {t('table.empty_drop_hint')}
+          </div>
         </>
       )}
     </div>
