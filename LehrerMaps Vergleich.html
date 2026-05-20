@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<title>LehrerMaps · Vergleich Hell ↔ Dunkel</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" />
+
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #0a090a; overflow: hidden; }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; color: #f0eee9; }
+  * { box-sizing: border-box; }
+
+  /* Bühne */
+  .stage {
+    height: 100vh; padding: 60px 32px 32px;
+    display: flex; gap: 28px; align-items: stretch; justify-content: center;
+    background: radial-gradient(120% 80% at 50% -10%, #1f1c17 0%, #100e0b 60%, #0a090a 100%);
+    overflow: auto;
+  }
+  .frame {
+    flex: 1; min-width: 0; max-width: 920px;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+    display: flex; flex-direction: column;
+    background: #fff;
+    position: relative;
+  }
+  .frame[data-dark="1"] { background: #0f0f12; }
+  .frame .body { flex: 1; min-height: 0; position: relative; }
+  .label {
+    position: absolute; top: -38px; left: 0; right: 0;
+    text-align: center; font-size: 13px; font-weight: 600;
+    letter-spacing: -0.2px; color: rgba(255,255,255,0.85);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+  }
+
+  /* macOS-Bar */
+  .mac {
+    height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 14px;
+    background: #ECECEC; border-bottom: 0.5px solid rgba(0,0,0,0.08);
+    position: relative; flex-shrink: 0;
+  }
+  .frame[data-dark="1"] .mac { background: #222226; border-bottom-color: rgba(255,255,255,0.06); }
+  .mac .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .mac .title {
+    position: absolute; left: 0; right: 0; text-align: center;
+    font-size: 11.5px; font-weight: 500; color: #555;
+  }
+  .frame[data-dark="1"] .mac .title { color: #aaa; }
+
+  /* Header */
+  .head {
+    text-align: center; padding: 22px 0 0;
+    position: absolute; top: 16px; left: 0; right: 0; pointer-events: none;
+  }
+  .head h1 {
+    margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.3px;
+    color: rgba(255,255,255,0.92);
+  }
+  .head .sub {
+    margin-top: 4px; font-size: 11px; color: rgba(255,255,255,0.5);
+    font-family: 'DM Mono', monospace;
+  }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="app/data.js"></script>
+<script type="text/babel" src="app/shared.jsx"></script>
+<script type="text/babel" src="app/upload-modal.jsx"></script>
+<script type="text/babel" src="app/notebook-app.jsx"></script>
+</head>
+<body>
+
+<div class="head">
+  <h1>LehrerMaps · Vergleich</h1>
+  <div class="sub">Hell + ausgeklappte Sidebar  ←→  Dunkel + Icon-Sidebar</div>
+</div>
+
+<div class="stage">
+  <div class="frame" data-dark="0">
+    <div class="label">Hell · Sidebar ausgeklappt</div>
+    <div class="mac">
+      <span class="dot" style="background:#ff5f57"></span>
+      <span class="dot" style="background:#febc2e"></span>
+      <span class="dot" style="background:#28c840"></span>
+      <span class="title">LehrerMaps · Notizbuch</span>
+    </div>
+    <div class="body" id="light"></div>
+  </div>
+
+  <div class="frame" data-dark="1">
+    <div class="label">Dunkel · Sidebar eingeklappt</div>
+    <div class="mac">
+      <span class="dot" style="background:#ff5f57"></span>
+      <span class="dot" style="background:#febc2e"></span>
+      <span class="dot" style="background:#28c840"></span>
+      <span class="title">LehrerMaps · Notizbuch</span>
+    </div>
+    <div class="body" id="dark"></div>
+  </div>
+</div>
+
+<script type="text/babel" data-presets="react">
+ReactDOM.createRoot(document.getElementById('light')).render(
+  <NotebookApp dark={false}
+    initialSubject="spanisch"
+    initialFolder="hoer"
+    initialFile="RTVE_Reporte_Andalucia.mp4" />
+);
+
+ReactDOM.createRoot(document.getElementById('dark')).render(
+  <NotebookApp dark={true}
+    initialCollapsed={true}
+    initialSubject="informatik"
+    initialFolder="py"
+    initialFile="Datenanalyse.ipynb" />
+);
+</script>
+
+</body>
+</html>

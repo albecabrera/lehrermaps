@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --c-bg: #F8F9FB;
+  --c-surface: #ffffff;
+  --c-surface-2: #FAFBFC;
+  --c-tab-bg: #EEF0F4;
+  --c-border: #E5E7EB;
+  --c-text: #111827;
+  --c-text-2: #6B7280;
+  --c-text-3: #9CA3AF;
+  --c-hover: #F3F4F6;
+  --c-hover-2: rgba(0, 0, 0, 0.025);
+  --c-input-bg: #ffffff;
+  --c-scrollbar: #D1D5DB;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --c-bg: #0F1117;
+  --c-surface: #1A1D27;
+  --c-surface-2: #161921;
+  --c-tab-bg: #141720;
+  --c-border: #2A2E42;
+  --c-text: #F1F3F9;
+  --c-text-2: #8892A8;
+  --c-text-3: #555E78;
+  --c-hover: #252A3A;
+  --c-hover-2: rgba(255, 255, 255, 0.04);
+  --c-input-bg: #1E2130;
+  --c-scrollbar: #3A3F56;
+  color-scheme: dark;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+
+/* File list columns — responsive via container query */
+.lm-filerow {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 80px 90px 28px;
+  column-gap: 12px;
+  align-items: center;
+}
+
+@container (max-width: 480px) {
+  .lm-filerow { grid-template-columns: 40px minmax(0, 1fr) 80px 28px; }
+  .lm-col-size { display: none; }
+}
+
+@container (max-width: 360px) {
+  .lm-filerow { grid-template-columns: 40px minmax(0, 1fr) 28px; }
+  .lm-col-date { display: none; }
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--c-scrollbar); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-text-3); }
+
+/* Notes editor content styles */
+.lm-notes-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--c-text-3);
+  pointer-events: none;
+}
+.lm-notes-editor h1 { font-size: 1.8em; font-weight: 700; margin: 0.6em 0 0.3em; }
+.lm-notes-editor h2 { font-size: 1.4em; font-weight: 600; margin: 0.5em 0 0.25em; }
+.lm-notes-editor h3 { font-size: 1.15em; font-weight: 600; margin: 0.4em 0 0.2em; }
+.lm-notes-editor p { margin: 0.3em 0; }
+.lm-notes-editor ul { list-style: disc; padding-left: 1.6em; margin: 0.3em 0; }
+.lm-notes-editor ol { list-style: decimal; padding-left: 1.6em; margin: 0.3em 0; }
+.lm-notes-editor li { margin: 0.15em 0; }
+.lm-notes-editor a { color: #3B82F6; }
+.lm-notes-editor blockquote { border-left: 3px solid var(--c-border); margin: 0.5em 0; padding-left: 1em; color: var(--c-text-2); }
+
+@keyframes lmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lmSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}

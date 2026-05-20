@@ -1,0 +1,117 @@
+import { Router } from 'express';
+import pool from '../db.js';
+import auth from '../middleware/auth.js';
+
+const router = Router();
+router.use(auth);
+
+const FOLDER_WITH_COUNT = `
+  SELECT f.*, COUNT(fi.id) AS file_count
+  FROM folders f
+  LEFT JOIN files fi ON fi.folder_id = f.id
+  WHERE f.id = ?
+  GROUP BY f.id
+`;
+
+router.get('/', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT f.*, COUNT(fi.id) AS file_count
+      FROM folders f
+      LEFT JOIN files fi ON fi.folder_id = f.id
+      GROUP BY f.id
+      ORDER BY f.subject, f.group_name, f.sort_order, f.name
+    `);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/', async (req, res) => {
+  const { subject, group_name, name } = req.body;
+  if (!subject || !group_name || !name) {
+    return res.status(400).json({ error: 'subject, group_name und name erforderlich' });
+  }
+  try {
+    const [result] = await pool.execute(
+      'INSERT INTO folders (subject, group_name, name) VALUES (?, ?, ?)',
+      [subject, group_name, name]
+    );
+    const [rows] = await pool.execute(
+      'SELECT *, 0 AS file_count FROM folders WHERE id = ?',
+      [result.insertId]
+    );
+    res.status(201).json(rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Must come before /:id
+router.put('/reorder', async (req, res) => {
+  const { items } = req.body; // [{ id, sort_order }]
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'items array required' });
+  }
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    for (const { id, sort_order } of items) {
+      await conn.execute('UPDATE folders SET sort_order = ? WHERE id = ?', [sort_order, id]);
+    }
+    await conn.commit();
+    res.json({ ok: true });
+  } catch (e) {
+    await conn.rollback();
+    res.status(500).json({ error: e.message });
+  } finally {
+    conn.release();
+  }
+});
+
+router.put('/:id/favorite', async (req, res) => {
+  try {
+    await pool.execute(
+      'UPDATE folders SET is_favorite = IF(is_favorite=1, 0, 1) WHERE id = ?',
+      [req.params.id]
+    );
+    const [rows] = await pool.execute(FOLDER_WITH_COUNT, [req.params.id]);
+    res.json(rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'name erforderlich' });
+  try {
+    await pool.execute('UPDATE folders SET name = ? WHERE id = ?', [name.trim(), req.params.id]);
+    const [rows] = await pool.execute(FOLDER_WITH_COUNT, [req.params.id]);
+    res.json(rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.put('/:id/notes', async (req, res) => {
+  const { content } = req.body;
+  try {
+    await pool.execute('UPDATE folders SET notes = ? WHERE id = ?', [content ?? '', req.params.id]);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    await pool.execute('DELETE FROM folders WHERE id = ?', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+export default router;

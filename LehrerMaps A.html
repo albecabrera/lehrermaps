@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LehrerMaps · Notizbuch</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" />
+
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #1c1b18; }
+  body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
+  * { box-sizing: border-box; }
+
+  /* "Desktop"-Bühne — die App schwebt als Fenster auf einer warmen Fläche */
+  .stage {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #2e2a23 0%, #181612 60%, #0e0d0a 100%);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .window {
+    width: 100%; height: 100%; max-width: 1440px; max-height: 900px;
+    border-radius: 14px; overflow: hidden;
+    box-shadow:
+      0 40px 80px rgba(0,0,0,0.5),
+      0 0 0 1px rgba(255,255,255,0.06);
+    display: flex; flex-direction: column;
+    background: #fff;
+  }
+  /* Für kleine Bildschirme die Bühne ausblenden */
+  @media (max-width: 900px) {
+    .stage { padding: 0; }
+    .window { border-radius: 0; max-width: none; max-height: none; box-shadow: none; }
+  }
+
+  /* Dateiliste — responsive Spalten via Container-Query.
+     Name darf schrumpfen (minmax(0, 1fr) + min-width: 0), Größe wird
+     auf engen Breiten ausgeblendet, dann auch Datum. */
+  .lm-filerow {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 80px 80px 28px;
+    column-gap: 12px;
+  }
+  @container (max-width: 480px) {
+    .lm-filerow { grid-template-columns: 40px minmax(0, 1fr) 80px 28px; }
+    .lm-col-size { display: none; }
+  }
+  @container (max-width: 360px) {
+    .lm-filerow { grid-template-columns: 40px minmax(0, 1fr) 28px; }
+    .lm-col-date { display: none; }
+  }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="app/data.js"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="app/chrome.jsx"></script>
+<script type="text/babel" src="app/shared.jsx"></script>
+<script type="text/babel" src="app/upload-modal.jsx"></script>
+<script type="text/babel" src="app/notebook-app.jsx"></script>
+</head>
+<body>
+<div class="stage">
+  <div class="window">
+    <div id="chrome-bar"></div>
+    <div id="root" style="flex:1; min-height:0; position:relative;"></div>
+  </div>
+</div>
+
+<script type="text/babel" data-presets="react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "dark": false,
+  "chrome": "macos"
+}/*EDITMODE-END*/;
+
+function ChromeBar({ chrome, dark, title }) {
+  if (chrome === 'none') return null;
+  const bg = dark ? '#222226' : '#ECECEC';
+  const border = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+  const text = dark ? '#aaa' : '#555';
+  if (chrome === 'macos') {
+    return (
+      <div style={{
+        height: 36, display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px',
+        background: bg, borderBottom: `0.5px solid ${border}`, position: 'relative',
+      }}>
+        <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f57' }} />
+        <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#febc2e' }} />
+        <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#28c840' }} />
+        <span style={{
+          position: 'absolute', left: 0, right: 0, textAlign: 'center', pointerEvents: 'none',
+          fontSize: 12, fontWeight: 500, color: text,
+        }}>{title}</span>
+      </div>
+    );
+  }
+  if (chrome === 'windows') {
+    return (
+      <div style={{
+        height: 32, display: 'flex', alignItems: 'center',
+        background: bg, borderBottom: `1px solid ${border}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', flex: 1 }}>
+          <div style={{ width: 14, height: 14, borderRadius: 3, background: '#E8472A' }} />
+          <span style={{ fontSize: 12, color: text }}>{title}</span>
+        </div>
+        <div style={{ display: 'flex', height: '100%' }}>
+          {['—','▢','×'].map((g, i) => (
+            <div key={i} style={{ width: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: text }}>{g}</div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (chrome === 'linux') {
+    return (
+      <div style={{
+        height: 40, display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px 0 16px',
+        background: bg, borderBottom: `1px solid ${border}`,
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: dark ? '#fff' : '#222' }}>{title}</span>
+        <div style={{ flex: 1 }} />
+        {[0,1,2].map(i => (
+          <span key={i} style={{
+            width: 22, height: 22, borderRadius: '50%',
+            background: dark ? 'rgba(255,255,255,0.06)' : '#dcdcdc',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, color: text,
+          }}>{['—','▢','×'][i]}</span>
+        ))}
+      </div>
+    );
+  }
+}
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  // Hintergrund der Bühne dunkler bei Dark Mode
+  React.useEffect(() => {
+    document.body.style.background = t.dark ? '#0a090a' : '#1c1b18';
+  }, [t.dark]);
+
+  // Chrome separat über React rendern
+  React.useEffect(() => {
+    const root = ReactDOM.createRoot(document.getElementById('chrome-bar'));
+    root.render(<ChromeBar chrome={t.chrome} dark={t.dark} title="LehrerMaps · Notizbuch" />);
+    return () => root.unmount();
+  }, [t.chrome, t.dark]);
+
+  return (
+    <>
+      <NotebookApp dark={t.dark} />
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection label="Erscheinungsbild" />
+        <TweakToggle label="Dark Mode" value={t.dark} onChange={(v) => setTweak('dark', v)} />
+        <TweakSelect label="Fenster-Stil" value={t.chrome}
+          options={[
+            { value: 'macos',   label: 'macOS' },
+            { value: 'windows', label: 'Windows 11' },
+            { value: 'linux',   label: 'GNOME / Linux' },
+            { value: 'none',    label: 'Ohne (Web/PWA)' },
+          ]}
+          onChange={(v) => setTweak('chrome', v)} />
+
+        <TweakSection label="Tipp" />
+        <div style={{
+          fontSize: 11, color: 'rgba(41,38,27,0.65)', lineHeight: 1.5,
+          padding: '6px 8px', borderRadius: 6, background: 'rgba(0,0,0,0.04)',
+        }}>
+          Klicke Reiter (Fach), Ordner in der Sidebar oder Dateien in der Liste —
+          alles ist live. Sidebar lässt sich oben einklappen.
+        </div>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

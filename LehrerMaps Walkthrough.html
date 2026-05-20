@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<title>LehrerMaps · Walkthrough</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" />
+
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #0a090a; overflow: hidden; }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; }
+  * { box-sizing: border-box; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="app/data.js"></script>
+<script type="text/babel" src="animations.jsx"></script>
+<script type="text/babel" src="app/shared.jsx"></script>
+<script type="text/babel" src="app/notebook-app.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+
+// ─────────────────────────────────────────────────────────────
+// Drehbuch: feste State-Snapshots, die zu bestimmten Zeitpunkten
+// "einrasten". Der Cursor bewegt sich vorher zum Ziel, klickt, dann
+// wechselt der State (mit kurzer Verzögerung, damit der Klick wirkt).
+// ─────────────────────────────────────────────────────────────
+
+const STATES = [
+  // t,  subject, group, folder, file, collapsed, dashboard, caption
+  { at: 0.0,  subjectId: 'spanisch',   groupId: 'es-9',   folderId: 'vokab',  fileName: 'Vokabeltest_Unidad_3_2026-04-12.pdf', collapsed: false, dashboard: false, caption: 'LehrerMaps · alles an einem Ort' },
+  { at: 4.0,  subjectId: 'spanisch',   groupId: 'es-9',   folderId: 'hoer',   fileName: 'RTVE_Reporte_Andalucia.mp4',          collapsed: false, dashboard: false, caption: 'Ordner wechseln — sofort sichtbar in der Vorschau' },
+  { at: 8.0,  subjectId: 'informatik', groupId: 'inf-810',folderId: 'py',     fileName: 'turtle_grafik_aufgaben.py',           collapsed: false, dashboard: false, caption: 'Fach wechseln — Akzentfarbe folgt' },
+  { at: 12.0, subjectId: 'sport',      groupId: 'sp-tanz',folderId: 'vid',    fileName: 'Aufführung_Probe_03.mp4',             collapsed: false, dashboard: false, caption: 'Praxis, Theorie, Q2 Tanz — drei Klicks weg' },
+  { at: 16.0, subjectId: 'sport',      groupId: 'sp-tanz',folderId: 'vid',    fileName: 'Aufführung_Probe_03.mp4',             collapsed: true,  dashboard: false, caption: 'Sidebar einklappen für mehr Platz' },
+  { at: 19.5, subjectId: 'klasse',     groupId: 'kl-form',folderId: 'aus',    fileName: 'Genehmigung_Klassenfahrt.docx',       collapsed: false, dashboard: true,  caption: 'Klassenleitung — Übersicht aller Gruppen' },
+];
+
+const DURATION = 24;
+
+// ─────────────────────────────────────────────────────────────
+// Cursor-Wegpunkte. Jeder Eintrag hat:
+//   at      — Zeitpunkt, an dem der Cursor das Ziel erreicht
+//   target  — data-walk-Attribut des Zielelements
+//   click   — true => Klick-Ripple zum Zeitpunkt
+// ─────────────────────────────────────────────────────────────
+
+const PATH = [
+  { at: 0.5,  target: 'file-1' },
+  { at: 3.7,  target: 'folder-hoer',  click: true },
+  { at: 6.2,  target: 'tab-informatik', click: true },
+  { at: 7.7,  target: 'folder-py',    click: true },
+  { at: 10.5, target: 'tab-sport',    click: true },
+  { at: 11.7, target: 'folder-vid',   click: true },
+  { at: 15.5, target: 'sidebar-toggle', click: true },
+  { at: 19.0, target: 'dashboard-btn',  click: true },
+  { at: 22.5, target: 'preview-pad' },
+];
+
+// ─────────────────────────────────────────────────────────────
+// Hook: aktiver Snapshot zum aktuellen Zeitpunkt
+// ─────────────────────────────────────────────────────────────
+
+function useWalkState() {
+  const time = useTime();
+  // Snapshot greift 0.3s NACH dem Klick (damit der Klick sichtbar ist)
+  const clickLag = 0.3;
+  let s = STATES[0];
+  for (const x of STATES) if (time >= x.at - 0.001) s = x;
+  return s;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Cursor-Komponente — bewegt sich entlang PATH, animiert
+// per CSS-Transition zwischen Wegpunkten
+// ─────────────────────────────────────────────────────────────
+
+function Cursor({ frameRef }) {
+  const time = useTime();
+  const ref = React.useRef(null);
+  const [pos, setPos] = React.useState({ x: 1100, y: 700 });
+  const [rippleAt, setRippleAt] = React.useState(-99);
+
+  // Aktuelles Segment: letzter Wegpunkt mit at <= time + Lookahead
+  // Cursor bewegt sich vom vorherigen zum nächsten Wegpunkt.
+  React.useEffect(() => {
+    if (!frameRef.current) return;
+    // Letzter erreichter Wegpunkt
+    let idx = -1;
+    for (let i = 0; i < PATH.length; i++) if (time >= PATH[i].at) idx = i;
+    const next = PATH[Math.min(idx + 1, PATH.length - 1)];
+    const cur = idx >= 0 ? PATH[idx] : PATH[0];
+    const wp = next || cur;
+
+    const target = document.querySelector(`[data-walk="${wp.target}"]`);
+    if (!target) return;
+    const frameRect = frameRef.current.getBoundingClientRect();
+    const tr = target.getBoundingClientRect();
+    const cx = tr.left - frameRect.left + tr.width / 2;
+    const cy = tr.top  - frameRect.top  + tr.height / 2;
+    setPos({ x: cx, y: cy });
+
+    // Wenn wir gerade einen Klick-Wegpunkt erreicht haben → Ripple feuern
+    if (cur && cur.click && Math.abs(time - cur.at) < 0.15) {
+      setRippleAt(cur.at);
+    }
+  }, [time, frameRef]);
+
+  const sinceRipple = time - rippleAt;
+  const ripple = sinceRipple >= 0 && sinceRipple < 0.6;
+  const rippleProg = ripple ? sinceRipple / 0.6 : 0;
+
+  return (
+    <>
+      {/* Ripple-Kreis */}
+      {ripple && (
+        <div style={{
+          position: 'absolute', left: pos.x, top: pos.y, pointerEvents: 'none', zIndex: 100,
+          width: 50 * rippleProg, height: 50 * rippleProg, borderRadius: '50%',
+          border: '2px solid rgba(0,0,0,0.4)',
+          transform: 'translate(-50%, -50%)',
+          opacity: 1 - rippleProg,
+        }} />
+      )}
+      <div ref={ref} style={{
+        position: 'absolute', left: 0, top: 0, pointerEvents: 'none', zIndex: 101,
+        transform: `translate(${pos.x}px, ${pos.y}px)`,
+        transition: 'transform .9s cubic-bezier(.45,.05,.2,1)',
+      }}>
+        <svg width="22" height="28" viewBox="0 0 22 28" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))' }}>
+          <path d="M2 2L20 14L12 16L17 25L13 27L8 18L2 22V2Z" fill="#fff" stroke="#000" strokeWidth="1.3" strokeLinejoin="round"/>
+        </svg>
+      </div>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Notebook-Frame, controlled (State von außen)
+// ─────────────────────────────────────────────────────────────
+
+function NotebookFrame({ state, dark = false }) {
+  const t = ThemeFor(dark);
+  const subject = SUBJECTS.find(s => s.id === state.subjectId);
+  const group   = subject.groups.find(g => g.id === state.groupId)  || subject.groups[0];
+  const folder  = group.folders.find(f => f.id === state.folderId)  || group.folders[0];
+  const file    = folder.files.find(f => f.name === state.fileName) || folder.files[0];
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+      background: t.bg, color: t.text,
+      fontFamily: '"DM Sans", -apple-system, sans-serif',
+    }}>
+      {/* Tab-Reihe */}
+      <div style={{
+        display: 'flex', alignItems: 'flex-end', padding: '8px 16px 0',
+        background: dark ? '#0a0a0c' : '#EEF0F4',
+        borderBottom: `1px solid ${t.border}`, flexShrink: 0, gap: 2, position: 'relative',
+      }}>
+        <div data-walk="dashboard-btn" style={{
+          marginRight: 8, marginBottom: 6,
+          width: 32, height: 32, borderRadius: 8,
+          background: state.dashboard ? subject.color : '#fff',
+          color: state.dashboard ? '#fff' : t.muted,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all .2s',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+            <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+            <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+            <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4"/>
+          </svg>
+        </div>
+        {SUBJECTS.map(s => {
+          const on = s.id === subject.id && !state.dashboard;
+          return (
+            <div key={s.id} data-walk={`tab-${s.id}`} style={{
+              padding: '10px 18px 12px',
+              background: on ? t.surface : 'transparent',
+              borderRadius: '10px 10px 0 0',
+              marginBottom: on ? -1 : 0,
+              display: 'flex', alignItems: 'center', gap: 9,
+              borderLeft:  on ? `1px solid ${t.border}` : '1px solid transparent',
+              borderRight: on ? `1px solid ${t.border}` : '1px solid transparent',
+              transition: 'background .2s',
+            }}>
+              <span style={{
+                width: 9, height: 9, borderRadius: 3, background: s.color,
+                opacity: on ? 1 : 0.5, transition: 'all .2s',
+              }} />
+              <span style={{ fontSize: 13, fontWeight: on ? 600 : 500, color: on ? t.text : t.muted }}>
+                {s.name}
+              </span>
+              {on && (
+                <div style={{ position: 'absolute', bottom: -1, left: 'inherit', height: 2, background: s.color, transition: 'all .25s' }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Body */}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+        {/* Sidebar */}
+        <div style={{
+          width: state.collapsed ? 56 : 240,
+          background: t.sidebar, borderRight: `1px solid ${t.border}`,
+          flexShrink: 0, display: 'flex', flexDirection: 'column',
+          transition: 'width .35s cubic-bezier(.4,.7,.3,1)',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            height: 44, display: 'flex', alignItems: 'center',
+            padding: state.collapsed ? '0' : '0 12px 0 16px',
+            justifyContent: state.collapsed ? 'center' : 'space-between',
+            borderBottom: `1px solid ${t.border}`, flexShrink: 0,
+          }}>
+            {!state.collapsed && (
+              <span style={{
+                fontSize: 10, fontWeight: 600, letterSpacing: 0.7,
+                textTransform: 'uppercase', color: t.subtle,
+              }}>{subject.name}</span>
+            )}
+            <div data-walk="sidebar-toggle" style={{
+              width: 26, height: 26, borderRadius: 6,
+              background: 'transparent', color: t.muted,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d={state.collapsed ? 'M4 3l4 4-4 4' : 'M10 3L6 7l4 4'} stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div style={{ flex: 1, overflow: 'hidden', padding: state.collapsed ? '8px 6px' : '10px 0' }}>
+            {subject.groups.map(g => (
+              <div key={g.id} style={{ marginBottom: state.collapsed ? 8 : 16 }}>
+                {!state.collapsed && (
+                  <div style={{
+                    padding: '0 16px 6px', fontSize: 10, fontWeight: 600, letterSpacing: 0.6,
+                    textTransform: 'uppercase', color: t.subtle,
+                    display: 'flex', alignItems: 'center', gap: 6,
+                  }}>
+                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: subject.color, opacity: 0.6 }} />
+                    {g.name}
+                  </div>
+                )}
+                {g.folders.map(f => {
+                  const on = g.id === group.id && f.id === folder.id && !state.dashboard;
+                  return (
+                    <div key={f.id} data-walk={`folder-${f.id}`} style={{
+                      width: state.collapsed ? 44 : '100%',
+                      padding: state.collapsed ? '8px 0' : '7px 14px 7px 16px',
+                      margin: state.collapsed ? '2px auto' : 0, display: 'flex',
+                      alignItems: 'center', justifyContent: state.collapsed ? 'center' : 'flex-start',
+                      gap: 10,
+                      background: on ? (dark ? `${subject.color}26` : `${subject.color}14`) : 'transparent',
+                      borderLeft: !state.collapsed && on ? `3px solid ${subject.color}` : '3px solid transparent',
+                      borderRadius: state.collapsed ? 8 : 0,
+                      color: on ? t.text : t.muted,
+                      fontSize: 13, fontWeight: on ? 600 : 400,
+                      transition: 'background .2s, color .2s',
+                    }}>
+                      <FolderIcon color={on ? subject.color : (dark ? '#5a5a60' : '#C7CACF')} size={16} />
+                      {!state.collapsed && (
+                        <>
+                          <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</span>
+                          <span style={{ fontSize: 10, color: t.subtle, fontFamily: '"DM Mono", monospace' }}>{f.files.length}</span>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Main */}
+        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', position: 'relative' }}>
+          {state.dashboard
+            ? <DashboardMini subject={subject} dark={dark} />
+            : <FolderViewMini subject={subject} group={group} folder={folder} file={file} dark={dark} />}
+        </div>
+
+        {/* Preview */}
+        <div style={{ width: 340, flexShrink: 0 }} data-walk="preview-pad">
+          <FilePreviewPlus file={state.dashboard ? recentFiles(subject, 1)[0] : file} accent={subject.color} dark={dark} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FolderViewMini({ subject, group, folder, file, dark }) {
+  const t = ThemeFor(dark);
+  return (
+    <div style={{ padding: '20px 28px' }}>
+      <Breadcrumb items={[subject.name, group.name, folder.name]} accent={subject.color} dark={dark} />
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8, marginBottom: 18 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0, letterSpacing: -0.5 }}>{folder.name}</h1>
+          <div style={{ fontSize: 12, color: t.muted, marginTop: 4 }}>
+            {folder.files.length} Datei{folder.files.length !== 1 ? 'en' : ''} · zuletzt {folder.files[0]?.date}
+          </div>
+        </div>
+      </div>
+      <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: '40px 1fr 80px 80px 28px', gap: 12,
+          padding: '8px 16px', borderBottom: `1px solid ${t.border}`,
+          fontSize: 10, fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase', color: t.subtle,
+        }}>
+          <span /><span>Name</span><span>Größe</span><span>Datum</span><span />
+        </div>
+        {folder.files.map((f, i) => {
+          const on = f.name === file?.name;
+          return (
+            <div key={f.name} data-walk={`file-${i}`} style={{
+              display: 'grid', gridTemplateColumns: '40px 1fr 80px 80px 28px', gap: 12,
+              padding: '10px 16px', alignItems: 'center',
+              background: on ? (dark ? `${subject.color}22` : `${subject.color}0F`) : 'transparent',
+              borderTop: i > 0 ? `1px solid ${t.border}` : 'none',
+              transition: 'background .2s',
+            }}>
+              <FileBadge kind={f.kind} size={26} />
+              <span style={{ fontSize: 13, fontWeight: on ? 600 : 500, color: t.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</span>
+              <span style={{ fontSize: 11, color: t.subtle, fontFamily: '"DM Mono", monospace' }}>{f.size}</span>
+              <span style={{ fontSize: 11, color: t.subtle, fontFamily: '"DM Mono", monospace' }}>{f.date}</span>
+              <span style={{ color: t.subtle, fontSize: 14, opacity: on ? 1 : 0.5 }}>›</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DashboardMini({ subject, dark }) {
+  const t = ThemeFor(dark);
+  return (
+    <div style={{ padding: '20px 28px' }}>
+      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.7, textTransform: 'uppercase', color: t.subtle }}>Übersicht</div>
+      <h1 style={{ fontSize: 24, fontWeight: 600, margin: '6px 0 4px', letterSpacing: -0.5 }}>{subject.name}</h1>
+      <div style={{ fontSize: 13, color: t.muted, marginBottom: 20 }}>Schnellzugriff auf alle Gruppen und Ordner</div>
+      {subject.groups.map(g => (
+        <div key={g.id} style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 8 }}>{g.name}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {g.folders.map(f => (
+              <div key={f.id} style={{
+                border: `1px solid ${t.border}`, background: t.surface,
+                borderRadius: 10, padding: 11,
+                display: 'flex', flexDirection: 'column', gap: 8,
+              }}>
+                <FolderIcon color={subject.color} size={22} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: t.text }}>{f.name}</div>
+                  <div style={{ fontSize: 10, color: t.subtle, fontFamily: '"DM Mono", monospace', marginTop: 2 }}>{f.files.length} Datei{f.files.length !== 1 ? 'en' : ''}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Caption-Overlay — sanft eingeblendet pro State
+// ─────────────────────────────────────────────────────────────
+
+function CaptionOverlay() {
+  const time = useTime();
+  // Aktiver Caption-State
+  let idx = 0;
+  for (let i = 0; i < STATES.length; i++) if (time >= STATES[i].at - 0.001) idx = i;
+  const s = STATES[idx];
+  const next = STATES[idx + 1];
+  const enter = Math.min(1, (time - s.at) / 0.5);
+  const exit = next ? Math.max(0, 1 - (next.at - time) / 0.5) : 0;
+  const opacity = Math.max(0, enter - exit);
+
+  return (
+    <div style={{
+      position: 'absolute', bottom: 32, left: 0, right: 0,
+      display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 50,
+    }}>
+      <div style={{
+        background: 'rgba(15,15,18,0.88)', color: '#fff',
+        padding: '10px 18px', borderRadius: 999,
+        fontSize: 14, fontWeight: 500, letterSpacing: -0.2,
+        opacity, transform: `translateY(${(1-opacity) * 8}px)`,
+        transition: 'opacity .3s, transform .3s',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(12px)',
+        border: '0.5px solid rgba(255,255,255,0.1)',
+      }}>
+        {s.caption}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Outro
+// ─────────────────────────────────────────────────────────────
+
+function Outro() {
+  const time = useTime();
+  if (time < 22.5) return null;
+  const t = Math.min(1, (time - 22.5) / 0.8);
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 200,
+      background: `rgba(15,15,18,${0.92 * t})`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexDirection: 'column', gap: 14, color: '#fff',
+      opacity: t,
+    }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+        {SUBJECTS.map(s => (
+          <div key={s.id} style={{ width: 14, height: 14, borderRadius: 4, background: s.color }} />
+        ))}
+      </div>
+      <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: -0.8 }}>LehrerMaps</div>
+      <div style={{ fontSize: 14, opacity: 0.7 }}>Ordnerstruktur. Klar und modern.</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Time-Label im Stage-Root für Kommentare
+// ─────────────────────────────────────────────────────────────
+
+function TimestampLabel() {
+  const time = useTime();
+  React.useEffect(() => {
+    const stage = document.querySelector('[data-screen-label-root]');
+    if (stage) stage.setAttribute('data-screen-label', `Walkthrough · ${Math.floor(time)}s`);
+  }, [Math.floor(time)]);
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// App
+// ─────────────────────────────────────────────────────────────
+
+function App() {
+  const frameRef = React.useRef(null);
+  return (
+    <Stage width={1280} height={720} duration={DURATION} background="#0a090a">
+      <TimestampLabel />
+      <div data-screen-label-root style={{ position: 'absolute', inset: 0 }}>
+        {/* Bühnenhintergrund: warmes Studio */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(120% 80% at 50% -10%, #2a2620 0%, #14120e 60%, #0a090a 100%)',
+        }} />
+
+        {/* Fenster — fest in der Mitte mit Padding */}
+        <div ref={frameRef} style={{
+          position: 'absolute',
+          left: 40, top: 32, right: 40, bottom: 92,
+          borderRadius: 14, overflow: 'hidden',
+          boxShadow: '0 30px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
+          background: '#fff',
+        }}>
+          {/* macOS-Bar */}
+          <div style={{
+            height: 32, display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px',
+            background: '#ECECEC', borderBottom: '0.5px solid rgba(0,0,0,0.08)',
+            position: 'relative',
+          }}>
+            <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f57' }} />
+            <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#febc2e' }} />
+            <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#28c840' }} />
+            <span style={{ position: 'absolute', left: 0, right: 0, textAlign: 'center', fontSize: 11.5, fontWeight: 500, color: '#555' }}>
+              LehrerMaps · Notizbuch
+            </span>
+          </div>
+          <FrameContent />
+          <Cursor frameRef={frameRef} />
+        </div>
+
+        <CaptionOverlay />
+        <Outro />
+      </div>
+    </Stage>
+  );
+}
+
+function FrameContent() {
+  const state = useWalkState();
+  return (
+    <div style={{ position: 'absolute', top: 32, left: 0, right: 0, bottom: 0 }}>
+      <NotebookFrame state={state} dark={false} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
