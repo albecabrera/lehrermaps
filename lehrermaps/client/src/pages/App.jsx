@@ -623,6 +623,7 @@ export default function App({ onLogout }) {
           subject={subject}
           groups={subject.groups}
           folders={subjectFolders}
+          loading={foldersLoading}
           activeFolderId={activeFolder?.id}
           onFolderSelect={onFolderSelect}
           onNewFolder={() => { setNewFolderGroup(null); setNewFolderOpen(true); }}

@@ -3,7 +3,7 @@ import FolderIcon from './FolderIcon';
 import { useLang } from '../contexts/LangContext';
 
 export default function Sidebar({
-  subject, groups, folders,
+  subject, groups, folders, loading = false,
   activeFolderId, onFolderSelect,
   onNewFolder, onNewFolderInGroup,
   onRenameFolder, onDeleteFolder,
@@ -97,7 +97,10 @@ export default function Sidebar({
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: collapsed ? '8px 6px' : '10px 0' }}>
-        {groups.map((g) => {
+        {loading ? (
+          <SidebarSkeleton collapsed={collapsed} accent={accent} />
+        ) : (
+          groups.map((g) => {
           const groupFolders = folders
             .filter((f) => f.group_name === g.name)
             .sort((a, b) => {
@@ -137,7 +140,7 @@ export default function Sidebar({
                     onMenu={(x, y) => setMenu({ folder: f, x, y })}
                     onDragStart={(e) => handleDragStart(e, f.id)}
                     onDragOver={(e) => handleDragOver(e, f.id)}
-                    onDrop={(e) => handleDrop(e, g.name)}
+                    onDrop={(e) => { e.stopPropagation(); handleDrop(e, g.name); }}
                     onDragEnd={handleDragEnd}
                     onToggleFavorite={() => onToggleFavorite?.(f.id)}
                     draggingFileName={draggingFileName}
@@ -147,7 +150,8 @@ export default function Sidebar({
               })}
             </div>
           );
-        })}
+          }))
+        )}
       </div>
 
       {!collapsed && onNewFolder && (
@@ -183,6 +187,34 @@ export default function Sidebar({
           t={t}
         />
       )}
+    </div>
+  );
+}
+
+function SidebarSkeleton({ collapsed, accent }) {
+  return (
+    <div style={{ padding: collapsed ? '4px 0' : '0 0 8px' }}>
+      {[1, 2, 3].map((group) => (
+        <div key={group} style={{ marginBottom: collapsed ? 8 : 14 }}>
+          {!collapsed && (
+            <div style={{ padding: '0 8px 8px 16px' }}>
+              <div style={{ height: 10, width: 90, borderRadius: 999, background: `${accent}18` }} />
+            </div>
+          )}
+          {[1, 2, 3].map((row) => (
+            <div
+              key={row}
+              style={{
+                height: collapsed ? 28 : 32,
+                margin: collapsed ? '4px auto' : '4px 12px 4px 16px',
+                borderRadius: 8,
+                background: 'var(--c-surface-2)',
+                border: '1px solid var(--c-border)',
+              }}
+            />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
