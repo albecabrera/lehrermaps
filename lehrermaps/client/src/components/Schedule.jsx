@@ -223,7 +223,7 @@ function ScheduleCell({ cell, onOpen, onEdit, onUnlink, t }) {
           onClick={(e) => { e.stopPropagation(); onUnlink(); }}
           style={{
             position: 'absolute', top: 4, right: 4, width: 18, height: 18,
-            border: 'none', borderRadius: 4, background: 'rgba(0,0,0,0.15)',
+            border: 'none', borderRadius: 4, background: 'var(--c-hover)',
             color: '#fff', cursor: 'pointer', fontSize: 11, lineHeight: 1,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}

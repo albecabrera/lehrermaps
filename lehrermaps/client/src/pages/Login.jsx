@@ -44,7 +44,7 @@ export default function Login({ onLogin }) {
             background: 'linear-gradient(135deg, #E8472A, #9333EA)',
             margin: '0 auto 16px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(232,71,42,0.3)',
+            boxShadow: 'var(--c-shadow-pop)',
           }}>
             <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
               <path d="M3 6a2 2 0 0 1 2-2h5l2 2h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z"
@@ -98,7 +98,7 @@ export default function Login({ onLogin }) {
               fontSize: 14, fontWeight: 600, cursor: loading ? 'wait' : 'pointer',
               fontFamily: 'inherit', marginTop: 4,
               opacity: loading || !password ? 0.7 : 1,
-              boxShadow: '0 2px 8px rgba(232,71,42,0.3)',
+              boxShadow: '0 2px 8px rgba(232,71,42,0.18)',
               transition: 'transform .1s, opacity .15s',
             }}
             onMouseDown={(e) => { if (!loading) e.currentTarget.style.transform = 'scale(0.98)'; }}

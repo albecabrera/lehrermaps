@@ -44,7 +44,7 @@ export default function StudentLogin({ onLogin }) {
             background: 'linear-gradient(135deg, #0EA5E9, #6366F1)',
             margin: '0 auto 16px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(14,165,233,0.3)',
+            boxShadow: 'var(--c-shadow-pop)',
           }}>
             <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
               <circle cx="13" cy="9" r="4" fill="rgba(255,255,255,0.9)"/>
@@ -98,7 +98,7 @@ export default function StudentLogin({ onLogin }) {
               fontSize: 14, fontWeight: 600, cursor: loading ? 'wait' : 'pointer',
               fontFamily: 'inherit', marginTop: 4,
               opacity: loading || !password ? 0.7 : 1,
-              boxShadow: '0 2px 8px rgba(14,165,233,0.3)',
+              boxShadow: '0 2px 8px rgba(14,165,233,0.18)',
               transition: 'transform .1s, opacity .15s',
             }}
             onMouseDown={(e) => { if (!loading) e.currentTarget.style.transform = 'scale(0.98)'; }}

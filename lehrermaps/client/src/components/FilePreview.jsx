@@ -168,7 +168,7 @@ function PreviewSurface({ file, kind, accent, t }) {
       <video
         controls
         src={src}
-        style={{ width: '100%', height: '100%', background: '#000', display: 'block' }}
+        style={{ width: '100%', height: '100%', background: 'var(--c-surface-2)', display: 'block' }}
       />
     );
   }
