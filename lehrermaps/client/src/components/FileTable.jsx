@@ -342,8 +342,8 @@ function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onTo
         position: 'fixed', left: x, top: y, zIndex: 1100,
         background: 'var(--c-surface)', color: 'var(--c-text)',
         borderRadius: 8, padding: 4, minWidth: 200,
-        boxShadow: '0 12px 40px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(0,0,0,0.1)',
-        border: '1px solid var(--c-border)',
+        boxShadow: 'var(--c-shadow-pop)',
+        border: '1px solid var(--c-border-soft)',
         fontFamily: '"DM Sans", -apple-system, sans-serif',
         animation: 'lmSlideUp .12s ease-out',
       }}>
@@ -410,8 +410,8 @@ function LinkContextMenu({ link, x, y, accent, onClose, onDelete, t }) {
         position: 'fixed', left: x, top: y, zIndex: 1100,
         background: 'var(--c-surface)', color: 'var(--c-text)',
         borderRadius: 8, padding: 4, minWidth: 200,
-        boxShadow: '0 12px 40px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(0,0,0,0.1)',
-        border: '1px solid var(--c-border)',
+        boxShadow: 'var(--c-shadow-pop)',
+        border: '1px solid var(--c-border-soft)',
         fontFamily: '"DM Sans", -apple-system, sans-serif',
       }}>
         <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--c-border)', marginBottom: 4 }}>

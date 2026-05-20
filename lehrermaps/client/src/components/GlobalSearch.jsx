@@ -60,7 +60,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 1300,
-        background: 'rgba(8,8,12,0.72)', backdropFilter: 'blur(12px)',
+        background: 'var(--c-overlay)', backdropFilter: 'blur(12px)',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
         padding: '72px 24px 24px',
         animation: 'lmFadeIn .12s ease-out',
@@ -72,8 +72,8 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
         style={{
           width: '100%', maxWidth: 620,
           background: 'var(--c-surface)', borderRadius: 16,
-          boxShadow: '0 32px 100px rgba(0,0,0,0.35)',
-          border: '1px solid var(--c-border)',
+          boxShadow: 'var(--c-shadow-modal)',
+          border: '1px solid var(--c-border-soft)',
           overflow: 'hidden',
           animation: 'lmSlideUp .18s cubic-bezier(.4,.7,.3,1)',
           maxHeight: '70vh', display: 'flex', flexDirection: 'column',

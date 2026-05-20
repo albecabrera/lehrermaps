@@ -300,9 +300,9 @@ function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, 
         style={{
           position: 'fixed', left: x, top: y, zIndex: 1100,
           background: 'var(--c-surface)', borderRadius: 8, padding: 4, minWidth: 180,
-          boxShadow: '0 12px 40px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(0,0,0,0.1)',
+          boxShadow: 'var(--c-shadow-pop)',
           fontFamily: '"DM Sans", -apple-system, sans-serif',
-          border: '1px solid var(--c-border)',
+          border: '1px solid var(--c-border-soft)',
         }}
       >
         <div style={{ padding: '7px 10px 6px', borderBottom: '1px solid var(--c-border)', marginBottom: 4 }}>

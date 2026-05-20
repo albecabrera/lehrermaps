@@ -244,7 +244,7 @@ function FolderPicker({ folders, onSelect, onClose, t }) {
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 1200,
-        background: 'rgba(10,10,14,0.6)', backdropFilter: 'blur(8px)',
+        background: 'var(--c-overlay)', backdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 24, fontFamily: '"DM Sans", -apple-system, sans-serif',
       }}
@@ -254,8 +254,8 @@ function FolderPicker({ folders, onSelect, onClose, t }) {
         style={{
           width: '100%', maxWidth: 440, maxHeight: '70vh',
           background: 'var(--c-surface)', borderRadius: 14,
-          border: '1px solid var(--c-border)',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.25)',
+          border: '1px solid var(--c-border-soft)',
+          boxShadow: 'var(--c-shadow-modal)',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
           animation: 'lmSlideUp .18s cubic-bezier(.4,.7,.3,1)',
         }}

@@ -63,7 +63,7 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
       onClick={!uploading ? handleClose : undefined}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(15,15,18,0.55)', backdropFilter: 'blur(8px)',
+        background: 'var(--c-overlay)', backdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 24, animation: 'lmFadeIn .15s ease-out',
         fontFamily: '"DM Sans", -apple-system, sans-serif',
@@ -75,10 +75,10 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
           width: '100%', maxWidth: 600, maxHeight: '90vh',
           background: 'var(--c-surface)', color: 'var(--c-text)',
           borderRadius: 14, overflow: 'hidden',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.2)',
+          boxShadow: 'var(--c-shadow-modal)',
           display: 'flex', flexDirection: 'column',
           animation: 'lmSlideUp .2s cubic-bezier(.4,.7,.3,1)',
-          border: '1px solid var(--c-border)',
+          border: '1px solid var(--c-border-soft)',
         }}
       >
         <div style={{

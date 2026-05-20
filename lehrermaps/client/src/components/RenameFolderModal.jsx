@@ -26,7 +26,7 @@ export default function RenameFolderModal({ folder, accent = '#E8472A', onClose,
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 1200,
-        background: 'rgba(15,15,18,0.55)', backdropFilter: 'blur(6px)',
+        background: 'var(--c-overlay)', backdropFilter: 'blur(6px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontFamily: '"DM Sans", -apple-system, sans-serif',
       }}
@@ -35,7 +35,7 @@ export default function RenameFolderModal({ folder, accent = '#E8472A', onClose,
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 340, background: 'var(--c-surface)', borderRadius: 12,
-          boxShadow: '0 24px 60px rgba(0,0,0,0.18)', overflow: 'hidden',
+          boxShadow: 'var(--c-shadow-modal)', overflow: 'hidden',
         }}
       >
         <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--c-border)' }}>

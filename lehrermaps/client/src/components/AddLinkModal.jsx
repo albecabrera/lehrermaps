@@ -38,16 +38,16 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 2000,
-      background: 'rgba(0,0,0,0.45)', display: 'flex',
+      background: 'var(--c-overlay)', display: 'flex',
       alignItems: 'center', justifyContent: 'center',
     }} onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--c-surface)', borderRadius: 14, width: 440,
-          boxShadow: '0 24px 60px rgba(0,0,0,0.25)', overflow: 'hidden',
+          boxShadow: 'var(--c-shadow-modal)', overflow: 'hidden',
           fontFamily: '"DM Sans", -apple-system, sans-serif',
-          border: '1px solid var(--c-border)',
+          border: '1px solid var(--c-border-soft)',
         }}
       >
         <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--c-border)', display: 'flex', alignItems: 'center', gap: 10 }}>
