@@ -13,7 +13,7 @@ import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
 import { useRecents } from '../hooks/useRecents';
-import { downloadFolderZip } from '../lib/api';
+import { downloadFolderZip, downloadFilesZip } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
@@ -43,10 +43,11 @@ export default function App({ onLogout }) {
   const [viewMode, setViewMode] = useState('subjects');
   const [dropOver, setDropOver] = useState(false);
   const [dropFiles, setDropFiles] = useState(null);
+  const [dropUploading, setDropUploading] = useState(null);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
-  const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, reload: reloadFolders } = useFolders();
-  const { files, upload, remove: removeFile, rename: renameFileHook, toggleShare } = useFiles(activeFolder?.id);
+  const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, reload: reloadFolders } = useFolders();
+  const { files, upload, remove: removeFile, rename: renameFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
 
@@ -145,6 +146,29 @@ export default function App({ onLogout }) {
     return newFile;
   };
 
+  const handleDirectDropUpload = useCallback(async (incomingFiles) => {
+    const filesToUpload = [...incomingFiles].slice(0, 20);
+    if (!filesToUpload.length || !activeFolder) return;
+
+    setDropUploading({ total: filesToUpload.length, done: 0, failed: 0 });
+
+    let done = 0;
+    let failed = 0;
+    for (const file of filesToUpload) {
+      try {
+        await upload(file);
+        done += 1;
+      } catch {
+        failed += 1;
+      } finally {
+        setDropUploading({ total: filesToUpload.length, done, failed });
+      }
+    }
+
+    reloadFolders();
+    setTimeout(() => setDropUploading(null), 900);
+  }, [activeFolder, reloadFolders, upload]);
+
   const handleNewFolder = async ({ subject: subjectKey, group_name, name }) => {
     await addFolder(subjectKey, group_name, name);
   };
@@ -164,6 +188,49 @@ export default function App({ onLogout }) {
   const handleRenameFile = async (id, name) => {
     const updated = await renameFileHook(id, name);
     if (activeFile?.id === id) setActiveFile(updated);
+  };
+
+  const handleSetFolderDeadline = async () => {
+    if (!activeFolder) return;
+    const current = activeFolder.due_at ? new Date(activeFolder.due_at).toISOString().slice(0, 10) : '';
+    const value = window.prompt('Fecha límite carpeta (YYYY-MM-DD). Vacío para quitar:', current);
+    if (value === null) return;
+    const due_at = value.trim() ? `${value.trim()} 23:59:59` : null;
+    const updated = await setFolderDeadline(activeFolder.id, due_at);
+    setActiveFolder(updated);
+  };
+
+  const handleSetFileDeadline = async (file) => {
+    const current = file?.due_at ? new Date(file.due_at).toISOString().slice(0, 10) : '';
+    const value = window.prompt('Fecha límite archivo (YYYY-MM-DD). Vacío para quitar:', current);
+    if (value === null) return;
+    const due_at = value.trim() ? `${value.trim()} 23:59:59` : null;
+    const updated = await setFileDeadline(file.id, due_at);
+    if (activeFile?.id === file.id) setActiveFile(updated);
+  };
+
+  const handleBulkDeleteFiles = async (selectedFiles) => {
+    for (const file of selectedFiles) {
+      await removeFile(file.id);
+      if (activeFile?.id === file.id) setActiveFile(null);
+    }
+  };
+
+  const handleBulkShareFiles = async (selectedFiles) => {
+    for (const file of selectedFiles) {
+      if (!file.is_shared) await toggleShare(file.id);
+    }
+  };
+
+  const handleBulkUnshareFiles = async (selectedFiles) => {
+    for (const file of selectedFiles) {
+      if (file.is_shared) await toggleShare(file.id);
+    }
+  };
+
+  const handleBulkDownloadFiles = (selectedFiles) => {
+    if (!selectedFiles.length) return;
+    window.location.href = downloadFilesZip(selectedFiles.map((f) => f.id));
   };
 
   const handleAddLink = async (title, url) => {
@@ -435,18 +502,17 @@ export default function App({ onLogout }) {
 
         <div
           style={{ flex: 1, minWidth: 0, overflow: 'auto', position: 'relative' }}
-          onDragOver={(e) => { if (!activeFolder) return; e.preventDefault(); setDropOver(true); }}
-          onDragEnter={(e) => { if (!activeFolder) return; e.preventDefault(); setDropOver(true); }}
+          onDragOver={(e) => { if (!activeFolder || folderTab !== 'files') return; e.preventDefault(); setDropOver(true); }}
+          onDragEnter={(e) => { if (!activeFolder || folderTab !== 'files') return; e.preventDefault(); setDropOver(true); }}
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDropOver(false); }}
-          onDrop={(e) => {
+          onDrop={async (e) => {
             e.preventDefault();
             setDropOver(false);
-            if (!activeFolder || !e.dataTransfer.files.length) return;
-            setDropFiles(e.dataTransfer.files);
-            setUploadOpen(true);
+            if (!activeFolder || folderTab !== 'files' || !e.dataTransfer.files.length) return;
+            await handleDirectDropUpload(e.dataTransfer.files);
           }}
         >
-          {dropOver && activeFolder && (
+          {(dropOver || dropUploading) && activeFolder && folderTab === 'files' && (
             <div style={{
               position: 'absolute', inset: 0, zIndex: 50,
               background: `${accent}14`,
@@ -460,7 +526,9 @@ export default function App({ onLogout }) {
                   stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span style={{ fontSize: 15, fontWeight: 600, color: accent }}>
-                {t('modal.upload.drop_active')}
+                {dropUploading
+                  ? `Subiendo ${dropUploading.done}/${dropUploading.total}${dropUploading.failed ? ` · ${dropUploading.failed} error` : ''}`
+                  : t('modal.upload.drop_active')}
               </span>
             </div>
           )}
@@ -509,6 +577,19 @@ export default function App({ onLogout }) {
                       </svg>
                       ZIP
                     </a>
+                    <button
+                      onClick={handleSetFolderDeadline}
+                      style={{
+                        marginLeft: 8, height: 26, padding: '0 10px',
+                        border: '1px solid var(--c-border)', borderRadius: 6,
+                        background: 'transparent', color: 'var(--c-text-3)',
+                        fontSize: 11, fontWeight: 500, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      ⏰ {activeFolder?.due_at ? new Date(activeFolder.due_at).toLocaleDateString('de-DE') : 'Deadline'}
+                    </button>
                   </div>
                 </div>
 
@@ -565,6 +646,12 @@ export default function App({ onLogout }) {
                       onUpload={() => setUploadOpen(true)}
                       onAddLink={() => setAddLinkOpen(true)}
                       onToggleShare={toggleShare}
+                      onTogglePublic={togglePublic}
+                      onSetDeadline={handleSetFileDeadline}
+                      onBulkDelete={handleBulkDeleteFiles}
+                      onBulkShare={handleBulkShareFiles}
+                      onBulkUnshare={handleBulkUnshareFiles}
+                      onBulkDownload={handleBulkDownloadFiles}
                     />
                   </div>
                 ) : (

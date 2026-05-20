@@ -62,6 +62,25 @@ const upload = multer({
 });
 
 const router = Router();
+
+router.get('/public/:token', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT * FROM files WHERE public_token = ? AND is_public = 1 LIMIT 1',
+      [req.params.token]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Datei nicht gefunden' });
+    const file = rows[0];
+    const filePath = path.join(UPLOADS_DIR, file.stored_name);
+    if (!existsSync(filePath)) return res.status(404).json({ error: 'Datei nicht auf Disk' });
+    res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(file.original_name)}`);
+    res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
+    createReadStream(filePath).pipe(res);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.use(auth);
 
 // ── View / Preview / Download must come BEFORE /:folder_id ──
@@ -180,6 +199,37 @@ router.get('/zip/:folder_id', async (req, res) => {
   }
 });
 
+router.get('/zip-selected', async (req, res) => {
+  try {
+    const ids = String(req.query.ids || '')
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isInteger(n) && n > 0)
+      .slice(0, 200);
+    if (!ids.length) return res.status(400).json({ error: 'Keine Dateien ausgewählt' });
+
+    const placeholders = ids.map(() => '?').join(',');
+    const [files] = await pool.execute(
+      `SELECT * FROM files WHERE id IN (${placeholders}) ORDER BY uploaded_at DESC`,
+      ids
+    );
+    if (!files.length) return res.status(404).json({ error: 'Keine Dateien gefunden' });
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent('selected-files.zip')}`);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.on('error', (e) => { throw e; });
+    archive.pipe(res);
+    for (const file of files) {
+      const fp = path.join(UPLOADS_DIR, file.stored_name);
+      if (existsSync(fp)) archive.file(fp, { name: file.original_name });
+    }
+    await archive.finalize();
+  } catch (e) {
+    if (!res.headersSent) res.status(500).json({ error: e.message });
+  }
+});
+
 router.get('/search', async (req, res) => {
   const q = (req.query.q || '').trim();
   if (!q) return res.json({ files: [], folders: [] });
@@ -195,10 +245,14 @@ router.get('/search', async (req, res) => {
       LIMIT 25
     `, [like]);
     const [folders] = await pool.execute(`
-      SELECT id, name, subject, group_name, is_favorite
-      FROM folders WHERE name LIKE ?
-      ORDER BY name LIMIT 15
-    `, [like]);
+      SELECT
+        id, name, subject, group_name, is_favorite,
+        CASE WHEN notes LIKE ? THEN 1 ELSE 0 END AS notes_match
+      FROM folders
+      WHERE name LIKE ? OR notes LIKE ?
+      ORDER BY notes_match DESC, name
+      LIMIT 15
+    `, [like, like, like]);
     res.json({ files, folders });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -224,6 +278,37 @@ router.put('/:id/share', async (req, res) => {
       'UPDATE files SET is_shared = IF(is_shared=1, 0, 1) WHERE id = ?',
       [req.params.id]
     );
+    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
+    res.json(rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.put('/:id/public', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+  try {
+    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Datei nicht gefunden' });
+    const current = rows[0];
+    const nextPublic = current.is_public ? 0 : 1;
+    const token = current.public_token || randomUUID().replace(/-/g, '');
+    await pool.execute(
+      'UPDATE files SET is_public = ?, public_token = ? WHERE id = ?',
+      [nextPublic, token, req.params.id]
+    );
+    const [updatedRows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
+    res.json(updatedRows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.put('/:id/deadline', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+  const { due_at } = req.body;
+  try {
+    await pool.execute('UPDATE files SET due_at = ? WHERE id = ?', [due_at || null, req.params.id]);
     const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
     res.json(rows[0]);
   } catch (e) {

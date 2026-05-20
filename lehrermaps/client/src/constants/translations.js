@@ -130,6 +130,7 @@ export const translations = {
     'search.no_results': 'Keine Ergebnisse',
     'search.files_section': 'Dateien',
     'search.folders_section': 'Ordner',
+    'search.notes_match': 'Treffer in Notizen',
     'search.hint': 'Tippe um zu suchen',
 
     // Confirm modal
@@ -159,6 +160,7 @@ export const translations = {
     'schedule.unlink': 'Verknüpfung entfernen',
     'schedule.pick_folder': 'Ordner auswählen',
     'schedule.navigate': 'Öffnen',
+    'schedule.export_ics': 'Als .ics exportieren',
 
     // Student view
     'student.view': 'Schüler-Ansicht',
@@ -306,6 +308,7 @@ export const translations = {
     'search.no_results': 'Sin resultados',
     'search.files_section': 'Archivos',
     'search.folders_section': 'Carpetas',
+    'search.notes_match': 'Coincidencia en notas',
     'search.hint': 'Escribí para buscar',
 
     // Confirm modal
@@ -335,6 +338,7 @@ export const translations = {
     'schedule.unlink': 'Eliminar vínculo',
     'schedule.pick_folder': 'Elegir carpeta',
     'schedule.navigate': 'Abrir',
+    'schedule.export_ics': 'Exportar como .ics',
 
     // Student view
     'student.view': 'Vista alumno',

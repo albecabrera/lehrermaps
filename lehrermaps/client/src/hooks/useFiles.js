@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getFiles, uploadFile, deleteFile, renameFile, toggleFileShare } from '../lib/api';
+import { getFiles, uploadFile, deleteFile, renameFile, toggleFileShare, setFileDeadline, toggleFilePublic } from '../lib/api';
 
 export function useFiles(folderId) {
   const [files, setFiles] = useState([]);
@@ -44,5 +44,17 @@ export function useFiles(folderId) {
     return updated;
   }, []);
 
-  return { files, loading, error, reload: load, upload, remove, rename, toggleShare };
+  const setDeadline = useCallback(async (id, due_at) => {
+    const updated = await setFileDeadline(id, due_at);
+    setFiles((prev) => prev.map((f) => (f.id === id ? updated : f)));
+    return updated;
+  }, []);
+
+  const togglePublic = useCallback(async (id) => {
+    const updated = await toggleFilePublic(id);
+    setFiles((prev) => prev.map((f) => (f.id === id ? updated : f)));
+    return updated;
+  }, []);
+
+  return { files, loading, error, reload: load, upload, remove, rename, toggleShare, setDeadline, togglePublic };
 }

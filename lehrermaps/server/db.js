@@ -47,7 +47,11 @@ export async function initSchema() {
   try { await pool.execute(`ALTER TABLE folders ADD COLUMN sort_order INT DEFAULT 0`); } catch {}
   try { await pool.execute(`ALTER TABLE folders ADD COLUMN notes LONGTEXT DEFAULT NULL`); } catch {}
   try { await pool.execute(`ALTER TABLE folders ADD COLUMN is_favorite TINYINT(1) DEFAULT 0`); } catch {}
+  try { await pool.execute(`ALTER TABLE folders ADD COLUMN due_at DATETIME NULL`); } catch {}
   try { await pool.execute(`ALTER TABLE files ADD COLUMN is_shared TINYINT(1) DEFAULT 0`); } catch {}
+  try { await pool.execute(`ALTER TABLE files ADD COLUMN due_at DATETIME NULL`); } catch {}
+  try { await pool.execute(`ALTER TABLE files ADD COLUMN is_public TINYINT(1) DEFAULT 0`); } catch {}
+  try { await pool.execute(`ALTER TABLE files ADD COLUMN public_token VARCHAR(64) NULL`); } catch {}
 }
 
 export default pool;

@@ -22,6 +22,7 @@ export default function Schedule({ folders, onNavigate }) {
   const [picker, setPicker] = useState(null); // { day, period }
 
   const DAYS = lang === 'es' ? DAYS_ES : DAYS_DE;
+  const fileDate = new Date().toISOString().slice(0, 10);
 
   const getSubjectColor = (subjectId) =>
     SUBJECTS.find((s) => s.id === subjectId)?.color ?? '#6B7280';
@@ -46,6 +47,56 @@ export default function Schedule({ folders, onNavigate }) {
     saveSchedule(next);
   }, [schedule]);
 
+  const exportIcs = useCallback(() => {
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//LehrerMaps//Schedule Export//DE',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+    ];
+    const today = new Date();
+    const nextMonday = new Date(today);
+    const day = nextMonday.getDay();
+    const delta = day === 0 ? 1 : (day === 1 ? 0 : 8 - day);
+    nextMonday.setDate(nextMonday.getDate() + delta);
+    nextMonday.setHours(0, 0, 0, 0);
+
+    const pad = (n) => String(n).padStart(2, '0');
+    const fmt = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+    const stamp = fmt(new Date());
+
+    Object.entries(schedule).forEach(([key, cell], idx) => {
+      if (!cell?.folderName) return;
+      const [d, p] = key.split('-').map(Number);
+      const start = new Date(nextMonday);
+      start.setDate(nextMonday.getDate() + d);
+      start.setHours(8 + p, 0, 0, 0);
+      const end = new Date(start);
+      end.setHours(start.getHours() + 1);
+      lines.push(
+        'BEGIN:VEVENT',
+        `UID:lehrermaps-${d}-${p}-${idx}@local`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART:${fmt(start)}`,
+        `DTEND:${fmt(end)}`,
+        `SUMMARY:${cell.folderName.replace(/,/g, '\\,')}`,
+        `DESCRIPTION:${(cell.subject || '').replace(/,/g, '\\,')}`,
+        'END:VEVENT'
+      );
+    });
+    lines.push('END:VCALENDAR');
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lehrermaps-stundenplan-${fileDate}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [schedule, fileDate]);
+
   return (
     <div style={{ padding: '28px 32px', height: '100%', overflow: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
@@ -56,6 +107,24 @@ export default function Schedule({ folders, onNavigate }) {
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--c-text)', letterSpacing: -0.4 }}>
           {t('schedule.title')}
         </h2>
+        <button
+          onClick={exportIcs}
+          style={{
+            marginLeft: 'auto',
+            height: 30,
+            padding: '0 12px',
+            border: '1px solid var(--c-border)',
+            borderRadius: 7,
+            background: 'transparent',
+            color: 'var(--c-text-2)',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          {t('schedule.export_ics')}
+        </button>
       </div>
 
       <div style={{

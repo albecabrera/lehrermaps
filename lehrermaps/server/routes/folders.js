@@ -105,6 +105,18 @@ router.put('/:id/notes', async (req, res) => {
   }
 });
 
+router.put('/:id/deadline', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+  const { due_at } = req.body;
+  try {
+    await pool.execute('UPDATE folders SET due_at = ? WHERE id = ?', [due_at || null, req.params.id]);
+    const [rows] = await pool.execute(FOLDER_WITH_COUNT, [req.params.id]);
+    res.json(rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.delete('/:id', async (req, res) => {
   try {
     await pool.execute('DELETE FROM folders WHERE id = ?', [req.params.id]);

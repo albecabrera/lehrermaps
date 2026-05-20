@@ -143,7 +143,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
                   onClick={() => { onNavigate(f.subject, f.id); onClose(); }}
                   icon={<FolderIcon color={getColor(f.subject)} size={15} />}
                   name={f.name}
-                  meta={`${f.subject} › ${f.group_name}`}
+                  meta={`${f.subject} › ${f.group_name}${f.notes_match ? ` · ${t('search.notes_match')}` : ''}`}
                   dotColor={getColor(f.subject)}
                 />
               ))}

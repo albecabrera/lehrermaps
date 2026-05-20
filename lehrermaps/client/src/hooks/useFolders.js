@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getFolders, createFolder, deleteFolder, renameFolder, reorderFolders, toggleFolderFavorite } from '../lib/api';
+import { getFolders, createFolder, deleteFolder, renameFolder, reorderFolders, toggleFolderFavorite, setFolderDeadline } from '../lib/api';
 
 export function useFolders() {
   const [folders, setFolders] = useState([]);
@@ -57,11 +57,17 @@ export function useFolders() {
     return updated;
   }, []);
 
+  const setDeadline = useCallback(async (id, due_at) => {
+    const updated = await setFolderDeadline(id, due_at);
+    setFolders((prev) => prev.map((f) => (f.id === id ? updated : f)));
+    return updated;
+  }, []);
+
   const bySubjectGroup = useCallback(
     (subject, group_name) =>
       folders.filter((f) => f.subject === subject && f.group_name === group_name),
     [folders]
   );
 
-  return { folders, loading, error, reload: load, add, remove, rename, reorder, toggleFavorite, bySubjectGroup };
+  return { folders, loading, error, reload: load, add, remove, rename, reorder, toggleFavorite, setDeadline, bySubjectGroup };
 }

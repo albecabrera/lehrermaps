@@ -125,6 +125,11 @@ export default function StudentApp({ onLogout }) {
                 <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {f.name}
                 </span>
+                {f.due_at ? (
+                  <span style={{ fontSize: 10, color: '#DC2626', fontFamily: '"DM Mono", monospace' }}>
+                    ⏰ {new Date(f.due_at).toLocaleDateString('de-DE')}
+                  </span>
+                ) : null}
               </button>
             );
           })}

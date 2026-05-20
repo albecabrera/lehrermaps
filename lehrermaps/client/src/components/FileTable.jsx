@@ -1,22 +1,35 @@
 import { useState } from 'react';
 import FileBadge from './FileBadge';
 import { detectKind } from '../constants/structure';
-import { downloadFile } from '../lib/api';
+import { downloadFile, publicFileUrl } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 
 export default function FileTable({
   files, links = [], activeFileId, activeLinkId,
   onFileSelect, onLinkSelect, accent = '#E8472A',
   query, onDelete, onRename, onDeleteLink, onUpload, onAddLink, onToggleShare,
+  onTogglePublic,
+  onSetDeadline,
+  onBulkDelete, onBulkShare, onBulkUnshare, onBulkDownload,
 }) {
   const { t } = useLang();
   const [menuFile, setMenuFile] = useState(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [menuLink, setMenuLink] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [sortBy, setSortBy] = useState('date');
+  const [sortDir, setSortDir] = useState('desc');
 
   const filtered = query
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase()))
     : files;
+
+  const sorted = [...filtered].sort((a, b) => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    if (sortBy === 'name') return a.original_name.localeCompare(b.original_name) * dir;
+    if (sortBy === 'size') return ((a.size_bytes || 0) - (b.size_bytes || 0)) * dir;
+    return (new Date(a.uploaded_at || 0) - new Date(b.uploaded_at || 0)) * dir;
+  });
 
   const handleContextMenu = (e, file) => {
     e.preventDefault();
@@ -24,9 +37,60 @@ export default function FileTable({
     setMenuPos({ x: e.clientX, y: e.clientY });
   };
 
+  const selectedFiles = sorted.filter((f) => selectedIds.has(f.id));
+  const allSelected = sorted.length > 0 && selectedIds.size === sorted.length;
+
+  const toggleSelected = (fileId) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(fileId)) next.delete(fileId);
+      else next.add(fileId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectedIds(new Set(sorted.map((f) => f.id)));
+  };
+
+  const toggleSort = (key) => {
+    if (sortBy === key) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setSortBy(key);
+    setSortDir(key === 'name' ? 'asc' : 'desc');
+  };
+
   return (
     <div style={{ position: 'relative' }}>
-      {filtered.length === 0 ? (
+      {selectedFiles.length > 0 && (onBulkDownload || onBulkShare || onBulkUnshare || onBulkDelete) && (
+        <div style={{
+          marginBottom: 12,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '10px 12px',
+          border: '1px solid var(--c-border)',
+          borderRadius: 10,
+          background: 'var(--c-surface)',
+        }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-text-2)' }}>
+            {selectedFiles.length} selected
+          </span>
+          <button onClick={() => onBulkDownload?.(selectedFiles)} style={bulkBtnStyle}>{t('table.ctx_download')}</button>
+          <button onClick={() => onBulkShare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.share_toggle')}</button>
+          <button onClick={() => onBulkUnshare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.unshare')}</button>
+          <button onClick={() => onBulkDelete?.(selectedFiles)} style={{ ...bulkBtnStyle, color: '#DC2626' }}>{t('delete')}</button>
+          <button onClick={() => setSelectedIds(new Set())} style={{ ...bulkBtnStyle, marginLeft: 'auto' }}>Clear</button>
+        </div>
+      )}
+
+      {sorted.length === 0 ? (
         <EmptyState query={query} accent={accent} onUpload={onUpload} t={t} />
       ) : (
         <div style={{
@@ -39,20 +103,31 @@ export default function FileTable({
             fontSize: 10, fontWeight: 600, letterSpacing: 0.6,
             textTransform: 'uppercase', color: 'var(--c-text-3)',
           }}>
-            <span />
-            <span>Name</span>
-            <span className="lm-col-size">{t('table.col_size')}</span>
-            <span className="lm-col-date">{t('table.col_date')}</span>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
+            </span>
+            <button onClick={() => toggleSort('name')} style={thBtnStyle}>
+              Name {sortBy === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+            </button>
+            <button className="lm-col-size" onClick={() => toggleSort('size')} style={thBtnStyle}>
+              {t('table.col_size')} {sortBy === 'size' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+            </button>
+            <button className="lm-col-date" onClick={() => toggleSort('date')} style={thBtnStyle}>
+              {t('table.col_date')} {sortBy === 'date' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+            </button>
             <span />
           </div>
 
-          {filtered.map((file, i) => {
+          {sorted.map((file, i) => {
             const on = file.id === activeFileId;
             const kind = detectKind(file.original_name);
             const sizeFmt = file.size_bytes ? formatBytes(file.size_bytes) : '—';
             const dateFmt = file.uploaded_at
               ? new Date(file.uploaded_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
               : '—';
+            const dueFmt = file.due_at
+              ? new Date(file.due_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
+              : null;
 
             return (
               <button
@@ -71,6 +146,9 @@ export default function FileTable({
                 onMouseEnter={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
                 onMouseLeave={(e) => { if (!on) e.currentTarget.style.background = on ? `${accent}0F` : 'transparent'; }}
               >
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={(e) => { e.stopPropagation(); toggleSelected(file.id); }}>
+                  <input type="checkbox" checked={selectedIds.has(file.id)} readOnly />
+                </span>
                 <FileBadge kind={kind} name={file.original_name} size={26} />
                 <span style={{
                   fontSize: 13, fontWeight: on ? 600 : 500,
@@ -94,7 +172,7 @@ export default function FileTable({
                 <span className="lm-col-date" style={{
                   fontSize: 11, color: 'var(--c-text-3)',
                   fontFamily: '"DM Mono", monospace',
-                }}>{dateFmt}</span>
+                }}>{dueFmt ? `⏰ ${dueFmt}` : dateFmt}</span>
                 <span
                   onClick={(e) => { e.stopPropagation(); handleContextMenu(e, file); }}
                   style={{
@@ -191,6 +269,8 @@ export default function FileTable({
           onRename={() => { onRename?.(menuFile); setMenuFile(null); }}
           onDelete={() => { onDelete(menuFile); setMenuFile(null); }}
           onToggleShare={() => { onToggleShare?.(menuFile); setMenuFile(null); }}
+          onTogglePublic={() => { onTogglePublic?.(menuFile.id); setMenuFile(null); }}
+          onSetDeadline={() => { onSetDeadline?.(menuFile); setMenuFile(null); }}
           t={t}
         />
       )}
@@ -252,7 +332,7 @@ function EmptyState({ query, accent, onUpload, t }) {
   );
 }
 
-function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onToggleShare, t }) {
+function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onToggleShare, onTogglePublic, onSetDeadline, t }) {
   const kind = detectKind(file.original_name);
 
   return (
@@ -282,6 +362,19 @@ function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onTo
           label={file.is_shared ? t('student.unshare') : t('student.share_toggle')}
           onClick={onToggleShare}
         />
+        <MenuItem
+          icon={file.is_public ? '🌐' : '🧷'}
+          label={file.is_public ? 'Public Link AUS' : 'Public Link AN'}
+          onClick={onTogglePublic}
+        />
+        {file.is_public && file.public_token ? (
+          <MenuItem
+            icon="⎘"
+            label={t('student.copy_link')}
+            onClick={() => { navigator.clipboard.writeText(publicFileUrl(file.public_token)); onClose(); }}
+          />
+        ) : null}
+        <MenuItem icon="⏰" label="Deadline" onClick={onSetDeadline} />
         <div style={{ height: 1, background: 'var(--c-border)', margin: '4px 2px' }} />
         <MenuItem icon="🗑" label={t('delete')} danger onClick={onDelete} />
       </div>
@@ -340,3 +433,28 @@ function formatBytes(bytes) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+const bulkBtnStyle = {
+  height: 26,
+  padding: '0 10px',
+  border: '1px solid var(--c-border)',
+  borderRadius: 6,
+  background: 'var(--c-surface-2)',
+  color: 'var(--c-text)',
+  fontSize: 11,
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+
+const thBtnStyle = {
+  appearance: 'none',
+  border: 'none',
+  background: 'transparent',
+  textAlign: 'left',
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  cursor: 'pointer',
+};

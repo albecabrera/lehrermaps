@@ -69,14 +69,23 @@ export const saveFolderNotes = (id, content) =>
 
 export const toggleFolderFavorite = (id) =>
   api.put(`/folders/${id}/favorite`).then((r) => r.data);
+export const setFolderDeadline = (id, due_at) =>
+  api.put(`/folders/${id}/deadline`, { due_at }).then((r) => r.data);
 
 export const searchGlobal = (q) =>
   api.get('/files/search', { params: { q } }).then((r) => r.data);
 
 export const downloadFolderZip = (folderId) => withToken(`/api/files/zip/${folderId}`);
+export const downloadFilesZip = (ids) => withToken(`/api/files/zip-selected?ids=${ids.join(',')}`);
 
 export const toggleFileShare = (id) =>
   api.put(`/files/${id}/share`).then((r) => r.data);
+export const toggleFilePublic = (id) =>
+  api.put(`/files/${id}/public`).then((r) => r.data);
+export const setFileDeadline = (id, due_at) =>
+  api.put(`/files/${id}/deadline`, { due_at }).then((r) => r.data);
+export const publicFileUrl = (token) =>
+  `${window.location.origin}/api/files/public/${encodeURIComponent(token)}`;
 
 export const loginStudent = (password) =>
   api.post('/login-student', { password }).then((r) => r.data.token);

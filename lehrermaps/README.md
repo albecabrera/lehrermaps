@@ -103,15 +103,32 @@ Alle Endpunkte außer Login erfordern `Authorization: Bearer <token>`.
 
 ```
 POST   /api/login                    { password } → { token }
+POST   /api/login-student            { password } → { token }
 
 GET    /api/folders                  → Alle Ordner (mit file_count)
 POST   /api/folders                  { subject, group_name, name } → Ordner
+PUT    /api/folders/:id/favorite
+PUT    /api/folders/:id/notes        { content }
+PUT    /api/folders/:id/deadline     { due_at | null }
+PUT    /api/folders/reorder          { items: [{id, sort_order}] }
 DELETE /api/folders/:id
 
 GET    /api/files/:folder_id         → Dateien in Ordner
 POST   /api/files/upload             multipart: folder_id + file → Datei
+GET    /api/files/view/:id           → Inline-Ansicht
 GET    /api/files/download/:id       → Datei-Stream
+GET    /api/files/zip/:folder_id     → ZIP je Ordner
+GET    /api/files/zip-selected?ids=1,2,3
+GET    /api/files/search?q=...       → Global Search (Dateien/Ordner/Notizen)
+GET    /api/files/public/:token      → Öffentlicher Datei-Link (ohne Login)
+PUT    /api/files/:id/share
+PUT    /api/files/:id/public
+PUT    /api/files/:id/deadline       { due_at | null }
 DELETE /api/files/:id
+
+GET    /api/links/:folder_id
+POST   /api/links                    { folder_id, title, url }
+DELETE /api/links/:id
 ```
 
 ---
@@ -137,7 +154,31 @@ CREATE TABLE files (
   uploaded_at   DATETIME DEFAULT NOW(),
   FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE
 );
+
+-- Migrationen (db.js)
+ALTER TABLE folders ADD COLUMN sort_order INT DEFAULT 0;
+ALTER TABLE folders ADD COLUMN notes LONGTEXT DEFAULT NULL;
+ALTER TABLE folders ADD COLUMN is_favorite TINYINT(1) DEFAULT 0;
+ALTER TABLE folders ADD COLUMN due_at DATETIME NULL;
+
+ALTER TABLE files ADD COLUMN is_shared TINYINT(1) DEFAULT 0;
+ALTER TABLE files ADD COLUMN due_at DATETIME NULL;
+ALTER TABLE files ADD COLUMN is_public TINYINT(1) DEFAULT 0;
+ALTER TABLE files ADD COLUMN public_token VARCHAR(64) NULL;
 ```
+
+---
+
+## Wichtige Features (aktuell)
+
+- Direktes Drag & Drop Upload in der Dateiliste (ohne Modal)
+- Mehrfachauswahl + Bulk-Aktionen (Download/Share/Unshare/Delete)
+- Deadlines auf Ordner- und Dateiebene (sichtbar in Student-Ansicht)
+- Öffentliche Datei-Links ohne Login (`/api/files/public/:token`)
+- Sortierbare Dateitabelle (Name/Datum/Größe)
+- Stundenplan Export als `.ics`
+- Global Search inkl. Notiz-Inhalten
+- PWA App-Shell + Offline-Fallback via `service-worker.js`
 
 ---
 
@@ -184,6 +225,7 @@ lehrermaps/
 ├── client/                  # React Frontend (Vite)
 │   ├── public/
 │   │   ├── manifest.json    # PWA
+│   │   ├── service-worker.js
 │   │   └── icons/           # icon-192.png, icon-512.png
 │   └── src/
 │       ├── components/      # FileBadge, FileTable, FilePreview, Sidebar, ...
