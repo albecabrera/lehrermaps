@@ -85,7 +85,7 @@ export default function FileTable({
           <button onClick={() => onBulkDownload?.(selectedFiles)} style={bulkBtnStyle}>{t('table.ctx_download')}</button>
           <button onClick={() => onBulkShare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.share_toggle')}</button>
           <button onClick={() => onBulkUnshare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.unshare')}</button>
-          <button onClick={() => onBulkDelete?.(selectedFiles)} style={{ ...bulkBtnStyle, color: '#DC2626' }}>{t('delete')}</button>
+          <button onClick={() => onBulkDelete?.(selectedFiles)} style={{ ...bulkBtnStyle, color: 'var(--c-danger-text)' }}>{t('delete')}</button>
           <button onClick={() => setSelectedIds(new Set())} style={{ ...bulkBtnStyle, marginLeft: 'auto' }}>{t('table.clear_selection')}</button>
         </div>
       )}
@@ -95,13 +95,11 @@ export default function FileTable({
       ) : (
         <div style={{
           background: 'var(--c-surface)', border: '1px solid var(--c-border)',
-          borderRadius: 12, overflow: 'hidden',
-          containerType: 'inline-size',
+          borderRadius: 12, padding: 10,
         }}>
-          <div className="lm-filerow" style={{
-            padding: '8px 16px', borderBottom: '1px solid var(--c-border)',
-            fontSize: 10, fontWeight: 600, letterSpacing: 0.6,
-            textTransform: 'uppercase', color: 'var(--c-text-3)',
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: '4px 6px 10px',
+            fontSize: 10, fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase', color: 'var(--c-text-3)',
           }}>
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
@@ -115,10 +113,14 @@ export default function FileTable({
             <button className="lm-col-date" onClick={() => toggleSort('date')} style={thBtnStyle}>
               {t('table.col_date')} {sortBy === 'date' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
             </button>
-            <span />
           </div>
 
-          {sorted.map((file, i) => {
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gap: 8,
+          }}>
+          {sorted.map((file) => {
             const on = file.id === activeFileId;
             const kind = detectKind(file.original_name);
             const sizeFmt = file.size_bytes ? formatBytes(file.size_bytes) : '—';
@@ -134,58 +136,60 @@ export default function FileTable({
                 key={file.id}
                 onClick={() => onFileSelect(file)}
                 onContextMenu={(e) => handleContextMenu(e, file)}
-                className="lm-filerow"
                 style={{
                   appearance: 'none', border: 'none', font: 'inherit',
-                  textAlign: 'left', width: '100%',
-                  padding: '10px 16px', alignItems: 'center', cursor: 'pointer',
-                  background: on ? `${accent}0F` : 'transparent',
-                  borderTop: i > 0 ? '1px solid var(--c-border)' : 'none',
-                  transition: 'background .1s',
+                  textAlign: 'left', width: '100%', cursor: 'pointer',
+                  background: on ? `${accent}12` : 'var(--c-surface-2)',
+                  border: on ? `1px solid ${accent}66` : '1px solid var(--c-border-soft)',
+                  borderRadius: 10, padding: '9px 10px',
+                  transition: 'background .1s, border-color .1s',
                 }}
                 onMouseEnter={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
-                onMouseLeave={(e) => { if (!on) e.currentTarget.style.background = on ? `${accent}0F` : 'transparent'; }}
+                onMouseLeave={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
+                onFocus={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
+                onBlur={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
               >
-                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={(e) => { e.stopPropagation(); toggleSelected(file.id); }}>
-                  <input type="checkbox" checked={selectedIds.has(file.id)} readOnly />
-                </span>
-                <FileBadge kind={kind} name={file.original_name} size={26} />
-                <span style={{
-                  fontSize: 13, fontWeight: on ? 600 : 500,
-                  color: 'var(--c-text)', minWidth: 0,
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                }}>
-                  {file.original_name}
-                </span>
-                {file.is_shared ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={(e) => { e.stopPropagation(); toggleSelected(file.id); }}>
+                    <input type="checkbox" checked={selectedIds.has(file.id)} readOnly />
+                  </span>
+                  <FileBadge kind={kind} name={file.original_name} size={24} />
                   <span style={{
-                    fontSize: 9, fontWeight: 700, letterSpacing: 0.4,
-                    color: '#16A34A', background: 'rgba(22,163,74,0.12)',
-                    border: '1px solid rgba(22,163,74,0.25)',
-                    borderRadius: 4, padding: '1px 5px', flexShrink: 0,
-                  }}>✓</span>
-                ) : null}
-                <span className="lm-col-size" style={{
-                  fontSize: 11, color: 'var(--c-text-3)',
-                  fontFamily: '"DM Mono", monospace',
-                }}>{sizeFmt}</span>
-                <span className="lm-col-date" style={{
-                  fontSize: 11, color: 'var(--c-text-3)',
-                  fontFamily: '"DM Mono", monospace',
-                }}>{dueFmt ? `⏰ ${dueFmt}` : dateFmt}</span>
-                <span
-                  onClick={(e) => { e.stopPropagation(); handleContextMenu(e, file); }}
-                  style={{
-                    width: 28, height: 28, display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', borderRadius: 6, color: 'var(--c-text-3)',
-                    fontSize: 14, cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >⋯</span>
+                    fontSize: 12.5, fontWeight: on ? 600 : 500,
+                    color: 'var(--c-text)', minWidth: 0, flex: 1,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {file.original_name}
+                  </span>
+                  <span
+                    onClick={(e) => { e.stopPropagation(); handleContextMenu(e, file); }}
+                    style={{
+                      width: 24, height: 24, display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', borderRadius: 6, color: 'var(--c-text-3)',
+                      fontSize: 13, cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >⋯</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7 }}>
+                  {file.is_shared ? (
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, letterSpacing: 0.4,
+                      color: '#16A34A', background: 'rgba(22,163,74,0.12)',
+                      border: '1px solid rgba(22,163,74,0.25)',
+                      borderRadius: 4, padding: '1px 5px', flexShrink: 0,
+                    }}>✓</span>
+                  ) : null}
+                  <span style={{ fontSize: 10.5, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', letterSpacing: 0.2 }}>{sizeFmt}</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', letterSpacing: 0.2 }}>
+                    {dueFmt ? `⏰ ${dueFmt}` : dateFmt}
+                  </span>
+                </div>
               </button>
             );
           })}
+          </div>
         </div>
       )}
 
@@ -232,6 +236,8 @@ export default function FileTable({
                     }}
                     onMouseEnter={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = on ? `${accent}0F` : 'transparent'; }}
+                    onFocus={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
+                    onBlur={(e) => { if (!on) e.currentTarget.style.background = 'transparent'; }}
                   >
                     <div style={{ width: 26, height: 26, borderRadius: 6, background: `${accent}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
@@ -390,10 +396,10 @@ function MenuItem({ icon, label, danger, onClick }) {
         appearance: 'none', border: 'none', width: '100%', textAlign: 'left',
         padding: '7px 10px', borderRadius: 5, background: 'transparent',
         cursor: 'pointer', font: 'inherit', fontSize: 12,
-        color: danger ? '#DC2626' : 'var(--c-text)',
+        color: danger ? 'var(--c-danger-text)' : 'var(--c-text)',
         display: 'flex', alignItems: 'center', gap: 10,
       }}
-      onMouseEnter={(e) => e.currentTarget.style.background = danger ? 'rgba(220,38,38,0.08)' : 'var(--c-hover)'}
+      onMouseEnter={(e) => e.currentTarget.style.background = danger ? 'var(--c-danger-bg)' : 'var(--c-hover)'}
       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
     >
       <span style={{ width: 14, textAlign: 'center', opacity: 0.7, fontSize: 11 }}>{icon}</span>

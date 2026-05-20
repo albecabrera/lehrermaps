@@ -10,6 +10,7 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
+  const folderInputRef = useRef(null);
 
   const handleFiles = useCallback(async (incoming) => {
     const files = [...incoming].slice(0, 20);
@@ -137,12 +138,40 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
                 {dragOver ? t('modal.upload.drop_active') : t('modal.upload.drop')}
               </div>
               <div style={{ fontSize: 12, color: 'var(--c-text-2)' }}>
-                oder <span style={{ color: accent, fontWeight: 600 }}>{t('modal.upload.browse')}</span>
+                <span style={{ color: accent, fontWeight: 600 }}>{t('modal.upload.browse')}</span>
               </div>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); folderInputRef.current?.click(); }}
+                style={{
+                  marginTop: 2,
+                  height: 30,
+                  padding: '0 12px',
+                  border: '1px solid var(--c-border)',
+                  borderRadius: 8,
+                  background: 'var(--c-surface)',
+                  color: 'var(--c-text)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('modal.upload.browse_folder')}
+              </button>
               <input
                 ref={inputRef}
                 type="file"
                 multiple
+                style={{ display: 'none' }}
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+              <input
+                ref={folderInputRef}
+                type="file"
+                multiple
+                webkitdirectory="true"
+                directory="true"
                 style={{ display: 'none' }}
                 onChange={(e) => handleFiles(e.target.files)}
               />
