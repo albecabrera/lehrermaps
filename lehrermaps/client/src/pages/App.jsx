@@ -18,6 +18,7 @@ import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
 import NotesEditor from '../components/NotesEditor';
+import FolderGallery from '../components/FolderGallery';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLang } from '../contexts/LangContext';
 
@@ -38,6 +39,7 @@ export default function App({ onLogout }) {
   const [renamingFile, setRenamingFile] = useState(null);
   const [hoverSubject, setHoverSubject] = useState(null);
   const [folderTab, setFolderTab] = useState('files');
+  const [filesView, setFilesView] = useState('list');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
   const [viewMode, setViewMode] = useState('subjects');
@@ -54,17 +56,38 @@ export default function App({ onLogout }) {
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
 
-  // Cmd+K global search shortcut
+  // Keyboard shortcuts: Cmd/Ctrl+K, j/k navigation, space preview toggle
   useEffect(() => {
     const handler = (e) => {
+      const target = e.target;
+      const tag = target?.tagName?.toLowerCase();
+      const isTyping = tag === 'input' || tag === 'textarea' || target?.isContentEditable;
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setGlobalSearchOpen(true);
+        return;
+      }
+      if (isTyping || folderTab !== 'files' || !activeFolder || !files.length) return;
+      if (e.key === 'j') {
+        e.preventDefault();
+        if (!activeFile) { setActiveFile(files[0]); return; }
+        const idx = files.findIndex((f) => f.id === activeFile.id);
+        const next = files[Math.min(files.length - 1, idx + 1)];
+        if (next) setActiveFile(next);
+      } else if (e.key === 'k') {
+        e.preventDefault();
+        if (!activeFile) { setActiveFile(files[0]); return; }
+        const idx = files.findIndex((f) => f.id === activeFile.id);
+        const prev = files[Math.max(0, idx - 1)];
+        if (prev) setActiveFile(prev);
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        setActiveFile((prev) => (prev ? null : files[0] || null));
       }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, []);
+  }, [activeFile, activeFolder, files, folderTab]);
 
   const onResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -169,8 +192,23 @@ export default function App({ onLogout }) {
     setTimeout(() => setDropUploading(null), 900);
   }, [activeFolder, reloadFolders, upload]);
 
-  const handleNewFolder = async ({ subject: subjectKey, group_name, name }) => {
-    await addFolder(subjectKey, group_name, name);
+  const handleNewFolder = async ({ subject: subjectKey, group_name, name, template }) => {
+    if (!template) {
+      await addFolder(subjectKey, group_name, name);
+      return;
+    }
+    const templates = {
+      abitur: ['Material', 'Übungen', 'Hausaufgaben', 'Klausuren'],
+      standard: ['Material', 'Arbeitsblätter', 'Abgaben'],
+    };
+    const parts = templates[template] || [];
+    if (!parts.length) {
+      await addFolder(subjectKey, group_name, name);
+      return;
+    }
+    for (const part of parts) {
+      await addFolder(subjectKey, group_name, `${name} · ${part}`);
+    }
   };
 
   const handleDeleteFile = (file) => {
@@ -616,12 +654,20 @@ export default function App({ onLogout }) {
                     );
                   })}
                   {folderTab === 'files' && (
-                    <div style={{ fontSize: 12, color: 'var(--c-text-2)', marginLeft: 'auto', alignSelf: 'center', paddingRight: 4 }}>
-                      {filteredCount !== null
-                        ? t('files.filter', { filtered: filteredCount, total: files.length, q: query })
-                        : (files.length === 1
-                            ? t('files.count_one', { n: 1 })
-                            : t('files.count_many', { n: files.length }))}
+                    <div style={{ marginLeft: 'auto', alignSelf: 'center', paddingRight: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button
+                        onClick={() => setFilesView((v) => (v === 'list' ? 'gallery' : 'list'))}
+                        style={{ height: 24, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 6, background: 'transparent', color: 'var(--c-text-2)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
+                      >
+                        {filesView === 'list' ? 'Galerie' : 'Liste'}
+                      </button>
+                      <div style={{ fontSize: 12, color: 'var(--c-text-2)' }}>
+                        {filteredCount !== null
+                          ? t('files.filter', { filtered: filteredCount, total: files.length, q: query })
+                          : (files.length === 1
+                              ? t('files.count_one', { n: 1 })
+                              : t('files.count_many', { n: files.length }))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -631,28 +677,37 @@ export default function App({ onLogout }) {
               <div style={{ flex: 1, minHeight: 0, overflow: folderTab === 'files' ? 'auto' : 'hidden' }}>
                 {folderTab === 'files' ? (
                   <div style={{ padding: '18px 28px' }}>
-                    <FileTable
-                      files={files}
-                      links={links}
-                      activeFileId={activeFile?.id}
-                      activeLinkId={activeLink?.id}
-                      onFileSelect={(f) => { setActiveFile(f); setActiveLink(null); }}
-                      onLinkSelect={(l) => { setActiveLink(l); setActiveFile(null); }}
-                      accent={accent}
-                      query={query}
-                      onDelete={handleDeleteFile}
-                      onRename={setRenamingFile}
-                      onDeleteLink={handleDeleteLink}
-                      onUpload={() => setUploadOpen(true)}
-                      onAddLink={() => setAddLinkOpen(true)}
-                      onToggleShare={toggleShare}
-                      onTogglePublic={togglePublic}
-                      onSetDeadline={handleSetFileDeadline}
-                      onBulkDelete={handleBulkDeleteFiles}
-                      onBulkShare={handleBulkShareFiles}
-                      onBulkUnshare={handleBulkUnshareFiles}
-                      onBulkDownload={handleBulkDownloadFiles}
-                    />
+                    {filesView === 'gallery' ? (
+                      <FolderGallery
+                        files={files}
+                        activeFileId={activeFile?.id}
+                        onSelect={(f) => { setActiveFile(f); setActiveLink(null); }}
+                        accent={accent}
+                      />
+                    ) : (
+                      <FileTable
+                        files={files}
+                        links={links}
+                        activeFileId={activeFile?.id}
+                        activeLinkId={activeLink?.id}
+                        onFileSelect={(f) => { setActiveFile(f); setActiveLink(null); }}
+                        onLinkSelect={(l) => { setActiveLink(l); setActiveFile(null); }}
+                        accent={accent}
+                        query={query}
+                        onDelete={handleDeleteFile}
+                        onRename={setRenamingFile}
+                        onDeleteLink={handleDeleteLink}
+                        onUpload={() => setUploadOpen(true)}
+                        onAddLink={() => setAddLinkOpen(true)}
+                        onToggleShare={toggleShare}
+                        onTogglePublic={togglePublic}
+                        onSetDeadline={handleSetFileDeadline}
+                        onBulkDelete={handleBulkDeleteFiles}
+                        onBulkShare={handleBulkShareFiles}
+                        onBulkUnshare={handleBulkUnshareFiles}
+                        onBulkDownload={handleBulkDownloadFiles}
+                      />
+                    )}
                   </div>
                 ) : (
                   <NotesEditor

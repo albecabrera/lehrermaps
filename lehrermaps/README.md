@@ -176,9 +176,12 @@ ALTER TABLE files ADD COLUMN public_token VARCHAR(64) NULL;
 - Deadlines auf Ordner- und Dateiebene (sichtbar in Student-Ansicht)
 - Öffentliche Datei-Links ohne Login (`/api/files/public/:token`)
 - Sortierbare Dateitabelle (Name/Datum/Größe)
+- Umschaltbare Dateiansicht: Liste / Galerie (für Bildordner)
 - Stundenplan Export als `.ics`
 - Global Search inkl. Notiz-Inhalten
 - PWA App-Shell + Offline-Fallback via `service-worker.js`
+- Ordner-Templates beim Erstellen (z. B. „Tema Abitur“)
+- Tastaturkürzel in Dateien: `j`/`k` Navigation, `space` Preview umschalten
 
 ---
 
@@ -229,6 +232,7 @@ lehrermaps/
 │   │   └── icons/           # icon-192.png, icon-512.png
 │   └── src/
 │       ├── components/      # FileBadge, FileTable, FilePreview, Sidebar, ...
+│       │                    # + FolderGallery
 │       ├── constants/       # structure.js — Fächer, Farben, MIME-Typen
 │       ├── hooks/           # useFiles.js, useFolders.js
 │       ├── lib/             # api.js — Axios-Wrapper

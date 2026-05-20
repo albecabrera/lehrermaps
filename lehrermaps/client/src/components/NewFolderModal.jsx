@@ -7,10 +7,11 @@ export default function NewFolderModal({ open, onClose, onSave, subject, default
   const { t } = useLang();
   const [name, setName] = useState('');
   const [groupName, setGroupName] = useState('');
+  const [template, setTemplate] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) { setName(''); setGroupName(defaultGroup || ''); setSaving(false); }
+    if (open) { setName(''); setGroupName(defaultGroup || ''); setTemplate(''); setSaving(false); }
   }, [open, defaultGroup]);
 
   const subjectData = SUBJECTS.find((s) => s.id === subject?.id);
@@ -21,7 +22,7 @@ export default function NewFolderModal({ open, onClose, onSave, subject, default
     if (!name.trim() || !groupName) return;
     setSaving(true);
     try {
-      await onSave({ subject: subject.id, group_name: groupName, name: name.trim() });
+      await onSave({ subject: subject.id, group_name: groupName, name: name.trim(), template: template || null });
       setName('');
       setGroupName('');
       onClose();
@@ -91,6 +92,18 @@ export default function NewFolderModal({ open, onClose, onSave, subject, default
               placeholder={t('modal.new_folder.name_placeholder')}
               style={inputStyle}
             />
+          </label>
+
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 600, letterSpacing: 0.6,
+              textTransform: 'uppercase', color: 'var(--c-text-3)',
+            }}>Template</span>
+            <select value={template} onChange={(e) => setTemplate(e.target.value)} style={inputStyle}>
+              <option value="">Ohne Template</option>
+              <option value="abitur">Tema Abitur</option>
+              <option value="standard">Standard Unterricht</option>
+            </select>
           </label>
         </div>
 
