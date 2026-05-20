@@ -11,6 +11,7 @@ export default function FileTable({
   onTogglePublic,
   onSetDeadline,
   onFileDragStart,
+  hiddenIds = new Set(),
   onBulkDelete, onBulkShare, onBulkUnshare, onBulkDownload,
 }) {
   const { t } = useLang();
@@ -22,8 +23,8 @@ export default function FileTable({
   const [sortDir, setSortDir] = useState('desc');
 
   const filtered = query
-    ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase()))
-    : files;
+    ? files.filter((f) => !hiddenIds.has(f.id) && f.original_name.toLowerCase().includes(query.toLowerCase()))
+    : files.filter((f) => !hiddenIds.has(f.id));
 
   const sorted = [...filtered].sort((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;

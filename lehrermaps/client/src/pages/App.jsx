@@ -45,6 +45,8 @@ export default function App({ onLogout }) {
   const [confirmModal, setConfirmModal] = useState(null);
   const [deadlineModal, setDeadlineModal] = useState(null);
   const [toast, setToast] = useState(null);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState(new Set());
+  const deleteTimersRef = useRef(new Map());
   const [viewMode, setViewMode] = useState('subjects');
   const [dropOver, setDropOver] = useState(false);
   const [dropFiles, setDropFiles] = useState(null);
@@ -61,9 +63,14 @@ export default function App({ onLogout }) {
 
   useEffect(() => {
     if (!toast) return;
-    const tmr = setTimeout(() => setToast(null), 2200);
+    const tmr = setTimeout(() => setToast(null), toast.duration || 2200);
     return () => clearTimeout(tmr);
   }, [toast]);
+
+  useEffect(() => () => {
+    for (const timer of deleteTimersRef.current.values()) clearTimeout(timer);
+    deleteTimersRef.current.clear();
+  }, []);
 
   // Keyboard shortcuts: Cmd/Ctrl+K, j/k navigation, space preview toggle
   useEffect(() => {
@@ -237,15 +244,56 @@ export default function App({ onLogout }) {
       message: t('confirm.delete_file_msg', { name: file.original_name }),
       onConfirm: async () => {
         setConfirmModal(null);
-        try {
-          await removeFile(file.id);
-          if (activeFile?.id === file.id) setActiveFile(null);
-          setToast({ type: 'success', msg: t('toast.file_deleted') });
-        } catch {
-          setToast({ type: 'error', msg: t('toast.file_delete_error') });
-        }
+        enqueueDelete(file);
       },
     });
+  };
+
+  const enqueueDelete = (file) => {
+    if (!file?.id) return;
+    setPendingDeleteIds((prev) => {
+      const next = new Set(prev);
+      next.add(file.id);
+      return next;
+    });
+    if (activeFile?.id === file.id) setActiveFile(null);
+
+    const timer = setTimeout(async () => {
+      deleteTimersRef.current.delete(file.id);
+      try {
+        await removeFile(file.id);
+        setToast({ type: 'success', msg: t('toast.file_deleted') });
+      } catch {
+        setToast({ type: 'error', msg: t('toast.file_delete_error') });
+      } finally {
+        setPendingDeleteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(file.id);
+          return next;
+        });
+      }
+    }, 5200);
+
+    deleteTimersRef.current.set(file.id, timer);
+    setToast({
+      type: 'warning',
+      msg: t('toast.file_delete_pending'),
+      actionLabel: t('toast.undo'),
+      action: () => undoDelete(file.id),
+      duration: 5200,
+    });
+  };
+
+  const undoDelete = (fileId) => {
+    const timer = deleteTimersRef.current.get(fileId);
+    if (timer) clearTimeout(timer);
+    deleteTimersRef.current.delete(fileId);
+    setPendingDeleteIds((prev) => {
+      const next = new Set(prev);
+      next.delete(fileId);
+      return next;
+    });
+    setToast({ type: 'success', msg: t('toast.undo_done') });
   };
 
   const handleRenameFile = async (id, name) => {
@@ -265,21 +313,10 @@ export default function App({ onLogout }) {
   };
 
   const handleBulkDeleteFiles = async (selectedFiles) => {
-    let failed = 0;
     for (const file of selectedFiles) {
-      try {
-        await removeFile(file.id);
-        if (activeFile?.id === file.id) setActiveFile(null);
-      } catch {
-        failed += 1;
-      }
+      enqueueDelete(file);
     }
-    setToast({
-      type: failed ? 'error' : 'success',
-      msg: failed
-        ? t('toast.bulk_done_error', { failed, total: selectedFiles.length })
-        : t('toast.bulk_done'),
-    });
+    setToast({ type: 'warning', msg: t('toast.bulk_delete_pending', { n: selectedFiles.length }), duration: 5200 });
   };
 
   const handleBulkShareFiles = async (selectedFiles) => {
@@ -752,6 +789,7 @@ export default function App({ onLogout }) {
                     ) : (
                       <FileTable
                         files={files}
+                        hiddenIds={pendingDeleteIds}
                         links={links}
                         activeFileId={activeFile?.id}
                         activeLinkId={activeLink?.id}
@@ -913,11 +951,33 @@ export default function App({ onLogout }) {
           position: 'fixed', right: 18, bottom: 18, zIndex: 1300,
           minWidth: 220, maxWidth: 360, padding: '10px 12px',
           borderRadius: 8, border: '1px solid var(--c-border-soft)',
-          background: toast.type === 'error' ? 'var(--c-danger-bg)' : 'var(--c-surface)',
-          color: toast.type === 'error' ? 'var(--c-danger-text)' : 'var(--c-text)',
+          background: toast.type === 'error'
+            ? 'var(--c-danger-bg)'
+            : toast.type === 'warning'
+              ? 'rgba(245,158,11,0.14)'
+              : 'var(--c-surface)',
+          color: toast.type === 'error'
+            ? 'var(--c-danger-text)'
+            : toast.type === 'warning'
+              ? '#92400E'
+              : 'var(--c-text)',
           boxShadow: 'var(--c-shadow-pop)', fontSize: 12, fontWeight: 600,
         }}>
-          {toast.msg}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ flex: 1 }}>{toast.msg}</span>
+            {toast.action && toast.actionLabel && (
+              <button
+                onClick={toast.action}
+                style={{
+                  border: '1px solid var(--c-border)', background: 'transparent',
+                  borderRadius: 6, height: 24, padding: '0 8px', cursor: 'pointer',
+                  fontSize: 11, fontFamily: 'inherit', color: 'inherit',
+                }}
+              >
+                {toast.actionLabel}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
