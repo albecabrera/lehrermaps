@@ -80,13 +80,13 @@ export default function FileTable({
           background: 'var(--c-surface)',
         }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-text-2)' }}>
-            {selectedFiles.length} selected
+            {t('table.selected_count', { n: selectedFiles.length })}
           </span>
           <button onClick={() => onBulkDownload?.(selectedFiles)} style={bulkBtnStyle}>{t('table.ctx_download')}</button>
           <button onClick={() => onBulkShare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.share_toggle')}</button>
           <button onClick={() => onBulkUnshare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.unshare')}</button>
           <button onClick={() => onBulkDelete?.(selectedFiles)} style={{ ...bulkBtnStyle, color: '#DC2626' }}>{t('delete')}</button>
-          <button onClick={() => setSelectedIds(new Set())} style={{ ...bulkBtnStyle, marginLeft: 'auto' }}>Clear</button>
+          <button onClick={() => setSelectedIds(new Set())} style={{ ...bulkBtnStyle, marginLeft: 'auto' }}>{t('table.clear_selection')}</button>
         </div>
       )}
 
@@ -364,7 +364,7 @@ function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onTo
         />
         <MenuItem
           icon={file.is_public ? '🌐' : '🧷'}
-          label={file.is_public ? 'Public Link AUS' : 'Public Link AN'}
+          label={file.is_public ? t('table.public_link_off') : t('table.public_link_on')}
           onClick={onTogglePublic}
         />
         {file.is_public && file.public_token ? (
@@ -374,7 +374,7 @@ function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onTo
             onClick={() => { navigator.clipboard.writeText(publicFileUrl(file.public_token)); onClose(); }}
           />
         ) : null}
-        <MenuItem icon="⏰" label="Deadline" onClick={onSetDeadline} />
+        <MenuItem icon="⏰" label={t('table.deadline')} onClick={onSetDeadline} />
         <div style={{ height: 1, background: 'var(--c-border)', margin: '4px 2px' }} />
         <MenuItem icon="🗑" label={t('delete')} danger onClick={onDelete} />
       </div>

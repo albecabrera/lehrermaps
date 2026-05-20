@@ -1,4 +1,7 @@
+import { useLang } from '../contexts/LangContext';
+
 export default function FolderGallery({ files, activeFileId, onSelect, accent = '#E8472A' }) {
+  const { t } = useLang();
   const imageFiles = files.filter((f) => {
     const name = (f.original_name || '').toLowerCase();
     const mime = (f.mime_type || '').toLowerCase();
@@ -8,7 +11,7 @@ export default function FolderGallery({ files, activeFileId, onSelect, accent = 
   if (!imageFiles.length) {
     return (
       <div style={{ padding: 24, color: 'var(--c-text-3)', fontSize: 13 }}>
-        No image files in this folder.
+        {t('table.no_images')}
       </div>
     );
   }

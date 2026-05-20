@@ -231,7 +231,7 @@ export default function App({ onLogout }) {
   const handleSetFolderDeadline = async () => {
     if (!activeFolder) return;
     const current = activeFolder.due_at ? new Date(activeFolder.due_at).toISOString().slice(0, 10) : '';
-    const value = window.prompt('Fecha límite carpeta (YYYY-MM-DD). Vacío para quitar:', current);
+    const value = window.prompt(t('prompt.folder_deadline'), current);
     if (value === null) return;
     const due_at = value.trim() ? `${value.trim()} 23:59:59` : null;
     const updated = await setFolderDeadline(activeFolder.id, due_at);
@@ -240,7 +240,7 @@ export default function App({ onLogout }) {
 
   const handleSetFileDeadline = async (file) => {
     const current = file?.due_at ? new Date(file.due_at).toISOString().slice(0, 10) : '';
-    const value = window.prompt('Fecha límite archivo (YYYY-MM-DD). Vacío para quitar:', current);
+    const value = window.prompt(t('prompt.file_deadline'), current);
     if (value === null) return;
     const due_at = value.trim() ? `${value.trim()} 23:59:59` : null;
     const updated = await setFileDeadline(file.id, due_at);
@@ -626,7 +626,7 @@ export default function App({ onLogout }) {
                         fontFamily: 'inherit',
                       }}
                     >
-                      ⏰ {activeFolder?.due_at ? new Date(activeFolder.due_at).toLocaleDateString('de-DE') : 'Deadline'}
+                      ⏰ {activeFolder?.due_at ? new Date(activeFolder.due_at).toLocaleDateString('de-DE') : t('table.deadline')}
                     </button>
                   </div>
                 </div>
@@ -659,7 +659,7 @@ export default function App({ onLogout }) {
                         onClick={() => setFilesView((v) => (v === 'list' ? 'gallery' : 'list'))}
                         style={{ height: 24, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 6, background: 'transparent', color: 'var(--c-text-2)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
                       >
-                        {filesView === 'list' ? 'Galerie' : 'Liste'}
+                        {filesView === 'list' ? t('table.gallery') : t('table.list')}
                       </button>
                       <div style={{ fontSize: 12, color: 'var(--c-text-2)' }}>
                         {filteredCount !== null

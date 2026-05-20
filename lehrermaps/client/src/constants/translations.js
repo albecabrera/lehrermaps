@@ -66,6 +66,14 @@ export const translations = {
     'table.ctx_download': 'Herunterladen',
     'table.ctx_open_browser': 'Im Browser öffnen',
     'table.ctx_copy_url': 'URL kopieren',
+    'table.selected_count': '{{n}} ausgewählt',
+    'table.clear_selection': 'Auswahl löschen',
+    'table.public_link_on': 'Public-Link aktivieren',
+    'table.public_link_off': 'Public-Link deaktivieren',
+    'table.deadline': 'Deadline',
+    'table.gallery': 'Galerie',
+    'table.list': 'Liste',
+    'table.no_images': 'Keine Bilddateien in diesem Ordner.',
 
     // Folders
     'folders.count': '{{n}} Ordner',
@@ -175,6 +183,8 @@ export const translations = {
     'student.shared_badge': 'Freigegeben',
     'student.copy_link': 'Schüler-Link kopieren',
     'student.exit': 'Lehrer-Modus',
+    'prompt.folder_deadline': 'Ordner-Deadline (YYYY-MM-DD). Leer zum Entfernen:',
+    'prompt.file_deadline': 'Datei-Deadline (YYYY-MM-DD). Leer zum Entfernen:',
   },
 
   es: {
@@ -244,6 +254,14 @@ export const translations = {
     'table.ctx_download': 'Descargar',
     'table.ctx_open_browser': 'Abrir en navegador',
     'table.ctx_copy_url': 'Copiar URL',
+    'table.selected_count': '{{n}} seleccionados',
+    'table.clear_selection': 'Limpiar selección',
+    'table.public_link_on': 'Activar link público',
+    'table.public_link_off': 'Desactivar link público',
+    'table.deadline': 'Fecha límite',
+    'table.gallery': 'Galería',
+    'table.list': 'Lista',
+    'table.no_images': 'No hay imágenes en esta carpeta.',
 
     // Folders
     'folders.count': '{{n}} carpetas',
@@ -353,5 +371,7 @@ export const translations = {
     'student.shared_badge': 'Compartido',
     'student.copy_link': 'Copiar link alumnos',
     'student.exit': 'Modo docente',
+    'prompt.folder_deadline': 'Fecha límite carpeta (YYYY-MM-DD). Vacío para quitar:',
+    'prompt.file_deadline': 'Fecha límite archivo (YYYY-MM-DD). Vacío para quitar:',
   },
 };
