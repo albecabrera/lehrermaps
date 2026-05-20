@@ -141,7 +141,7 @@ function PreviewSurface({ file, kind, accent, t }) {
     return (
       <iframe
         src={src}
-        title={file.original_name}
+        title={t('preview.iframe_title', { name: file.original_name })}
         style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
       />
     );
@@ -304,7 +304,7 @@ function ConvertedPdfPreview({ fileId, t }) {
       )}
       <iframe
         src={src}
-        title="Vorschau"
+        title={t('preview.preview_title')}
         style={{ width: '100%', height: '100%', border: 'none', display: state === 'ready' ? 'block' : 'none' }}
         onLoad={() => setState('ready')}
         onError={() => setState('error')}

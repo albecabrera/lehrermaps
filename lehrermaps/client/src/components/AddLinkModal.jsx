@@ -80,7 +80,7 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
               <input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://..."
+                placeholder={t('modal.add_link.url_placeholder')}
                 style={inputStyle}
                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               />

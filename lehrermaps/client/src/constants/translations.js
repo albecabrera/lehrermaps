@@ -111,6 +111,18 @@ export const translations = {
     'notes.format_h1': 'Überschrift 1',
     'notes.format_h2': 'Überschrift 2',
     'notes.format_h3': 'Überschrift 3',
+    'notes.undo': 'Rückgängig (Ctrl+Z)',
+    'notes.redo': 'Wiederholen (Ctrl+Y)',
+    'notes.bold': 'Fett (Ctrl+B)',
+    'notes.italic': 'Kursiv (Ctrl+I)',
+    'notes.underline': 'Unterstrichen (Ctrl+U)',
+    'notes.strikethrough': 'Durchgestrichen',
+    'notes.align_left': 'Linksbündig',
+    'notes.align_center': 'Zentriert',
+    'notes.align_right': 'Rechtsbündig',
+    'notes.bullets': 'Aufzählungsliste',
+    'notes.numbered_list': 'Nummerierte Liste',
+    'notes.clear_format': 'Formatierung entfernen',
 
     // Modals
     'modal.new_folder.title': 'Neuer Ordner',
@@ -126,6 +138,7 @@ export const translations = {
     'modal.add_link.name_label': 'Bezeichnung',
     'modal.add_link.name_placeholder': 'z.B. Arbeitsblatt online',
     'modal.add_link.url_label': 'URL',
+    'modal.add_link.url_placeholder': 'https://…',
 
     'modal.upload.title': 'Datei hochladen',
     'modal.upload.target': 'Ziel',
@@ -165,6 +178,8 @@ export const translations = {
     // Presentation & print
     'preview.fullscreen': 'Vollbild',
     'preview.fullscreen_exit': 'Vollbild beenden',
+    'preview.preview_title': 'Dateivorschau',
+    'preview.iframe_title': 'Vorschau: {{name}}',
     'notes.print': 'Drucken',
 
     // ZIP
@@ -178,6 +193,7 @@ export const translations = {
     'schedule.pick_folder': 'Ordner auswählen',
     'schedule.navigate': 'Öffnen',
     'schedule.export_ics': 'Als .ics exportieren',
+    'schedule.filter_placeholder': 'Filter…',
 
     // Student view
     'student.view': 'Schüler-Ansicht',
@@ -327,6 +343,18 @@ export const translations = {
     'notes.format_h1': 'Encabezado 1',
     'notes.format_h2': 'Encabezado 2',
     'notes.format_h3': 'Encabezado 3',
+    'notes.undo': 'Deshacer (Ctrl+Z)',
+    'notes.redo': 'Rehacer (Ctrl+Y)',
+    'notes.bold': 'Negrita (Ctrl+B)',
+    'notes.italic': 'Cursiva (Ctrl+I)',
+    'notes.underline': 'Subrayado (Ctrl+U)',
+    'notes.strikethrough': 'Tachado',
+    'notes.align_left': 'Alinear a la izquierda',
+    'notes.align_center': 'Centrar',
+    'notes.align_right': 'Alinear a la derecha',
+    'notes.bullets': 'Lista con viñetas',
+    'notes.numbered_list': 'Lista numerada',
+    'notes.clear_format': 'Quitar formato',
 
     // Modals
     'modal.new_folder.title': 'Nueva carpeta',
@@ -342,6 +370,7 @@ export const translations = {
     'modal.add_link.name_label': 'Nombre',
     'modal.add_link.name_placeholder': 'Ej. Hoja de trabajo online',
     'modal.add_link.url_label': 'URL',
+    'modal.add_link.url_placeholder': 'https://…',
 
     'modal.upload.title': 'Subir archivo',
     'modal.upload.target': 'Destino',
@@ -381,6 +410,8 @@ export const translations = {
     // Presentation & print
     'preview.fullscreen': 'Pantalla completa',
     'preview.fullscreen_exit': 'Salir de pantalla completa',
+    'preview.preview_title': 'Vista previa del archivo',
+    'preview.iframe_title': 'Vista previa: {{name}}',
     'notes.print': 'Imprimir',
 
     // ZIP
@@ -394,6 +425,7 @@ export const translations = {
     'schedule.pick_folder': 'Elegir carpeta',
     'schedule.navigate': 'Abrir',
     'schedule.export_ics': 'Exportar como .ics',
+    'schedule.filter_placeholder': 'Filtrar…',
 
     // Student view
     'student.view': 'Vista alumno',

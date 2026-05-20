@@ -111,26 +111,26 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
         gap: 2, flexWrap: 'wrap', flexShrink: 0,
       }}>
         {/* Undo / Redo */}
-        <ToolBtn title="Rückgängig (Ctrl+Z)" onClick={() => exec('undo')}>
+        <ToolBtn title={t('notes.undo')} onClick={() => exec('undo')}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 5H8a3 3 0 0 1 0 6H5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 5l2.5-2.5M2 5l2.5 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </ToolBtn>
-        <ToolBtn title="Wiederholen (Ctrl+Y)" onClick={() => exec('redo')}>
+        <ToolBtn title={t('notes.redo')} onClick={() => exec('redo')}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M11 5H5a3 3 0 0 0 0 6h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M11 5l-2.5-2.5M11 5l-2.5 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </ToolBtn>
 
         <Divider />
 
         {/* Bold / Italic / Underline / Strike */}
-        <ToolBtn title="Fett (Ctrl+B)" active={btnActive('bold')} accent={accent} onClick={() => exec('bold')}>
+        <ToolBtn title={t('notes.bold')} active={btnActive('bold')} accent={accent} onClick={() => exec('bold')}>
           <span style={{ fontWeight: 700, fontSize: 12 }}>B</span>
         </ToolBtn>
-        <ToolBtn title="Kursiv (Ctrl+I)" active={btnActive('italic')} accent={accent} onClick={() => exec('italic')}>
+        <ToolBtn title={t('notes.italic')} active={btnActive('italic')} accent={accent} onClick={() => exec('italic')}>
           <span style={{ fontStyle: 'italic', fontSize: 12 }}>I</span>
         </ToolBtn>
-        <ToolBtn title="Unterstrichen (Ctrl+U)" active={btnActive('underline')} accent={accent} onClick={() => exec('underline')}>
+        <ToolBtn title={t('notes.underline')} active={btnActive('underline')} accent={accent} onClick={() => exec('underline')}>
           <span style={{ textDecoration: 'underline', fontSize: 12 }}>U</span>
         </ToolBtn>
-        <ToolBtn title="Durchgestrichen" active={btnActive('strikeThrough')} accent={accent} onClick={() => exec('strikeThrough')}>
+        <ToolBtn title={t('notes.strikethrough')} active={btnActive('strikeThrough')} accent={accent} onClick={() => exec('strikeThrough')}>
           <span style={{ textDecoration: 'line-through', fontSize: 12 }}>S</span>
         </ToolBtn>
 
@@ -157,30 +157,30 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
         <Divider />
 
         {/* Align */}
-        <ToolBtn title="Linksbündig" active={btnActive('justifyLeft')} accent={accent} onClick={() => exec('justifyLeft')}>
+        <ToolBtn title={t('notes.align_left')} active={btnActive('justifyLeft')} accent={accent} onClick={() => exec('justifyLeft')}>
           <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M1 4h7M1 7h11M1 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
-        <ToolBtn title="Zentriert" active={btnActive('justifyCenter')} accent={accent} onClick={() => exec('justifyCenter')}>
+        <ToolBtn title={t('notes.align_center')} active={btnActive('justifyCenter')} accent={accent} onClick={() => exec('justifyCenter')}>
           <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M3 4h7M1 7h11M3 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
-        <ToolBtn title="Rechtsbündig" active={btnActive('justifyRight')} accent={accent} onClick={() => exec('justifyRight')}>
+        <ToolBtn title={t('notes.align_right')} active={btnActive('justifyRight')} accent={accent} onClick={() => exec('justifyRight')}>
           <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M5 4h7M1 7h11M5 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
 
         <Divider />
 
         {/* Lists */}
-        <ToolBtn title="Aufzählungsliste" active={btnActive('insertUnorderedList')} accent={accent} onClick={() => exec('insertUnorderedList')}>
+        <ToolBtn title={t('notes.bullets')} active={btnActive('insertUnorderedList')} accent={accent} onClick={() => exec('insertUnorderedList')}>
           <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><circle cx="1.5" cy="2" r="1" fill="currentColor"/><circle cx="1.5" cy="5.5" r="1" fill="currentColor"/><circle cx="1.5" cy="9" r="1" fill="currentColor"/><path d="M4 2h8M4 5.5h8M4 9h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
-        <ToolBtn title="Nummerierte Liste" active={btnActive('insertOrderedList')} accent={accent} onClick={() => exec('insertOrderedList')}>
+        <ToolBtn title={t('notes.numbered_list')} active={btnActive('insertOrderedList')} accent={accent} onClick={() => exec('insertOrderedList')}>
           <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><text x="0" y="3.5" style={{fontSize:4, fontFamily:'monospace'}} fill="currentColor">1.</text><text x="0" y="7" style={{fontSize:4, fontFamily:'monospace'}} fill="currentColor">2.</text><text x="0" y="10.5" style={{fontSize:4, fontFamily:'monospace'}} fill="currentColor">3.</text><path d="M5 2h7M5 5.5h7M5 9h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
 
         <Divider />
 
         {/* Clear formatting */}
-        <ToolBtn title="Formatierung entfernen" onClick={() => exec('removeFormat')}>
+        <ToolBtn title={t('notes.clear_format')} onClick={() => exec('removeFormat')}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M8 3l1 1-5 5-1-1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M4 10h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
 

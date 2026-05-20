@@ -268,7 +268,7 @@ function FolderPicker({ folders, onSelect, onClose, t }) {
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter…"
+            placeholder={t('schedule.filter_placeholder')}
             style={{
               width: '100%', height: 32, border: '1px solid var(--c-border)', borderRadius: 7,
               background: 'var(--c-input-bg)', color: 'var(--c-text)', fontSize: 12,
