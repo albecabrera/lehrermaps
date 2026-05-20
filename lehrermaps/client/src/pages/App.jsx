@@ -320,27 +320,25 @@ export default function App({ onLogout }) {
   };
 
   const handleBulkShareFiles = async (selectedFiles) => {
+    const toShare = selectedFiles.filter((f) => !f.is_shared);
+    if (!toShare.length) return;
     let failed = 0;
-    for (const file of selectedFiles) {
-      try {
-        if (!file.is_shared) await toggleShare(file.id);
-      } catch {
-        failed += 1;
-      }
+    for (const file of toShare) {
+      try { await toggleShare(file.id); } catch { failed += 1; }
     }
-    if (failed) setToast({ type: 'error', msg: t('toast.bulk_done_error', { failed, total: selectedFiles.length }) });
+    if (failed) setToast({ type: 'error', msg: t('toast.bulk_done_error', { failed, total: toShare.length }) });
+    else setToast({ type: 'success', msg: t('toast.bulk_done') });
   };
 
   const handleBulkUnshareFiles = async (selectedFiles) => {
+    const toUnshare = selectedFiles.filter((f) => f.is_shared);
+    if (!toUnshare.length) return;
     let failed = 0;
-    for (const file of selectedFiles) {
-      try {
-        if (file.is_shared) await toggleShare(file.id);
-      } catch {
-        failed += 1;
-      }
+    for (const file of toUnshare) {
+      try { await toggleShare(file.id); } catch { failed += 1; }
     }
-    if (failed) setToast({ type: 'error', msg: t('toast.bulk_done_error', { failed, total: selectedFiles.length }) });
+    if (failed) setToast({ type: 'error', msg: t('toast.bulk_done_error', { failed, total: toUnshare.length }) });
+    else setToast({ type: 'success', msg: t('toast.bulk_done') });
   };
 
   const handleBulkDownloadFiles = (selectedFiles) => {

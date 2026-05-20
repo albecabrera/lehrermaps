@@ -21,6 +21,7 @@ export default function FileTable({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [sortBy, setSortBy] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
+  const [dndMode, setDndMode] = useState(false);
 
   const filtered = query
     ? files.filter((f) => !hiddenIds.has(f.id) && f.original_name.toLowerCase().includes(query.toLowerCase()))
@@ -115,6 +116,28 @@ export default function FileTable({
             <button className="lm-col-date" onClick={() => toggleSort('date')} style={thBtnStyle}>
               {t('table.col_date')} {sortBy === 'date' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
             </button>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => setDndMode((v) => !v)}
+              title={t('table.dnd_mode')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '3px 8px', borderRadius: 5, cursor: 'pointer',
+                border: `1px solid ${dndMode ? accent : 'var(--c-border)'}`,
+                background: dndMode ? `${accent}14` : 'transparent',
+                color: dndMode ? accent : 'var(--c-text-3)',
+                fontSize: 9, fontWeight: 700, letterSpacing: 0.6,
+                textTransform: 'uppercase', fontFamily: 'inherit',
+                transition: 'all .15s',
+              }}
+            >
+              <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+                <circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
+                <circle cx="2" cy="6" r="1.2"/><circle cx="6" cy="6" r="1.2"/>
+                <circle cx="2" cy="10" r="1.2"/><circle cx="6" cy="10" r="1.2"/>
+              </svg>
+              {t('table.dnd_mode')}
+            </button>
           </div>
 
           <div style={{
@@ -138,17 +161,18 @@ export default function FileTable({
                 key={file.id}
                 onClick={() => onFileSelect(file)}
                 onContextMenu={(e) => handleContextMenu(e, file)}
-                draggable
-                onDragStart={(e) => {
+                draggable={dndMode}
+                onDragStart={dndMode ? (e) => {
                   e.dataTransfer.setData('text/x-lm-file-id', String(file.id));
                   e.dataTransfer.setData('text/plain', file.original_name);
                   onFileDragStart?.(file);
-                }}
+                } : undefined}
                 style={{
                   appearance: 'none', border: 'none', font: 'inherit',
-                  textAlign: 'left', width: '100%', cursor: 'pointer',
+                  textAlign: 'left', width: '100%',
+                  cursor: dndMode ? 'grab' : 'pointer',
                   background: on ? `${accent}12` : 'var(--c-surface-2)',
-                  border: on ? `1px solid ${accent}66` : '1px solid var(--c-border-soft)',
+                  border: on ? `1px solid ${accent}66` : dndMode ? `1px solid var(--c-border)` : '1px solid var(--c-border-soft)',
                   borderRadius: 10, padding: '9px 10px',
                   transition: 'background .1s, border-color .1s',
                 }}
@@ -158,6 +182,15 @@ export default function FileTable({
                 onBlur={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {dndMode && (
+                    <span style={{ color: 'var(--c-text-3)', display: 'flex', alignItems: 'center', flexShrink: 0, opacity: 0.5 }}>
+                      <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+                        <circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
+                        <circle cx="2" cy="6" r="1.2"/><circle cx="6" cy="6" r="1.2"/>
+                        <circle cx="2" cy="10" r="1.2"/><circle cx="6" cy="10" r="1.2"/>
+                      </svg>
+                    </span>
+                  )}
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={(e) => { e.stopPropagation(); toggleSelected(file.id); }}>
                     <input type="checkbox" checked={selectedIds.has(file.id)} readOnly />
                   </span>

@@ -78,6 +78,7 @@ export const translations = {
     'table.gallery': 'Galerie',
     'table.list': 'Liste',
     'table.no_images': 'Keine Bilddateien in diesem Ordner.',
+    'table.dnd_mode': 'Drag & Drop',
 
     // Folders
     'folders.count': '{{n}} Ordner',
@@ -310,6 +311,7 @@ export const translations = {
     'table.gallery': 'Galería',
     'table.list': 'Lista',
     'table.no_images': 'No hay imágenes en esta carpeta.',
+    'table.dnd_mode': 'Drag & Drop',
 
     // Folders
     'folders.count': '{{n}} carpetas',
