@@ -237,8 +237,13 @@ export default function App({ onLogout }) {
       message: t('confirm.delete_file_msg', { name: file.original_name }),
       onConfirm: async () => {
         setConfirmModal(null);
-        await removeFile(file.id);
-        if (activeFile?.id === file.id) setActiveFile(null);
+        try {
+          await removeFile(file.id);
+          if (activeFile?.id === file.id) setActiveFile(null);
+          setToast({ type: 'success', msg: t('toast.file_deleted') });
+        } catch {
+          setToast({ type: 'error', msg: t('toast.file_delete_error') });
+        }
       },
     });
   };
@@ -260,22 +265,45 @@ export default function App({ onLogout }) {
   };
 
   const handleBulkDeleteFiles = async (selectedFiles) => {
+    let failed = 0;
     for (const file of selectedFiles) {
-      await removeFile(file.id);
-      if (activeFile?.id === file.id) setActiveFile(null);
+      try {
+        await removeFile(file.id);
+        if (activeFile?.id === file.id) setActiveFile(null);
+      } catch {
+        failed += 1;
+      }
     }
+    setToast({
+      type: failed ? 'error' : 'success',
+      msg: failed
+        ? t('toast.bulk_done_error', { failed, total: selectedFiles.length })
+        : t('toast.bulk_done'),
+    });
   };
 
   const handleBulkShareFiles = async (selectedFiles) => {
+    let failed = 0;
     for (const file of selectedFiles) {
-      if (!file.is_shared) await toggleShare(file.id);
+      try {
+        if (!file.is_shared) await toggleShare(file.id);
+      } catch {
+        failed += 1;
+      }
     }
+    if (failed) setToast({ type: 'error', msg: t('toast.bulk_done_error', { failed, total: selectedFiles.length }) });
   };
 
   const handleBulkUnshareFiles = async (selectedFiles) => {
+    let failed = 0;
     for (const file of selectedFiles) {
-      if (file.is_shared) await toggleShare(file.id);
+      try {
+        if (file.is_shared) await toggleShare(file.id);
+      } catch {
+        failed += 1;
+      }
     }
+    if (failed) setToast({ type: 'error', msg: t('toast.bulk_done_error', { failed, total: selectedFiles.length }) });
   };
 
   const handleBulkDownloadFiles = (selectedFiles) => {
@@ -296,11 +324,16 @@ export default function App({ onLogout }) {
         : null,
       onConfirm: async () => {
         setConfirmModal(null);
-        await removeFolder(folder.id);
-        if (activeFolder?.id === folder.id) {
-          setActiveFolder(null);
-          setActiveFile(null);
-          setActiveLink(null);
+        try {
+          await removeFolder(folder.id);
+          if (activeFolder?.id === folder.id) {
+            setActiveFolder(null);
+            setActiveFile(null);
+            setActiveLink(null);
+          }
+          setToast({ type: 'success', msg: t('toast.folder_deleted') });
+        } catch {
+          setToast({ type: 'error', msg: t('toast.folder_delete_error') });
         }
       },
     });
@@ -591,7 +624,11 @@ export default function App({ onLogout }) {
               </svg>
               <span style={{ fontSize: 15, fontWeight: 600, color: accent }}>
                 {dropUploading
-                  ? `Subiendo ${dropUploading.done}/${dropUploading.total}${dropUploading.failed ? ` · ${dropUploading.failed} error` : ''}`
+                  ? t(dropUploading.failed ? 'toast.drop_overlay_error' : 'toast.drop_overlay', {
+                    done: dropUploading.done,
+                    total: dropUploading.total,
+                    failed: dropUploading.failed,
+                  })
                   : t('modal.upload.drop_active')}
               </span>
             </div>
@@ -851,7 +888,7 @@ export default function App({ onLogout }) {
         initialDate={deadlineModal?.initialDate}
         accent={accent}
         onClose={() => setDeadlineModal(null)}
-        onSave={async (value) => {
+      onSave={async (value) => {
           if (!deadlineModal) return;
           const due_at = value?.trim() ? `${value.trim()} 23:59:59` : null;
           try {
