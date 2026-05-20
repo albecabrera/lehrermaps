@@ -96,4 +96,7 @@ export const deleteFile = (id) =>
 export const renameFile = (id, original_name) =>
   api.put(`/files/${id}`, { original_name }).then((r) => r.data);
 
+export const moveFile = (id, folder_id) =>
+  api.put(`/files/${id}`, { folder_id }).then((r) => r.data);
+
 export default api;

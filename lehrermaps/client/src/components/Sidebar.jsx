@@ -8,38 +8,55 @@ export default function Sidebar({
   onNewFolder, onNewFolderInGroup,
   onRenameFolder, onDeleteFolder,
   onReorderFolders, onToggleFavorite,
+  onMoveFileToFolder,
 }) {
   const { t } = useLang();
   const [collapsed, setCollapsed] = useState(false);
   const [menu, setMenu] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
+  const [fileDropTargetId, setFileDropTargetId] = useState(null);
   const accent = subject.color;
 
-  const handleDragStart = (folderId) => setDraggingId(folderId);
+  const handleDragStart = (e, folderId) => {
+    e.dataTransfer.setData('text/x-lm-folder-id', String(folderId));
+    setDraggingId(folderId);
+  };
 
   const handleDragOver = (e, folderId) => {
+    const fileId = e.dataTransfer.getData('text/x-lm-file-id');
+    if (fileId) {
+      e.preventDefault();
+      setFileDropTargetId(folderId);
+      return;
+    }
     e.preventDefault();
     if (folderId !== draggingId) setDropTargetId(folderId);
   };
 
-  const handleDrop = (e, groupName) => {
+  const handleDrop = async (e, groupName) => {
     e.preventDefault();
+    const fileId = Number(e.dataTransfer.getData('text/x-lm-file-id'));
+    if (Number.isInteger(fileId) && fileId > 0) {
+      if (fileDropTargetId) await onMoveFileToFolder?.(fileId, fileDropTargetId);
+      setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null);
+      return;
+    }
     if (!draggingId || !dropTargetId || draggingId === dropTargetId) {
-      setDraggingId(null); setDropTargetId(null); return;
+      setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); return;
     }
     const groupFolders = folders.filter((f) => f.group_name === groupName);
     const from = groupFolders.findIndex((f) => f.id === draggingId);
     const to = groupFolders.findIndex((f) => f.id === dropTargetId);
-    if (from === -1 || to === -1) { setDraggingId(null); setDropTargetId(null); return; }
+    if (from === -1 || to === -1) { setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); return; }
     const reordered = [...groupFolders];
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
     onReorderFolders?.(reordered.map((f) => f.id));
-    setDraggingId(null); setDropTargetId(null);
+    setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null);
   };
 
-  const handleDragEnd = () => { setDraggingId(null); setDropTargetId(null); };
+  const handleDragEnd = () => { setDraggingId(null); setDropTargetId(null); setFileDropTargetId(null); };
 
   return (
     <div style={{
@@ -113,10 +130,12 @@ export default function Sidebar({
                     groupName={g.name}
                     isDragging={f.id === draggingId}
                     isDropTarget={f.id === dropTargetId}
+                    isFileDropTarget={f.id === fileDropTargetId}
                     onClick={() => onFolderSelect(f)}
                     onMenu={(x, y) => setMenu({ folder: f, x, y })}
-                    onDragStart={() => handleDragStart(f.id)}
+                    onDragStart={(e) => handleDragStart(e, f.id)}
                     onDragOver={(e) => handleDragOver(e, f.id)}
+                    onDrop={(e) => handleDrop(e, g.name)}
                     onDragEnd={handleDragEnd}
                     onToggleFavorite={() => onToggleFavorite?.(f.id)}
                   />
@@ -196,7 +215,7 @@ function GroupHeader({ group, accent, onAdd, t }) {
 }
 
 function FolderRow({ folder, on, collapsed, accent, groupName, onClick, onMenu, onToggleFavorite,
-  isDragging, isDropTarget, onDragStart, onDragOver, onDragEnd }) {
+  isDragging, isDropTarget, isFileDropTarget, onDragStart, onDragOver, onDrop, onDragEnd }) {
   const [hovered, setHovered] = useState(false);
   const isFav = !!folder.is_favorite;
 
@@ -206,10 +225,10 @@ function FolderRow({ folder, on, collapsed, accent, groupName, onClick, onMenu, 
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {isDropTarget && !collapsed && (
+      {(isDropTarget || isFileDropTarget) && !collapsed && (
         <div style={{
           position: 'absolute', top: 0, left: 16, right: 16, height: 2,
-          background: accent, borderRadius: 1, zIndex: 2, pointerEvents: 'none',
+          background: isFileDropTarget ? '#22C55E' : accent, borderRadius: 1, zIndex: 2, pointerEvents: 'none',
         }} />
       )}
       <button
@@ -217,6 +236,7 @@ function FolderRow({ folder, on, collapsed, accent, groupName, onClick, onMenu, 
         draggable={!collapsed}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
+        onDrop={onDrop}
         onDragEnd={onDragEnd}
         title={collapsed ? `${groupName} · ${folder.name}` : undefined}
         style={{

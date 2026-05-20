@@ -10,6 +10,7 @@ export default function FileTable({
   query, onDelete, onRename, onDeleteLink, onUpload, onAddLink, onToggleShare,
   onTogglePublic,
   onSetDeadline,
+  onFileDragStart,
   onBulkDelete, onBulkShare, onBulkUnshare, onBulkDownload,
 }) {
   const { t } = useLang();
@@ -136,6 +137,12 @@ export default function FileTable({
                 key={file.id}
                 onClick={() => onFileSelect(file)}
                 onContextMenu={(e) => handleContextMenu(e, file)}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/x-lm-file-id', String(file.id));
+                  e.dataTransfer.setData('text/plain', file.original_name);
+                  onFileDragStart?.(file);
+                }}
                 style={{
                   appearance: 'none', border: 'none', font: 'inherit',
                   textAlign: 'left', width: '100%', cursor: 'pointer',

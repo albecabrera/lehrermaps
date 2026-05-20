@@ -49,7 +49,7 @@ export default function App({ onLogout }) {
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, reload: reloadFolders } = useFolders();
-  const { files, upload, remove: removeFile, rename: renameFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
+  const { files, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
 
@@ -304,6 +304,13 @@ export default function App({ onLogout }) {
     if (activeLink?.id === id) setActiveLink(null);
   };
 
+  const handleMoveFileToFolder = async (fileId, targetFolderId) => {
+    if (!activeFolder || activeFolder.id === targetFolderId) return;
+    await moveFileHook(fileId, targetFolderId);
+    if (activeFile?.id === fileId) setActiveFile(null);
+    reloadFolders();
+  };
+
   const accent = subject.color;
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const filteredCount = query
@@ -536,6 +543,7 @@ export default function App({ onLogout }) {
           onDeleteFolder={handleDeleteFolder}
           onReorderFolders={reorderFolders}
           onToggleFavorite={toggleFavorite}
+          onMoveFileToFolder={handleMoveFileToFolder}
         />
 
         <div
@@ -702,6 +710,12 @@ export default function App({ onLogout }) {
                         onToggleShare={toggleShare}
                         onTogglePublic={togglePublic}
                         onSetDeadline={handleSetFileDeadline}
+                        onFileDragStart={(file) => {
+                          if (!activeFile || activeFile.id !== file.id) {
+                            setActiveFile(file);
+                            setActiveLink(null);
+                          }
+                        }}
                         onBulkDelete={handleBulkDeleteFiles}
                         onBulkShare={handleBulkShareFiles}
                         onBulkUnshare={handleBulkUnshareFiles}

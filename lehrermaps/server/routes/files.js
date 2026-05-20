@@ -334,11 +334,23 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { original_name } = req.body;
-  if (!original_name?.trim()) return res.status(400).json({ error: 'original_name erforderlich' });
+  const { original_name, folder_id } = req.body;
+  const hasName = typeof original_name === 'string' && original_name.trim();
+  const hasFolder = Number.isInteger(Number(folder_id)) && Number(folder_id) > 0;
+  if (!hasName && !hasFolder) {
+    return res.status(400).json({ error: 'original_name oder folder_id erforderlich' });
+  }
   try {
-    await pool.execute('UPDATE files SET original_name = ? WHERE id = ?', [original_name.trim(), req.params.id]);
+    if (hasName) {
+      await pool.execute('UPDATE files SET original_name = ? WHERE id = ?', [original_name.trim(), req.params.id]);
+    }
+    if (hasFolder) {
+      const [target] = await pool.execute('SELECT id FROM folders WHERE id = ? LIMIT 1', [Number(folder_id)]);
+      if (!target.length) return res.status(404).json({ error: 'Zielordner nicht gefunden' });
+      await pool.execute('UPDATE files SET folder_id = ? WHERE id = ?', [Number(folder_id), req.params.id]);
+    }
     const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Datei nicht gefunden' });
     res.json(rows[0]);
   } catch (e) {
     res.status(500).json({ error: e.message });
