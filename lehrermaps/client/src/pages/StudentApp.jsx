@@ -109,7 +109,7 @@ export default function StudentApp({ onLogout }) {
                 onClick={() => { setActiveFolder(f); setActiveFile(null); }}
                 style={{
                   appearance: 'none', border: 'none', font: 'inherit',
-                  width: '100%', padding: '7px 14px 7px 16px',
+                  width: '100%', padding: '8px 14px 8px 16px',
                   display: 'flex', alignItems: 'center', gap: 10,
                   cursor: 'pointer', textAlign: 'left',
                   background: on ? `${accent}14` : 'transparent',

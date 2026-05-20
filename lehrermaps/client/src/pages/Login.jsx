@@ -34,8 +34,8 @@ export default function Login({ onLogin }) {
       <div style={{
         width: '100%', maxWidth: 360,
         background: 'var(--c-surface)', borderRadius: 16,
-        border: '1px solid var(--c-border)',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.06)',
+        border: '1px solid var(--c-border-soft)',
+        boxShadow: 'var(--c-shadow-modal)',
         padding: '40px 32px',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -84,8 +84,8 @@ export default function Login({ onLogin }) {
 
           {error && (
             <div style={{
-              fontSize: 12, color: '#DC2626', background: '#FEF2F2',
-              border: '1px solid #FECACA', borderRadius: 7, padding: '8px 12px',
+              fontSize: 12, color: 'var(--c-danger-text)', background: 'var(--c-danger-bg)',
+              border: '1px solid var(--c-danger-border)', borderRadius: 7, padding: '8px 12px',
             }}>{error}</div>
           )}
 

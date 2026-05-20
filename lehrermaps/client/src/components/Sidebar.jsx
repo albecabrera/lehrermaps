@@ -237,6 +237,8 @@ function FolderRow({ folder, on, collapsed, accent, groupName, onClick, onMenu, 
         }}
         onMouseEnter={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
         onMouseLeave={(e) => { if (!on) e.currentTarget.style.background = on ? `${accent}14` : 'transparent'; }}
+        onFocus={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
+        onBlur={(e) => { if (!on) e.currentTarget.style.background = 'transparent'; }}
       >
         <FolderIcon color={on ? accent : 'var(--c-text-3)'} size={16} />
         {!collapsed && (
@@ -326,10 +328,10 @@ function CMenuItem({ icon, label, danger, onClick }) {
         appearance: 'none', border: 'none', width: '100%', textAlign: 'left',
         padding: '7px 10px', borderRadius: 5, background: 'transparent',
         cursor: 'pointer', font: 'inherit', fontSize: 12,
-        color: danger ? '#DC2626' : 'var(--c-text)',
+        color: danger ? 'var(--c-danger-text)' : 'var(--c-text)',
         display: 'flex', alignItems: 'center', gap: 10,
       }}
-      onMouseEnter={(e) => e.currentTarget.style.background = danger ? 'rgba(220,38,38,0.08)' : 'var(--c-hover)'}
+      onMouseEnter={(e) => e.currentTarget.style.background = danger ? 'var(--c-danger-bg)' : 'var(--c-hover)'}
       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
     >
       <span style={{ width: 14, textAlign: 'center', opacity: 0.7, fontSize: 11 }}>{icon}</span>
