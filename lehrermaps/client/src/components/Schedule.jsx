@@ -16,9 +16,12 @@ const STUNDENPLAN_SUBJECTS = [
   { id: 'es9',           label: 'Spanisch 9',    color: '#E8472A' },
   { id: 'esq1',          label: 'Spanisch Q1',   color: '#B83220' },
   { id: 'sportq1',       label: 'Sport Q1',      color: '#16A34A' },
+  { id: 'sport5d',       label: 'Sport 5d',      color: '#15803D' },
   { id: 'vertretung',    label: 'Vertretung',    color: '#F59E0B' },
   { id: 'pausenaufsicht',label: 'Pausenaufsicht',color: '#64748B' },
   { id: 'mittagspause',  label: 'Mittagspause',  color: '#D97706' },
+  { id: 'zertifikatskurs', label: 'Zertifikatskurs', color: '#7C3AED' },
+  { id: 'frei',            label: 'Frei',             color: '#94A3B8' },
 ];
 
 function loadCache() {
