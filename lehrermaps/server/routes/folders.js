@@ -110,6 +110,17 @@ router.put('/:id/notes', async (req, res) => {
   }
 });
 
+router.put('/:id/color', async (req, res) => {
+  const { color } = req.body;
+  try {
+    await pool.execute('UPDATE folders SET color = ? WHERE id = ?', [color || null, req.params.id]);
+    const [rows] = await pool.execute(FOLDER_WITH_COUNT, [req.params.id]);
+    res.json(rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.put('/:id/deadline', async (req, res) => {
   if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
   const { due_at } = req.body;

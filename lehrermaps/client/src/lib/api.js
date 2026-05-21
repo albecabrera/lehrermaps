@@ -71,6 +71,8 @@ export const toggleFolderFavorite = (id) =>
   api.put(`/folders/${id}/favorite`).then((r) => r.data);
 export const setFolderDeadline = (id, due_at) =>
   api.put(`/folders/${id}/deadline`, { due_at }).then((r) => r.data);
+export const setFolderColor = (id, color) =>
+  api.put(`/folders/${id}/color`, { color }).then((r) => r.data);
 
 export const searchGlobal = (q, fileOffset = 0, folderOffset = 0) =>
   api.get('/files/search', { params: { q, fileOffset, folderOffset } }).then((r) => r.data);

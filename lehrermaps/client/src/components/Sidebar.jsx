@@ -19,12 +19,19 @@ function buildTree(folders, parentId = null) {
 }
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────
+const FOLDER_COLORS = [
+  null,
+  '#EF4444', '#F97316', '#EAB308', '#22C55E',
+  '#14B8A6', '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280',
+];
+
 export default function Sidebar({
   subject, groups, folders, loading = false, width = 260,
   activeFolderId, onFolderSelect,
   onNewFolder, onNewFolderInGroup, onNewSubfolder,
   onRenameFolder, onDeleteFolder,
   onReorderFolders, onToggleFavorite,
+  onSetFolderColor,
   onMoveFileToFolder,
 }) {
   const { t } = useLang();
@@ -178,6 +185,7 @@ export default function Sidebar({
           onRename={() => { onRenameFolder?.(menu.folder); setMenu(null); }}
           onDelete={() => { onDeleteFolder?.(menu.folder); setMenu(null); }}
           onNewSubfolder={() => { onNewSubfolder?.(menu.folder); setMenu(null); }}
+          onSetColor={(color) => { onSetFolderColor?.(menu.folder.id, color); setMenu(null); }}
           t={t}
         />
       )}
@@ -199,6 +207,7 @@ function TreeNode({
   const isActive = node.id === activeFolderId;
   const isFileDrop = node.id === fileDropTargetId;
   const isFav = !!node.is_favorite;
+  const nodeAccent = node.color || accent;
 
   const handleToggle = (e) => {
     e.stopPropagation();
@@ -247,6 +256,7 @@ function TreeNode({
 
         <button
           onClick={handleClick}
+          onContextMenu={(e) => { e.preventDefault(); onMenu(node, e.clientX, e.clientY); }}
           style={{
             appearance: 'none', border: 'none', font: 'inherit', textAlign: 'left',
             width: collapsed ? 44 : '100%',
@@ -257,8 +267,8 @@ function TreeNode({
             display: 'flex', alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
             gap: 5, cursor: 'pointer',
-            background: isActive ? `${accent}14` : 'transparent',
-            borderLeft: !collapsed && isActive ? `3px solid ${accent}` : '3px solid transparent',
+            background: isActive ? `${nodeAccent}14` : 'transparent',
+            borderLeft: !collapsed && isActive ? `3px solid ${nodeAccent}` : '3px solid transparent',
             borderRadius: collapsed ? 8 : 0,
             color: isActive ? 'var(--c-text)' : 'var(--c-text-2)',
             fontSize: 12.5, fontWeight: isActive ? 600 : 400,
@@ -297,7 +307,7 @@ function TreeNode({
           )}
 
           <FolderIcon
-            color={isActive ? accent : (isFileDrop ? '#22C55E' : (hovered ? accent + 'cc' : 'var(--c-text-3)'))}
+            color={isFileDrop ? '#22C55E' : isActive ? nodeAccent : hovered ? nodeAccent + 'cc' : (node.color ? node.color + '99' : 'var(--c-text-3)')}
             size={14}
           />
 
@@ -457,7 +467,7 @@ function GroupHeader({ group, accent, onAdd, t }) {
   );
 }
 
-function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, onNewSubfolder, t }) {
+function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, onNewSubfolder, onSetColor, t }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -521,6 +531,34 @@ function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, 
           onClick={onNewSubfolder}
           accent={accent}
         />
+        <div style={{ height: 1, background: 'var(--c-border)', margin: '4px 2px' }} />
+        <div style={{ padding: '6px 10px 4px' }}>
+          <div style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--c-text-3)', marginBottom: 6 }}>Farbe</div>
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+            {FOLDER_COLORS.map((c, i) => (
+              <button
+                key={i}
+                onClick={() => onSetColor(c)}
+                title={c || 'Standard'}
+                style={{
+                  width: 18, height: 18, borderRadius: 4, cursor: 'pointer',
+                  border: (folder.color === c || (!folder.color && c === null))
+                    ? '2px solid var(--c-text)'
+                    : '1.5px solid var(--c-border)',
+                  background: c || 'var(--c-surface-2)',
+                  flexShrink: 0, position: 'relative',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                {c === null && (
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 2l6 6M8 2L2 8" stroke="var(--c-text-3)" strokeWidth="1.4" strokeLinecap="round"/>
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </>
   );
