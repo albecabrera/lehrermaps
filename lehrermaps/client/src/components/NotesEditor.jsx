@@ -20,7 +20,7 @@ function tryMarkdownConvert(key, editor) {
   const range = sel.getRangeAt(0);
   let node = range.startContainer;
   while (node && node.parentNode !== editor) node = node.parentNode;
-  if (!node || node === editor || node.nodeType !== Node.ELEMENT_NODE) return false;
+  if (!node || node === editor) return false;
 
   const block = node;
   const text = block.textContent;
