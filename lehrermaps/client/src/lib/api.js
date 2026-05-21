@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: '/api' });
+const api = axios.create({ baseURL: '/api', timeout: 15000 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('lm_token');
@@ -37,13 +37,15 @@ export const renameFolder = (id, name) =>
 export const getFiles = (folderId) =>
   api.get(`/files/${folderId}`).then((r) => r.data);
 
-export const uploadFile = (folderId, file, onProgress) => {
+export const uploadFile = (folderId, file, onProgress, signal) => {
   const form = new FormData();
   form.append('folder_id', folderId);
   form.append('file', file);
   return api.post('/files/upload', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: onProgress,
+    timeout: 0,
+    signal,
   }).then((r) => r.data);
 };
 

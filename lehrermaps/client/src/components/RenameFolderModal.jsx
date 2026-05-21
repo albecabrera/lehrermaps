@@ -47,6 +47,7 @@ export default function RenameFolderModal({ folder, accent = '#E8472A', onClose,
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') onClose(); }}
+            maxLength={100}
             style={{
               width: '100%', height: 36, padding: '0 10px', border: '1px solid var(--c-border)',
               borderRadius: 7, fontSize: 13, fontFamily: 'inherit',

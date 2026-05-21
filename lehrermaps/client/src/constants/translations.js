@@ -154,6 +154,7 @@ export const translations = {
     'modal.upload.progress': '{{n}}% hochgeladen…',
     'modal.upload.formats': 'Unterstützte Formate',
     'modal.upload.max': 'Max. 300 MB pro Datei · alle Daten bleiben lokal',
+    'modal.upload.cancel_upload': 'Upload abbrechen',
     'modal.deadline.folder_title': 'Ordner-Deadline',
     'modal.deadline.file_title': 'Datei-Deadline',
     'modal.deadline.hint': 'Leer lassen, um die Deadline zu entfernen.',
@@ -185,6 +186,7 @@ export const translations = {
     'preview.fullscreen_exit': 'Vollbild beenden',
     'preview.preview_title': 'Dateivorschau',
     'preview.iframe_title': 'Vorschau: {{name}}',
+    'preview.truncated': 'Vorschau auf 60.000 Zeichen begrenzt – vollständige Datei herunterladen.',
     'notes.print': 'Drucken',
 
     // ZIP
@@ -391,6 +393,7 @@ export const translations = {
     'modal.upload.progress': '{{n}}% subido…',
     'modal.upload.formats': 'Formatos admitidos',
     'modal.upload.max': 'Máx. 300 MB por archivo · todos los datos son locales',
+    'modal.upload.cancel_upload': 'Cancelar subida',
     'modal.deadline.folder_title': 'Fecha límite de carpeta',
     'modal.deadline.file_title': 'Fecha límite de archivo',
     'modal.deadline.hint': 'Dejá vacío para quitar la fecha límite.',
@@ -422,6 +425,7 @@ export const translations = {
     'preview.fullscreen_exit': 'Salir de pantalla completa',
     'preview.preview_title': 'Vista previa del archivo',
     'preview.iframe_title': 'Vista previa: {{name}}',
+    'preview.truncated': 'Vista previa limitada a 60.000 caracteres – descargá el archivo para verlo completo.',
     'notes.print': 'Imprimir',
 
     // ZIP

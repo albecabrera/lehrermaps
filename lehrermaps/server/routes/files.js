@@ -239,24 +239,28 @@ router.get('/search', async (req, res) => {
   const FILE_LIMIT = 25;
   const FOLDER_LIMIT = 15;
   try {
-    const [files] = await pool.execute(`
-      SELECT fi.id, fi.original_name AS name, fi.mime_type, fi.size_bytes, fi.uploaded_at,
-             fo.id AS folder_id, fo.name AS folder_name, fo.subject, fo.group_name
-      FROM files fi
-      JOIN folders fo ON fo.id = fi.folder_id
-      WHERE fi.original_name LIKE ?
-      ORDER BY fi.uploaded_at DESC
-      LIMIT ? OFFSET ?
-    `, [like, FILE_LIMIT + 1, fileOffset]);
-    const [folders] = await pool.execute(`
-      SELECT
-        id, name, subject, group_name, is_favorite,
-        CASE WHEN notes LIKE ? THEN 1 ELSE 0 END AS notes_match
-      FROM folders
-      WHERE name LIKE ? OR notes LIKE ?
-      ORDER BY notes_match DESC, name
-      LIMIT ? OFFSET ?
-    `, [like, like, like, FOLDER_LIMIT + 1, folderOffset]);
+    const [[files], [folders], [[{ totalFiles }]], [[{ totalFolders }]]] = await Promise.all([
+      pool.execute(`
+        SELECT fi.id, fi.original_name AS name, fi.mime_type, fi.size_bytes, fi.uploaded_at,
+               fo.id AS folder_id, fo.name AS folder_name, fo.subject, fo.group_name
+        FROM files fi
+        JOIN folders fo ON fo.id = fi.folder_id
+        WHERE fi.original_name LIKE ?
+        ORDER BY fi.uploaded_at DESC
+        LIMIT ? OFFSET ?
+      `, [like, FILE_LIMIT + 1, fileOffset]),
+      pool.execute(`
+        SELECT
+          id, name, subject, group_name, is_favorite,
+          CASE WHEN notes LIKE ? THEN 1 ELSE 0 END AS notes_match
+        FROM folders
+        WHERE name LIKE ? OR notes LIKE ?
+        ORDER BY notes_match DESC, name
+        LIMIT ? OFFSET ?
+      `, [like, like, like, FOLDER_LIMIT + 1, folderOffset]),
+      pool.execute('SELECT COUNT(*) AS totalFiles FROM files fi JOIN folders fo ON fo.id = fi.folder_id WHERE fi.original_name LIKE ?', [like]),
+      pool.execute('SELECT COUNT(*) AS totalFolders FROM folders WHERE name LIKE ? OR notes LIKE ?', [like, like]),
+    ]);
     const hasMoreFiles = files.length > FILE_LIMIT;
     const hasMoreFolders = folders.length > FOLDER_LIMIT;
     res.json({
@@ -264,6 +268,8 @@ router.get('/search', async (req, res) => {
       folders: folders.slice(0, FOLDER_LIMIT),
       hasMoreFiles,
       hasMoreFolders,
+      totalFiles: Number(totalFiles),
+      totalFolders: Number(totalFolders),
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

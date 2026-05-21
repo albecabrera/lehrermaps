@@ -21,8 +21,8 @@ export function useFiles(folderId) {
 
   useEffect(() => { load(); }, [load]);
 
-  const upload = useCallback(async (file, onProgress) => {
-    const newFile = await uploadFile(folderId, file, onProgress);
+  const upload = useCallback(async (file, onProgress, signal) => {
+    const newFile = await uploadFile(folderId, file, onProgress, signal);
     setFiles((prev) => [newFile, ...prev]);
     return newFile;
   }, [folderId]);

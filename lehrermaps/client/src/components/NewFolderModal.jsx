@@ -111,6 +111,7 @@ export default function NewFolderModal({ open, onClose, onSave, subject, default
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               placeholder={t('modal.new_folder.name_placeholder')}
+              maxLength={100}
               style={inputStyle}
             />
           </label>

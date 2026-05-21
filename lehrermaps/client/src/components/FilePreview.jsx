@@ -157,6 +157,7 @@ function PreviewSurface({ file, kind, accent, t }) {
         <img
           src={src}
           alt={file.original_name}
+          loading="lazy"
           style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 4 }}
         />
       </div>
@@ -207,6 +208,8 @@ function PreviewSurface({ file, kind, accent, t }) {
   return <FallbackPreview file={file} kind={kind} accent={accent} t={t} />;
 }
 
+const TEXT_LIMIT = 60000;
+
 function TextPreview({ src, t }) {
   const [content, setContent] = useState(null);
   const [err, setErr] = useState(false);
@@ -230,15 +233,27 @@ function TextPreview({ src, t }) {
     <div style={{ padding: 16, fontSize: 12, color: 'var(--c-text-3)' }}>{t('preview.loading')}</div>
   );
 
+  const truncated = content.length > TEXT_LIMIT;
+
   return (
-    <pre style={{
-      margin: 0, width: '100%', height: '100%', padding: 14, boxSizing: 'border-box',
-      background: '#1F2937', color: '#e8e8ea', overflow: 'auto',
-      fontFamily: '"DM Mono", ui-monospace, monospace', fontSize: 11, lineHeight: 1.7,
-      whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-    }}>
-      {content.length > 60000 ? content.slice(0, 60000) + '\n\n[…]' : content}
-    </pre>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {truncated && (
+        <div style={{
+          padding: '4px 14px', background: '#78350F22', borderBottom: '1px solid #92400E44',
+          fontSize: 10, color: '#D97706', fontFamily: '"DM Mono", monospace', flexShrink: 0,
+        }}>
+          {t('preview.truncated')}
+        </div>
+      )}
+      <pre style={{
+        margin: 0, flex: 1, padding: 14, boxSizing: 'border-box',
+        background: '#1F2937', color: '#e8e8ea', overflow: 'auto',
+        fontFamily: '"DM Mono", ui-monospace, monospace', fontSize: 11, lineHeight: 1.7,
+        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+      }}>
+        {truncated ? content.slice(0, TEXT_LIMIT) + '\n\n[…]' : content}
+      </pre>
+    </div>
   );
 }
 

@@ -11,7 +11,7 @@ const DEBOUNCE_MS = 280;
 export default function GlobalSearch({ open, onClose, onNavigate }) {
   const { t } = useLang();
   const [q, setQ] = useState('');
-  const [results, setResults] = useState({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false });
+  const [results, setResults] = useState({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false, totalFiles: 0, totalFolders: 0 });
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(null); // 'files' | 'folders' | null
   const timerRef = useRef(null);
@@ -35,7 +35,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
 
   const doSearch = useCallback((value) => {
     clearTimeout(timerRef.current);
-    if (!value.trim()) { setResults({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false }); setLoading(false); return; }
+    if (!value.trim()) { setResults({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false, totalFiles: 0, totalFolders: 0 }); setLoading(false); return; }
     setLoading(true);
     timerRef.current = setTimeout(async () => {
       try {
@@ -154,7 +154,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
             </div>
           )}
           {results.folders.length > 0 && (
-            <ResultSection label={t('search.folders_section')}>
+            <ResultSection label={t('search.folders_section')} total={results.totalFolders}>
               {results.folders.map((f) => (
                 <ResultRow
                   key={`folder-${f.id}`}
@@ -171,7 +171,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
             </ResultSection>
           )}
           {results.files.length > 0 && (
-            <ResultSection label={t('search.files_section')}>
+            <ResultSection label={t('search.files_section')} total={results.totalFiles}>
               {results.files.map((f) => (
                 <ResultRow
                   key={`file-${f.id}`}
@@ -194,13 +194,23 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
   );
 }
 
-function ResultSection({ label, children }) {
+function ResultSection({ label, total, children }) {
   return (
     <div style={{ padding: '6px 0' }}>
       <div style={{
         fontSize: 10, fontWeight: 600, letterSpacing: 0.7, textTransform: 'uppercase',
         color: 'var(--c-text-3)', padding: '6px 18px 3px',
-      }}>{label}</div>
+        display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+        {label}
+        {total > 0 && (
+          <span style={{
+            fontSize: 9, fontWeight: 500, letterSpacing: 0,
+            background: 'var(--c-hover)', color: 'var(--c-text-3)',
+            borderRadius: 4, padding: '1px 5px', textTransform: 'none',
+          }}>{total}</span>
+        )}
+      </div>
       {children}
     </div>
   );

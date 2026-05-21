@@ -11,6 +11,7 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
   const folderInputRef = useRef(null);
+  const abortRef = useRef(null);
 
   const handleFiles = useCallback(async (incoming) => {
     const files = [...incoming].slice(0, 20);
@@ -22,6 +23,8 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
 
     let allOk = true;
     for (let i = 0; i < list.length; i++) {
+      const controller = new AbortController();
+      abortRef.current = controller;
       setFileList((prev) => prev.map((item, idx) => idx === i ? { ...item, status: 'uploading' } : item));
       try {
         await onUpload(list[i].file, (e) => {
@@ -29,11 +32,13 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
             const pct = Math.round((e.loaded / e.total) * 100);
             setFileList((prev) => prev.map((item, idx) => idx === i ? { ...item, progress: pct } : item));
           }
-        });
+        }, controller.signal);
         setFileList((prev) => prev.map((item, idx) => idx === i ? { ...item, status: 'done', progress: 100 } : item));
-      } catch {
+      } catch (e) {
+        const cancelled = e?.name === 'CanceledError' || e?.name === 'AbortError' || e?.code === 'ERR_CANCELED';
         allOk = false;
-        setFileList((prev) => prev.map((item, idx) => idx === i ? { ...item, status: 'error' } : item));
+        setFileList((prev) => prev.map((item, idx) => idx === i ? { ...item, status: cancelled ? 'cancelled' : 'error' } : item));
+        if (cancelled) break;
       }
     }
 
@@ -220,6 +225,7 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
                     <div style={{ flexShrink: 0, fontSize: 14 }}>
                       {item.status === 'done' && <span style={{ color: '#16A34A' }}>✓</span>}
                       {item.status === 'error' && <span style={{ color: '#DC2626' }}>✗</span>}
+                      {item.status === 'cancelled' && <span style={{ color: '#6B7280', fontSize: 10, fontFamily: '"DM Mono", monospace' }}>—</span>}
                       {item.status === 'uploading' && (
                         <span style={{ fontSize: 10, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace' }}>
                           {item.progress}%
@@ -283,14 +289,14 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
             {t('modal.upload.max')}
           </div>
           <button
-            onClick={handleClose}
-            disabled={uploading}
+            onClick={uploading ? () => abortRef.current?.abort() : handleClose}
             style={{
               height: 32, padding: '0 14px', border: '1px solid var(--c-border)', borderRadius: 7,
-              background: 'transparent', color: 'var(--c-text-2)', fontSize: 12, fontWeight: 500,
-              cursor: uploading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: uploading ? 0.5 : 1,
+              background: 'transparent', color: uploading ? '#DC2626' : 'var(--c-text-2)', fontSize: 12, fontWeight: 500,
+              cursor: 'pointer', fontFamily: 'inherit',
+              borderColor: uploading ? '#DC262640' : 'var(--c-border)',
             }}
-          >{t('cancel')}</button>
+          >{uploading ? t('modal.upload.cancel_upload') : t('cancel')}</button>
         </div>
       </div>
     </div>,
