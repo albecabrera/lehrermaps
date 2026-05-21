@@ -611,10 +611,7 @@ export default function App({ onLogout }) {
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         {viewMode === 'schedule' ? (
           <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-            <Schedule
-              folders={folders}
-              onNavigate={(subject, folderId) => { setViewMode('subjects'); handleGlobalNavigate(subject, folderId); }}
-            />
+            <Schedule />
           </div>
         ) : <>
         <Sidebar

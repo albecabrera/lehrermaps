@@ -1,13 +1,24 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { SUBJECTS } from '../constants/structure';
-import FolderIcon from './FolderIcon';
 import { useLang } from '../contexts/LangContext';
 
 const STORAGE_KEY = 'lm_schedule';
 const DAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
 const DAYS_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi'];
 const PERIODS = 10;
+
+const STUNDENPLAN_SUBJECTS = [
+  { id: 'klassenstunde', label: 'Klassenstunde', color: '#9333EA' },
+  { id: 'elsa',          label: 'ELSA',          color: '#0891B2' },
+  { id: 'inf6',          label: 'Informatik 6',  color: '#2563EB' },
+  { id: 'inf7',          label: 'Informatik 7',  color: '#1E40AF' },
+  { id: 'es9',           label: 'Spanisch 9',    color: '#E8472A' },
+  { id: 'esq1',          label: 'Spanisch Q1',   color: '#B83220' },
+  { id: 'sportq1',       label: 'Sport Q1',      color: '#16A34A' },
+  { id: 'vertretung',    label: 'Vertretung',    color: '#F59E0B' },
+  { id: 'pausenaufsicht',label: 'Pausenaufsicht',color: '#64748B' },
+  { id: 'mittagspause',  label: 'Mittagspause',  color: '#D97706' },
+];
 
 function loadSchedule() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
@@ -16,24 +27,18 @@ function saveSchedule(s) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
 }
 
-export default function Schedule({ folders, onNavigate }) {
+export default function Schedule() {
   const { t, lang } = useLang();
   const [schedule, setSchedule] = useState(loadSchedule);
-  const [picker, setPicker] = useState(null); // { day, period }
+  const [picker, setPicker] = useState(null); // { day, period, rect }
 
   const DAYS = lang === 'es' ? DAYS_ES : DAYS_DE;
   const fileDate = new Date().toISOString().slice(0, 10);
 
-  const getSubjectColor = (subjectId) =>
-    SUBJECTS.find((s) => s.id === subjectId)?.color ?? '#6B7280';
-
-  const assign = useCallback((folder) => {
+  const assign = useCallback((subject) => {
     if (!picker) return;
     const key = `${picker.day}-${picker.period}`;
-    const next = {
-      ...schedule,
-      [key]: { folderId: folder.id, folderName: folder.name, subject: folder.subject, color: getSubjectColor(folder.subject) },
-    };
+    const next = { ...schedule, [key]: { id: subject.id, label: subject.label, color: subject.color } };
     setSchedule(next);
     saveSchedule(next);
     setPicker(null);
@@ -46,6 +51,11 @@ export default function Schedule({ folders, onNavigate }) {
     setSchedule(next);
     saveSchedule(next);
   }, [schedule]);
+
+  const openPicker = useCallback((day, period, el) => {
+    const rect = el.getBoundingClientRect();
+    setPicker({ day, period, rect });
+  }, []);
 
   const exportIcs = useCallback(() => {
     const lines = [
@@ -67,7 +77,7 @@ export default function Schedule({ folders, onNavigate }) {
     const stamp = fmt(new Date());
 
     Object.entries(schedule).forEach(([key, cell], idx) => {
-      if (!cell?.folderName) return;
+      if (!cell?.label) return;
       const [d, p] = key.split('-').map(Number);
       const start = new Date(nextMonday);
       start.setDate(nextMonday.getDate() + d);
@@ -80,8 +90,7 @@ export default function Schedule({ folders, onNavigate }) {
         `DTSTAMP:${stamp}`,
         `DTSTART:${fmt(start)}`,
         `DTEND:${fmt(end)}`,
-        `SUMMARY:${cell.folderName.replace(/,/g, '\\,')}`,
-        `DESCRIPTION:${(cell.subject || '').replace(/,/g, '\\,')}`,
+        `SUMMARY:${cell.label.replace(/,/g, '\\,')}`,
         'END:VEVENT'
       );
     });
@@ -127,6 +136,22 @@ export default function Schedule({ folders, onNavigate }) {
         </button>
       </div>
 
+      {/* Subject legend */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+        {STUNDENPLAN_SUBJECTS.map((s) => (
+          <div key={s.id} style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '3px 10px', borderRadius: 20,
+            background: s.color + '18',
+            border: `1px solid ${s.color}44`,
+            fontSize: 11, fontWeight: 600, color: s.color,
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.color }} />
+            {s.label}
+          </div>
+        ))}
+      </div>
+
       <div style={{
         display: 'grid',
         gridTemplateColumns: `44px repeat(5, 1fr)`,
@@ -158,10 +183,8 @@ export default function Schedule({ folders, onNavigate }) {
                 <ScheduleCell
                   key={key}
                   cell={cell}
-                  onOpen={() => { if (cell) onNavigate(cell.subject, cell.folderId); }}
-                  onEdit={() => setPicker({ day: d, period: p })}
+                  onEdit={(el) => openPicker(d, p, el)}
                   onUnlink={() => unlink(d, p)}
-                  t={t}
                 />
               );
             }),
@@ -170,22 +193,24 @@ export default function Schedule({ folders, onNavigate }) {
       </div>
 
       {picker && (
-        <FolderPicker
-          folders={folders}
+        <SubjectPicker
+          rect={picker.rect}
+          current={schedule[`${picker.day}-${picker.period}`]?.id}
           onSelect={assign}
           onClose={() => setPicker(null)}
-          t={t}
         />
       )}
     </div>
   );
 }
 
-function ScheduleCell({ cell, onOpen, onEdit, onUnlink, t }) {
+function ScheduleCell({ cell, onEdit, onUnlink }) {
   const [hovered, setHovered] = useState(false);
+  const ref = useRef(null);
 
   return (
     <div
+      ref={ref}
       style={{
         minHeight: 56, borderRadius: 8,
         border: `1px solid ${cell ? cell.color + '44' : 'var(--c-border)'}`,
@@ -196,7 +221,7 @@ function ScheduleCell({ cell, onOpen, onEdit, onUnlink, t }) {
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={cell ? onOpen : onEdit}
+      onClick={() => onEdit(ref.current)}
     >
       {cell ? (
         <div style={{ padding: '8px 10px' }}>
@@ -205,9 +230,8 @@ function ScheduleCell({ cell, onOpen, onEdit, onUnlink, t }) {
             <div style={{
               fontSize: 11, fontWeight: 600, color: 'var(--c-text)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>{cell.folderName}</div>
+            }}>{cell.label}</div>
           </div>
-          <div style={{ fontSize: 10, color: 'var(--c-text-3)', marginTop: 2 }}>{cell.subject}</div>
         </div>
       ) : (
         <div style={{
@@ -223,7 +247,7 @@ function ScheduleCell({ cell, onOpen, onEdit, onUnlink, t }) {
           onClick={(e) => { e.stopPropagation(); onUnlink(); }}
           style={{
             position: 'absolute', top: 4, right: 4, width: 18, height: 18,
-            border: 'none', borderRadius: 4, background: 'var(--c-hover)',
+            border: 'none', borderRadius: 4, background: 'rgba(0,0,0,0.25)',
             color: '#fff', cursor: 'pointer', fontSize: 11, lineHeight: 1,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
@@ -233,89 +257,83 @@ function ScheduleCell({ cell, onOpen, onEdit, onUnlink, t }) {
   );
 }
 
-function FolderPicker({ folders, onSelect, onClose, t }) {
-  const [q, setQ] = useState('');
-  const filtered = q
-    ? folders.filter((f) => f.name.toLowerCase().includes(q.toLowerCase()) || f.subject.includes(q.toLowerCase()))
-    : folders;
+function SubjectPicker({ rect, current, onSelect, onClose }) {
+  const PICKER_W = 220;
+  const PICKER_H = 260;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  let left = rect.left;
+  let top = rect.bottom + 6;
+
+  if (left + PICKER_W > vw - 8) left = vw - PICKER_W - 8;
+  if (top + PICKER_H > vh - 8) top = rect.top - PICKER_H - 6;
+  left = Math.max(8, left);
 
   return createPortal(
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1200,
-        background: 'var(--c-overlay)', backdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24, fontFamily: '"DM Sans", -apple-system, sans-serif',
-      }}
-    >
+    <>
+      {/* backdrop */}
       <div
-        onClick={(e) => e.stopPropagation()}
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, zIndex: 1199 }}
+      />
+      {/* picker card */}
+      <div
         style={{
-          width: '100%', maxWidth: 440, maxHeight: '70vh',
-          background: 'var(--c-surface)', borderRadius: 14,
+          position: 'fixed',
+          left,
+          top,
+          width: PICKER_W,
+          zIndex: 1200,
+          background: 'var(--c-surface)',
           border: '1px solid var(--c-border-soft)',
+          borderRadius: 12,
           boxShadow: 'var(--c-shadow-modal)',
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          animation: 'lmSlideUp .18s cubic-bezier(.4,.7,.3,1)',
+          padding: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+          animation: 'lmSlideUp .15s cubic-bezier(.4,.7,.3,1)',
+          fontFamily: '"DM Sans", -apple-system, sans-serif',
         }}
       >
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--c-border)' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-text)', marginBottom: 10 }}>
-            {t('schedule.pick_folder')}
-          </div>
-          <input
-            autoFocus
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t('schedule.filter_placeholder')}
-            style={{
-              width: '100%', height: 32, border: '1px solid var(--c-border)', borderRadius: 7,
-              background: 'var(--c-input-bg)', color: 'var(--c-text)', fontSize: 12,
-              padding: '0 10px', outline: 'none', fontFamily: 'inherit',
-              boxSizing: 'border-box',
-            }}
-          />
-        </div>
-        <div style={{ overflowY: 'auto', flex: 1, padding: 8 }}>
-          {filtered.map((f) => {
-            const color = SUBJECTS.find((s) => s.id === f.subject)?.color ?? '#6B7280';
-            return (
-              <button
-                key={f.id}
-                onClick={() => onSelect(f)}
-                style={{
-                  width: '100%', textAlign: 'left', padding: '8px 10px',
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  border: 'none', background: 'transparent', cursor: 'pointer',
-                  borderRadius: 7, fontFamily: 'inherit', color: 'var(--c-text)',
-                  transition: 'background .1s',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <FolderIcon color={color} size={14} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {f.name}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--c-text-3)' }}>{f.subject} · {f.group_name}</div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-        <div style={{ padding: '10px 16px', borderTop: '1px solid var(--c-border)' }}>
-          <button onClick={onClose} style={{
-            height: 30, padding: '0 14px', border: '1px solid var(--c-border)', borderRadius: 7,
-            background: 'transparent', color: 'var(--c-text-2)', fontSize: 12,
-            cursor: 'pointer', fontFamily: 'inherit',
-          }}>
-            {t('cancel')}
-          </button>
-        </div>
+        {STUNDENPLAN_SUBJECTS.map((s) => {
+          const active = s.id === current;
+          return (
+            <button
+              key={s.id}
+              onClick={() => onSelect(s)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 9,
+                width: '100%', padding: '7px 10px',
+                border: active ? `1.5px solid ${s.color}` : '1.5px solid transparent',
+                borderRadius: 8,
+                background: active ? `${s.color}18` : 'transparent',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'background .1s, border-color .1s',
+              }}
+              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--c-hover)'; }}
+              onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+            >
+              <div style={{
+                width: 10, height: 10, borderRadius: '50%',
+                background: s.color, flexShrink: 0,
+              }} />
+              <span style={{
+                fontSize: 12, fontWeight: active ? 700 : 500,
+                color: active ? s.color : 'var(--c-text)',
+              }}>{s.label}</span>
+              {active && (
+                <svg style={{ marginLeft: 'auto', color: s.color }} width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </button>
+          );
+        })}
       </div>
-    </div>,
+    </>,
     document.body
   );
 }
