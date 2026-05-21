@@ -4,21 +4,71 @@ import { useLang } from '../contexts/LangContext';
 
 const DEBOUNCE_MS = 1500;
 
+const HIGHLIGHT_COLORS = [
+  '#FEF08A', '#BBF7D0', '#BAE6FD', '#F9A8D4', '#FED7AA', '#E9D5FF',
+];
+const TEXT_COLORS = [
+  '#DC2626', '#16A34A', '#2563EB', '#9333EA', '#F97316', '#0891B2', '#CA8A04',
+];
+
+// ── Markdown conversion ────────────────────────────────────────────────────
+function tryMarkdownConvert(key, editor) {
+  if (!editor) return false;
+  const sel = window.getSelection();
+  if (!sel?.rangeCount || !sel.isCollapsed) return false;
+
+  const range = sel.getRangeAt(0);
+  let node = range.startContainer;
+  while (node && node.parentNode !== editor) node = node.parentNode;
+  if (!node || node === editor || node.nodeType !== Node.ELEMENT_NODE) return false;
+
+  const block = node;
+  const text = block.textContent;
+
+  const clearBlock = () => {
+    const r = document.createRange();
+    r.selectNodeContents(block);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    document.execCommand('delete', false);
+  };
+
+  if (key === ' ') {
+    if (text === '#')   { clearBlock(); document.execCommand('formatBlock', false, 'h1'); return true; }
+    if (text === '##')  { clearBlock(); document.execCommand('formatBlock', false, 'h2'); return true; }
+    if (text === '###') { clearBlock(); document.execCommand('formatBlock', false, 'h3'); return true; }
+    if (text === '-' || text === '*') { clearBlock(); document.execCommand('insertUnorderedList', false); return true; }
+    if (/^1\.$/.test(text)) { clearBlock(); document.execCommand('insertOrderedList', false); return true; }
+    if (text === '>') { clearBlock(); document.execCommand('formatBlock', false, 'blockquote'); return true; }
+    if (text === '```') { clearBlock(); document.execCommand('formatBlock', false, 'pre'); return true; }
+  }
+
+  if (key === 'Enter') {
+    if (/^-{3,}$/.test(text.trim())) {
+      clearBlock();
+      document.execCommand('insertHorizontalRule', false);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
 export default function NotesEditor({ folderId, folderName, initialContent, accent = '#E8472A' }) {
   const { t } = useLang();
   const editorRef = useRef(null);
   const timerRef = useRef(null);
-  const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved
+  const [saveStatus, setSaveStatus] = useState('idle');
   const [activeFormats, setActiveFormats] = useState({});
+  const [showHL, setShowHL] = useState(false);
+  const [showTC, setShowTC] = useState(false);
 
-  // Load content when folder changes — flush pending save first
   useEffect(() => {
     if (!editorRef.current) return;
     editorRef.current.innerHTML = initialContent || '';
     setSaveStatus('idle');
-
     return () => {
-      // If timer is pending when folder changes, save immediately (fire & forget)
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
@@ -29,7 +79,6 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
     };
   }, [folderId]);
 
-  // Track active formats on selection change
   useEffect(() => {
     const update = () => {
       setActiveFormats({
@@ -48,18 +97,22 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
     return () => document.removeEventListener('selectionchange', update);
   }, []);
 
+  // close color pickers on outside click
+  useEffect(() => {
+    const handler = () => { setShowHL(false); setShowTC(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   const handleInput = useCallback(() => {
     clearTimeout(timerRef.current);
     setSaveStatus('saving');
     timerRef.current = setTimeout(async () => {
       if (!editorRef.current) return;
-      const content = editorRef.current.innerHTML;
       try {
-        await saveFolderNotes(folderId, content);
+        await saveFolderNotes(folderId, editorRef.current.innerHTML);
         setSaveStatus('saved');
-      } catch {
-        setSaveStatus('idle');
-      }
+      } catch { setSaveStatus('idle'); }
     }, DEBOUNCE_MS);
   }, [folderId]);
 
@@ -73,12 +126,12 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
         h3{font-size:1.15em;font-weight:600;margin:.4em 0 .2em}p{margin:.3em 0}
         ul{list-style:disc;padding-left:1.6em;margin:.3em 0}ol{list-style:decimal;padding-left:1.6em;margin:.3em 0}
         li{margin:.15em 0}blockquote{border-left:3px solid #ddd;margin:.5em 0;padding-left:1em;color:#555}
+        pre{background:#f4f4f5;border-radius:6px;padding:12px 14px;font-family:monospace;font-size:.9em;overflow-x:auto}
+        code{background:#f4f4f5;padding:1px 4px;border-radius:3px;font-family:monospace;font-size:.9em}
+        hr{border:none;border-top:2px solid #e5e7eb;margin:1.2em 0}
         @page{margin:2cm}
       </style></head><body>${content}</body></html>`);
-    w.document.close();
-    w.focus();
-    w.print();
-    w.close();
+    w.document.close(); w.focus(); w.print(); w.close();
   }, [folderName]);
 
   const exec = useCallback((cmd, value = null) => {
@@ -87,27 +140,64 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
     editorRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
   }, []);
 
-  const formatBlock = useCallback((tag) => {
+  const fmtBlock = useCallback((tag) => {
     editorRef.current?.focus();
     document.execCommand('formatBlock', false, tag);
     editorRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
   }, []);
 
-  const handleKeyDown = (e) => {
-    // Ctrl+B, I, U shortcuts already handled by browser in contenteditable
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-      // execCommand undo is handled by browser
+  const insertLink = useCallback(() => {
+    const sel = window.getSelection();
+    const defaultText = sel?.toString() || '';
+    const url = window.prompt('URL:', 'https://');
+    if (!url?.trim()) return;
+    editorRef.current?.focus();
+    if (defaultText) {
+      document.execCommand('createLink', false, url);
+    } else {
+      document.execCommand('insertHTML', false, `<a href="${url}" target="_blank" rel="noreferrer">${url}</a>`);
     }
-  };
+    editorRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
+  }, []);
 
-  const btnActive = (key) => activeFormats[key];
+  const insertCheckbox = useCallback(() => {
+    editorRef.current?.focus();
+    document.execCommand('insertHTML', false,
+      '<div class="lm-task"><input type="checkbox"><span>Aufgabe</span></div>');
+    editorRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
+  }, []);
+
+  const insertInlineCode = useCallback(() => {
+    const sel = window.getSelection();
+    const text = sel?.toString() || 'code';
+    editorRef.current?.focus();
+    document.execCommand('insertHTML', false, `<code>${text}</code>`);
+    editorRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
+  }, []);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      const converted = tryMarkdownConvert(e.key, editorRef.current);
+      if (converted) {
+        e.preventDefault();
+        editorRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+    // Ctrl+K → insert link
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      insertLink();
+    }
+  }, [insertLink]);
+
+  const on = (key) => activeFormats[key];
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--c-bg)' }}>
       {/* Toolbar */}
       <div style={{
         background: 'var(--c-surface)', borderBottom: '1px solid var(--c-border)',
-        padding: '6px 10px', display: 'flex', alignItems: 'center',
+        padding: '5px 10px', display: 'flex', alignItems: 'center',
         gap: 2, flexWrap: 'wrap', flexShrink: 0,
       }}>
         {/* Undo / Redo */}
@@ -120,31 +210,14 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
 
         <Divider />
 
-        {/* Bold / Italic / Underline / Strike */}
-        <ToolBtn title={t('notes.bold')} active={btnActive('bold')} accent={accent} onClick={() => exec('bold')}>
-          <span style={{ fontWeight: 700, fontSize: 12 }}>B</span>
-        </ToolBtn>
-        <ToolBtn title={t('notes.italic')} active={btnActive('italic')} accent={accent} onClick={() => exec('italic')}>
-          <span style={{ fontStyle: 'italic', fontSize: 12 }}>I</span>
-        </ToolBtn>
-        <ToolBtn title={t('notes.underline')} active={btnActive('underline')} accent={accent} onClick={() => exec('underline')}>
-          <span style={{ textDecoration: 'underline', fontSize: 12 }}>U</span>
-        </ToolBtn>
-        <ToolBtn title={t('notes.strikethrough')} active={btnActive('strikeThrough')} accent={accent} onClick={() => exec('strikeThrough')}>
-          <span style={{ textDecoration: 'line-through', fontSize: 12 }}>S</span>
-        </ToolBtn>
-
-        <Divider />
-
-        {/* Format block */}
+        {/* Format select */}
         <select
-          onChange={(e) => { formatBlock(e.target.value); e.target.value = ''; }}
+          onChange={(e) => { fmtBlock(e.target.value); e.target.value = ''; }}
           defaultValue=""
           style={{
             height: 26, border: '1px solid var(--c-border)', borderRadius: 5,
             background: 'var(--c-input-bg)', color: 'var(--c-text)',
-            fontSize: 11, padding: '0 6px', cursor: 'pointer', outline: 'none',
-            fontFamily: 'inherit',
+            fontSize: 11, padding: '0 6px', cursor: 'pointer', outline: 'none', fontFamily: 'inherit',
           }}
         >
           <option value="" disabled>{t('notes.format_normal')}</option>
@@ -152,39 +225,147 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
           <option value="h1">{t('notes.format_h1')}</option>
           <option value="h2">{t('notes.format_h2')}</option>
           <option value="h3">{t('notes.format_h3')}</option>
+          <option value="blockquote">Zitat</option>
+          <option value="pre">Code-Block</option>
         </select>
 
         <Divider />
 
+        {/* B / I / U / S */}
+        <ToolBtn title={t('notes.bold')} active={on('bold')} accent={accent} onClick={() => exec('bold')}>
+          <span style={{ fontWeight: 700, fontSize: 12 }}>B</span>
+        </ToolBtn>
+        <ToolBtn title={t('notes.italic')} active={on('italic')} accent={accent} onClick={() => exec('italic')}>
+          <span style={{ fontStyle: 'italic', fontSize: 12 }}>I</span>
+        </ToolBtn>
+        <ToolBtn title={t('notes.underline')} active={on('underline')} accent={accent} onClick={() => exec('underline')}>
+          <span style={{ textDecoration: 'underline', fontSize: 12 }}>U</span>
+        </ToolBtn>
+        <ToolBtn title={t('notes.strikethrough')} active={on('strikeThrough')} accent={accent} onClick={() => exec('strikeThrough')}>
+          <span style={{ textDecoration: 'line-through', fontSize: 12 }}>S</span>
+        </ToolBtn>
+        {/* Inline code */}
+        <ToolBtn title="Code (inline)" onClick={insertInlineCode}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M4.5 3L1 6.5 4.5 10M8.5 3L12 6.5 8.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </ToolBtn>
+
+        <Divider />
+
+        {/* Text color */}
+        <div style={{ position: 'relative' }} onMouseDown={(e) => e.stopPropagation()}>
+          <ToolBtn title="Textfarbe" onClick={() => { setShowTC((v) => !v); setShowHL(false); }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>A</span>
+              <div style={{ width: 12, height: 3, borderRadius: 1, background: accent }} />
+            </div>
+          </ToolBtn>
+          {showTC && (
+            <ColorPicker
+              colors={TEXT_COLORS}
+              onSelect={(c) => { exec('foreColor', c || 'var(--c-text)'); setShowTC(false); }}
+              extraLabel="Standard"
+              extraColor=""
+            />
+          )}
+        </div>
+
+        {/* Highlight */}
+        <div style={{ position: 'relative' }} onMouseDown={(e) => e.stopPropagation()}>
+          <ToolBtn title="Markieren" onClick={() => { setShowHL((v) => !v); setShowTC(false); }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+              <svg width="10" height="11" viewBox="0 0 10 11" fill="none">
+                <path d="M2 8l1.5-4 3.5 3.5L3.5 9z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+                <path d="M5 5.5l2-2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              </svg>
+              <div style={{ width: 12, height: 3, borderRadius: 1, background: '#FEF08A' }} />
+            </div>
+          </ToolBtn>
+          {showHL && (
+            <ColorPicker
+              colors={HIGHLIGHT_COLORS}
+              onSelect={(c) => {
+                exec('hiliteColor', c || 'transparent');
+                setShowHL(false);
+              }}
+              extraLabel="Keine"
+              extraColor="transparent"
+              showExtra
+            />
+          )}
+        </div>
+
+        <Divider />
+
         {/* Align */}
-        <ToolBtn title={t('notes.align_left')} active={btnActive('justifyLeft')} accent={accent} onClick={() => exec('justifyLeft')}>
+        <ToolBtn title={t('notes.align_left')} active={on('justifyLeft')} accent={accent} onClick={() => exec('justifyLeft')}>
           <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M1 4h7M1 7h11M1 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
-        <ToolBtn title={t('notes.align_center')} active={btnActive('justifyCenter')} accent={accent} onClick={() => exec('justifyCenter')}>
+        <ToolBtn title={t('notes.align_center')} active={on('justifyCenter')} accent={accent} onClick={() => exec('justifyCenter')}>
           <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M3 4h7M1 7h11M3 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
-        <ToolBtn title={t('notes.align_right')} active={btnActive('justifyRight')} accent={accent} onClick={() => exec('justifyRight')}>
+        <ToolBtn title={t('notes.align_right')} active={on('justifyRight')} accent={accent} onClick={() => exec('justifyRight')}>
           <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M5 4h7M1 7h11M5 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
 
         <Divider />
 
         {/* Lists */}
-        <ToolBtn title={t('notes.bullets')} active={btnActive('insertUnorderedList')} accent={accent} onClick={() => exec('insertUnorderedList')}>
+        <ToolBtn title={t('notes.bullets')} active={on('insertUnorderedList')} accent={accent} onClick={() => exec('insertUnorderedList')}>
           <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><circle cx="1.5" cy="2" r="1" fill="currentColor"/><circle cx="1.5" cy="5.5" r="1" fill="currentColor"/><circle cx="1.5" cy="9" r="1" fill="currentColor"/><path d="M4 2h8M4 5.5h8M4 9h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
-        <ToolBtn title={t('notes.numbered_list')} active={btnActive('insertOrderedList')} accent={accent} onClick={() => exec('insertOrderedList')}>
-          <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><text x="0" y="3.5" style={{fontSize:4, fontFamily:'monospace'}} fill="currentColor">1.</text><text x="0" y="7" style={{fontSize:4, fontFamily:'monospace'}} fill="currentColor">2.</text><text x="0" y="10.5" style={{fontSize:4, fontFamily:'monospace'}} fill="currentColor">3.</text><path d="M5 2h7M5 5.5h7M5 9h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+        <ToolBtn title={t('notes.numbered_list')} active={on('insertOrderedList')} accent={accent} onClick={() => exec('insertOrderedList')}>
+          <svg width="13" height="11" viewBox="0 0 13 11" fill="none">
+            <text x="0" y="3.5" style={{fontSize:4, fontFamily:'monospace'}} fill="currentColor">1.</text>
+            <text x="0" y="7" style={{fontSize:4, fontFamily:'monospace'}} fill="currentColor">2.</text>
+            <text x="0" y="10.5" style={{fontSize:4, fontFamily:'monospace'}} fill="currentColor">3.</text>
+            <path d="M5 2h7M5 5.5h7M5 9h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+        </ToolBtn>
+        {/* Checkbox/task */}
+        <ToolBtn title="Aufgabe (Checkbox)" onClick={insertCheckbox}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/>
+            <path d="M3.5 6.5l2 2 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </ToolBtn>
 
         <Divider />
 
-        {/* Clear formatting */}
+        {/* Indent / Outdent */}
+        <ToolBtn title="Einrücken" onClick={() => exec('indent')}>
+          <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M5 4h7M1 7h11M5 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M1 5.5l2.5-2v4z" fill="currentColor"/></svg>
+        </ToolBtn>
+        <ToolBtn title="Ausrücken" onClick={() => exec('outdent')}>
+          <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M5 4h7M1 7h11M5 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M4 5.5L1.5 3.5v4z" fill="currentColor"/></svg>
+        </ToolBtn>
+
+        <Divider />
+
+        {/* Link */}
+        <ToolBtn title="Link (⌘K)" onClick={insertLink}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M5 8l-1.5 1.5a2.5 2.5 0 0 1-3.536-3.536L2.5 3.5A2.5 2.5 0 0 1 5.914 4.086" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            <path d="M8 5l1.5-1.5a2.5 2.5 0 0 1 3.536 3.536L11.5 8.5A2.5 2.5 0 0 1 8.086 7.914" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            <path d="M4.5 8.5l4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+        </ToolBtn>
+
+        {/* HR */}
+        <ToolBtn title="Trennlinie" onClick={() => exec('insertHorizontalRule')}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M1 6.5h11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+            <path d="M4 3.5h5M4 9.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeOpacity="0.4"/>
+          </svg>
+        </ToolBtn>
+
+        <Divider />
+
+        {/* Clear format */}
         <ToolBtn title={t('notes.clear_format')} onClick={() => exec('removeFormat')}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M8 3l1 1-5 5-1-1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M4 10h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
         </ToolBtn>
-
-        <Divider />
 
         {/* Print */}
         <ToolBtn title={t('notes.print')} onClick={handlePrint}>
@@ -203,6 +384,27 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
         </div>
       </div>
 
+      {/* Markdown hint bar */}
+      <div style={{
+        background: 'var(--c-surface-2)', borderBottom: '1px solid var(--c-border)',
+        padding: '3px 14px', display: 'flex', gap: 12, flexWrap: 'wrap', flexShrink: 0,
+      }}>
+        {[
+          ['# ', 'H1'], ['## ', 'H2'], ['### ', 'H3'],
+          ['- ', 'Liste'], ['1. ', '1.'], ['> ', 'Zitat'],
+          ['``` ', 'Code'], ['--- ↩', 'Linie'],
+        ].map(([md, label]) => (
+          <span key={md} style={{ fontSize: 10, color: 'var(--c-text-3)', display: 'flex', gap: 4, alignItems: 'center' }}>
+            <code style={{
+              background: 'var(--c-surface)', border: '1px solid var(--c-border)',
+              borderRadius: 3, padding: '0 4px', fontSize: 9,
+              fontFamily: '"DM Mono", monospace', color: 'var(--c-text-2)',
+            }}>{md}</code>
+            <span>{label}</span>
+          </span>
+        ))}
+      </div>
+
       {/* Editor */}
       <div
         ref={editorRef}
@@ -219,6 +421,46 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
           fontFamily: '"DM Sans", -apple-system, sans-serif',
         }}
       />
+    </div>
+  );
+}
+
+function ColorPicker({ colors, onSelect, extraLabel, extraColor, showExtra }) {
+  return (
+    <div
+      onMouseDown={(e) => e.stopPropagation()}
+      style={{
+        position: 'absolute', top: 32, left: 0, zIndex: 1200,
+        background: 'var(--c-surface)', border: '1px solid var(--c-border-soft)',
+        borderRadius: 8, padding: 8, boxShadow: 'var(--c-shadow-pop)',
+        display: 'flex', flexWrap: 'wrap', gap: 4, width: 120,
+        animation: 'lmSlideUp .12s ease-out',
+        fontFamily: '"DM Sans", -apple-system, sans-serif',
+      }}
+    >
+      {colors.map((c) => (
+        <button
+          key={c}
+          title={c}
+          onMouseDown={() => onSelect(c)}
+          style={{
+            width: 20, height: 20, borderRadius: 4, cursor: 'pointer',
+            border: '1px solid var(--c-border)',
+            background: c === 'transparent' ? 'var(--c-surface-2)' : c,
+            flexShrink: 0,
+          }}
+        />
+      ))}
+      {showExtra && (
+        <button
+          onMouseDown={() => onSelect(extraColor)}
+          style={{
+            height: 20, padding: '0 6px', borderRadius: 4, cursor: 'pointer',
+            border: '1px solid var(--c-border)', background: 'transparent',
+            fontSize: 10, color: 'var(--c-text-2)', fontFamily: 'inherit',
+          }}
+        >{extraLabel}</button>
+      )}
     </div>
   );
 }

@@ -122,8 +122,18 @@ button, input, select, textarea {
 .lm-notes-editor ul { list-style: disc; padding-left: 1.6em; margin: 0.3em 0; }
 .lm-notes-editor ol { list-style: decimal; padding-left: 1.6em; margin: 0.3em 0; }
 .lm-notes-editor li { margin: 0.15em 0; }
-.lm-notes-editor a { color: #3B82F6; }
-.lm-notes-editor blockquote { border-left: 3px solid var(--c-border); margin: 0.5em 0; padding-left: 1em; color: var(--c-text-2); }
+.lm-notes-editor blockquote { border-left: 3px solid var(--c-border); margin: 0.5em 0; padding-left: 1em; color: var(--c-text-2); font-style: italic; }
+.lm-notes-editor pre { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 7px; padding: 12px 14px; font-family: "DM Mono", ui-monospace, monospace; font-size: 0.88em; overflow-x: auto; margin: 0.5em 0; white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
+.lm-notes-editor code { background: var(--c-surface-2); border: 1px solid var(--c-border); padding: 1px 5px; border-radius: 4px; font-family: "DM Mono", ui-monospace, monospace; font-size: 0.88em; }
+.lm-notes-editor pre code { background: none; border: none; padding: 0; }
+.lm-notes-editor hr { border: none; border-top: 2px solid var(--c-border); margin: 1.2em 0; }
+.lm-notes-editor a { color: #3B82F6; text-decoration: underline; }
+.lm-notes-editor .lm-task { display: flex; align-items: center; gap: 8px; margin: 0.2em 0; cursor: pointer; }
+.lm-notes-editor .lm-task input[type="checkbox"] { width: 15px; height: 15px; flex-shrink: 0; accent-color: var(--c-accent, #3B82F6); cursor: pointer; }
+.lm-notes-editor .lm-task input[type="checkbox"]:checked + span { text-decoration: line-through; opacity: 0.6; }
+.lm-notes-editor table { border-collapse: collapse; width: 100%; margin: 0.5em 0; }
+.lm-notes-editor th, .lm-notes-editor td { border: 1px solid var(--c-border); padding: 6px 10px; text-align: left; font-size: 0.93em; }
+.lm-notes-editor th { background: var(--c-surface-2); font-weight: 600; }
 
 [data-theme="dark"] .lm-muted-strong {
   color: var(--c-text-2) !important;
