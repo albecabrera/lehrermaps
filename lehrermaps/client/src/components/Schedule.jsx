@@ -327,7 +327,7 @@ function BreakDayCell({ active, onToggle }) {
 
 function SubjectPicker({ rect, current, onSelect, onClose }) {
   const PICKER_W = 220;
-  const PICKER_H = 260;
+  const PICKER_MAX_H = Math.min(360, window.innerHeight - 80);
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
@@ -335,7 +335,7 @@ function SubjectPicker({ rect, current, onSelect, onClose }) {
   let top = rect.bottom + 6;
 
   if (left + PICKER_W > vw - 8) left = vw - PICKER_W - 8;
-  if (top + PICKER_H > vh - 8) top = rect.top - PICKER_H - 6;
+  if (top + PICKER_MAX_H > vh - 8) top = rect.top - PICKER_MAX_H - 6;
   left = Math.max(8, left);
 
   return createPortal(
@@ -352,6 +352,8 @@ function SubjectPicker({ rect, current, onSelect, onClose }) {
           left,
           top,
           width: PICKER_W,
+          maxHeight: PICKER_MAX_H,
+          overflowY: 'auto',
           zIndex: 1200,
           background: 'var(--c-surface)',
           border: '1px solid var(--c-border-soft)',
