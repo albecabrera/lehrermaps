@@ -127,6 +127,15 @@ export const translations = {
     'notes.bullets': 'Aufzählungsliste',
     'notes.numbered_list': 'Nummerierte Liste',
     'notes.clear_format': 'Formatierung entfernen',
+    'notes.more_tools': 'Weitere Werkzeuge',
+    'notes.saved_ago': 'vor {{n}} Sek. gespeichert',
+    'table.filter_all': 'Alle',
+    'table.filter_pdf': 'PDF',
+    'table.filter_img': 'Bild',
+    'table.filter_doc': 'Dokument',
+    'table.filter_video': 'Video',
+    'table.filter_audio': 'Audio',
+    'qr.student_access': 'QR: Schüler-Zugang',
 
     // Modals
     'modal.new_folder.title': 'Neuer Ordner',
@@ -429,6 +438,15 @@ export const translations = {
     'preview.iframe_title': 'Vista previa: {{name}}',
     'preview.truncated': 'Vista previa limitada a 60.000 caracteres – descargá el archivo para verlo completo.',
     'notes.print': 'Imprimir',
+    'notes.more_tools': 'Más herramientas',
+    'notes.saved_ago': 'guardado hace {{n}} seg.',
+    'table.filter_all': 'Todo',
+    'table.filter_pdf': 'PDF',
+    'table.filter_img': 'Imagen',
+    'table.filter_doc': 'Documento',
+    'table.filter_video': 'Video',
+    'table.filter_audio': 'Audio',
+    'qr.student_access': 'QR: Acceso alumnos',
 
     // ZIP
     'folder.download_zip': 'Todo como ZIP',

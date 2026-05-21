@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { saveFolderNotes } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 
@@ -98,6 +98,9 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
   const [activeFormats, setActiveFormats] = useState({});
   const [showHL, setShowHL] = useState(false);
   const [showTC, setShowTC] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const savedAtRef = useRef(null);
+  const [savedAgo, setSavedAgo] = useState(null);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -132,9 +135,19 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
     return () => document.removeEventListener('selectionchange', update);
   }, []);
 
+  useEffect(() => {
+    if (saveStatus !== 'saved') return;
+    const id = setInterval(() => {
+      if (savedAtRef.current) {
+        setSavedAgo(Math.round((Date.now() - savedAtRef.current) / 1000));
+      }
+    }, 3000);
+    return () => clearInterval(id);
+  }, [saveStatus]);
+
   // close color pickers on outside click
   useEffect(() => {
-    const handler = () => { setShowHL(false); setShowTC(false); };
+    const handler = () => { setShowHL(false); setShowTC(false); setShowMore(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
@@ -147,6 +160,8 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
       try {
         await saveFolderNotes(folderId, editorRef.current.innerHTML);
         setSaveStatus('saved');
+        savedAtRef.current = Date.now();
+        setSavedAgo(0);
       } catch { setSaveStatus('idle'); }
     }, DEBOUNCE_MS);
   }, [folderId]);
@@ -340,19 +355,6 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
 
         <Divider />
 
-        {/* Align */}
-        <ToolBtn title={t('notes.align_left')} active={on('justifyLeft')} accent={accent} onClick={() => exec('justifyLeft')}>
-          <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M1 4h7M1 7h11M1 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-        </ToolBtn>
-        <ToolBtn title={t('notes.align_center')} active={on('justifyCenter')} accent={accent} onClick={() => exec('justifyCenter')}>
-          <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M3 4h7M1 7h11M3 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-        </ToolBtn>
-        <ToolBtn title={t('notes.align_right')} active={on('justifyRight')} accent={accent} onClick={() => exec('justifyRight')}>
-          <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M5 4h7M1 7h11M5 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-        </ToolBtn>
-
-        <Divider />
-
         {/* Lists */}
         <ToolBtn title={t('notes.bullets')} active={on('insertUnorderedList')} accent={accent} onClick={() => exec('insertUnorderedList')}>
           <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><circle cx="1.5" cy="2" r="1" fill="currentColor"/><circle cx="1.5" cy="5.5" r="1" fill="currentColor"/><circle cx="1.5" cy="9" r="1" fill="currentColor"/><path d="M4 2h8M4 5.5h8M4 9h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
@@ -364,23 +366,6 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
             <text x="0" y="10.5" style={{fontSize:4, fontFamily:'monospace'}} fill="currentColor">3.</text>
             <path d="M5 2h7M5 5.5h7M5 9h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
           </svg>
-        </ToolBtn>
-        {/* Checkbox/task */}
-        <ToolBtn title="Aufgabe (Checkbox)" onClick={insertCheckbox}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/>
-            <path d="M3.5 6.5l2 2 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </ToolBtn>
-
-        <Divider />
-
-        {/* Indent / Outdent */}
-        <ToolBtn title="Einrücken" onClick={() => exec('indent')}>
-          <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M5 4h7M1 7h11M5 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M1 5.5l2.5-2v4z" fill="currentColor"/></svg>
-        </ToolBtn>
-        <ToolBtn title="Ausrücken" onClick={() => exec('outdent')}>
-          <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M5 4h7M1 7h11M5 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M4 5.5L1.5 3.5v4z" fill="currentColor"/></svg>
         </ToolBtn>
 
         <Divider />
@@ -394,35 +379,74 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
           </svg>
         </ToolBtn>
 
-        {/* HR */}
-        <ToolBtn title="Trennlinie" onClick={() => exec('insertHorizontalRule')}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <path d="M1 6.5h11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-            <path d="M4 3.5h5M4 9.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeOpacity="0.4"/>
-          </svg>
-        </ToolBtn>
-
         <Divider />
 
-        {/* Clear format */}
-        <ToolBtn title={t('notes.clear_format')} onClick={() => exec('removeFormat')}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M8 3l1 1-5 5-1-1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M4 10h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-        </ToolBtn>
-
-        {/* Print */}
-        <ToolBtn title={t('notes.print')} onClick={handlePrint}>
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <rect x="2" y="5" width="9" height="6" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-            <path d="M4 5V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="1.3"/>
-            <path d="M4 9h5M4 11h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-            <circle cx="9.5" cy="7" r=".75" fill="currentColor"/>
-          </svg>
-        </ToolBtn>
+        {/* More (overflow) */}
+        <div style={{ position: 'relative' }} onMouseDown={(e) => e.stopPropagation()}>
+          <ToolBtn title={t('notes.more_tools')} onClick={() => setShowMore((v) => !v)}>
+            <span style={{ fontSize: 14, letterSpacing: 1, lineHeight: 1 }}>···</span>
+          </ToolBtn>
+          {showMore && (
+            <div
+              onMouseDown={(e) => e.stopPropagation()}
+              style={{
+                position: 'absolute', top: 32, left: 0, zIndex: 1200,
+                background: 'var(--c-surface)', border: '1px solid var(--c-border-soft)',
+                borderRadius: 8, padding: '6px 8px', boxShadow: 'var(--c-shadow-pop)',
+                display: 'flex', flexWrap: 'wrap', gap: 2, width: 160,
+                animation: 'lmSlideUp .12s ease-out',
+              }}
+            >
+              <ToolBtn title={t('notes.align_left')} active={on('justifyLeft')} accent={accent} onClick={() => exec('justifyLeft')}>
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M1 4h7M1 7h11M1 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+              </ToolBtn>
+              <ToolBtn title={t('notes.align_center')} active={on('justifyCenter')} accent={accent} onClick={() => exec('justifyCenter')}>
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M3 4h7M1 7h11M3 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+              </ToolBtn>
+              <ToolBtn title={t('notes.align_right')} active={on('justifyRight')} accent={accent} onClick={() => exec('justifyRight')}>
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M5 4h7M1 7h11M5 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+              </ToolBtn>
+              <ToolBtn title="Einrücken" onClick={() => exec('indent')}>
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M5 4h7M1 7h11M5 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M1 5.5l2.5-2v4z" fill="currentColor"/></svg>
+              </ToolBtn>
+              <ToolBtn title="Ausrücken" onClick={() => exec('outdent')}>
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none"><path d="M1 1h11M5 4h7M1 7h11M5 10h7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M4 5.5L1.5 3.5v4z" fill="currentColor"/></svg>
+              </ToolBtn>
+              <ToolBtn title="Aufgabe (Checkbox)" onClick={() => { insertCheckbox(); setShowMore(false); }}>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/>
+                  <path d="M3.5 6.5l2 2 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </ToolBtn>
+              <ToolBtn title="Trennlinie" onClick={() => { exec('insertHorizontalRule'); setShowMore(false); }}>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M1 6.5h11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                  <path d="M4 3.5h5M4 9.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeOpacity="0.4"/>
+                </svg>
+              </ToolBtn>
+              <ToolBtn title={t('notes.clear_format')} onClick={() => { exec('removeFormat'); setShowMore(false); }}>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2l9 9M8 3l1 1-5 5-1-1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M4 10h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+              </ToolBtn>
+              <ToolBtn title={t('notes.print')} onClick={() => { handlePrint(); setShowMore(false); }}>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <rect x="2" y="5" width="9" height="6" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                  <path d="M4 5V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="1.3"/>
+                  <path d="M4 9h5M4 11h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                  <circle cx="9.5" cy="7" r=".75" fill="currentColor"/>
+                </svg>
+              </ToolBtn>
+            </div>
+          )}
+        </div>
 
         {/* Save status */}
         <div style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', whiteSpace: 'nowrap' }}>
           {saveStatus === 'saving' && t('notes.saving')}
-          {saveStatus === 'saved' && t('notes.saved')}
+          {saveStatus === 'saved' && (
+            savedAgo !== null && savedAgo > 0
+              ? t('notes.saved_ago', { n: savedAgo })
+              : t('notes.saved')
+          )}
         </div>
       </div>
 

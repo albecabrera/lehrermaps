@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import FileBadge from './FileBadge';
 import { detectKind } from '../constants/structure';
 import { downloadFile, publicFileUrl } from '../lib/api';
@@ -22,10 +22,30 @@ export default function FileTable({
   const [sortBy, setSortBy] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
   const [dndMode, setDndMode] = useState(false);
+  const [filterType, setFilterType] = useState('all');
 
-  const filtered = query
+  const TYPE_GROUPS = useMemo(() => ({
+    pdf: (k) => k === 'pdf',
+    img: (k) => k === 'img',
+    doc: (k) => ['doc', 'slide', 'sheet', 'text', 'markdown', 'code', 'notebook'].includes(k),
+    video: (k) => k === 'video',
+    audio: (k) => k === 'audio',
+  }), []);
+
+  const byQuery = query
     ? files.filter((f) => !hiddenIds.has(f.id) && f.original_name.toLowerCase().includes(query.toLowerCase()))
     : files.filter((f) => !hiddenIds.has(f.id));
+
+  const filtered = filterType === 'all'
+    ? byQuery
+    : byQuery.filter((f) => TYPE_GROUPS[filterType]?.(detectKind(f.original_name)));
+
+  const availableTypes = useMemo(() => {
+    const kinds = new Set(files.map((f) => detectKind(f.original_name)));
+    return ['pdf', 'img', 'doc', 'video', 'audio'].filter((t) =>
+      files.some((f) => TYPE_GROUPS[t]?.(detectKind(f.original_name)))
+    );
+  }, [files, TYPE_GROUPS]);
 
   const sorted = [...filtered].sort((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;
@@ -143,6 +163,29 @@ export default function FileTable({
             </button>
           </div>
 
+          {availableTypes.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, padding: '0 6px 10px', flexWrap: 'wrap' }}>
+              {['all', ...availableTypes].map((type) => {
+                const on = filterType === type;
+                const label = type === 'all' ? t('table.filter_all') : t(`table.filter_${type}`);
+                return (
+                  <button
+                    key={type}
+                    onClick={() => setFilterType(type)}
+                    style={{
+                      height: 22, padding: '0 9px', borderRadius: 11,
+                      border: `1px solid ${on ? 'var(--c-text-3)' : 'var(--c-border)'}`,
+                      background: on ? 'var(--c-text-3)' : 'transparent',
+                      color: on ? 'var(--c-surface)' : 'var(--c-text-3)',
+                      fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                      letterSpacing: 0.3, transition: 'all .1s',
+                    }}
+                  >{label}</button>
+                );
+              })}
+            </div>
+          )}
+
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
@@ -163,6 +206,7 @@ export default function FileTable({
               <button
                 key={file.id}
                 onClick={() => onFileSelect(file)}
+                onDoubleClick={() => onRename?.(file)}
                 onContextMenu={(e) => handleContextMenu(e, file)}
                 draggable={dndMode}
                 onDragStart={dndMode ? (e) => {

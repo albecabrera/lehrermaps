@@ -16,7 +16,8 @@ const FOLDER_WITH_COUNT = `
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.execute(`
-      SELECT f.*, COUNT(fi.id) AS file_count, COALESCE(SUM(fi.size_bytes), 0) AS total_size_bytes
+      SELECT f.*, COUNT(fi.id) AS file_count, COALESCE(SUM(fi.size_bytes), 0) AS total_size_bytes,
+        (SELECT fi2.id FROM files fi2 WHERE fi2.folder_id = f.id AND fi2.mime_type LIKE 'image/%' ORDER BY fi2.uploaded_at DESC LIMIT 1) AS thumbnail_file_id
       FROM folders f
       LEFT JOIN files fi ON fi.folder_id = f.id
       GROUP BY f.id

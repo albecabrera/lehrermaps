@@ -10,6 +10,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import ConfirmModal from '../components/ConfirmModal';
 import DeadlineModal from '../components/DeadlineModal';
 import GlobalSearch from '../components/GlobalSearch';
+import QRModal from '../components/QRModal';
 import KeyboardHelp from '../components/KeyboardHelp';
 import Schedule from '../components/Schedule';
 import { SUBJECTS } from '../constants/structure';
@@ -18,7 +19,7 @@ import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
 import { useRecents } from '../hooks/useRecents';
 import { useRecentFiles } from '../hooks/useRecentFiles';
-import { downloadFolderZip, downloadFilesZip } from '../lib/api';
+import { downloadFolderZip, downloadFilesZip, viewFile } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
@@ -56,6 +57,7 @@ export default function App({ onLogout }) {
   const [dropOver, setDropOver] = useState(false);
   const [dropFiles, setDropFiles] = useState(null);
   const [dropUploading, setDropUploading] = useState(null);
+  const [qrOpen, setQrOpen] = useState(false);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, setColor: setFolderColor, reload: reloadFolders } = useFolders();
@@ -827,6 +829,28 @@ export default function App({ onLogout }) {
                     >
                       ⏰ {activeFolder?.due_at ? new Date(activeFolder.due_at).toLocaleDateString('de-DE') : t('table.deadline')}
                     </button>
+                    <button
+                      onClick={() => setQrOpen(true)}
+                      title={t('qr.student_access')}
+                      style={{
+                        marginLeft: 8, height: 26, padding: '0 10px',
+                        border: '1px solid var(--c-border)', borderRadius: 6,
+                        background: 'transparent', color: 'var(--c-text-3)',
+                        fontSize: 11, fontWeight: 500, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        fontFamily: 'inherit', transition: 'background .1s, color .1s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; e.currentTarget.style.color = 'var(--c-text)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--c-text-3)'; }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
+                        <rect x="7" y="1" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
+                        <rect x="1" y="7" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
+                        <path d="M7 8h1v1H7zM9 8h2M9 10h2M7 10h1" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                      </svg>
+                      QR
+                    </button>
                   </div>
                 </div>
 
@@ -1035,6 +1059,13 @@ export default function App({ onLogout }) {
         onNavigate={handleGlobalNavigate}
       />
       {keyboardHelpOpen && <KeyboardHelp onClose={() => setKeyboardHelpOpen(false)} />}
+      {qrOpen && (
+        <QRModal
+          url={window.location.origin + '/?student'}
+          title={t('qr.student_access')}
+          onClose={() => setQrOpen(false)}
+        />
+      )}
       <DeadlineModal
         open={!!deadlineModal}
         title={deadlineModal?.type === 'folder' ? t('modal.deadline.folder_title') : t('modal.deadline.file_title')}
@@ -1228,7 +1259,7 @@ function FolderCard({ folder, accent, onClick, t }) {
       style={{
         appearance: 'none', border: '1px solid var(--c-border)', borderRadius: 10,
         background: 'var(--c-surface)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-        padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8,
+        padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         transition: 'box-shadow .15s, transform .1s',
       }}
       onMouseEnter={(e) => {
@@ -1240,25 +1271,36 @@ function FolderCard({ folder, accent, onClick, t }) {
         e.currentTarget.style.transform = 'none';
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+      {folder.thumbnail_file_id ? (
+        <div style={{ width: '100%', height: 80, overflow: 'hidden', background: 'var(--c-surface-2)' }}>
+          <img
+            src={viewFile(folder.thumbnail_file_id)}
+            alt=""
+            loading="lazy"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </div>
+      ) : (
         <div style={{
-          width: 32, height: 28, borderRadius: 4, background: `${accent}18`,
+          width: '100%', height: 80, background: `${accent}10`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <svg width="16" height="14" viewBox="0 0 24 20" fill="none">
+          <svg width="28" height="24" viewBox="0 0 24 20" fill="none">
             <path d="M0 4a2 2 0 0 1 2-2h7l2 2h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Z"
-              fill={accent} opacity="0.92"/>
-            <path d="M0 6h24v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6Z" fill={accent}/>
+              fill={accent} opacity="0.5"/>
+            <path d="M0 6h24v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6Z" fill={accent} opacity="0.6"/>
           </svg>
         </div>
-        {folder.is_favorite ? <span style={{ fontSize: 12, color: '#F59E0B' }}>★</span> : null}
-      </div>
-      <div>
-        <div style={{
-          fontSize: 13, fontWeight: 600, color: 'var(--c-text)',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>{folder.name}</div>
-        <div style={{ fontSize: 10, color: 'var(--c-text-3)', marginTop: 2, fontFamily: '"DM Mono", monospace' }}>
+      )}
+      <div style={{ padding: '10px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+          <div style={{
+            fontSize: 13, fontWeight: 600, color: 'var(--c-text)',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, minWidth: 0,
+          }}>{folder.name}</div>
+          {folder.is_favorite ? <span style={{ fontSize: 12, color: '#F59E0B', flexShrink: 0, marginLeft: 6 }}>★</span> : null}
+        </div>
+        <div style={{ fontSize: 10, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace' }}>
           {folder.group_name} · {t('folders.files', { n: folder.file_count ?? 0 })}
         </div>
       </div>
