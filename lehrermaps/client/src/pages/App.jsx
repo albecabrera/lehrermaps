@@ -140,6 +140,7 @@ export default function App({ onLogout }) {
     setActiveFolder(null);
     setActiveFile(null);
     setQuery('');
+    setViewMode('subjects');
   };
 
   const onFolderSelect = (folder) => {
