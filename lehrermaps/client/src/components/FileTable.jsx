@@ -223,7 +223,11 @@ export default function FileTable({
                     }}>✓</span>
                   ) : null}
                   <span style={{ fontSize: 10.5, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', letterSpacing: 0.2 }}>{sizeFmt}</span>
-                  <span style={{ fontSize: 10.5, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', letterSpacing: 0.2 }}>
+                  <span style={{
+                    fontSize: 10.5, fontFamily: '"DM Mono", monospace', letterSpacing: 0.2,
+                    color: dueFmt && new Date(file.due_at) < new Date() ? '#EF4444' : 'var(--c-text-3)',
+                    fontWeight: dueFmt && new Date(file.due_at) < new Date() ? 700 : 400,
+                  }}>
                     {dueFmt ? `⏰ ${dueFmt}` : dateFmt}
                   </span>
                 </div>

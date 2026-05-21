@@ -315,7 +315,7 @@ function FolderRow({ folder, on, collapsed, accent, groupName, onClick, onMenu, 
               {folder.name}
             </span>
             <span style={{ fontSize: 10, color: isFav ? '#F59E0B' : 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', flexShrink: 0 }}>
-              {hovered ? '' : (isFav ? '★' : (folder.file_count ?? 0))}
+              {hovered ? '' : (isFav ? '★' : (folder.total_size_bytes > 0 ? fmtSize(folder.total_size_bytes) : (folder.file_count ?? 0)))}
             </span>
           </>
         )}
@@ -351,6 +351,12 @@ function FolderRow({ folder, on, collapsed, accent, groupName, onClick, onMenu, 
       )}
     </div>
   );
+}
+
+function fmtSize(bytes) {
+  if (!bytes) return '0';
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
 function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, t }) {

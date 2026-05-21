@@ -283,6 +283,12 @@ function ConvertedPdfPreview({ fileId, t }) {
   const [state, setState] = useState('loading');
   const src = previewFile(fileId);
 
+  useEffect(() => {
+    if (state !== 'loading') return;
+    const timer = setTimeout(() => setState('error'), 30000);
+    return () => clearTimeout(timer);
+  }, [state, src]);
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       {state === 'loading' && (

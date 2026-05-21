@@ -16,7 +16,7 @@ const FOLDER_WITH_COUNT = `
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.execute(`
-      SELECT f.*, COUNT(fi.id) AS file_count
+      SELECT f.*, COUNT(fi.id) AS file_count, COALESCE(SUM(fi.size_bytes), 0) AS total_size_bytes
       FROM folders f
       LEFT JOIN files fi ON fi.folder_id = f.id
       GROUP BY f.id

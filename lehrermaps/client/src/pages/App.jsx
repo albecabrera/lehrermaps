@@ -8,6 +8,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import ConfirmModal from '../components/ConfirmModal';
 import DeadlineModal from '../components/DeadlineModal';
 import GlobalSearch from '../components/GlobalSearch';
+import KeyboardHelp from '../components/KeyboardHelp';
 import Schedule from '../components/Schedule';
 import { SUBJECTS } from '../constants/structure';
 import { useFolders } from '../hooks/useFolders';
@@ -42,6 +43,7 @@ export default function App({ onLogout }) {
   const [folderTab, setFolderTab] = useState('files');
   const [filesView, setFilesView] = useState('list');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
   const [deadlineModal, setDeadlineModal] = useState(null);
   const [toast, setToast] = useState(null);
@@ -81,6 +83,11 @@ export default function App({ onLogout }) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setGlobalSearchOpen(true);
+        return;
+      }
+      if (e.key === '?' && !isTyping) {
+        e.preventDefault();
+        setKeyboardHelpOpen((v) => !v);
         return;
       }
       if (isTyping || folderTab !== 'files' || !activeFolder || !files.length) return;
@@ -716,11 +723,11 @@ export default function App({ onLogout }) {
                       onClick={openFolderDeadlineModal}
                       style={{
                         marginLeft: 8, height: 26, padding: '0 10px',
-                        border: '1px solid var(--c-border)', borderRadius: 6,
-                        background: 'transparent', color: 'var(--c-text-3)',
-                        fontSize: 11, fontWeight: 500, cursor: 'pointer',
+                        borderRadius: 6, background: 'transparent', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: 5,
-                        fontFamily: 'inherit',
+                        fontFamily: 'inherit', fontSize: 11, fontWeight: 500,
+                        color: activeFolder?.due_at && new Date(activeFolder.due_at) < new Date() ? '#EF4444' : 'var(--c-text-3)',
+                        border: activeFolder?.due_at && new Date(activeFolder.due_at) < new Date() ? '1px solid #EF444455' : '1px solid var(--c-border)',
                       }}
                     >
                       ⏰ {activeFolder?.due_at ? new Date(activeFolder.due_at).toLocaleDateString('de-DE') : t('table.deadline')}
@@ -917,6 +924,7 @@ export default function App({ onLogout }) {
         onClose={() => setGlobalSearchOpen(false)}
         onNavigate={handleGlobalNavigate}
       />
+      {keyboardHelpOpen && <KeyboardHelp onClose={() => setKeyboardHelpOpen(false)} />}
       <DeadlineModal
         open={!!deadlineModal}
         title={deadlineModal?.type === 'folder' ? t('modal.deadline.folder_title') : t('modal.deadline.file_title')}
