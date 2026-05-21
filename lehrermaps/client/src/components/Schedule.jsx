@@ -170,6 +170,8 @@ export default function Schedule() {
         {/* Period rows */}
         {Array.from({ length: PERIODS }, (_, p) => (
           [
+            p === 1 && <BreakRow key="break-fruehstueck" label="Frühstückspause" />,
+            p === 4 && <BreakRow key="break-mittag" label="Mittagspause" />,
             <div key={`label-${p}`} style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
@@ -253,6 +255,25 @@ function ScheduleCell({ cell, onEdit, onUnlink }) {
           }}
         >×</button>
       )}
+    </div>
+  );
+}
+
+function BreakRow({ label }) {
+  return (
+    <div style={{
+      gridColumn: '1 / -1',
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '4px 0',
+      margin: '2px 0',
+    }}>
+      <div style={{ flex: 1, height: 1, background: 'var(--c-border)' }} />
+      <span style={{
+        fontSize: 10, fontWeight: 600, letterSpacing: 0.4,
+        textTransform: 'uppercase', color: 'var(--c-text-3)',
+        whiteSpace: 'nowrap',
+      }}>{label}</span>
+      <div style={{ flex: 1, height: 1, background: 'var(--c-border)' }} />
     </div>
   );
 }
