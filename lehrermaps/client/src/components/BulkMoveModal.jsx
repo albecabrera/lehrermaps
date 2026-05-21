@@ -18,6 +18,7 @@ export default function BulkMoveModal({ files, folders, targetId, onTargetChange
       }}
     >
       <div
+        className="lm-modal-surface"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--c-surface)', border: '1px solid var(--c-border-soft)',

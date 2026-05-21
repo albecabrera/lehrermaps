@@ -17,6 +17,7 @@ export default function ConfirmModal({ open, title, message, warning, onConfirm,
       }}
     >
       <div
+        className="lm-modal-surface"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 420,

@@ -66,7 +66,7 @@ export default function Sidebar({
   const clearFileDrop = () => { setFileDropTargetId(null); setDraggingFileName(''); };
 
   return (
-    <div style={{
+    <div className="lm-sidebar" style={{
       width: collapsed ? 52 : width,
       background: 'var(--c-surface)',
       borderRight: '1px solid var(--c-border)',

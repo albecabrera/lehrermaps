@@ -76,6 +76,7 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
       }}
     >
       <div
+        className="lm-modal-surface"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 600, maxHeight: '90vh',

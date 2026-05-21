@@ -23,30 +23,38 @@
   --c-danger-bg: #FEF2F2;
   --c-danger-border: #FECACA;
   --c-danger-text: #B91C1C;
+  --c-glass-bg: rgba(255, 255, 255, 0.62);
+  --c-glass-border: rgba(0, 0, 0, 0.09);
+  --c-glass-blur: blur(22px) saturate(150%);
+  --c-glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255,255,255,0.7);
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --c-bg: #1C1D24;
-  --c-surface: #22232D;
-  --c-surface-2: #292A36;
-  --c-tab-bg: #1E1F28;
-  --c-border: #323340;
-  --c-border-soft: rgba(255, 255, 255, 0.07);
-  --c-text: #F0F1F5;
-  --c-text-2: #B0B3C4;
-  --c-text-3: #7A7D90;
-  --c-hover: #1C1D26;
-  --c-hover-2: rgba(255, 255, 255, 0.042);
-  --c-input-bg: #15161C;
-  --c-scrollbar: #2E3040;
-  --c-overlay: rgba(0, 0, 0, 0.72);
+  --c-bg: #0D1117;
+  --c-surface: #161C2D;
+  --c-surface-2: #1C2338;
+  --c-tab-bg: #0B0E18;
+  --c-border: #2A3050;
+  --c-border-soft: rgba(255, 255, 255, 0.09);
+  --c-text: #ECF0FA;
+  --c-text-2: #A0AABE;
+  --c-text-3: #636F8A;
+  --c-hover: #1A2040;
+  --c-hover-2: rgba(255, 255, 255, 0.05);
+  --c-input-bg: #0E1220;
+  --c-scrollbar: rgba(255, 255, 255, 0.1);
+  --c-overlay: rgba(5, 8, 18, 0.80);
   --c-focus: #7B9FFF;
-  --c-shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --c-shadow-pop: 0 12px 36px rgba(0, 0, 0, 0.52);
-  --c-danger-bg: rgba(100, 18, 18, 0.24);
-  --c-danger-border: rgba(248, 113, 113, 0.28);
+  --c-shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --c-shadow-pop: 0 12px 36px rgba(0, 0, 0, 0.5);
+  --c-danger-bg: rgba(100, 18, 18, 0.22);
+  --c-danger-border: rgba(248, 113, 113, 0.25);
   --c-danger-text: #FC9A9A;
+  --c-glass-bg: rgba(255, 255, 255, 0.055);
+  --c-glass-border: rgba(255, 255, 255, 0.10);
+  --c-glass-blur: blur(22px) saturate(160%);
+  --c-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.07);
   color-scheme: dark;
 }
 
@@ -63,6 +71,14 @@ html, body, #root {
   background: var(--c-bg);
   color: var(--c-text);
   transition: background-color .16s ease, color .16s ease;
+}
+
+[data-theme="dark"] body,
+[data-theme="dark"] #root {
+  background:
+    radial-gradient(ellipse 70% 50% at 18% -5%, rgba(99, 102, 241, 0.13) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 82% 105%, rgba(139, 92, 246, 0.10) 0%, transparent 55%),
+    #0D1117;
 }
 
 button, input, select, textarea {
@@ -151,4 +167,34 @@ button, input, select, textarea {
 @keyframes lmSlideUp {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Liquid Glass utilities ─────────────────────────────────────────────── */
+.lm-glass {
+  background: var(--c-glass-bg) !important;
+  backdrop-filter: var(--c-glass-blur);
+  -webkit-backdrop-filter: var(--c-glass-blur);
+  border-color: var(--c-glass-border) !important;
+  box-shadow: var(--c-glass-shadow);
+}
+
+[data-theme="dark"] .lm-tabbar {
+  background: rgba(10, 12, 22, 0.80) !important;
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .lm-sidebar {
+  background: rgba(12, 15, 24, 0.82) !important;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .lm-modal-surface {
+  background: rgba(18, 22, 38, 0.88) !important;
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border-color: rgba(255, 255, 255, 0.10) !important;
 }

@@ -27,6 +27,7 @@ export default function QRModal({ url, title, onClose }) {
       }}
     >
       <div
+        className="lm-modal-surface"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--c-surface)', borderRadius: 16,

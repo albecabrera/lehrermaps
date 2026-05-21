@@ -58,6 +58,7 @@ export default function NewFolderModal({ open, onClose, onSave, subject, default
       }}
     >
       <div
+        className="lm-modal-surface"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 380,

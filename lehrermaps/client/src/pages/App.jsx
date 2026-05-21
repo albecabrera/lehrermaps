@@ -509,7 +509,7 @@ export default function App({ onLogout }) {
       fontFeatureSettings: '"ss01", "cv11"',
     }}>
       {/* Tab bar */}
-      <div style={{
+      <div className="lm-tabbar" style={{
         display: 'flex', alignItems: 'flex-end', padding: '8px 16px 0',
         background: 'var(--c-tab-bg)', borderBottom: '1px solid var(--c-border)',
         position: 'relative', flexShrink: 0, gap: 2,

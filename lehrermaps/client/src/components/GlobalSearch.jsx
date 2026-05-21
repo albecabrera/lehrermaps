@@ -86,6 +86,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
       }}
     >
       <div
+        className="lm-modal-surface"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 620,

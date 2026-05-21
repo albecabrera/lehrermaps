@@ -120,7 +120,7 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
         </>
       ) : (
         /* ── Password form ── */
-        <div style={{
+        <div className="lm-modal-surface" style={{
           width: '100%', maxWidth: 340,
           background: 'var(--c-surface)', borderRadius: 20,
           border: '1px solid var(--c-border-soft)',
