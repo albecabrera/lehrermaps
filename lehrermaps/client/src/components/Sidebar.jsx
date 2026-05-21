@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import FolderIcon from './FolderIcon';
+import FileBadge from './FileBadge';
+import { detectKind } from '../constants/structure';
 import { useLang } from '../contexts/LangContext';
 
 const INDENT = 20;   // px per depth level
@@ -33,6 +35,8 @@ export default function Sidebar({
   onReorderFolders, onToggleFavorite,
   onSetFolderColor,
   onMoveFileToFolder,
+  recentFiles = [],
+  onRecentFileClick,
 }) {
   const { t } = useLang();
   const [collapsed, setCollapsed] = useState(false);
@@ -107,6 +111,36 @@ export default function Sidebar({
 
       {/* Tree area */}
       <div style={{ flex: 1, overflow: 'auto', padding: collapsed ? '8px 4px' : '8px 0' }}>
+        {!collapsed && recentFiles.length > 0 && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{
+              padding: '0 8px 4px 16px', fontSize: 9.5, fontWeight: 700, letterSpacing: 0.7,
+              textTransform: 'uppercase', color: 'var(--c-text-3)',
+            }}>{t('sidebar.recent_files')}</div>
+            {recentFiles.slice(0, 5).map((rf) => (
+              <button
+                key={rf.id}
+                onClick={() => onRecentFileClick?.(rf)}
+                style={{
+                  appearance: 'none', border: 'none', font: 'inherit',
+                  width: '100%', padding: '4px 10px 4px 16px',
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  cursor: 'pointer', textAlign: 'left',
+                  background: 'transparent', color: 'var(--c-text-2)',
+                  fontSize: 11.5, transition: 'background .08s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover-2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <FileBadge kind={detectKind(rf.name)} name={rf.name} size={13} />
+                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {rf.name}
+                </span>
+              </button>
+            ))}
+            <div style={{ height: 1, background: 'var(--c-border)', margin: '6px 12px 6px' }} />
+          </div>
+        )}
         {loading ? (
           <SidebarSkeleton collapsed={collapsed} accent={accent} />
         ) : (

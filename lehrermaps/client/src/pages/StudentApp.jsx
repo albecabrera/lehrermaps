@@ -14,6 +14,7 @@ export default function StudentApp({ onLogout }) {
   const [subjectId, setSubjectId] = useState('spanisch');
   const [activeFolder, setActiveFolder] = useState(null);
   const [activeFile, setActiveFile] = useState(null);
+  const [studentQuery, setStudentQuery] = useState('');
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const { folders, loading } = useFolders();
@@ -74,7 +75,7 @@ export default function StudentApp({ onLogout }) {
           return (
             <button
               key={s.id}
-              onClick={() => { setSubjectId(s.id); setActiveFolder(null); setActiveFile(null); }}
+              onClick={() => { setSubjectId(s.id); setActiveFolder(null); setActiveFile(null); setStudentQuery(''); }}
               style={{
                 appearance: 'none', border: 'none', font: 'inherit',
                 padding: '10px 18px', cursor: 'pointer',
@@ -106,7 +107,7 @@ export default function StudentApp({ onLogout }) {
             return (
               <button
                 key={f.id}
-                onClick={() => { setActiveFolder(f); setActiveFile(null); }}
+                onClick={() => { setActiveFolder(f); setActiveFile(null); setStudentQuery(''); }}
                 style={{
                   appearance: 'none', border: 'none', font: 'inherit',
                   width: '100%', padding: '8px 14px 8px 16px',
@@ -136,7 +137,48 @@ export default function StudentApp({ onLogout }) {
         </div>
 
         {/* File list */}
-        <div style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: '18px 24px' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {activeFolder && (
+            <div style={{
+              padding: '12px 24px 0', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <div style={{
+                flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+                border: '1px solid var(--c-border)', borderRadius: 8,
+                background: 'var(--c-surface)', padding: '0 10px', height: 32,
+              }}>
+                <svg width="12" height="12" viewBox="0 0 13 13" fill="none" style={{ color: 'var(--c-text-3)', flexShrink: 0 }}>
+                  <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.4"/>
+                  <path d="M8.5 8.5l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                </svg>
+                <input
+                  value={studentQuery}
+                  onChange={(e) => setStudentQuery(e.target.value)}
+                  placeholder={t('search.placeholder')}
+                  style={{
+                    flex: 1, border: 'none', background: 'transparent', outline: 'none',
+                    fontSize: 12, color: 'var(--c-text)', fontFamily: 'inherit',
+                  }}
+                />
+                {studentQuery && (
+                  <button
+                    onClick={() => setStudentQuery('')}
+                    style={{
+                      width: 16, height: 16, border: 'none', background: 'var(--c-hover)',
+                      borderRadius: 3, color: 'var(--c-text-3)', cursor: 'pointer',
+                      fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >×</button>
+                )}
+              </div>
+              <span style={{ fontSize: 11, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', flexShrink: 0 }}>
+                {studentQuery
+                  ? `${files.filter((f) => f.original_name.toLowerCase().includes(studentQuery.toLowerCase())).length} / ${files.length}`
+                  : files.length}
+              </span>
+            </div>
+          )}
+          <div style={{ flex: 1, overflow: 'auto', padding: '12px 24px 18px' }}>
           {activeFolder ? (
             <FileTable
               files={files}
@@ -144,18 +186,27 @@ export default function StudentApp({ onLogout }) {
               activeFileId={activeFile?.id}
               onFileSelect={(f) => setActiveFile(f)}
               accent={accent}
-              query=""
+              query={studentQuery}
             />
           ) : (
-            <div style={{ color: 'var(--c-text-3)', fontSize: 13, paddingTop: 24 }}>
-              {t('preview.select')}
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              height: '100%', gap: 12, color: 'var(--c-text-3)',
+            }}>
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ opacity: 0.3 }}>
+                <path d="M6 34V10l10-6h18v30H6z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                <path d="M6 10h10V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14 20h12M14 26h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              <span style={{ fontSize: 13 }}>{t('preview.select')}</span>
             </div>
           )}
+          </div>
         </div>
 
         {/* Preview */}
         {activeFolder && (
-          <div style={{ width: 300, flexShrink: 0, borderLeft: '1px solid var(--c-border)', overflow: 'hidden' }}>
+          <div style={{ width: 360, flexShrink: 0, borderLeft: '1px solid var(--c-border)', overflow: 'hidden' }}>
             <FilePreview file={activeFile} accent={accent} />
           </div>
         )}

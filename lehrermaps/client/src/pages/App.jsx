@@ -17,6 +17,7 @@ import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
 import { useRecents } from '../hooks/useRecents';
+import { useRecentFiles } from '../hooks/useRecentFiles';
 import { downloadFolderZip, downloadFilesZip } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
@@ -61,6 +62,8 @@ export default function App({ onLogout }) {
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
+  const { recentFiles, trackFile } = useRecentFiles();
+  const [pendingFileId, setPendingFileId] = useState(null);
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
@@ -79,6 +82,12 @@ export default function App({ onLogout }) {
     deleteTimersRef.current.clear();
   }, []);
 
+  useEffect(() => {
+    if (!pendingFileId || !files.length) return;
+    const file = files.find((f) => f.id === pendingFileId);
+    if (file) { setActiveFile(file); setPendingFileId(null); }
+  }, [files, pendingFileId]);
+
   // Keyboard shortcuts: Cmd/Ctrl+K, j/k navigation, space preview toggle
   useEffect(() => {
     const handler = (e) => {
@@ -96,18 +105,21 @@ export default function App({ onLogout }) {
         return;
       }
       if (isTyping || folderTab !== 'files' || !activeFolder || !files.length) return;
-      if (e.key === 'j') {
+      if (e.key === 'j' || e.key === 'ArrowDown') {
         e.preventDefault();
         if (!activeFile) { setActiveFile(files[0]); return; }
         const idx = files.findIndex((f) => f.id === activeFile.id);
         const next = files[Math.min(files.length - 1, idx + 1)];
         if (next) setActiveFile(next);
-      } else if (e.key === 'k') {
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
         e.preventDefault();
         if (!activeFile) { setActiveFile(files[0]); return; }
         const idx = files.findIndex((f) => f.id === activeFile.id);
         const prev = files[Math.max(0, idx - 1)];
         if (prev) setActiveFile(prev);
+      } else if (e.key === 'Delete' && activeFile) {
+        e.preventDefault();
+        handleDeleteFile(activeFile);
       } else if (e.key === ' ') {
         e.preventDefault();
         setActiveFile((prev) => (prev ? null : files[0] || null));
@@ -211,6 +223,20 @@ export default function App({ onLogout }) {
       setActiveLink(null);
       setQuery('');
       setFolderTab('files');
+    }
+  };
+
+  const handleRecentFileClick = (rf) => {
+    setSubjectId(rf.subjectId);
+    const folder = folders.find((f) => f.id === rf.folderId);
+    if (folder) {
+      setActiveFolder(folder);
+      setActiveFile(null);
+      setActiveLink(null);
+      setQuery('');
+      setFolderTab('files');
+      setPendingFileId(rf.id);
+      addRecent(folder, SUBJECTS.find((s) => s.id === folder.subject)?.color);
     }
   };
 
@@ -693,6 +719,8 @@ export default function App({ onLogout }) {
           onToggleFavorite={toggleFavorite}
           onSetFolderColor={setFolderColor}
           onMoveFileToFolder={handleMoveFileToFolder}
+          recentFiles={recentFiles}
+          onRecentFileClick={handleRecentFileClick}
         />
         <div
           onMouseDown={onSidebarResizeMouseDown}
@@ -854,7 +882,7 @@ export default function App({ onLogout }) {
                       <FolderGallery
                         files={files}
                         activeFileId={activeFile?.id}
-                        onSelect={(f) => { setActiveFile(f); setActiveLink(null); }}
+                        onSelect={(f) => { setActiveFile(f); setActiveLink(null); trackFile(f, activeFolder?.id, subjectId); }}
                         accent={accent}
                       />
                     ) : (
@@ -864,7 +892,7 @@ export default function App({ onLogout }) {
                         links={links}
                         activeFileId={activeFile?.id}
                         activeLinkId={activeLink?.id}
-                        onFileSelect={(f) => { setActiveFile(f); setActiveLink(null); }}
+                        onFileSelect={(f) => { setActiveFile(f); setActiveLink(null); trackFile(f, activeFolder?.id, subjectId); }}
                         onLinkSelect={(l) => { setActiveLink(l); setActiveFile(null); }}
                         accent={accent}
                         query={query}

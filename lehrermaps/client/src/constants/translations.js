@@ -178,6 +178,7 @@ export const translations = {
     // Sidebar extras
     'sidebar.favorites': 'Favoriten',
     'sidebar.recents': 'Zuletzt geöffnet',
+    'sidebar.recent_files': 'Zuletzt geöffnete Dateien',
     'sidebar.pin': 'Als Favorit markieren',
     'sidebar.unpin': 'Aus Favoriten entfernen',
 
@@ -417,6 +418,7 @@ export const translations = {
     // Sidebar extras
     'sidebar.favorites': 'Favoritos',
     'sidebar.recents': 'Recientes',
+    'sidebar.recent_files': 'Archivos recientes',
     'sidebar.pin': 'Marcar como favorito',
     'sidebar.unpin': 'Quitar de favoritos',
 
