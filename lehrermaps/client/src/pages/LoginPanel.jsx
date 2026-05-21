@@ -3,6 +3,8 @@ import { login, loginStudent } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 import { useTheme } from '../contexts/ThemeContext';
 
+const DEFAULT_AVATAR = '/teacher-avatar.jpg';
+
 export default function LoginPanel({ onLogin, initialRole = null }) {
   const { t, lang, setLang } = useLang();
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -11,15 +13,15 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [avatar, setAvatar] = useState(() => localStorage.getItem('lm_teacher_avatar') || null);
+  const [avatar, setAvatar] = useState(
+    () => localStorage.getItem('lm_teacher_avatar') || DEFAULT_AVATAR
+  );
   const [hoverAvatar, setHoverAvatar] = useState(false);
   const fileRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (step !== 'select') {
-      setTimeout(() => inputRef.current?.focus(), 80);
-    }
+    if (step !== 'select') setTimeout(() => inputRef.current?.focus(), 80);
   }, [step]);
 
   const handleAvatarChange = (e) => {
@@ -63,78 +65,59 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       fontFamily: '"DM Sans", -apple-system, sans-serif',
-      padding: 24,
+      padding: '24px 24px 40px',
+      position: 'relative',
     }}>
+
       {/* Top-right controls */}
-      <div style={{
-        position: 'fixed', top: 16, right: 16,
-        display: 'flex', gap: 8, alignItems: 'center',
-      }}>
-        <button
-          onClick={() => setLang(lang === 'de' ? 'es' : 'de')}
-          style={topBtnStyle}
-        >{lang === 'de' ? 'ES' : 'DE'}</button>
+      <div style={{ position: 'fixed', top: 16, right: 16, display: 'flex', gap: 8 }}>
+        <button onClick={() => setLang(lang === 'de' ? 'es' : 'de')} style={topBtnStyle}>
+          {lang === 'de' ? 'ES' : 'DE'}
+        </button>
         <button onClick={toggleTheme} style={topBtnStyle}>
-          {isDark ? (
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-          ) : (
-            <svg width="12" height="12" viewBox="0 0 13 13" fill="none"><path d="M11.5 8.5A5 5 0 0 1 4.5 1.5a5 5 0 1 0 7 7z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-          )}
+          {isDark
+            ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            : <svg width="12" height="12" viewBox="0 0 13 13" fill="none"><path d="M11.5 8.5A5 5 0 0 1 4.5 1.5a5 5 0 1 0 7 7z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+          }
         </button>
       </div>
 
-      {/* Logo */}
-      <div style={{ textAlign: 'center', marginBottom: step === 'select' ? 40 : 32 }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: 12,
-          background: 'linear-gradient(135deg, #E8472A, #9333EA)',
-          margin: '0 auto 14px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 16px rgba(232,71,42,0.25)',
-        }}>
-          <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
-            <path d="M3 6a2 2 0 0 1 2-2h5l2 2h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z"
-              fill="rgba(255,255,255,0.9)"/>
-          </svg>
-        </div>
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.5, color: 'var(--c-text)' }}>
-          LehrerMaps
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--c-text-3)', marginTop: 3 }}>
-          {step === 'select' ? t('login.choose_role') : t('login.subtitle')}
-        </div>
-      </div>
-
       {step === 'select' ? (
-        /* ── Role selector ── */
-        <div style={{
-          display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center',
-          maxWidth: 480,
-        }}>
-          <RoleCard
-            label={t('login.teacher_role')}
-            desc={t('login.teacher_desc')}
-            accent="#E8472A"
-            onClick={() => setStep('teacher')}
-            avatar={
-              <TeacherAvatar
-                avatar={avatar}
-                onChange={handleAvatarChange}
-                fileRef={fileRef}
-                hovered={hoverAvatar}
-                setHovered={setHoverAvatar}
-                changeLabel={t('login.change_photo')}
-              />
-            }
-          />
-          <RoleCard
-            label={t('login.student_role')}
-            desc={t('login.student_desc')}
-            accent="#0EA5E9"
-            onClick={() => setStep('student')}
-            avatar={<StudentAvatar />}
-          />
-        </div>
+        <>
+          {/* ── Banner ── */}
+          <WelcomeBanner />
+
+          {/* ── Role cards ── */}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <RoleCard
+              label={t('login.teacher_role')}
+              desc={t('login.teacher_desc')}
+              accent="#E8472A"
+              onClick={() => setStep('teacher')}
+              avatar={
+                <TeacherAvatar
+                  avatar={avatar}
+                  onChange={handleAvatarChange}
+                  fileRef={fileRef}
+                  hovered={hoverAvatar}
+                  setHovered={setHoverAvatar}
+                  changeLabel={t('login.change_photo')}
+                />
+              }
+            />
+            <RoleCard
+              label={t('login.student_role')}
+              desc={t('login.student_desc')}
+              accent="#0EA5E9"
+              onClick={() => setStep('student')}
+              avatar={<StudentAvatar />}
+            />
+          </div>
+
+          <div style={{ fontSize: 10, color: 'var(--c-text-3)', marginTop: 36 }}>
+            {t('login.footer')}
+          </div>
+        </>
       ) : (
         /* ── Password form ── */
         <div style={{
@@ -142,16 +125,16 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
           background: 'var(--c-surface)', borderRadius: 20,
           border: '1px solid var(--c-border-soft)',
           boxShadow: 'var(--c-shadow-modal)',
-          padding: '32px 28px',
+          padding: '28px 28px 32px',
           animation: 'lmSlideUp .2s cubic-bezier(.4,.7,.3,1)',
         }}>
-          {/* Back */}
           <button
             onClick={back}
             style={{
               appearance: 'none', border: 'none', background: 'transparent',
-              color: 'var(--c-text-3)', cursor: 'pointer', padding: '0 0 18px',
-              display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontFamily: 'inherit',
+              color: 'var(--c-text-3)', cursor: 'pointer', padding: '0 0 20px',
+              display: 'flex', alignItems: 'center', gap: 5,
+              fontSize: 12, fontFamily: 'inherit',
             }}
             onMouseEnter={(e) => e.currentTarget.style.color = 'var(--c-text)'}
             onMouseLeave={(e) => e.currentTarget.style.color = 'var(--c-text-3)'}
@@ -162,9 +145,8 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
             {t('login.back')}
           </button>
 
-          {/* Role avatar */}
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
               {isTeacher ? (
                 <TeacherAvatar
                   avatar={avatar}
@@ -172,15 +154,18 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
                   fileRef={fileRef}
                   hovered={hoverAvatar}
                   setHovered={setHoverAvatar}
-                  size={80}
+                  size={84}
                   changeLabel={t('login.change_photo')}
                 />
               ) : (
-                <StudentAvatar size={80} />
+                <StudentAvatar size={84} />
               )}
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--c-text)', letterSpacing: -0.3 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--c-text)', letterSpacing: -0.3 }}>
               {isTeacher ? t('login.teacher_role') : t('login.student_role')}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--c-text-3)', marginTop: 2 }}>
+              {isTeacher ? t('login.teacher_desc') : t('login.student_desc')}
             </div>
           </div>
 
@@ -203,10 +188,16 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
                   border: `1px solid ${error ? '#DC2626' : 'var(--c-border)'}`,
                   borderRadius: 10, background: 'var(--c-input-bg)', color: 'var(--c-text)',
                   padding: '11px 13px', fontSize: 14, fontFamily: 'inherit', outline: 'none',
-                  transition: 'border-color .15s',
+                  transition: 'border-color .15s, box-shadow .15s',
                 }}
-                onFocus={(e) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}22`; }}
-                onBlur={(e) => { e.target.style.borderColor = error ? '#DC2626' : 'var(--c-border)'; e.target.style.boxShadow = 'none'; }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = accent;
+                  e.target.style.boxShadow = `0 0 0 3px ${accent}22`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = error ? '#DC2626' : 'var(--c-border)';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </label>
 
@@ -227,7 +218,7 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
                 cursor: loading ? 'wait' : 'pointer',
                 fontFamily: 'inherit', marginTop: 4,
                 opacity: loading || !password ? 0.65 : 1,
-                boxShadow: `0 3px 12px ${accent}33`,
+                boxShadow: `0 3px 14px ${accent}40`,
                 transition: 'transform .1s, opacity .15s',
               }}
               onMouseDown={(e) => { if (!loading && password) e.currentTarget.style.transform = 'scale(0.98)'; }}
@@ -240,14 +231,116 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
           </form>
         </div>
       )}
+    </div>
+  );
+}
 
-      <div style={{ fontSize: 10, color: 'var(--c-text-3)', marginTop: 32 }}>
-        {t('login.footer')}
+/* ── Welcome Banner ─────────────────────────────────────── */
+function WelcomeBanner() {
+  return (
+    <div style={{
+      width: '100%', maxWidth: 480, marginBottom: 36,
+      borderRadius: 24, overflow: 'hidden', position: 'relative',
+      boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+    }}>
+      {/* Gradient background */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 40%, #24243e 70%, #E8472A 130%)',
+        padding: '36px 36px 32px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Decorative circles */}
+        <div style={{
+          position: 'absolute', top: -40, right: -40,
+          width: 180, height: 180, borderRadius: '50%',
+          background: 'rgba(232,71,42,0.15)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: -30, left: -20,
+          width: 120, height: 120, borderRadius: '50%',
+          background: 'rgba(147,51,234,0.12)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', top: '30%', right: '20%',
+          width: 60, height: 60, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.04)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* App badge */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 7,
+          background: 'rgba(255,255,255,0.1)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: 20, padding: '4px 12px',
+          marginBottom: 20,
+        }}>
+          <div style={{
+            width: 18, height: 18, borderRadius: 5,
+            background: 'linear-gradient(135deg, #E8472A, #9333EA)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="10" height="10" viewBox="0 0 26 26" fill="none">
+              <path d="M3 6a2 2 0 0 1 2-2h5l2 2h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z"
+                fill="rgba(255,255,255,0.95)"/>
+            </svg>
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)', letterSpacing: 0.3 }}>
+            LehrerMaps
+          </span>
+        </div>
+
+        {/* Main heading */}
+        <div>
+          <div style={{
+            fontSize: 11, fontWeight: 600, letterSpacing: 2,
+            textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)',
+            marginBottom: 6,
+          }}>
+            Unterrichtsmaterial · Bonn · NRW
+          </div>
+          <h1 style={{
+            fontSize: 32, fontWeight: 800, margin: 0,
+            letterSpacing: -1,
+            background: 'linear-gradient(90deg, #ffffff 0%, #e0c8ff 60%, #ffb3a0 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            lineHeight: 1.15,
+          }}>
+            Herzlich<br />Willkommen
+          </h1>
+          <p style={{
+            margin: '10px 0 0', fontSize: 13,
+            color: 'rgba(255,255,255,0.55)',
+            lineHeight: 1.5, maxWidth: 260,
+          }}>
+            Verwalte deine Unterrichtsmaterialien — sicher, schnell und übersichtlich.
+          </p>
+        </div>
+
+        {/* Bottom stats strip */}
+        <div style={{
+          marginTop: 24, paddingTop: 20,
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex', gap: 24,
+        }}>
+          {[['4', 'Fächer'], ['∞', 'Dateien'], ['100%', 'Lokal']].map(([val, label]) => (
+            <div key={label}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{val}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
+/* ── Role card ───────────────────────────────────────────── */
 function RoleCard({ label, desc, accent, onClick, avatar }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -257,20 +350,20 @@ function RoleCard({ label, desc, accent, onClick, avatar }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         appearance: 'none', font: 'inherit', cursor: 'pointer',
-        width: 200, padding: '28px 20px 24px',
-        background: hovered ? 'var(--c-surface)' : 'var(--c-surface)',
+        width: 200, padding: '28px 20px 22px',
+        background: 'var(--c-surface)',
         border: `1.5px solid ${hovered ? accent : 'var(--c-border)'}`,
         borderRadius: 20,
         boxShadow: hovered
-          ? `0 8px 32px ${accent}22, 0 2px 8px rgba(0,0,0,0.08)`
-          : '0 1px 4px rgba(0,0,0,0.06)',
+          ? `0 10px 40px ${accent}28, 0 2px 10px rgba(0,0,0,0.1)`
+          : '0 1px 6px rgba(0,0,0,0.07)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
-        transition: 'border-color .15s, box-shadow .15s, transform .1s',
-        transform: hovered ? 'translateY(-2px)' : 'none',
+        transition: 'border-color .15s, box-shadow .18s, transform .12s',
+        transform: hovered ? 'translateY(-3px)' : 'none',
       }}
     >
       {avatar}
-      <div>
+      <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--c-text)', marginBottom: 3 }}>
           {label}
         </div>
@@ -279,19 +372,24 @@ function RoleCard({ label, desc, accent, onClick, avatar }) {
         </div>
       </div>
       <div style={{
-        height: 28, padding: '0 16px', borderRadius: 8,
-        background: `${accent}14`, color: accent,
+        height: 28, padding: '0 18px', borderRadius: 8,
+        background: hovered ? accent : `${accent}14`,
+        color: hovered ? '#fff' : accent,
         fontSize: 11, fontWeight: 600,
-        display: 'flex', alignItems: 'center',
+        display: 'flex', alignItems: 'center', gap: 5,
         border: `1px solid ${accent}33`,
-        transition: 'background .1s',
+        transition: 'background .15s, color .15s',
       }}>
-        →
+        Einloggen
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M2 5h6M6 3l2 2-2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
       </div>
     </button>
   );
 }
 
+/* ── Teacher avatar (uploadable) ─────────────────────────── */
 function TeacherAvatar({ avatar, onChange, fileRef, hovered, setHovered, size = 72, changeLabel }) {
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -308,37 +406,31 @@ function TeacherAvatar({ avatar, onChange, fileRef, hovered, setHovered, size = 
         onMouseLeave={() => setHovered(false)}
         style={{
           width: size, height: size, borderRadius: '50%',
-          background: avatar ? 'transparent' : 'linear-gradient(135deg, #E8472A, #9333EA)',
           overflow: 'hidden', cursor: 'pointer', position: 'relative',
-          border: '2.5px solid var(--c-border)',
-          boxShadow: hovered ? '0 0 0 3px #E8472A33' : 'none',
+          border: '3px solid var(--c-border)',
+          boxShadow: hovered
+            ? '0 0 0 3px #E8472A44, 0 4px 20px rgba(0,0,0,0.15)'
+            : '0 2px 12px rgba(0,0,0,0.12)',
           transition: 'box-shadow .15s',
           flexShrink: 0,
         }}
       >
-        {avatar ? (
-          <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width={size * 0.42} height={size * 0.42} viewBox="0 0 26 26" fill="none">
-              <circle cx="13" cy="9" r="4.5" fill="rgba(255,255,255,0.9)"/>
-              <path d="M4 23c0-4.97 4.03-9 9-9s9 4.03 9 9" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </div>
-        )}
-        {/* Camera overlay on hover */}
+        <img src={avatar} alt="Lehrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+
+        {/* Camera overlay */}
         {hovered && (
           <div style={{
             position: 'absolute', inset: 0, borderRadius: '50%',
-            background: 'rgba(0,0,0,0.45)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 2,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 3,
           }}>
             <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
-              <path d="M6.5 1h5l1.5 2H16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h2.5L6.5 1Z" stroke="white" strokeWidth="1.3" strokeLinejoin="round"/>
+              <path d="M6.5 1h5l1.5 2H16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h2.5L6.5 1Z"
+                stroke="white" strokeWidth="1.3" strokeLinejoin="round"/>
               <circle cx="9" cy="8.5" r="2.5" stroke="white" strokeWidth="1.3"/>
             </svg>
-            <span style={{ fontSize: 8, color: '#fff', fontWeight: 600, letterSpacing: 0.3, lineHeight: 1 }}>
+            <span style={{ fontSize: 8, color: '#fff', fontWeight: 600, letterSpacing: 0.3 }}>
               {changeLabel}
             </span>
           </div>
@@ -348,18 +440,21 @@ function TeacherAvatar({ avatar, onChange, fileRef, hovered, setHovered, size = 
   );
 }
 
+/* ── Student avatar ──────────────────────────────────────── */
 function StudentAvatar({ size = 72 }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%',
       background: 'linear-gradient(135deg, #0EA5E9, #6366F1)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      border: '2.5px solid var(--c-border)',
+      border: '3px solid var(--c-border)',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
       flexShrink: 0,
     }}>
       <svg width={size * 0.42} height={size * 0.42} viewBox="0 0 26 26" fill="none">
         <circle cx="13" cy="9" r="4.5" fill="rgba(255,255,255,0.9)"/>
-        <path d="M4 23c0-4.97 4.03-9 9-9s9 4.03 9 9" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M4 23c0-4.97 4.03-9 9-9s9 4.03 9 9"
+          stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round"/>
       </svg>
     </div>
   );
