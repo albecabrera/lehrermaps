@@ -6,7 +6,7 @@ import api from '../lib/api';
 const STORAGE_KEY = 'lm_schedule';
 const DAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
 const DAYS_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi'];
-const PERIODS = 10;
+const PERIODS = 6;
 
 const STUNDENPLAN_SUBJECTS = [
   { id: 'klassenstunde', label: 'Klassenstunde', color: '#9333EA' },
