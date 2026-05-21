@@ -29,7 +29,7 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 app.use('/api', authRouter);
 app.use('/api/folders', foldersRouter);

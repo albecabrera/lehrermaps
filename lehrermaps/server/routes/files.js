@@ -45,7 +45,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: { fileSize: 300 * 1024 * 1024 },
   fileFilter: (_, file, cb) => {
     if (
       file.mimetype.startsWith('image/') ||
@@ -378,7 +378,7 @@ router.delete('/:id', async (req, res) => {
 router.use((err, req, res, _next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ error: 'Datei zu groß — max. 50 MB' });
+      return res.status(413).json({ error: 'Datei zu groß — max. 300 MB' });
     }
     return res.status(400).json({ error: err.message });
   }
