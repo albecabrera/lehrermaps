@@ -33,6 +33,17 @@ function tryMarkdownConvert(key, editor) {
     document.execCommand('delete', false);
   };
 
+  if (key === 'Enter') {
+    if (text === '#')   { clearBlock(); document.execCommand('formatBlock', false, 'h1'); return true; }
+    if (text === '##')  { clearBlock(); document.execCommand('formatBlock', false, 'h2'); return true; }
+    if (text === '###') { clearBlock(); document.execCommand('formatBlock', false, 'h3'); return true; }
+    if (text === '-' || text === '*') { clearBlock(); document.execCommand('insertUnorderedList', false); return true; }
+    if (/^1\.$/.test(text)) { clearBlock(); document.execCommand('insertOrderedList', false); return true; }
+    if (text === '>') { clearBlock(); document.execCommand('formatBlock', false, 'blockquote'); return true; }
+    if (text === '```') { clearBlock(); document.execCommand('formatBlock', false, 'pre'); return true; }
+    if (/^-{3,}$/.test(text.trim())) { clearBlock(); document.execCommand('insertHorizontalRule', false); return true; }
+  }
+
   if (key === ' ') {
     if (text === '#')   { clearBlock(); document.execCommand('formatBlock', false, 'h1'); return true; }
     if (text === '##')  { clearBlock(); document.execCommand('formatBlock', false, 'h2'); return true; }
@@ -41,14 +52,6 @@ function tryMarkdownConvert(key, editor) {
     if (/^1\.$/.test(text)) { clearBlock(); document.execCommand('insertOrderedList', false); return true; }
     if (text === '>') { clearBlock(); document.execCommand('formatBlock', false, 'blockquote'); return true; }
     if (text === '```') { clearBlock(); document.execCommand('formatBlock', false, 'pre'); return true; }
-  }
-
-  if (key === 'Enter') {
-    if (/^-{3,}$/.test(text.trim())) {
-      clearBlock();
-      document.execCommand('insertHorizontalRule', false);
-      return true;
-    }
   }
 
   return false;
@@ -390,9 +393,9 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
         padding: '3px 14px', display: 'flex', gap: 12, flexWrap: 'wrap', flexShrink: 0,
       }}>
         {[
-          ['# ', 'H1'], ['## ', 'H2'], ['### ', 'H3'],
-          ['- ', 'Liste'], ['1. ', '1.'], ['> ', 'Zitat'],
-          ['``` ', 'Code'], ['--- ↩', 'Linie'],
+          ['#↩', 'H1'], ['##↩', 'H2'], ['###↩', 'H3'],
+          ['-↩', 'Liste'], ['1.↩', '1.'], ['>↩', 'Zitat'],
+          ['```↩', 'Code'], ['---↩', 'Linie'],
         ].map(([md, label]) => (
           <span key={md} style={{ fontSize: 10, color: 'var(--c-text-3)', display: 'flex', gap: 4, alignItems: 'center' }}>
             <code style={{
