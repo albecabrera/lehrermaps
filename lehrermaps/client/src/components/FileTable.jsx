@@ -41,9 +41,8 @@ export default function FileTable({
     : byQuery.filter((f) => TYPE_GROUPS[filterType]?.(detectKind(f.original_name)));
 
   const availableTypes = useMemo(() => {
-    const kinds = new Set(files.map((f) => detectKind(f.original_name)));
-    return ['pdf', 'img', 'doc', 'video', 'audio'].filter((t) =>
-      files.some((f) => TYPE_GROUPS[t]?.(detectKind(f.original_name)))
+    return ['pdf', 'img', 'doc', 'video', 'audio'].filter((type) =>
+      files.some((f) => TYPE_GROUPS[type]?.(detectKind(f.original_name)))
     );
   }, [files, TYPE_GROUPS]);
 

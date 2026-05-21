@@ -380,10 +380,17 @@ export default function App({ onLogout }) {
   };
 
   const handleBulkDeleteFiles = async (selectedFiles) => {
+    const fileIds = selectedFiles.map((f) => f.id);
     for (const file of selectedFiles) {
       enqueueDelete(file);
     }
-    setToast({ type: 'warning', msg: t('toast.bulk_delete_pending', { n: selectedFiles.length }), duration: 5200 });
+    setToast({
+      type: 'warning',
+      msg: t('toast.bulk_delete_pending', { n: selectedFiles.length }),
+      duration: 5200,
+      actionLabel: t('toast.undo'),
+      action: () => fileIds.forEach(undoDelete),
+    });
   };
 
   const handleBulkShareFiles = async (selectedFiles) => {
@@ -911,6 +918,7 @@ export default function App({ onLogout }) {
                       />
                     ) : (
                       <FileTable
+                        key={activeFolder?.id}
                         files={files}
                         hiddenIds={pendingDeleteIds}
                         links={links}
