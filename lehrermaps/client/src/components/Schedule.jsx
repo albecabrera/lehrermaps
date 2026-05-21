@@ -192,7 +192,7 @@ export default function Schedule() {
         {/* Period rows */}
         {Array.from({ length: PERIODS }, (_, p) => (
           [
-            p === 1 && <BreakRow key="break-fruehstueck" label="Frühstückspause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} />,
+            p === 2 && <BreakRow key="break-fruehstueck" label="Frühstückspause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} />,
             p === 4 && <BreakRow key="break-mittag" label="Mittagspause" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} />,
             <div key={`label-${p}`} style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
