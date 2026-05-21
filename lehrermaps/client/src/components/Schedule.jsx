@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLang } from '../contexts/LangContext';
+import api from '../lib/api';
 
 const STORAGE_KEY = 'lm_schedule';
 const DAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
@@ -20,37 +21,58 @@ const STUNDENPLAN_SUBJECTS = [
   { id: 'mittagspause',  label: 'Mittagspause',  color: '#D97706' },
 ];
 
-function loadSchedule() {
+function loadCache() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
 }
-function saveSchedule(s) {
+function writeCache(s) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
 }
 
 export default function Schedule() {
   const { t, lang } = useLang();
-  const [schedule, setSchedule] = useState(loadSchedule);
+  const [schedule, setSchedule] = useState(loadCache);
   const [picker, setPicker] = useState(null); // { day, period, rect }
+
+  useEffect(() => {
+    api.get('/schedule').then((res) => {
+      const data = res.data || {};
+      setSchedule(data);
+      writeCache(data);
+    }).catch(() => {});
+  }, []);
 
   const DAYS = lang === 'es' ? DAYS_ES : DAYS_DE;
   const fileDate = new Date().toISOString().slice(0, 10);
 
+  const persist = useCallback((next) => {
+    setSchedule(next);
+    writeCache(next);
+    api.put('/schedule', next).catch(() => {});
+  }, []);
+
   const assign = useCallback((subject) => {
     if (!picker) return;
     const key = `${picker.day}-${picker.period}`;
-    const next = { ...schedule, [key]: { id: subject.id, label: subject.label, color: subject.color } };
-    setSchedule(next);
-    saveSchedule(next);
+    persist({ ...schedule, [key]: { id: subject.id, label: subject.label, color: subject.color } });
     setPicker(null);
-  }, [picker, schedule]);
+  }, [picker, schedule, persist]);
 
   const unlink = useCallback((day, period) => {
     const key = `${day}-${period}`;
     const next = { ...schedule };
     delete next[key];
-    setSchedule(next);
-    saveSchedule(next);
-  }, [schedule]);
+    persist(next);
+  }, [schedule, persist]);
+
+  const toggleBreakDay = useCallback((breakKey, day) => {
+    const current = schedule[breakKey] || {};
+    const updated = { ...current, [day]: !current[day] };
+    if (!updated[day]) delete updated[day];
+    const next = { ...schedule };
+    if (Object.keys(updated).length === 0) delete next[breakKey];
+    else next[breakKey] = updated;
+    persist(next);
+  }, [schedule, persist]);
 
   const openPicker = useCallback((day, period, el) => {
     const rect = el.getBoundingClientRect();
@@ -170,8 +192,8 @@ export default function Schedule() {
         {/* Period rows */}
         {Array.from({ length: PERIODS }, (_, p) => (
           [
-            p === 1 && <BreakRow key="break-fruehstueck" label="Frühstückspause" />,
-            p === 4 && <BreakRow key="break-mittag" label="Mittagspause" />,
+            p === 1 && <BreakRow key="break-fruehstueck" label="Frühstückspause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} />,
+            p === 4 && <BreakRow key="break-mittag" label="Mittagspause" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} />,
             <div key={`label-${p}`} style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
@@ -259,21 +281,43 @@ function ScheduleCell({ cell, onEdit, onUnlink }) {
   );
 }
 
-function BreakRow({ label }) {
+const AUFSICHT_COLOR = '#64748B';
+
+function BreakRow({ label, value, onToggleDay }) {
+  return [
+    <div key="label" style={{
+      display: 'flex', alignItems: 'center',
+      fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
+      textTransform: 'uppercase', color: 'var(--c-text-3)',
+      justifyContent: 'flex-end', paddingRight: 6,
+      height: 30,
+    }}>{label.split('pause')[0]}</div>,
+    ...[0, 1, 2, 3, 4].map((d) => (
+      <BreakDayCell key={d} active={!!value[d]} onToggle={() => onToggleDay(d)} />
+    )),
+  ];
+}
+
+function BreakDayCell({ active, onToggle }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div style={{
-      gridColumn: '1 / -1',
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '4px 0',
-      margin: '2px 0',
-    }}>
-      <div style={{ flex: 1, height: 1, background: 'var(--c-border)' }} />
-      <span style={{
-        fontSize: 10, fontWeight: 600, letterSpacing: 0.4,
-        textTransform: 'uppercase', color: 'var(--c-text-3)',
-        whiteSpace: 'nowrap',
-      }}>{label}</span>
-      <div style={{ flex: 1, height: 1, background: 'var(--c-border)' }} />
+    <div
+      onClick={onToggle}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        height: 30, borderRadius: 6, cursor: 'pointer',
+        border: `1px solid ${active ? AUFSICHT_COLOR + '66' : hovered ? AUFSICHT_COLOR + '33' : 'var(--c-border)'}`,
+        background: active ? `${AUFSICHT_COLOR}18` : hovered ? `${AUFSICHT_COLOR}0C` : 'var(--c-surface)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'background .1s, border-color .1s',
+      }}
+    >
+      {active ? (
+        <span style={{ fontSize: 9, fontWeight: 700, color: AUFSICHT_COLOR, letterSpacing: 0.3 }}>Aufsicht</span>
+      ) : hovered ? (
+        <span style={{ fontSize: 14, color: AUFSICHT_COLOR, opacity: 0.5 }}>+</span>
+      ) : null}
     </div>
   );
 }
