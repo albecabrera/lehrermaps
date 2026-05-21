@@ -195,8 +195,8 @@ export default function Schedule() {
         {/* Period rows */}
         {Array.from({ length: PERIODS }, (_, p) => (
           [
-            p === 2 && <BreakRow key="break-fruehstueck" label="Frühstückspause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} />,
-            p === 4 && <BreakRow key="break-mittag" label="Mittagspause" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} />,
+            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Frühstückspause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} />,
+            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Mittagspause" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} />,
             <div key={`label-${p}`} style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
@@ -286,9 +286,9 @@ function ScheduleCell({ cell, onEdit, onUnlink }) {
 
 const AUFSICHT_COLOR = '#64748B';
 
-function BreakRow({ label, value, onToggleDay }) {
+function BreakRow({ breakKey, label, value, onToggleDay }) {
   return [
-    <div key="label" style={{
+    <div key={`${breakKey}-label`} style={{
       display: 'flex', alignItems: 'center',
       fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
       textTransform: 'uppercase', color: 'var(--c-text-3)',
@@ -296,7 +296,7 @@ function BreakRow({ label, value, onToggleDay }) {
       height: 30,
     }}>{label.split('pause')[0]}</div>,
     ...[0, 1, 2, 3, 4].map((d) => (
-      <BreakDayCell key={d} active={!!value[d]} onToggle={() => onToggleDay(d)} />
+      <BreakDayCell key={`${breakKey}-${d}`} active={!!value[d]} onToggle={() => onToggleDay(d)} />
     )),
   ];
 }
