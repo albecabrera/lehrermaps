@@ -1217,7 +1217,7 @@ function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect
       ) : (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
           gap: 12,
         }}>
           {folders.map((f) => (
@@ -1252,27 +1252,82 @@ function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect
   );
 }
 
+const SUBJECT_COVERS = {
+  spanisch: {
+    gradient: 'linear-gradient(145deg, #7c2d12 0%, #c2410c 38%, #ea580c 68%, #fb923c 100%)',
+    orb1: 'rgba(251,146,60,0.25)', orb2: 'rgba(124,45,18,0.4)',
+    icon: (
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+        <path d="M6 8h24a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H16l-6 6v-6H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z"
+          fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.5)" strokeWidth="1.4"/>
+        <path d="M22 8v24M6 8l8 12 8-12" stroke="rgba(255,255,255,0.3)" strokeWidth="1.2" strokeLinecap="round"/>
+        <circle cx="34" cy="12" r="7" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2"/>
+        <path d="M31 12h6M34 9v6" stroke="rgba(255,255,255,0.6)" strokeWidth="1.4" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  informatik: {
+    gradient: 'linear-gradient(145deg, #0f2150 0%, #1d4ed8 40%, #3b82f6 72%, #22d3ee 110%)',
+    orb1: 'rgba(34,211,238,0.2)', orb2: 'rgba(15,33,80,0.5)',
+    icon: (
+      <svg width="48" height="36" viewBox="0 0 48 36" fill="none">
+        <path d="M14 8L4 18l10 10" stroke="rgba(255,255,255,0.7)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M34 8l10 10-10 10" stroke="rgba(255,255,255,0.7)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M28 4L20 32" stroke="rgba(255,255,255,0.45)" strokeWidth="1.8" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  sport: {
+    gradient: 'linear-gradient(145deg, #14532d 0%, #15803d 40%, #16a34a 70%, #4ade80 110%)',
+    orb1: 'rgba(74,222,128,0.2)', orb2: 'rgba(20,83,45,0.45)',
+    icon: (
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+        <circle cx="22" cy="22" r="15" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5"/>
+        <path d="M22 7c0 0-5 6-5 15s5 15 5 15" stroke="rgba(255,255,255,0.35)" strokeWidth="1.3"/>
+        <path d="M7 22h30" stroke="rgba(255,255,255,0.35)" strokeWidth="1.3"/>
+        <path d="M10 12c4 2 8 3 12 3s8-1 12-3M10 32c4-2 8-3 12-3s8 1 12 3"
+          stroke="rgba(255,255,255,0.3)" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  klasse: {
+    gradient: 'linear-gradient(145deg, #3b0764 0%, #7c3aed 42%, #9333ea 70%, #c084fc 110%)',
+    orb1: 'rgba(192,132,252,0.22)', orb2: 'rgba(59,7,100,0.45)',
+    icon: (
+      <svg width="46" height="40" viewBox="0 0 46 40" fill="none">
+        <path d="M23 4L2 16l21 12 21-12z" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.55)" strokeWidth="1.4" strokeLinejoin="round"/>
+        <path d="M8 22v10c0 0 5 6 15 6s15-6 15-6V22" stroke="rgba(255,255,255,0.45)" strokeWidth="1.4" strokeLinecap="round"/>
+        <path d="M40 16v12" stroke="rgba(255,255,255,0.4)" strokeWidth="1.4" strokeLinecap="round"/>
+        <circle cx="40" cy="30" r="2.5" fill="rgba(255,255,255,0.5)"/>
+      </svg>
+    ),
+  },
+};
+
 function FolderCard({ folder, accent, onClick, t }) {
+  const cover = SUBJECT_COVERS[folder.subject] || SUBJECT_COVERS.klasse;
+
   return (
     <button
       onClick={onClick}
       style={{
-        appearance: 'none', border: '1px solid var(--c-border)', borderRadius: 10,
+        appearance: 'none', border: '1px solid var(--c-border)', borderRadius: 14,
         background: 'var(--c-surface)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
         padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        transition: 'box-shadow .15s, transform .1s',
+        transition: 'box-shadow .18s, transform .12s',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)';
-        e.currentTarget.style.transform = 'translateY(-1px)';
+        e.currentTarget.style.boxShadow = `0 8px 28px rgba(0,0,0,0.16), 0 0 0 1px ${accent}44`;
+        e.currentTarget.style.transform = 'translateY(-2px)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.boxShadow = 'none';
         e.currentTarget.style.transform = 'none';
       }}
     >
+      {/* Cover area */}
       {folder.thumbnail_file_id ? (
-        <div style={{ width: '100%', height: 80, overflow: 'hidden', background: 'var(--c-surface-2)' }}>
+        <div style={{ width: '100%', height: 112, overflow: 'hidden', background: 'var(--c-surface-2)', flexShrink: 0 }}>
           <img
             src={viewFile(folder.thumbnail_file_id)}
             alt=""
@@ -1282,27 +1337,80 @@ function FolderCard({ folder, accent, onClick, t }) {
         </div>
       ) : (
         <div style={{
-          width: '100%', height: 80, background: `${accent}10`,
+          width: '100%', height: 112, flexShrink: 0,
+          background: cover.gradient,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', overflow: 'hidden',
         }}>
-          <svg width="28" height="24" viewBox="0 0 24 20" fill="none">
-            <path d="M0 4a2 2 0 0 1 2-2h7l2 2h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Z"
-              fill={accent} opacity="0.5"/>
-            <path d="M0 6h24v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6Z" fill={accent} opacity="0.6"/>
-          </svg>
+          {/* Orbs */}
+          <div style={{
+            position: 'absolute', top: -24, right: -24, width: 96, height: 96,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${cover.orb1} 0%, transparent 70%)`,
+            pointerEvents: 'none',
+          }} />
+          <div style={{
+            position: 'absolute', bottom: -20, left: -16, width: 72, height: 72,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${cover.orb2} 0%, transparent 70%)`,
+            pointerEvents: 'none',
+          }} />
+          {/* Grid texture */}
+          <div style={{
+            position: 'absolute', inset: 0, opacity: 0.05,
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+            pointerEvents: 'none',
+          }} />
+          {/* Icon */}
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {cover.icon}
+          </div>
+          {/* Group label badge */}
+          <div style={{
+            position: 'absolute', bottom: 8, left: 10,
+            background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255,255,255,0.14)',
+            borderRadius: 6, padding: '2px 7px',
+            fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.85)',
+            letterSpacing: 0.4, textTransform: 'uppercase',
+          }}>
+            {folder.group_name}
+          </div>
+          {/* File count badge */}
+          {folder.file_count > 0 && (
+            <div style={{
+              position: 'absolute', bottom: 8, right: 10,
+              background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(4px)',
+              border: '1px solid rgba(255,255,255,0.14)',
+              borderRadius: 6, padding: '2px 7px',
+              fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.75)',
+              fontFamily: '"DM Mono", monospace',
+            }}>
+              {folder.file_count}
+            </div>
+          )}
         </div>
       )}
-      <div style={{ padding: '10px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+
+      {/* Info */}
+      <div style={{ padding: '10px 13px 11px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+          <div style={{ width: 6, height: 6, borderRadius: 2, background: accent, flexShrink: 0 }} />
           <div style={{
             fontSize: 13, fontWeight: 600, color: 'var(--c-text)',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, minWidth: 0,
           }}>{folder.name}</div>
-          {folder.is_favorite ? <span style={{ fontSize: 12, color: '#F59E0B', flexShrink: 0, marginLeft: 6 }}>★</span> : null}
+          {folder.is_favorite ? <span style={{ fontSize: 11, color: '#F59E0B', flexShrink: 0 }}>★</span> : null}
         </div>
-        <div style={{ fontSize: 10, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace' }}>
-          {folder.group_name} · {t('folders.files', { n: folder.file_count ?? 0 })}
-        </div>
+        {folder.due_at && (
+          <div style={{
+            fontSize: 9.5, color: new Date(folder.due_at) < new Date() ? '#EF4444' : 'var(--c-text-3)',
+            fontFamily: '"DM Mono", monospace', marginTop: 1,
+          }}>
+            ⏰ {new Date(folder.due_at).toLocaleDateString('de-DE')}
+          </div>
+        )}
       </div>
     </button>
   );
