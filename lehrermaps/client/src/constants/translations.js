@@ -37,6 +37,13 @@ export const translations = {
     'login.loading': 'Anmelden…',
     'login.error': 'Falsches Passwort. Bitte erneut versuchen.',
     'login.footer': 'LehrerMaps · Bonn · NRW',
+    'login.choose_role': 'Wie möchtest du einloggen?',
+    'login.teacher_role': 'Lehrer',
+    'login.teacher_desc': 'Materialien verwalten',
+    'login.student_role': 'Schüler',
+    'login.student_desc': 'Freigegebene Inhalte ansehen',
+    'login.change_photo': 'Foto ändern',
+    'login.back': 'Zurück',
 
     // App shell
     'app.upload': 'Hochladen',
@@ -460,6 +467,14 @@ export const translations = {
     'schedule.navigate': 'Abrir',
     'schedule.export_ics': 'Exportar como .ics',
     'schedule.filter_placeholder': 'Filtrar…',
+
+    'login.choose_role': '¿Cómo querés entrar?',
+    'login.teacher_role': 'Maestro',
+    'login.teacher_desc': 'Gestionar materiales',
+    'login.student_role': 'Alumno',
+    'login.student_desc': 'Ver contenido compartido',
+    'login.change_photo': 'Cambiar foto',
+    'login.back': 'Volver',
 
     // Student view
     'student.view': 'Vista alumno',

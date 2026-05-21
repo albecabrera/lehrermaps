@@ -1,11 +1,10 @@
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import Login from './pages/Login';
 import App from './pages/App';
 import ErrorBoundary from './components/ErrorBoundary';
-import StudentLogin from './pages/StudentLogin';
 import StudentApp from './pages/StudentApp';
+import LoginPanel from './pages/LoginPanel';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LangProvider } from './contexts/LangContext';
 
@@ -16,7 +15,6 @@ function parseRole(token) {
 }
 
 function Root() {
-  const isStudentMode = new URLSearchParams(window.location.search).has('student');
   const [tick, setTick] = useState(0);
 
   const token = localStorage.getItem('lm_token');
@@ -27,16 +25,14 @@ function Root() {
   const handleLogout = () => {
     localStorage.removeItem('lm_token');
     setTick((n) => n + 1);
-    if (isStudentMode) window.location.href = '/';
   };
 
-  if (isStudentMode) {
-    if (role === 'student') return <StudentApp onLogout={handleLogout} />;
-    return <StudentLogin onLogin={handleLogin} />;
-  }
-
   if (role === 'lehrer') return <App onLogout={handleLogout} />;
-  return <Login onLogin={handleLogin} />;
+  if (role === 'student') return <StudentApp onLogout={handleLogout} />;
+
+  // Pre-select student role if coming from QR (?student in URL)
+  const initialRole = new URLSearchParams(window.location.search).has('student') ? 'student' : null;
+  return <LoginPanel onLogin={handleLogin} initialRole={initialRole} />;
 }
 
 createRoot(document.getElementById('root')).render(
