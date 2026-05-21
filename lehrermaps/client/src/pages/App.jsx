@@ -63,6 +63,9 @@ export default function App({ onLogout }) {
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
+  const [sidebarWidth, setSidebarWidth] = useState(260);
+  const sidebarDragState = useRef(null);
+  const [newFolderParentId, setNewFolderParentId] = useState(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -112,6 +115,28 @@ export default function App({ onLogout }) {
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [activeFile, activeFolder, files, folderTab]);
+
+  const onSidebarResizeMouseDown = useCallback((e) => {
+    e.preventDefault();
+    sidebarDragState.current = { startX: e.clientX, startWidth: sidebarWidth };
+    const onMove = (ev) => {
+      if (!sidebarDragState.current) return;
+      const delta = ev.clientX - sidebarDragState.current.startX;
+      const next = Math.min(500, Math.max(180, sidebarDragState.current.startWidth + delta));
+      setSidebarWidth(next);
+    };
+    const onUp = () => {
+      sidebarDragState.current = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [sidebarWidth]);
 
   const onResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -228,9 +253,10 @@ export default function App({ onLogout }) {
     setTimeout(() => setDropUploading(null), 900);
   }, [activeFolder, reloadFolders, upload]);
 
-  const handleNewFolder = async ({ subject: subjectKey, group_name, name, template }) => {
-    if (!template) {
-      await addFolder(subjectKey, group_name, name);
+  const handleNewFolder = async ({ subject: subjectKey, group_name, name, template, parent_id }) => {
+    if (!template || parent_id) {
+      await addFolder(subjectKey, group_name, name, parent_id ?? null);
+      setNewFolderParentId(null);
       return;
     }
     const templates = {
@@ -240,11 +266,13 @@ export default function App({ onLogout }) {
     const parts = templates[template] || [];
     if (!parts.length) {
       await addFolder(subjectKey, group_name, name);
+      setNewFolderParentId(null);
       return;
     }
     for (const part of parts) {
       await addFolder(subjectKey, group_name, `${name} · ${part}`);
     }
+    setNewFolderParentId(null);
   };
 
   const handleDeleteFile = (file) => {
@@ -651,15 +679,27 @@ export default function App({ onLogout }) {
           groups={subject.groups}
           folders={subjectFolders}
           loading={foldersLoading}
+          width={sidebarWidth}
           activeFolderId={activeFolder?.id}
           onFolderSelect={onFolderSelect}
           onNewFolder={() => { setNewFolderGroup(null); setNewFolderOpen(true); }}
           onNewFolderInGroup={(g) => { setNewFolderGroup(g); setNewFolderOpen(true); }}
+          onNewSubfolder={(folder) => { setNewFolderParentId(folder.id); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
           onRenameFolder={setRenamingFolder}
           onDeleteFolder={handleDeleteFolder}
           onReorderFolders={reorderFolders}
           onToggleFavorite={toggleFavorite}
           onMoveFileToFolder={handleMoveFileToFolder}
+        />
+        <div
+          onMouseDown={onSidebarResizeMouseDown}
+          style={{
+            width: 4, flexShrink: 0, cursor: 'col-resize',
+            background: 'transparent', position: 'relative',
+            transition: 'background .15s',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = accent + '55'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         />
 
         <div
@@ -915,10 +955,11 @@ export default function App({ onLogout }) {
 
       <NewFolderModal
         open={newFolderOpen}
-        onClose={() => setNewFolderOpen(false)}
+        onClose={() => { setNewFolderOpen(false); setNewFolderParentId(null); }}
         onSave={handleNewFolder}
         subject={subject}
         defaultGroup={newFolderGroup}
+        parentFolder={newFolderParentId ? folders.find((f) => f.id === newFolderParentId) ?? null : null}
       />
       <RenameFolderModal
         folder={renamingFolder}

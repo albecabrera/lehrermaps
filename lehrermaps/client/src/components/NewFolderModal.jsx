@@ -3,16 +3,23 @@ import { createPortal } from 'react-dom';
 import { SUBJECTS } from '../constants/structure';
 import { useLang } from '../contexts/LangContext';
 
-export default function NewFolderModal({ open, onClose, onSave, subject, defaultGroup }) {
+export default function NewFolderModal({ open, onClose, onSave, subject, defaultGroup, parentFolder = null }) {
   const { t } = useLang();
   const [name, setName] = useState('');
   const [groupName, setGroupName] = useState('');
   const [template, setTemplate] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const isSubfolder = !!parentFolder;
+
   useEffect(() => {
-    if (open) { setName(''); setGroupName(defaultGroup || ''); setTemplate(''); setSaving(false); }
-  }, [open, defaultGroup]);
+    if (open) {
+      setName('');
+      setGroupName(isSubfolder ? parentFolder.group_name : (defaultGroup || ''));
+      setTemplate('');
+      setSaving(false);
+    }
+  }, [open, defaultGroup, isSubfolder, parentFolder]);
 
   const subjectData = SUBJECTS.find((s) => s.id === subject?.id);
   const groups = subjectData?.groups ?? [];
@@ -22,7 +29,13 @@ export default function NewFolderModal({ open, onClose, onSave, subject, default
     if (!name.trim() || !groupName) return;
     setSaving(true);
     try {
-      await onSave({ subject: subject.id, group_name: groupName, name: name.trim(), template: template || null });
+      await onSave({
+        subject: subject.id,
+        group_name: groupName,
+        name: name.trim(),
+        template: template || null,
+        parent_id: parentFolder?.id ?? null,
+      });
       setName('');
       setGroupName('');
       onClose();
@@ -55,29 +68,37 @@ export default function NewFolderModal({ open, onClose, onSave, subject, default
         }}
       >
         <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--c-border)' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3, color: 'var(--c-text)' }}>{t('modal.new_folder.title')}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3, color: 'var(--c-text)' }}>
+            {isSubfolder ? 'Neue Unterordner' : t('modal.new_folder.title')}
+          </div>
           <div style={{ fontSize: 12, color: 'var(--c-text-2)', marginTop: 3 }}>
-            {t('modal.new_folder.in')} <strong style={{ color: accent }}>{t('subject.' + subject?.id) || subjectData?.name}</strong>
+            {isSubfolder ? (
+              <>In <strong style={{ color: accent }}>📁 {parentFolder.name}</strong></>
+            ) : (
+              <>{t('modal.new_folder.in')} <strong style={{ color: accent }}>{t('subject.' + subject?.id) || subjectData?.name}</strong></>
+            )}
           </div>
         </div>
 
         <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={{
-              fontSize: 10, fontWeight: 600, letterSpacing: 0.6,
-              textTransform: 'uppercase', color: 'var(--c-text-3)',
-            }}>{t('modal.new_folder.subject_label')}</span>
-            <select
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              style={inputStyle}
-            >
-              <option value="">Gruppe wählen…</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.name}>{g.name}</option>
-              ))}
-            </select>
-          </label>
+          {!isSubfolder && (
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{
+                fontSize: 10, fontWeight: 600, letterSpacing: 0.6,
+                textTransform: 'uppercase', color: 'var(--c-text-3)',
+              }}>{t('modal.new_folder.subject_label')}</span>
+              <select
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                style={inputStyle}
+              >
+                <option value="">Gruppe wählen…</option>
+                {groups.map((g) => (
+                  <option key={g.id} value={g.name}>{g.name}</option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <span style={{
@@ -115,12 +136,12 @@ export default function NewFolderModal({ open, onClose, onSave, subject, default
           <button onClick={onClose} style={btnSecStyle}>{t('cancel')}</button>
           <button
             onClick={handleSave}
-            disabled={!name.trim() || !groupName || saving}
+            disabled={!name.trim() || (!groupName && !isSubfolder) || saving}
             style={{
               ...btnPriStyle,
               background: accent,
-              opacity: !name.trim() || !groupName || saving ? 0.5 : 1,
-              cursor: !name.trim() || !groupName || saving ? 'not-allowed' : 'pointer',
+              opacity: !name.trim() || (!groupName && !isSubfolder) || saving ? 0.5 : 1,
+              cursor: !name.trim() || (!groupName && !isSubfolder) || saving ? 'not-allowed' : 'pointer',
             }}
           >{saving ? t('creating') : t('create')}</button>
         </div>

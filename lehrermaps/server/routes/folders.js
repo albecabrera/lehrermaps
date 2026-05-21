@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
       FROM folders f
       LEFT JOIN files fi ON fi.folder_id = f.id
       GROUP BY f.id
-      ORDER BY f.subject, f.group_name, f.sort_order, f.name
+      ORDER BY f.subject, f.group_name, f.parent_id, f.sort_order, f.name
     `);
     res.json(rows);
   } catch (e) {
@@ -29,17 +29,22 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { subject, group_name, name } = req.body;
+  const { subject, group_name, name, parent_id } = req.body;
   if (!subject || !group_name || !name) {
     return res.status(400).json({ error: 'subject, group_name und name erforderlich' });
   }
+  const pid = parent_id ? Number(parent_id) : null;
   try {
+    if (pid) {
+      const [check] = await pool.execute('SELECT id FROM folders WHERE id = ?', [pid]);
+      if (!check.length) return res.status(400).json({ error: 'Überordner nicht gefunden' });
+    }
     const [result] = await pool.execute(
-      'INSERT INTO folders (subject, group_name, name) VALUES (?, ?, ?)',
-      [subject, group_name, name]
+      'INSERT INTO folders (subject, group_name, name, parent_id) VALUES (?, ?, ?, ?)',
+      [subject, group_name, name, pid]
     );
     const [rows] = await pool.execute(
-      'SELECT *, 0 AS file_count FROM folders WHERE id = ?',
+      'SELECT *, 0 AS file_count, 0 AS total_size_bytes FROM folders WHERE id = ?',
       [result.insertId]
     );
     res.status(201).json(rows[0]);

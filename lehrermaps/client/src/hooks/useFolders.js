@@ -20,8 +20,8 @@ export function useFolders() {
 
   useEffect(() => { load(); }, [load]);
 
-  const add = useCallback(async (subject, group_name, name) => {
-    const folder = await createFolder({ subject, group_name, name });
+  const add = useCallback(async (subject, group_name, name, parent_id = null) => {
+    const folder = await createFolder({ subject, group_name, name, ...(parent_id ? { parent_id } : {}) });
     setFolders((prev) => [...prev, folder]);
     return folder;
   }, []);
