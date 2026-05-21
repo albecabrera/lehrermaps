@@ -27,26 +27,26 @@
 }
 
 [data-theme="dark"] {
-  --c-bg: #141925;
-  --c-surface: #1C2331;
-  --c-surface-2: #202838;
-  --c-tab-bg: #1A2130;
-  --c-border: #364156;
-  --c-border-soft: rgba(186, 198, 224, 0.16);
-  --c-text: #EFF3FB;
-  --c-text-2: #B3BDD0;
-  --c-text-3: #9FAAC0;
-  --c-hover: #303B52;
-  --c-hover-2: rgba(255, 255, 255, 0.08);
-  --c-input-bg: #20293A;
-  --c-scrollbar: #46536D;
-  --c-overlay: rgba(9, 12, 18, 0.52);
-  --c-focus: #8FB4FF;
-  --c-shadow-modal: 0 20px 56px rgba(3, 6, 12, 0.42);
-  --c-shadow-pop: 0 10px 28px rgba(3, 6, 12, 0.34);
-  --c-danger-bg: rgba(127, 29, 29, 0.24);
-  --c-danger-border: rgba(248, 113, 113, 0.35);
-  --c-danger-text: #FCA5A5;
+  --c-bg: #0C0D10;
+  --c-surface: #13141A;
+  --c-surface-2: #1A1B23;
+  --c-tab-bg: #0F1014;
+  --c-border: #242530;
+  --c-border-soft: rgba(255, 255, 255, 0.055);
+  --c-text: #ECEDF2;
+  --c-text-2: #9B9EAC;
+  --c-text-3: #5E6070;
+  --c-hover: #1C1D26;
+  --c-hover-2: rgba(255, 255, 255, 0.042);
+  --c-input-bg: #15161C;
+  --c-scrollbar: #2E3040;
+  --c-overlay: rgba(0, 0, 0, 0.72);
+  --c-focus: #7B9FFF;
+  --c-shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --c-shadow-pop: 0 12px 36px rgba(0, 0, 0, 0.52);
+  --c-danger-bg: rgba(100, 18, 18, 0.24);
+  --c-danger-border: rgba(248, 113, 113, 0.28);
+  --c-danger-text: #FC9A9A;
   color-scheme: dark;
 }
 
@@ -97,10 +97,17 @@ button, input, select, textarea {
 }
 
 /* Smooth scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--c-scrollbar); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--c-scrollbar); border-radius: 6px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--c-text-3); }
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.18);
+}
 
 /* Notes editor content styles */
 .lm-notes-editor:empty::before {
