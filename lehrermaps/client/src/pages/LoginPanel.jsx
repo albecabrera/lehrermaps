@@ -240,98 +240,120 @@ function WelcomeBanner() {
   return (
     <div style={{
       width: '100%', maxWidth: 480, marginBottom: 36,
-      borderRadius: 24, overflow: 'hidden', position: 'relative',
-      boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+      borderRadius: 24, overflow: 'hidden',
+      boxShadow: '0 12px 48px rgba(10,14,40,0.35), 0 2px 8px rgba(0,0,0,0.12)',
     }}>
-      {/* Gradient background */}
       <div style={{
-        background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 40%, #24243e 70%, #E8472A 130%)',
-        padding: '36px 36px 32px',
+        background: 'linear-gradient(145deg, #0a0f1e 0%, #131929 30%, #1c1040 58%, #3b1f6a 80%, #6b2d4a 100%)',
+        padding: '34px 36px 30px',
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Decorative circles */}
+
+        {/* Decorative orbs */}
         <div style={{
-          position: 'absolute', top: -40, right: -40,
-          width: 180, height: 180, borderRadius: '50%',
-          background: 'rgba(232,71,42,0.15)',
+          position: 'absolute', top: -50, right: -50,
+          width: 200, height: 200, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(107,45,74,0.55) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
         <div style={{
-          position: 'absolute', bottom: -30, left: -20,
-          width: 120, height: 120, borderRadius: '50%',
-          background: 'rgba(147,51,234,0.12)',
+          position: 'absolute', bottom: -40, left: -30,
+          width: 160, height: 160, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(59,31,106,0.6) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
+        {/* Subtle grid lines */}
         <div style={{
-          position: 'absolute', top: '30%', right: '20%',
-          width: 60, height: 60, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.04)',
+          position: 'absolute', inset: 0, opacity: 0.04,
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
           pointerEvents: 'none',
         }} />
 
-        {/* App badge */}
+        {/* School badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 7,
-          background: 'rgba(255,255,255,0.1)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: 20, padding: '4px 12px',
-          marginBottom: 20,
+          background: 'rgba(255,255,255,0.07)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 20, padding: '5px 13px',
+          marginBottom: 22, backdropFilter: 'blur(4px)',
         }}>
           <div style={{
             width: 18, height: 18, borderRadius: 5,
             background: 'linear-gradient(135deg, #E8472A, #9333EA)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
           }}>
             <svg width="10" height="10" viewBox="0 0 26 26" fill="none">
               <path d="M3 6a2 2 0 0 1 2-2h5l2 2h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z"
                 fill="rgba(255,255,255,0.95)"/>
             </svg>
           </div>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)', letterSpacing: 0.3 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)', letterSpacing: 0.2 }}>
             LehrerMaps
           </span>
         </div>
 
-        {/* Main heading */}
-        <div>
-          <div style={{
-            fontSize: 11, fontWeight: 600, letterSpacing: 2,
-            textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)',
-            marginBottom: 6,
-          }}>
-            Unterrichtsmaterial · Bonn · NRW
-          </div>
-          <h1 style={{
-            fontSize: 32, fontWeight: 800, margin: 0,
-            letterSpacing: -1,
-            background: 'linear-gradient(90deg, #ffffff 0%, #e0c8ff 60%, #ffb3a0 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            lineHeight: 1.15,
-          }}>
-            Herzlich<br />Willkommen
-          </h1>
-          <p style={{
-            margin: '10px 0 0', fontSize: 13,
-            color: 'rgba(255,255,255,0.55)',
-            lineHeight: 1.5, maxWidth: 260,
-          }}>
-            Verwalte deine Unterrichtsmaterialien — sicher, schnell und übersichtlich.
-          </p>
+        {/* School name */}
+        <div style={{
+          fontSize: 10, fontWeight: 700, letterSpacing: 1.8,
+          textTransform: 'uppercase', marginBottom: 10,
+          color: 'transparent',
+          background: 'linear-gradient(90deg, #c084fc, #f0abfc)',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+        }}>
+          Elisabeth-Selbert-Gesamtschule · Bonn
         </div>
 
-        {/* Bottom stats strip */}
-        <div style={{
-          marginTop: 24, paddingTop: 20,
-          borderTop: '1px solid rgba(255,255,255,0.1)',
-          display: 'flex', gap: 24,
+        {/* Main heading */}
+        <h1 style={{
+          fontSize: 34, fontWeight: 800, margin: '0 0 10px',
+          letterSpacing: -1.2, lineHeight: 1.12,
+          background: 'linear-gradient(100deg, #ffffff 0%, #e9d5ff 45%, #fca5a5 85%, #fdba74 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
         }}>
-          {[['4', 'Fächer'], ['∞', 'Dateien'], ['100%', 'Lokal']].map(([val, label]) => (
-            <div key={label}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{val}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div>
+          Herzlich<br />Willkommen
+        </h1>
+
+        <p style={{
+          margin: 0, fontSize: 12.5,
+          color: 'rgba(255,255,255,0.45)',
+          lineHeight: 1.55, maxWidth: 270,
+        }}>
+          Unterrichtsmaterialien verwalten — sicher, schnell und übersichtlich.
+        </p>
+
+        {/* Stats strip */}
+        <div style={{
+          marginTop: 22, paddingTop: 18,
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex', gap: 0,
+        }}>
+          {[
+            ['4', 'Fächer'],
+            ['∞', 'Dateien'],
+            ['✓', 'DSGVO-konform'],
+          ].map(([val, label], i) => (
+            <div key={label} style={{
+              flex: 1, paddingRight: 12,
+              borderRight: i < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+              marginRight: i < 2 ? 12 : 0,
+            }}>
+              <div style={{
+                fontSize: 16, fontWeight: 800, lineHeight: 1,
+                background: 'linear-gradient(135deg, #e9d5ff, #fca5a5)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>{val}</div>
+              <div style={{
+                fontSize: 9, color: 'rgba(255,255,255,0.38)',
+                letterSpacing: 0.4, textTransform: 'uppercase', marginTop: 3,
+              }}>{label}</div>
             </div>
           ))}
         </div>
