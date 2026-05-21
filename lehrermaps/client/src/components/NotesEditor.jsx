@@ -11,7 +11,39 @@ const TEXT_COLORS = [
   '#DC2626', '#16A34A', '#2563EB', '#9333EA', '#F97316', '#0891B2', '#CA8A04',
 ];
 
-// ── Markdown conversion ────────────────────────────────────────────────────
+// ── Inline markdown (typed closing delimiter → format) ────────────────────
+const INLINE_PATTERNS = [
+  [/\*\*([^*\n]+)\*\*$/, (t) => `<strong>${t}</strong>`],
+  [/__([^_\n]+)__$/, (t) => `<strong>${t}</strong>`],
+  [/\*([^*\n]+)\*$/, (t) => `<em>${t}</em>`],
+  [/_([^_\n]+)_$/, (t) => `<em>${t}</em>`],
+  [/~~([^~\n]+)~~$/, (t) => `<s>${t}</s>`],
+  [/`([^`\n]+)`$/, (t) => `<code>${t}</code>`],
+];
+
+function tryInlineMarkdown(editor) {
+  if (!editor) return false;
+  const sel = window.getSelection();
+  if (!sel?.rangeCount || !sel.isCollapsed) return false;
+  const range = sel.getRangeAt(0);
+  const node = range.startContainer;
+  if (node.nodeType !== Node.TEXT_NODE) return false;
+  const before = node.textContent.slice(0, range.startOffset);
+  for (const [re, html] of INLINE_PATTERNS) {
+    const m = before.match(re);
+    if (!m) continue;
+    const r = document.createRange();
+    r.setStart(node, range.startOffset - m[0].length);
+    r.setEnd(node, range.startOffset);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    document.execCommand('insertHTML', false, html(m[1]));
+    return true;
+  }
+  return false;
+}
+
+// ── Block markdown conversion ──────────────────────────────────────────────
 function tryMarkdownConvert(key, editor) {
   if (!editor) return false;
   const sel = window.getSelection();
@@ -179,6 +211,14 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
   }, []);
 
   const handleKeyDown = useCallback((e) => {
+    // Inline markdown: fire after the closing delimiter is inserted
+    if (['*', '_', '~', '`'].includes(e.key)) {
+      setTimeout(() => {
+        if (tryInlineMarkdown(editorRef.current)) {
+          editorRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }, 0);
+    }
     if (e.key === ' ' || e.key === 'Enter') {
       const converted = tryMarkdownConvert(e.key, editorRef.current);
       if (converted) {
@@ -186,7 +226,6 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
         editorRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
       }
     }
-    // Ctrl+K → insert link
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
       insertLink();
@@ -394,8 +433,9 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
       }}>
         {[
           ['#↩', 'H1'], ['##↩', 'H2'], ['###↩', 'H3'],
-          ['-↩', 'Liste'], ['1.↩', '1.'], ['>↩', 'Zitat'],
-          ['```↩', 'Code'], ['---↩', 'Linie'],
+          ['-↩', 'Liste'], ['>↩', 'Zitat'], ['---↩', 'Linie'],
+          ['**text**', 'Fett'], ['*text*', 'Kursiv'],
+          ['~~text~~', 'Durch.'], ['`text`', 'Code'],
         ].map(([md, label]) => (
           <span key={md} style={{ fontSize: 10, color: 'var(--c-text-3)', display: 'flex', gap: 4, alignItems: 'center' }}>
             <code style={{
