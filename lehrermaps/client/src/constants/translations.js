@@ -79,6 +79,9 @@ export const translations = {
     'table.list': 'Liste',
     'table.no_images': 'Keine Bilddateien in diesem Ordner.',
     'table.dnd_mode': 'Drag & Drop',
+    'table.bulk_move': 'Verschieben…',
+    'table.bulk_move_title': 'In Ordner verschieben',
+    'table.bulk_move_confirm': 'Verschieben',
 
     // Folders
     'folders.count': '{{n}} Ordner',
@@ -163,6 +166,7 @@ export const translations = {
     'search.folders_section': 'Ordner',
     'search.notes_match': 'Treffer in Notizen',
     'search.hint': 'Tippe um zu suchen',
+    'search.show_more': 'Mehr anzeigen',
 
     // Confirm modal
     'confirm.delete': 'Löschen bestätigen',
@@ -312,6 +316,9 @@ export const translations = {
     'table.list': 'Lista',
     'table.no_images': 'No hay imágenes en esta carpeta.',
     'table.dnd_mode': 'Drag & Drop',
+    'table.bulk_move': 'Mover a…',
+    'table.bulk_move_title': 'Mover a carpeta',
+    'table.bulk_move_confirm': 'Mover',
 
     // Folders
     'folders.count': '{{n}} carpetas',
@@ -396,6 +403,7 @@ export const translations = {
     'search.folders_section': 'Carpetas',
     'search.notes_match': 'Coincidencia en notas',
     'search.hint': 'Escribí para buscar',
+    'search.show_more': 'Ver más',
 
     // Confirm modal
     'confirm.delete': 'Confirmar eliminación',

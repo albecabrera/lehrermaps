@@ -232,8 +232,12 @@ router.get('/zip-selected', async (req, res) => {
 
 router.get('/search', async (req, res) => {
   const q = (req.query.q || '').trim();
-  if (!q) return res.json({ files: [], folders: [] });
+  if (!q) return res.json({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false });
   const like = `%${q}%`;
+  const fileOffset = Math.max(0, Number(req.query.fileOffset) || 0);
+  const folderOffset = Math.max(0, Number(req.query.folderOffset) || 0);
+  const FILE_LIMIT = 25;
+  const FOLDER_LIMIT = 15;
   try {
     const [files] = await pool.execute(`
       SELECT fi.id, fi.original_name AS name, fi.mime_type, fi.size_bytes, fi.uploaded_at,
@@ -242,8 +246,8 @@ router.get('/search', async (req, res) => {
       JOIN folders fo ON fo.id = fi.folder_id
       WHERE fi.original_name LIKE ?
       ORDER BY fi.uploaded_at DESC
-      LIMIT 25
-    `, [like]);
+      LIMIT ? OFFSET ?
+    `, [like, FILE_LIMIT + 1, fileOffset]);
     const [folders] = await pool.execute(`
       SELECT
         id, name, subject, group_name, is_favorite,
@@ -251,9 +255,16 @@ router.get('/search', async (req, res) => {
       FROM folders
       WHERE name LIKE ? OR notes LIKE ?
       ORDER BY notes_match DESC, name
-      LIMIT 15
-    `, [like, like, like]);
-    res.json({ files, folders });
+      LIMIT ? OFFSET ?
+    `, [like, like, like, FOLDER_LIMIT + 1, folderOffset]);
+    const hasMoreFiles = files.length > FILE_LIMIT;
+    const hasMoreFolders = folders.length > FOLDER_LIMIT;
+    res.json({
+      files: files.slice(0, FILE_LIMIT),
+      folders: folders.slice(0, FOLDER_LIMIT),
+      hasMoreFiles,
+      hasMoreFolders,
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

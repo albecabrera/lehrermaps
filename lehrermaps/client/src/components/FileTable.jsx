@@ -12,7 +12,7 @@ export default function FileTable({
   onSetDeadline,
   onFileDragStart,
   hiddenIds = new Set(),
-  onBulkDelete, onBulkShare, onBulkUnshare, onBulkDownload,
+  onBulkDelete, onBulkShare, onBulkUnshare, onBulkDownload, onBulkMove,
 }) {
   const { t } = useLang();
   const [menuFile, setMenuFile] = useState(null);
@@ -71,7 +71,7 @@ export default function FileTable({
 
   return (
     <div style={{ position: 'relative' }}>
-      {selectedFiles.length > 0 && (onBulkDownload || onBulkShare || onBulkUnshare || onBulkDelete) && (
+      {selectedFiles.length > 0 && (onBulkDownload || onBulkShare || onBulkUnshare || onBulkDelete || onBulkMove) && (
         <div style={{
           marginBottom: 12,
           display: 'flex',
@@ -88,6 +88,9 @@ export default function FileTable({
           <button onClick={() => onBulkDownload?.(selectedFiles)} style={bulkBtnStyle}>{t('table.ctx_download')}</button>
           <button onClick={() => onBulkShare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.share_toggle')}</button>
           <button onClick={() => onBulkUnshare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.unshare')}</button>
+          {onBulkMove && (
+            <button onClick={() => onBulkMove(selectedFiles)} style={bulkBtnStyle}>{t('table.bulk_move')}</button>
+          )}
           <button onClick={() => onBulkDelete?.(selectedFiles)} style={{ ...bulkBtnStyle, color: 'var(--c-danger-text)' }}>{t('delete')}</button>
           <button onClick={() => setSelectedIds(new Set())} style={{ ...bulkBtnStyle, marginLeft: 'auto' }}>{t('table.clear_selection')}</button>
         </div>

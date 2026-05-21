@@ -11,16 +11,18 @@ const DEBOUNCE_MS = 280;
 export default function GlobalSearch({ open, onClose, onNavigate }) {
   const { t } = useLang();
   const [q, setQ] = useState('');
-  const [results, setResults] = useState({ files: [], folders: [] });
+  const [results, setResults] = useState({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false });
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(null); // 'files' | 'folders' | null
   const timerRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (open) {
       setQ('');
-      setResults({ files: [], folders: [] });
+      setResults({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false });
       setLoading(false);
+      setLoadingMore(null);
       setTimeout(() => inputRef.current?.focus(), 40);
     }
   }, [open]);
@@ -33,16 +35,32 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
 
   const doSearch = useCallback((value) => {
     clearTimeout(timerRef.current);
-    if (!value.trim()) { setResults({ files: [], folders: [] }); setLoading(false); return; }
+    if (!value.trim()) { setResults({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false }); setLoading(false); return; }
     setLoading(true);
     timerRef.current = setTimeout(async () => {
       try {
         const data = await searchGlobal(value);
         setResults(data);
-      } catch { setResults({ files: [], folders: [] }); }
+      } catch { setResults({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false }); }
       finally { setLoading(false); }
     }, DEBOUNCE_MS);
   }, []);
+
+  const loadMore = useCallback(async (section) => {
+    setLoadingMore(section);
+    try {
+      const fileOffset = section === 'files' ? results.files.length : 0;
+      const folderOffset = section === 'folders' ? results.folders.length : 0;
+      const data = await searchGlobal(q, fileOffset, folderOffset);
+      setResults((prev) => ({
+        files: section === 'files' ? [...prev.files, ...data.files] : prev.files,
+        folders: section === 'folders' ? [...prev.folders, ...data.folders] : prev.folders,
+        hasMoreFiles: section === 'files' ? data.hasMoreFiles : prev.hasMoreFiles,
+        hasMoreFolders: section === 'folders' ? data.hasMoreFolders : prev.hasMoreFolders,
+      }));
+    } catch { /* silent */ }
+    finally { setLoadingMore(null); }
+  }, [q, results.files.length, results.folders.length]);
 
   const handleChange = (e) => {
     setQ(e.target.value);
@@ -147,6 +165,9 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
                   dotColor={getColor(f.subject)}
                 />
               ))}
+              {results.hasMoreFolders && (
+                <ShowMoreButton loading={loadingMore === 'folders'} onClick={() => loadMore('folders')} t={t} />
+              )}
             </ResultSection>
           )}
           {results.files.length > 0 && (
@@ -161,6 +182,9 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
                   dotColor={getColor(f.subject)}
                 />
               ))}
+              {results.hasMoreFiles && (
+                <ShowMoreButton loading={loadingMore === 'files'} onClick={() => loadMore('files')} t={t} />
+              )}
             </ResultSection>
           )}
         </div>
@@ -179,6 +203,26 @@ function ResultSection({ label, children }) {
       }}>{label}</div>
       {children}
     </div>
+  );
+}
+
+function ShowMoreButton({ loading, onClick, t }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      style={{
+        width: '100%', textAlign: 'center', padding: '7px 18px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        background: 'transparent', border: 'none', cursor: loading ? 'wait' : 'pointer',
+        fontFamily: 'inherit', fontSize: 11, color: 'var(--c-text-3)',
+        opacity: loading ? 0.6 : 1,
+      }}
+      onMouseEnter={(e) => { if (!loading) e.currentTarget.style.color = 'var(--c-text-2)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--c-text-3)'; }}
+    >
+      {loading ? '…' : t('search.show_more')}
+    </button>
   );
 }
 

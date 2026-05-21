@@ -9,14 +9,14 @@ const DAYS_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi'];
 const PERIODS = 6;
 
 const STUNDENPLAN_SUBJECTS = [
-  { id: 'klassenstunde', label: 'Klassenstunde', color: '#9333EA' },
-  { id: 'elsa',          label: 'ELSA',          color: '#0891B2' },
-  { id: 'inf6',          label: 'Informatik 6',  color: '#2563EB' },
-  { id: 'inf7',          label: 'Informatik 7',  color: '#1E40AF' },
-  { id: 'es9',           label: 'Spanisch 9',    color: '#E8472A' },
-  { id: 'esq1',          label: 'Spanisch Q1',   color: '#B83220' },
-  { id: 'sportq1',       label: 'Sport Q1',      color: '#16A34A' },
-  { id: 'sport5d',       label: 'Sport 5d',      color: '#15803D' },
+  { id: 'klassenstunde', label: 'Klassenstunde', color: '#9333EA', subjectId: 'klasse' },
+  { id: 'elsa',          label: 'ELSA',          color: '#0891B2', subjectId: 'klasse' },
+  { id: 'inf6',          label: 'Informatik 6',  color: '#2563EB', subjectId: 'informatik' },
+  { id: 'inf7',          label: 'Informatik 7',  color: '#1E40AF', subjectId: 'informatik' },
+  { id: 'es9',           label: 'Spanisch 9',    color: '#E8472A', subjectId: 'spanisch' },
+  { id: 'esq1',          label: 'Spanisch Q1',   color: '#B83220', subjectId: 'spanisch' },
+  { id: 'sportq1',       label: 'Sport Q1',      color: '#16A34A', subjectId: 'sport' },
+  { id: 'sport5d',       label: 'Sport 5d',      color: '#15803D', subjectId: 'sport' },
   { id: 'vertretung',    label: 'Vertretung',    color: '#F59E0B' },
   { id: 'pausenaufsicht',label: 'Pausenaufsicht',color: '#64748B' },
   { id: 'mittagspause',  label: 'Mittagspause',  color: '#D97706' },
@@ -31,7 +31,7 @@ function writeCache(s) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
 }
 
-export default function Schedule() {
+export default function Schedule({ onNavigate }) {
   const { t, lang } = useLang();
   const [schedule, setSchedule] = useState(loadCache);
   const [picker, setPicker] = useState(null); // { day, period, rect }
@@ -56,7 +56,9 @@ export default function Schedule() {
   const assign = useCallback((subject) => {
     if (!picker) return;
     const key = `${picker.day}-${picker.period}`;
-    persist({ ...schedule, [key]: { id: subject.id, label: subject.label, color: subject.color } });
+    const cell = { id: subject.id, label: subject.label, color: subject.color };
+    if (subject.subjectId) cell.subjectId = subject.subjectId;
+    persist({ ...schedule, [key]: cell });
     setPicker(null);
   }, [picker, schedule, persist]);
 
@@ -212,6 +214,7 @@ export default function Schedule() {
                   cell={cell}
                   onEdit={(el) => openPicker(d, p, el)}
                   onUnlink={() => unlink(d, p)}
+                  onNavigate={onNavigate}
                 />
               );
             }),
@@ -231,9 +234,18 @@ export default function Schedule() {
   );
 }
 
-function ScheduleCell({ cell, onEdit, onUnlink }) {
+function ScheduleCell({ cell, onEdit, onUnlink, onNavigate }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
+  const canNav = cell?.subjectId && onNavigate;
+
+  const handleClick = () => {
+    if (canNav) {
+      onNavigate(cell.subjectId);
+    } else {
+      onEdit(ref.current);
+    }
+  };
 
   return (
     <div
@@ -248,7 +260,7 @@ function ScheduleCell({ cell, onEdit, onUnlink }) {
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => onEdit(ref.current)}
+      onClick={handleClick}
     >
       {cell ? (
         <div style={{ padding: '8px 10px' }}>
@@ -259,6 +271,9 @@ function ScheduleCell({ cell, onEdit, onUnlink }) {
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>{cell.label}</div>
           </div>
+          {canNav && hovered && (
+            <div style={{ fontSize: 9, color: cell.color, marginTop: 2, opacity: 0.8 }}>→ öffnen</div>
+          )}
         </div>
       ) : (
         <div style={{
@@ -270,15 +285,27 @@ function ScheduleCell({ cell, onEdit, onUnlink }) {
         }}>+</div>
       )}
       {cell && hovered && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onUnlink(); }}
-          style={{
-            position: 'absolute', top: 4, right: 4, width: 18, height: 18,
-            border: 'none', borderRadius: 4, background: 'rgba(0,0,0,0.25)',
-            color: '#fff', cursor: 'pointer', fontSize: 11, lineHeight: 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >×</button>
+        <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 3 }}>
+          {canNav && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(ref.current); }}
+              title="Bearbeiten"
+              style={{
+                width: 18, height: 18, border: 'none', borderRadius: 4,
+                background: 'rgba(0,0,0,0.25)', color: '#fff', cursor: 'pointer',
+                fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >✎</button>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onUnlink(); }}
+            style={{
+              width: 18, height: 18, border: 'none', borderRadius: 4,
+              background: 'rgba(0,0,0,0.25)', color: '#fff', cursor: 'pointer',
+              fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >×</button>
+        </div>
       )}
     </div>
   );
