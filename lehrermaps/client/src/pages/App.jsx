@@ -61,6 +61,7 @@ export default function App({ onLogout }) {
   const [activeFile2, setActiveFile2] = useState(null);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
+  const accent = subject.color;
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, setColor: setFolderColor, reload: reloadFolders } = useFolders();
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
@@ -570,7 +571,6 @@ export default function App({ onLogout }) {
     }
   };
 
-  const accent = subject.color;
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const filteredCount = query
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
@@ -739,7 +739,6 @@ export default function App({ onLogout }) {
           <button
             className="lm-spring"
             onClick={() => setUploadOpen(true)}
-            onMouseDown={(e) => { if (activeFolder) triggerHapticAt(e.clientX, e.clientY, accent); }}
             disabled={!activeFolder}
             style={{
               height: 30, padding: '0 14px', border: 'none', borderRadius: 7,
@@ -751,7 +750,11 @@ export default function App({ onLogout }) {
               transition: 'background .15s, transform .1s',
               fontFamily: 'inherit',
             }}
-            onMouseDown={(e) => { if (activeFolder) e.currentTarget.style.transform = 'scale(0.97)'; }}
+            onMouseDown={(e) => {
+              if (!activeFolder) return;
+              triggerHapticAt(e.clientX, e.clientY, accent);
+              e.currentTarget.style.transform = 'scale(0.97)';
+            }}
             onMouseUp={(e) => e.currentTarget.style.transform = ''}
             onMouseLeave={(e) => e.currentTarget.style.transform = ''}
           >

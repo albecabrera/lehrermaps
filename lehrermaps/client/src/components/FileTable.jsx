@@ -238,7 +238,7 @@ export default function FileTable({
                   onFileDragStart?.(file);
                 } : undefined}
                 style={{
-                  appearance: 'none', border: 'none', font: 'inherit',
+                  appearance: 'none', font: 'inherit',
                   textAlign: 'left', width: '100%',
                   cursor: dndMode ? 'grab' : 'pointer',
                   background: on ? `${accent}12` : on2 ? 'rgba(14,165,233,0.10)' : 'var(--c-surface-2)',
