@@ -25,7 +25,6 @@ import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
 import NotesEditor from '../components/NotesEditor';
 import FolderGallery from '../components/FolderGallery';
-import TerminalModal from '../components/TerminalModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLang } from '../contexts/LangContext';
 
@@ -82,7 +81,6 @@ export default function App({ onLogout }) {
   const [hapticPulse, setHapticPulse] = useState(null);
   const [backSwipe, setBackSwipe] = useState({ active: false, x: 0 });
   const [heroQrLink, setHeroQrLink] = useState(null);
-  const [terminalOpen, setTerminalOpen] = useState(false);
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
@@ -635,7 +633,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen || terminalOpen;
+  const hasModalOpen = globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen;
 
   return (
     <div style={{
@@ -775,8 +773,14 @@ export default function App({ onLogout }) {
 
           <button
             className="lm-spring"
-            onClick={() => setTerminalOpen(true)}
-            title="Terminal"
+            onClick={async () => {
+              const token = localStorage.getItem('lm_token');
+              await fetch('/api/shell/open', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+              });
+            }}
+            title="Terminal öffnen"
             style={{
               height: 30, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 7,
               background: 'transparent', color: 'var(--c-text-2)',
@@ -1399,7 +1403,6 @@ export default function App({ onLogout }) {
           onClose={() => setQrOpen(false)}
         />
       )}
-      <TerminalModal open={terminalOpen} onClose={() => setTerminalOpen(false)} />
       <DeadlineModal
         open={!!deadlineModal}
         title={deadlineModal?.type === 'folder' ? t('modal.deadline.folder_title') : t('modal.deadline.file_title')}
