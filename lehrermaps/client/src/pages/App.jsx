@@ -24,6 +24,7 @@ import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
 import WorksheetGenerator from '../components/WorksheetGenerator';
+import TerminalModal from '../components/TerminalModal';
 import NotesEditor from '../components/NotesEditor';
 import FolderGallery from '../components/FolderGallery';
 import { useTheme } from '../contexts/ThemeContext';
@@ -83,6 +84,7 @@ export default function App({ onLogout }) {
   const [backSwipe, setBackSwipe] = useState({ active: false, x: 0 });
   const [heroQrLink, setHeroQrLink] = useState(null);
   const [worksheetGenOpen, setWorksheetGenOpen] = useState(false);
+  const [terminalOpen, setTerminalOpen] = useState(false);
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
@@ -792,14 +794,8 @@ export default function App({ onLogout }) {
 
           <button
             className="lm-spring"
-            onClick={async () => {
-              const token = localStorage.getItem('lm_token');
-              await fetch('/api/shell/open', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-              });
-            }}
-            title="Terminal öffnen"
+            onClick={() => setTerminalOpen(true)}
+            title="Terminal"
             style={{
               height: 30, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 7,
               background: 'transparent', color: 'var(--c-text-2)',
@@ -1448,6 +1444,7 @@ export default function App({ onLogout }) {
           }
         }}
       />
+      <TerminalModal open={terminalOpen} onClose={() => setTerminalOpen(false)} />
       {worksheetGenOpen && <WorksheetGenerator onClose={() => setWorksheetGenOpen(false)} />}
 
       {toast && (
