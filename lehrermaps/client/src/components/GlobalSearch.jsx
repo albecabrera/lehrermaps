@@ -11,7 +11,7 @@ const DEBOUNCE_MS = 280;
 export default function GlobalSearch({ open, onClose, onNavigate }) {
   const { t } = useLang();
   const [q, setQ] = useState('');
-  const [results, setResults] = useState({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false, totalFiles: 0, totalFolders: 0 });
+  const [results, setResults] = useState({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 });
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(null); // 'files' | 'folders' | null
   const timerRef = useRef(null);
@@ -20,7 +20,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
   useEffect(() => {
     if (open) {
       setQ('');
-      setResults({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false });
+      setResults({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 });
       setLoading(false);
       setLoadingMore(null);
       setTimeout(() => inputRef.current?.focus(), 40);
@@ -35,13 +35,13 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
 
   const doSearch = useCallback((value) => {
     clearTimeout(timerRef.current);
-    if (!value.trim()) { setResults({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false, totalFiles: 0, totalFolders: 0 }); setLoading(false); return; }
+    if (!value.trim()) { setResults({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 }); setLoading(false); return; }
     setLoading(true);
     timerRef.current = setTimeout(async () => {
       try {
         const data = await searchGlobal(value);
         setResults(data);
-      } catch { setResults({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false }); }
+      } catch { setResults({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 }); }
       finally { setLoading(false); }
     }, DEBOUNCE_MS);
   }, []);
@@ -51,16 +51,22 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
     try {
       const fileOffset = section === 'files' ? results.files.length : 0;
       const folderOffset = section === 'folders' ? results.folders.length : 0;
-      const data = await searchGlobal(q, fileOffset, folderOffset);
+      const linkOffset = section === 'links' ? results.links.length : 0;
+      const data = await searchGlobal(q, fileOffset, folderOffset, linkOffset);
       setResults((prev) => ({
         files: section === 'files' ? [...prev.files, ...data.files] : prev.files,
         folders: section === 'folders' ? [...prev.folders, ...data.folders] : prev.folders,
+        links: section === 'links' ? [...prev.links, ...data.links] : prev.links,
         hasMoreFiles: section === 'files' ? data.hasMoreFiles : prev.hasMoreFiles,
         hasMoreFolders: section === 'folders' ? data.hasMoreFolders : prev.hasMoreFolders,
+        hasMoreLinks: section === 'links' ? data.hasMoreLinks : prev.hasMoreLinks,
+        totalFiles: data.totalFiles ?? prev.totalFiles,
+        totalFolders: data.totalFolders ?? prev.totalFolders,
+        totalLinks: data.totalLinks ?? prev.totalLinks,
       }));
     } catch { /* silent */ }
     finally { setLoadingMore(null); }
-  }, [q, results.files.length, results.folders.length]);
+  }, [q, results.files.length, results.folders.length, results.links.length]);
 
   const handleChange = (e) => {
     setQ(e.target.value);
@@ -71,7 +77,8 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
 
   const getColor = (subjectId) => SUBJECTS.find((s) => s.id === subjectId)?.color ?? '#6B7280';
   const hasQuery = q.trim().length > 0;
-  const isEmpty = results.files.length === 0 && results.folders.length === 0;
+  const isEmpty = results.files.length === 0 && results.folders.length === 0 && results.links.length === 0;
+  const suggestions = buildSuggestions(q, results).slice(0, 8);
 
   return createPortal(
     <div
@@ -127,7 +134,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
           />
           {q && (
             <button
-              onClick={() => { setQ(''); setResults({ files: [], folders: [] }); inputRef.current?.focus(); }}
+              onClick={() => { setQ(''); setResults({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 }); inputRef.current?.focus(); }}
               style={{
                 width: 20, height: 20, border: 'none', borderRadius: 4, background: 'var(--c-hover)',
                 color: 'var(--c-text-3)', cursor: 'pointer', fontSize: 13, lineHeight: 1,
@@ -144,6 +151,22 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
 
         {/* Results */}
         <div style={{ overflowY: 'auto', flex: 1 }}>
+          {hasQuery && suggestions.length > 0 && (
+            <div style={{ padding: '10px 18px 2px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => { setQ(s); doSearch(s); inputRef.current?.focus(); }}
+                  style={{
+                    border: '1px solid var(--c-border)', background: 'var(--c-surface-2)', color: 'var(--c-text-2)',
+                    borderRadius: 999, padding: '4px 9px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
           {!hasQuery && (
             <div style={{ padding: '28px 18px', textAlign: 'center', color: 'var(--c-text-3)', fontSize: 13 }}>
               {t('search.hint')}
@@ -188,6 +211,23 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
               )}
             </ResultSection>
           )}
+          {results.links.length > 0 && (
+            <ResultSection label={t('search.links_section')} total={results.totalLinks}>
+              {results.links.map((l) => (
+                <ResultRow
+                  key={`link-${l.id}`}
+                  onClick={() => { onNavigate(l.subject, l.folder_id, { type: 'link', id: l.id }); onClose(); }}
+                  icon={<FileBadge kind="qr" name="QR" size={20} />}
+                  name={l.title || l.url}
+                  meta={`${l.subject} › ${l.folder_name} · ${t('search.links_qr_match')}`}
+                  dotColor={getColor(l.subject)}
+                />
+              ))}
+              {results.hasMoreLinks && (
+                <ShowMoreButton loading={loadingMore === 'links'} onClick={() => loadMore('links')} t={t} />
+              )}
+            </ResultSection>
+          )}
         </div>
       </div>
     </div>,
@@ -215,6 +255,35 @@ function ResultSection({ label, total, children }) {
       {children}
     </div>
   );
+}
+
+function normalizeText(v) {
+  return String(v || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildSuggestions(query, results) {
+  const qn = normalizeText(query);
+  if (!qn) return [];
+  const items = [
+    ...results.files.map((f) => f.name),
+    ...results.folders.map((f) => f.name),
+    ...results.links.map((l) => l.title || l.url),
+  ];
+  const out = new Set();
+  for (const text of items) {
+    const words = normalizeText(text).split(' ').filter((w) => w.length >= 3);
+    for (const w of words) {
+      if (w.includes(qn) || qn.includes(w) || w.startsWith(qn[0])) out.add(w);
+      if (out.size >= 16) return [...out];
+    }
+  }
+  return [...out];
 }
 
 function ShowMoreButton({ loading, onClick, t }) {

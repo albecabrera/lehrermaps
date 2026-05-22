@@ -132,7 +132,7 @@ export default function Sidebar({
                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover-2)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
-                <FileBadge kind={detectKind(rf.name)} name={rf.name} size={13} />
+                <FileBadge kind={detectKind(rf.name)} name={rf.name} size={18} />
                 <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {rf.name}
                 </span>
@@ -248,8 +248,8 @@ function TreeNode({
     setExpanded((v) => !v);
   };
 
-  const handleClick = () => {
-    onSelect(node);
+  const handleClick = (e) => {
+    onSelect(node, e.currentTarget.getBoundingClientRect());
     if (hasChildren && !expanded) setExpanded(true);
   };
 
@@ -290,6 +290,7 @@ function TreeNode({
 
         <button
           onClick={handleClick}
+          className="lm-spring"
           onContextMenu={(e) => { e.preventDefault(); onMenu(node, e.clientX, e.clientY); }}
           style={{
             appearance: 'none', border: 'none', font: 'inherit', textAlign: 'left',
@@ -453,7 +454,7 @@ function SidebarSkeleton({ collapsed, accent }) {
             </div>
           )}
           {[1, 2, 3].map((row) => (
-            <div key={row} style={{
+            <div key={row} className="lm-skeleton-shimmer" style={{
               height: collapsed ? 28 : ROW_H,
               margin: collapsed ? '4px auto' : `3px 12px 3px ${16 + row * 4}px`,
               borderRadius: 7, background: 'var(--c-surface-2)',

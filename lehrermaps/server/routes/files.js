@@ -232,44 +232,109 @@ router.get('/zip-selected', async (req, res) => {
 
 router.get('/search', async (req, res) => {
   const q = (req.query.q || '').trim();
-  if (!q) return res.json({ files: [], folders: [], hasMoreFiles: false, hasMoreFolders: false });
-  const like = `%${q}%`;
+  if (!q) return res.json({
+    files: [], folders: [], links: [],
+    hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false,
+    totalFiles: 0, totalFolders: 0, totalLinks: 0,
+  });
   const fileOffset = Math.max(0, Number(req.query.fileOffset) || 0);
   const folderOffset = Math.max(0, Number(req.query.folderOffset) || 0);
+  const linkOffset = Math.max(0, Number(req.query.linkOffset) || 0);
   const FILE_LIMIT = 25;
   const FOLDER_LIMIT = 15;
+  const LINK_LIMIT = 25;
+  const norm = q
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const tokens = norm.split(' ').filter(Boolean).slice(0, 6);
+  const normalizedSql = (field) => `
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+      LOWER(${field}),
+      'á','a'),'à','a'),'ä','a'),'â','a'),
+      'é','e'),'è','e'),'ë','e'),'ê','e'),
+      'í','i'),'ì','i')
+  `;
+  const normalizedSql2 = (field) => `
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+      ${normalizedSql(field)},
+      'ï','i'),'î','i'),
+      'ó','o'),'ò','o'),'ö','o'),'ô','o'),
+      'ú','u'),'ù','u'),'ü','u')
+  `;
+  const normalizedSql3 = (field) => `
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+      ${normalizedSql2(field)},
+      'û','u'),'ñ','n'),
+      '.', ''), ',', ''), '-', ''), '_', '')
+  `;
+  const buildTokenWhere = (fields) => tokens.map(() =>
+    `(${fields.map((f) => `${normalizedSql3(f)} LIKE ?`).join(' OR ')})`
+  ).join(' AND ');
+  const fileFields = ['fi.original_name', 'fo.name', 'fo.group_name', 'fo.subject'];
+  const folderFields = ['name', 'group_name', 'subject', 'notes'];
+  const linkFields = ['li.title', 'li.url', 'fo.name', 'fo.group_name', 'fo.subject'];
+  const fileWhere = tokens.length ? buildTokenWhere(fileFields) : `${normalizedSql3('fi.original_name')} LIKE ?`;
+  const folderWhere = tokens.length ? buildTokenWhere(folderFields) : `(${normalizedSql3('name')} LIKE ? OR ${normalizedSql3('notes')} LIKE ?)`;
+  const linkWhere = tokens.length ? buildTokenWhere(linkFields) : `(${normalizedSql3('li.title')} LIKE ? OR ${normalizedSql3('li.url')} LIKE ?)`;
+  const fileParams = tokens.length
+    ? tokens.flatMap((t) => fileFields.map(() => `%${t}%`))
+    : [`%${norm}%`];
+  const folderParams = tokens.length
+    ? tokens.flatMap((t) => folderFields.map(() => `%${t}%`))
+    : [`%${norm}%`, `%${norm}%`];
+  const linkParams = tokens.length
+    ? tokens.flatMap((t) => linkFields.map(() => `%${t}%`))
+    : [`%${norm}%`, `%${norm}%`];
   try {
-    const [[files], [folders], [[{ totalFiles }]], [[{ totalFolders }]]] = await Promise.all([
+    const [[files], [folders], [links], [[{ totalFiles }]], [[{ totalFolders }]], [[{ totalLinks }]]] = await Promise.all([
       pool.execute(`
         SELECT fi.id, fi.original_name AS name, fi.mime_type, fi.size_bytes, fi.uploaded_at,
                fo.id AS folder_id, fo.name AS folder_name, fo.subject, fo.group_name
         FROM files fi
         JOIN folders fo ON fo.id = fi.folder_id
-        WHERE fi.original_name LIKE ?
+        WHERE ${fileWhere}
         ORDER BY fi.uploaded_at DESC
         LIMIT ? OFFSET ?
-      `, [like, FILE_LIMIT + 1, fileOffset]),
+      `, [...fileParams, FILE_LIMIT + 1, fileOffset]),
       pool.execute(`
         SELECT
           id, name, subject, group_name, is_favorite,
-          CASE WHEN notes LIKE ? THEN 1 ELSE 0 END AS notes_match
+          CASE WHEN ${normalizedSql3('notes')} LIKE ? THEN 1 ELSE 0 END AS notes_match
         FROM folders
-        WHERE name LIKE ? OR notes LIKE ?
+        WHERE ${folderWhere}
         ORDER BY notes_match DESC, name
         LIMIT ? OFFSET ?
-      `, [like, like, like, FOLDER_LIMIT + 1, folderOffset]),
-      pool.execute('SELECT COUNT(*) AS totalFiles FROM files fi JOIN folders fo ON fo.id = fi.folder_id WHERE fi.original_name LIKE ?', [like]),
-      pool.execute('SELECT COUNT(*) AS totalFolders FROM folders WHERE name LIKE ? OR notes LIKE ?', [like, like]),
+      `, [`%${norm}%`, ...folderParams, FOLDER_LIMIT + 1, folderOffset]),
+      pool.execute(`
+        SELECT li.id, li.title, li.url, li.created_at,
+               fo.id AS folder_id, fo.name AS folder_name, fo.subject, fo.group_name
+        FROM links li
+        JOIN folders fo ON fo.id = li.folder_id
+        WHERE ${linkWhere}
+        ORDER BY li.created_at DESC
+        LIMIT ? OFFSET ?
+      `, [...linkParams, LINK_LIMIT + 1, linkOffset]),
+      pool.execute(`SELECT COUNT(*) AS totalFiles FROM files fi JOIN folders fo ON fo.id = fi.folder_id WHERE ${fileWhere}`, fileParams),
+      pool.execute(`SELECT COUNT(*) AS totalFolders FROM folders WHERE ${folderWhere}`, folderParams),
+      pool.execute(`SELECT COUNT(*) AS totalLinks FROM links li JOIN folders fo ON fo.id = li.folder_id WHERE ${linkWhere}`, linkParams),
     ]);
     const hasMoreFiles = files.length > FILE_LIMIT;
     const hasMoreFolders = folders.length > FOLDER_LIMIT;
+    const hasMoreLinks = links.length > LINK_LIMIT;
     res.json({
       files: files.slice(0, FILE_LIMIT),
       folders: folders.slice(0, FOLDER_LIMIT),
+      links: links.slice(0, LINK_LIMIT),
       hasMoreFiles,
       hasMoreFolders,
+      hasMoreLinks,
       totalFiles: Number(totalFiles),
       totalFolders: Number(totalFolders),
+      totalLinks: Number(totalLinks),
     });
   } catch (e) {
     res.status(500).json({ error: e.message });

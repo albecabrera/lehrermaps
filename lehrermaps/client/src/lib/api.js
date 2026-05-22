@@ -76,8 +76,8 @@ export const setFolderDeadline = (id, due_at) =>
 export const setFolderColor = (id, color) =>
   api.put(`/folders/${id}/color`, { color }).then((r) => r.data);
 
-export const searchGlobal = (q, fileOffset = 0, folderOffset = 0) =>
-  api.get('/files/search', { params: { q, fileOffset, folderOffset } }).then((r) => r.data);
+export const searchGlobal = (q, fileOffset = 0, folderOffset = 0, linkOffset = 0) =>
+  api.get('/files/search', { params: { q, fileOffset, folderOffset, linkOffset } }).then((r) => r.data);
 
 export const downloadFolderZip = (folderId) => withToken(`/api/files/zip/${folderId}`);
 export const downloadFilesZip = (ids) => withToken(`/api/files/zip-selected?ids=${ids.join(',')}`);

@@ -177,10 +177,12 @@ export const translations = {
     'modal.deadline.clear': 'Deadline entfernen',
 
     // Global search
-    'search.placeholder': 'Dateien, Ordner suchen…',
+    'search.placeholder': 'Dateien, Ordner, Links, QR suchen…',
     'search.no_results': 'Keine Ergebnisse',
     'search.files_section': 'Dateien',
     'search.folders_section': 'Ordner',
+    'search.links_section': 'Links & QR-Codes',
+    'search.links_qr_match': 'Link / QR-Treffer',
     'search.notes_match': 'Treffer in Notizen',
     'search.hint': 'Tippe um zu suchen',
     'search.show_more': 'Mehr anzeigen',
@@ -417,10 +419,12 @@ export const translations = {
     'modal.deadline.clear': 'Quitar fecha límite',
 
     // Global search
-    'search.placeholder': 'Buscar archivos, carpetas…',
+    'search.placeholder': 'Buscar archivos, carpetas, enlaces, QR…',
     'search.no_results': 'Sin resultados',
     'search.files_section': 'Archivos',
     'search.folders_section': 'Carpetas',
+    'search.links_section': 'Enlaces & Códigos QR',
+    'search.links_qr_match': 'Coincidencia enlace / QR',
     'search.notes_match': 'Coincidencia en notas',
     'search.hint': 'Escribí para buscar',
     'search.show_more': 'Ver más',

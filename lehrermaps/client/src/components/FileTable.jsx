@@ -205,7 +205,7 @@ export default function FileTable({
             gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
             gap: 8,
           }}>
-          {sorted.map((file) => {
+          {sorted.map((file, idx) => {
             const on = file.id === activeFileId;
             const on2 = file.id === activeFile2Id;
             const kind = detectKind(file.original_name);
@@ -225,9 +225,10 @@ export default function FileTable({
                     e.preventDefault();
                     onFileSecondarySelect(file);
                   } else {
-                    onFileSelect(file);
+                    onFileSelect(file, { sourceRect: e.currentTarget.getBoundingClientRect() });
                   }
                 }}
+                className="lm-spring lm-stagger-in"
                 onDoubleClick={() => onRename?.(file)}
                 onContextMenu={(e) => handleContextMenu(e, file)}
                 draggable={dndMode}
@@ -244,6 +245,7 @@ export default function FileTable({
                   border: on ? `1px solid ${accent}66` : on2 ? '1px solid rgba(14,165,233,0.45)' : dndMode ? `1px solid var(--c-border)` : '1px solid var(--c-border-soft)',
                   borderRadius: 10, padding: '9px 10px',
                   transition: 'background .1s, border-color .1s',
+                  animationDelay: `${Math.min(14, idx) * 26}ms`,
                 }}
                 onMouseEnter={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
                 onMouseLeave={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-surface-2)'; }}

@@ -85,6 +85,65 @@ button, input, select, textarea {
   transition: background-color .14s ease, color .14s ease, border-color .14s ease, box-shadow .14s ease;
 }
 
+button {
+  will-change: transform;
+}
+
+button:active {
+  transform: scale(0.985);
+}
+
+.lm-spring {
+  transition:
+    transform .42s cubic-bezier(.22, 1.25, .3, 1),
+    box-shadow .2s ease,
+    background-color .16s ease,
+    color .16s ease,
+    border-color .16s ease;
+}
+
+.lm-spring:hover {
+  transform: translateY(-1px);
+}
+
+.lm-stagger-in {
+  animation: lmStaggerIn .36s cubic-bezier(.22,.9,.2,1) both;
+}
+
+.lm-folder-open-shell {
+  animation: lmFolderOpen .44s cubic-bezier(.2,.9,.2,1) both;
+}
+
+.lm-depth-scene {
+  transform: scale(0.986);
+  filter: blur(0.5px) saturate(0.96);
+  transition: transform .26s cubic-bezier(.2,.9,.2,1), filter .26s ease;
+}
+
+.lm-depth-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1200;
+  background: linear-gradient(to bottom, rgba(10,12,20,0.12), rgba(10,12,20,0.2));
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  animation: lmFadeIn .16s ease-out;
+}
+
+.lm-skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.lm-skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,0.34) 45%, transparent 70%);
+  transform: translateX(-120%);
+  animation: lmShimmer 1.45s ease-in-out infinite;
+}
+
 :focus-visible {
   outline: 2px solid var(--c-focus);
   outline-offset: 2px;
@@ -167,6 +226,55 @@ button, input, select, textarea {
 @keyframes lmSlideUp {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lmStaggerIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes lmFolderOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes lmShimmer {
+  to { transform: translateX(120%); }
+}
+
+@keyframes lmHapticPulse {
+  from { opacity: 0.85; transform: scale(0.82); }
+  to { opacity: 0; transform: scale(1.42); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-stagger-in,
+  .lm-folder-open-shell {
+    animation: none !important;
+  }
+  .lm-spring,
+  button {
+    transition: none !important;
+    transform: none !important;
+  }
+  .lm-skeleton-shimmer::after,
+  .lm-depth-overlay {
+    animation: none !important;
+  }
 }
 
 /* ── Liquid Glass utilities ─────────────────────────────────────────────── */

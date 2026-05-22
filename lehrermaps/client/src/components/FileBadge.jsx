@@ -3,15 +3,16 @@ import { fileKindLabel, fileKindColor } from '../constants/structure';
 export default function FileBadge({ kind, name, size = 28 }) {
   const label = fileKindLabel(kind, name);
   const color = fileKindColor(kind);
+  const longLabel = label.length >= 4;
   return (
     <div style={{
-      width: size, height: size + 4, flexShrink: 0,
+      width: longLabel ? size + 6 : size, height: size + 4, flexShrink: 0,
       background: color, color: '#fff',
       borderRadius: 4,
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       paddingBottom: 3,
       fontFamily: '"DM Mono", ui-monospace, SFMono-Regular, monospace',
-      fontSize: 8.5, fontWeight: 600, letterSpacing: 0.4,
+      fontSize: longLabel ? 7.2 : 8.5, fontWeight: 600, letterSpacing: longLabel ? 0.2 : 0.4,
       position: 'relative',
       boxShadow: `inset -3px 3px 0 rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.08)`,
     }}>

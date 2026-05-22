@@ -67,12 +67,23 @@ export default function App({ onLogout }) {
   const { recents, add: addRecent } = useRecents();
   const { recentFiles, trackFile } = useRecentFiles();
   const [pendingFileId, setPendingFileId] = useState(null);
+  const [pendingLinkId, setPendingLinkId] = useState(null);
+  const [folderOpenTick, setFolderOpenTick] = useState(0);
+  const [folderZoom, setFolderZoom] = useState(null);
+  const [previewHero, setPreviewHero] = useState(null);
+  const [parallax, setParallax] = useState({ x: 0, y: 0 });
+  const [hapticPulse, setHapticPulse] = useState(null);
+  const [backSwipe, setBackSwipe] = useState({ active: false, x: 0 });
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const sidebarDragState = useRef(null);
   const [newFolderParentId, setNewFolderParentId] = useState(null);
+  const contentPaneRef = useRef(null);
+  const previewPaneRef = useRef(null);
+  const backSwipeRef = useRef({ dragging: false, startX: 0, pointerId: null });
+  const pullRef = useRef({ startY: 0, pulling: false, atTop: false });
 
   useEffect(() => {
     if (!toast) return;
@@ -95,13 +106,43 @@ export default function App({ onLogout }) {
     if (file) { setActiveFile(file); setPendingFileId(null); }
   }, [files, pendingFileId]);
 
-  // Keyboard shortcuts: Cmd/Ctrl+K, j/k navigation, space preview toggle
+  useEffect(() => {
+    if (!pendingLinkId || !links.length) return;
+    const link = links.find((l) => l.id === pendingLinkId);
+    if (link) { setActiveLink(link); setPendingLinkId(null); }
+  }, [links, pendingLinkId]);
+
+  useEffect(() => {
+    if (!folderZoom) return;
+    const raf = requestAnimationFrame(() => {
+      setFolderZoom((prev) => (prev ? { ...prev, phase: 'run' } : prev));
+    });
+    const t = setTimeout(() => setFolderZoom(null), 430);
+    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
+  }, [folderZoom]);
+
+  useEffect(() => {
+    if (!previewHero) return;
+    const raf = requestAnimationFrame(() => {
+      setPreviewHero((prev) => (prev ? { ...prev, phase: 'run' } : prev));
+    });
+    const t = setTimeout(() => setPreviewHero(null), 360);
+    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
+  }, [previewHero]);
+
+  useEffect(() => {
+    if (!hapticPulse) return;
+    const t = setTimeout(() => setHapticPulse(null), 240);
+    return () => clearTimeout(t);
+  }, [hapticPulse]);
+
+  // Keyboard shortcuts: Cmd/Ctrl+P, j/k navigation, space preview toggle
   useEffect(() => {
     const handler = (e) => {
       const target = e.target;
       const tag = target?.tagName?.toLowerCase();
       const isTyping = tag === 'input' || tag === 'textarea' || target?.isContentEditable;
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setGlobalSearchOpen(true);
         return;
@@ -197,7 +238,7 @@ export default function App({ onLogout }) {
     setViewMode('subjects');
   };
 
-  const onFolderSelect = (folder) => {
+  const onFolderSelect = (folder, sourceRect = null) => {
     setActiveFolder(folder);
     setActiveFile(null);
     setActiveFile2(null);
@@ -206,19 +247,31 @@ export default function App({ onLogout }) {
     setFolderTab('files');
     const color = SUBJECTS.find((s) => s.id === folder.subject)?.color;
     addRecent(folder, color);
+    setFolderOpenTick((v) => v + 1);
+    if (sourceRect && contentPaneRef.current) {
+      const to = contentPaneRef.current.getBoundingClientRect();
+      setFolderZoom({ from: sourceRect, to, accent: color || accent, phase: 'start' });
+      setHapticPulse({
+        x: sourceRect.left + sourceRect.width / 2,
+        y: sourceRect.top + sourceRect.height / 2,
+        color: color || accent,
+      });
+    }
   };
 
-  const handleGlobalNavigate = (targetSubject, folderId) => {
+  const handleGlobalNavigate = (targetSubject, folderId, target = null) => {
     setSubjectId(targetSubject);
     const folder = folders.find((f) => f.id === folderId);
     if (folder) {
       setActiveFolder(folder);
       setActiveFile(null);
       setActiveLink(null);
+      if (target?.type === 'link' && target.id) setPendingLinkId(target.id);
       setQuery('');
       setFolderTab('files');
       const color = SUBJECTS.find((s) => s.id === targetSubject)?.color;
       addRecent(folder, color);
+      setFolderOpenTick((v) => v + 1);
     }
     setGlobalSearchOpen(false);
   };
@@ -232,6 +285,7 @@ export default function App({ onLogout }) {
       setActiveLink(null);
       setQuery('');
       setFolderTab('files');
+      setFolderOpenTick((v) => v + 1);
     }
   };
 
@@ -246,6 +300,7 @@ export default function App({ onLogout }) {
       setFolderTab('files');
       setPendingFileId(rf.id);
       addRecent(folder, SUBJECTS.find((s) => s.id === folder.subject)?.color);
+      setFolderOpenTick((v) => v + 1);
     }
   };
 
@@ -260,6 +315,19 @@ export default function App({ onLogout }) {
       throw e;
     }
   };
+
+  const triggerHapticAt = useCallback((x, y, color = accent) => {
+    setHapticPulse({ x, y, color });
+  }, [accent]);
+
+  const closeFolderView = useCallback(() => {
+    setActiveFolder(null);
+    setActiveFile(null);
+    setActiveFile2(null);
+    setActiveLink(null);
+    setQuery('');
+    setBackSwipe({ active: false, x: 0 });
+  }, []);
 
   const handleDirectDropUpload = useCallback(async (incomingFiles) => {
     const filesToUpload = [...incomingFiles].slice(0, 20);
@@ -508,6 +576,8 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
+  const hasModalOpen = globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen;
+
   return (
     <div style={{
       position: 'fixed', inset: 0,
@@ -516,6 +586,7 @@ export default function App({ onLogout }) {
       fontFamily: '"DM Sans", -apple-system, BlinkMacSystemFont, sans-serif',
       fontFeatureSettings: '"ss01", "cv11"',
     }}>
+      <div className={hasModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Tab bar */}
       <div className="lm-tabbar" style={{
         display: 'flex', alignItems: 'flex-end', padding: '8px 16px 0',
@@ -529,6 +600,7 @@ export default function App({ onLogout }) {
           return (
             <button
               key={s.id}
+              className="lm-spring"
               ref={(el) => (tabRefs.current[s.id] = el)}
               onClick={() => onSubjectChange(s.id)}
               onMouseEnter={() => setHoverSubject(s.id)}
@@ -570,6 +642,7 @@ export default function App({ onLogout }) {
 
         {/* Stundenplan toggle */}
         <button
+          className="lm-spring"
           onClick={() => setViewMode((m) => m === 'schedule' ? 'subjects' : 'schedule')}
           style={{
             appearance: 'none', border: 'none', font: 'inherit',
@@ -600,13 +673,14 @@ export default function App({ onLogout }) {
         <div style={{ paddingBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
           {/* Global search button */}
           <button
+            className="lm-spring"
             onClick={() => setGlobalSearchOpen(true)}
-            title="Suche (⌘K)"
+            onMouseDown={(e) => triggerHapticAt(e.clientX, e.clientY, accent)}
+            title="Suche (⌘P)"
             style={{
-              height: 30, padding: '0 10px', border: '0.5px solid var(--c-border)', borderRadius: 7,
+              width: 30, height: 30, padding: 0, border: '0.5px solid var(--c-border)', borderRadius: 7,
               background: 'var(--c-hover)', color: 'var(--c-text-2)',
-              display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-              fontSize: 12, fontFamily: 'inherit', minWidth: 140,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
               transition: 'background .12s',
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-border)'}
@@ -616,19 +690,11 @@ export default function App({ onLogout }) {
               <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.4"/>
               <path d="M8.5 8.5l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
             </svg>
-            <span style={{ flex: 1 }}>{t('search.placeholder')}</span>
-            <kbd style={{
-              fontSize: 9, background: 'var(--c-surface)', border: '1px solid var(--c-border)',
-              borderRadius: 4, padding: '1px 4px', fontFamily: '"DM Mono", monospace',
-              color: 'var(--c-text-3)',
-            }}>⌘K</kbd>
           </button>
-
-          <SearchField value={query} onChange={setQuery} accent={accent}
-            placeholder={t('app.search_placeholder', { subject: t('subject.' + subjectId) })} />
 
           {/* Lang toggle */}
           <button
+            className="lm-spring"
             onClick={() => setLang(lang === 'de' ? 'es' : 'de')}
             title={lang === 'de' ? t('app.lang_es') : t('app.lang_de')}
             style={{
@@ -645,6 +711,7 @@ export default function App({ onLogout }) {
 
           {/* Theme toggle */}
           <button
+            className="lm-spring"
             onClick={toggleTheme}
             title={isDark ? t('app.theme_light') : t('app.theme_dark')}
             style={{
@@ -670,7 +737,9 @@ export default function App({ onLogout }) {
 
           {/* Upload */}
           <button
+            className="lm-spring"
             onClick={() => setUploadOpen(true)}
+            onMouseDown={(e) => { if (activeFolder) triggerHapticAt(e.clientX, e.clientY, accent); }}
             disabled={!activeFolder}
             style={{
               height: 30, padding: '0 14px', border: 'none', borderRadius: 7,
@@ -694,6 +763,7 @@ export default function App({ onLogout }) {
 
           {/* Logout */}
           <button
+            className="lm-spring"
             onClick={onLogout}
             title={t('app.logout')}
             style={{
@@ -713,32 +783,43 @@ export default function App({ onLogout }) {
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+      <div
+        style={{ flex: 1, minHeight: 0, display: 'flex' }}
+        onMouseMove={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+          const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+          setParallax({ x: nx, y: ny });
+        }}
+        onMouseLeave={() => setParallax({ x: 0, y: 0 })}
+      >
         {viewMode === 'schedule' ? (
           <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
             <Schedule onNavigate={(subjectId) => { onSubjectChange(subjectId); }} />
           </div>
         ) : <>
-        <Sidebar
-          subject={subject}
-          groups={subject.groups}
-          folders={subjectFolders}
-          loading={foldersLoading}
-          width={sidebarWidth}
-          activeFolderId={activeFolder?.id}
-          onFolderSelect={onFolderSelect}
-          onNewFolder={() => { setNewFolderGroup(null); setNewFolderOpen(true); }}
-          onNewFolderInGroup={(g) => { setNewFolderGroup(g); setNewFolderOpen(true); }}
-          onNewSubfolder={(folder) => { setNewFolderParentId(folder.id); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
-          onRenameFolder={setRenamingFolder}
-          onDeleteFolder={handleDeleteFolder}
-          onReorderFolders={reorderFolders}
-          onToggleFavorite={toggleFavorite}
-          onSetFolderColor={setFolderColor}
-          onMoveFileToFolder={handleMoveFileToFolder}
-          recentFiles={recentFiles}
-          onRecentFileClick={handleRecentFileClick}
-        />
+        <div style={{ transform: `translate3d(${parallax.x * -4}px, ${parallax.y * -2}px, 0)`, transition: 'transform .25s cubic-bezier(.2,.8,.2,1)' }}>
+          <Sidebar
+            subject={subject}
+            groups={subject.groups}
+            folders={subjectFolders}
+            loading={foldersLoading}
+            width={sidebarWidth}
+            activeFolderId={activeFolder?.id}
+            onFolderSelect={onFolderSelect}
+            onNewFolder={() => { setNewFolderGroup(null); setNewFolderOpen(true); }}
+            onNewFolderInGroup={(g) => { setNewFolderGroup(g); setNewFolderOpen(true); }}
+            onNewSubfolder={(folder) => { setNewFolderParentId(folder.id); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
+            onRenameFolder={setRenamingFolder}
+            onDeleteFolder={handleDeleteFolder}
+            onReorderFolders={reorderFolders}
+            onToggleFavorite={toggleFavorite}
+            onSetFolderColor={setFolderColor}
+            onMoveFileToFolder={handleMoveFileToFolder}
+            recentFiles={recentFiles}
+            onRecentFileClick={handleRecentFileClick}
+          />
+        </div>
         <div
           onMouseDown={onSidebarResizeMouseDown}
           style={{
@@ -751,7 +832,43 @@ export default function App({ onLogout }) {
         />
 
         <div
+          ref={contentPaneRef}
           style={{ flex: 1, minWidth: 0, overflow: 'auto', position: 'relative' }}
+          onPointerDown={(e) => {
+            if (!activeFolder || e.pointerType === 'mouse' && e.clientX > 28) return;
+            if (e.clientX > 28) return;
+            backSwipeRef.current = { dragging: true, startX: e.clientX, pointerId: e.pointerId };
+            setBackSwipe({ active: true, x: 0 });
+          }}
+          onPointerMove={(e) => {
+            if (!backSwipeRef.current.dragging) return;
+            const delta = Math.max(0, e.clientX - backSwipeRef.current.startX);
+            setBackSwipe({ active: true, x: Math.min(delta, 260) });
+          }}
+          onPointerUp={() => {
+            if (!backSwipeRef.current.dragging) return;
+            const shouldBack = backSwipe.x > 110;
+            backSwipeRef.current.dragging = false;
+            if (shouldBack) {
+              closeFolderView();
+            } else {
+              setBackSwipe({ active: false, x: 0 });
+            }
+          }}
+          onTouchStart={(e) => {
+            const el = e.currentTarget;
+            pullRef.current.atTop = el.scrollTop <= 0;
+            pullRef.current.startY = e.touches[0].clientY;
+            pullRef.current.pulling = pullRef.current.atTop && !activeFolder;
+          }}
+          onTouchMove={(e) => {
+            if (!pullRef.current.pulling) return;
+            const dy = e.touches[0].clientY - pullRef.current.startY;
+            if (dy > 70) {
+              pullRef.current.pulling = false;
+              setGlobalSearchOpen(true);
+            }
+          }}
           onDragOver={(e) => { if (!activeFolder || folderTab !== 'files') return; e.preventDefault(); setDropOver(true); }}
           onDragEnter={(e) => { if (!activeFolder || folderTab !== 'files') return; e.preventDefault(); setDropOver(true); }}
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDropOver(false); }}
@@ -787,7 +904,17 @@ export default function App({ onLogout }) {
             </div>
           )}
           {activeFolder ? (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div
+              key={`folder-open-${activeFolder.id}-${folderOpenTick}`}
+              className="lm-folder-open-shell"
+              style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                transform: `translate3d(${parallax.x * 2 + (backSwipe.active ? backSwipe.x : 0)}px, ${parallax.y * 1.5}px, 0)`,
+                transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
+              }}
+            >
               {/* Folder header */}
               <div style={{ padding: '20px 28px 0', flexShrink: 0 }}>
                 <Breadcrumb
@@ -878,6 +1005,7 @@ export default function App({ onLogout }) {
                     const on = folderTab === key;
                     return (
                       <button
+                        className="lm-spring"
                         key={key}
                         onClick={() => setFolderTab(key)}
                         style={{
@@ -894,6 +1022,7 @@ export default function App({ onLogout }) {
                   {folderTab === 'files' && (
                     <div style={{ marginLeft: 'auto', alignSelf: 'center', paddingRight: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
                       <button
+                        className="lm-spring"
                         onClick={() => setFilesView((v) => (v === 'list' ? 'gallery' : 'list'))}
                         style={{ height: 24, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 6, background: 'transparent', color: 'var(--c-text-2)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
                       >
@@ -933,7 +1062,14 @@ export default function App({ onLogout }) {
                         activeFileId={activeFile?.id}
                         activeFile2Id={activeFile2?.id}
                         activeLinkId={activeLink?.id}
-                        onFileSelect={(f) => { setActiveFile(f); setActiveLink(null); trackFile(f, activeFolder?.id, subjectId); }}
+                        onFileSelect={(f, meta) => {
+                          setActiveFile(f);
+                          setActiveLink(null);
+                          trackFile(f, activeFolder?.id, subjectId);
+                          const from = meta?.sourceRect;
+                          const to = previewPaneRef.current?.getBoundingClientRect();
+                          if (from && to) setPreviewHero({ from, to, accent, phase: 'start' });
+                        }}
                         onFileSecondarySelect={(f) => { setActiveFile2(f); trackFile(f, activeFolder?.id, subjectId); }}
                         onLinkSelect={(l) => { setActiveLink(l); setActiveFile(null); }}
                         accent={accent}
@@ -986,7 +1122,13 @@ export default function App({ onLogout }) {
 
         {/* Preview panel — resizable, optional split */}
         {activeFolder && (
-          <div style={{ width: previewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden' }}>
+          <div
+            style={{
+              width: previewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden',
+              transform: `translate3d(${parallax.x * 3}px, ${parallax.y * 1.5}px, 0)`,
+              transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
+            }}
+          >
             <div
               onMouseDown={onResizeMouseDown}
               style={{
@@ -999,7 +1141,9 @@ export default function App({ onLogout }) {
             />
             <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex' }}>
               {/* Slot 1 */}
-              <div style={{
+              <div
+                ref={previewPaneRef}
+                style={{
                 flex: 1, minWidth: 0, overflow: 'hidden',
                 borderRight: activeFile2 ? '1px solid var(--c-border)' : 'none',
               }}>
@@ -1027,6 +1171,7 @@ export default function App({ onLogout }) {
         )}
         </>}
       </div>
+      </div>
 
       <UploadModal
         open={uploadOpen}
@@ -1045,6 +1190,62 @@ export default function App({ onLogout }) {
         onSave={handleAddLink}
         accent={accent}
       />
+      {hasModalOpen && <div className="lm-depth-overlay" />}
+      {folderZoom && (
+        <div
+          style={{
+            position: 'fixed',
+            left: folderZoom.phase === 'run' ? folderZoom.to.left : folderZoom.from.left,
+            top: folderZoom.phase === 'run' ? folderZoom.to.top : folderZoom.from.top,
+            width: folderZoom.phase === 'run' ? folderZoom.to.width : folderZoom.from.width,
+            height: folderZoom.phase === 'run' ? folderZoom.to.height : folderZoom.from.height,
+            borderRadius: folderZoom.phase === 'run' ? 0 : 14,
+            background: `${folderZoom.accent}22`,
+            border: `1px solid ${folderZoom.accent}55`,
+            boxShadow: `0 18px 42px ${folderZoom.accent}33`,
+            transition: 'all .42s cubic-bezier(.2,.9,.2,1)',
+            pointerEvents: 'none',
+            zIndex: 1500,
+            opacity: folderZoom.phase === 'run' ? 0 : 1,
+          }}
+        />
+      )}
+      {previewHero && (
+        <div
+          style={{
+            position: 'fixed',
+            left: previewHero.phase === 'run' ? previewHero.to.left + 12 : previewHero.from.left,
+            top: previewHero.phase === 'run' ? previewHero.to.top + 12 : previewHero.from.top,
+            width: previewHero.phase === 'run' ? Math.max(120, previewHero.to.width - 24) : previewHero.from.width,
+            height: previewHero.phase === 'run' ? 74 : previewHero.from.height,
+            borderRadius: 10,
+            background: `${previewHero.accent}16`,
+            border: `1px solid ${previewHero.accent}66`,
+            transition: 'all .34s cubic-bezier(.2,.9,.2,1)',
+            pointerEvents: 'none',
+            zIndex: 1499,
+            opacity: previewHero.phase === 'run' ? 0 : 0.96,
+          }}
+        />
+      )}
+      {hapticPulse && (
+        <div
+          style={{
+            position: 'fixed',
+            left: hapticPulse.x - 22,
+            top: hapticPulse.y - 22,
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            border: `1px solid ${hapticPulse.color}99`,
+            background: `${hapticPulse.color}22`,
+            boxShadow: `0 0 0 8px ${hapticPulse.color}22`,
+            animation: 'lmHapticPulse .24s ease-out forwards',
+            pointerEvents: 'none',
+            zIndex: 1700,
+          }}
+        />
+      )}
 
       <NewFolderModal
         open={newFolderOpen}
@@ -1172,7 +1373,7 @@ function FilesSkeleton() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 8, padding: 8 }}>
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} style={{ height: 64, borderRadius: 10, border: '1px solid var(--c-border)', background: 'var(--c-surface-2)' }} />
+        <div key={i} className="lm-skeleton-shimmer" style={{ height: 64, borderRadius: 10, border: '1px solid var(--c-border)', background: 'var(--c-surface-2)' }} />
       ))}
     </div>
   );
@@ -1259,7 +1460,7 @@ function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect
           gap: 12,
         }}>
           {folders.map((f) => (
-            <FolderCard key={f.id} folder={f} accent={accent} onClick={() => onFolderSelect(f)} t={t} />
+            <FolderCard key={f.id} folder={f} accent={accent} onClick={(rect) => onFolderSelect(f, rect)} t={t} />
           ))}
           <button
             onClick={onNewFolder}
@@ -1347,12 +1548,14 @@ function FolderCard({ folder, accent, onClick, t }) {
 
   return (
     <button
-      onClick={onClick}
+      onClick={(e) => onClick?.(e.currentTarget.getBoundingClientRect())}
+      className="lm-spring"
       style={{
         appearance: 'none', border: '1px solid var(--c-border)', borderRadius: 14,
         background: 'var(--c-surface)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
         padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         transition: 'box-shadow .18s, transform .12s',
+        animation: 'lmStaggerIn .42s cubic-bezier(.22,.9,.2,1) both',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = `0 8px 28px rgba(0,0,0,0.16), 0 0 0 1px ${accent}44`;
@@ -1488,4 +1691,3 @@ function SearchField({ value, onChange, accent, placeholder }) {
     </div>
   );
 }
-
