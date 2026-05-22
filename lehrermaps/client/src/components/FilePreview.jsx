@@ -184,13 +184,7 @@ function PreviewSurface({ file, kind, accent, t }) {
   }
 
   if (kind === 'video') {
-    return (
-      <video
-        controls
-        src={src}
-        style={{ width: '100%', height: '100%', background: 'var(--c-surface-2)', display: 'block' }}
-      />
-    );
+    return <VideoPlayer src={src} />;
   }
 
   if (kind === 'audio') {
@@ -371,6 +365,105 @@ function FallbackPreview({ file, kind, accent, t }) {
       <div style={{ fontSize: 11, color: 'var(--c-text-3)', textAlign: 'center' }}>
         {t('preview.download_to_open')}
       </div>
+    </div>
+  );
+}
+
+function fmtTime(s) {
+  if (!isFinite(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function VideoPlayer({ src }) {
+  const videoRef = useRef(null);
+  const scrubState = useRef(null);
+  const [scrubbing, setScrubbing] = useState(false);
+  const [scrubInfo, setScrubInfo] = useState({ delta: 0, current: 0 });
+
+  const handlePointerDown = useCallback((e) => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 1) return;
+    scrubState.current = { startX: e.clientX, startTime: video.currentTime, activated: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, []);
+
+  const handlePointerMove = useCallback((e) => {
+    const state = scrubState.current;
+    const video = videoRef.current;
+    if (!state || !video) return;
+    const dx = e.clientX - state.startX;
+    if (!state.activated) {
+      if (Math.abs(dx) < 6) return;
+      state.activated = true;
+      setScrubbing(true);
+    }
+    const duration = video.duration || 60;
+    const rate = Math.max(duration / 800, 0.04);
+    const delta = dx * rate;
+    const newTime = Math.max(0, Math.min(duration, state.startTime + delta));
+    video.currentTime = newTime;
+    setScrubInfo({ delta: Math.round(delta * 10) / 10, current: newTime });
+  }, []);
+
+  const handlePointerUp = useCallback(() => {
+    scrubState.current = null;
+    setScrubbing(false);
+  }, []);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000' }}>
+      <video
+        ref={videoRef}
+        controls
+        src={src}
+        style={{ width: '100%', height: '100%', display: 'block' }}
+      />
+      {/* Transparent overlay — upper area handles drag-to-scrub; bottom 48px stays for native controls */}
+      <div
+        style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 48,
+          cursor: scrubbing ? 'ew-resize' : 'grab',
+          touchAction: 'none', userSelect: 'none',
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      />
+      {scrubbing && (
+        <div style={{
+          position: 'absolute', top: '38%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'rgba(0,0,0,0.82)',
+          backdropFilter: 'blur(14px)',
+          color: '#fff', borderRadius: 14,
+          padding: '14px 24px',
+          pointerEvents: 'none',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+          border: '1px solid rgba(255,255,255,0.15)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 22, fontWeight: 700, letterSpacing: -0.5 }}>
+            {scrubInfo.delta >= 0 ? (
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M3 10h14M13 6l4 4-4 4" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M17 10H3M7 6L3 10l4 4" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+            <span>
+              {scrubInfo.delta >= 0 ? '+' : ''}{scrubInfo.delta.toFixed(1)}s
+            </span>
+          </div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', fontFamily: '"DM Mono", monospace', letterSpacing: 0.5 }}>
+            {fmtTime(scrubInfo.current)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
