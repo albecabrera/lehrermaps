@@ -35,6 +35,7 @@ export default function Schedule({ onNavigate }) {
   const { t, lang } = useLang();
   const [schedule, setSchedule] = useState(loadCache);
   const [picker, setPicker] = useState(null); // { day, period, rect }
+  const [dragOverKey, setDragOverKey] = useState(null);
 
   useEffect(() => {
     api.get('/schedule').then((res) => {
@@ -83,6 +84,26 @@ export default function Schedule({ onNavigate }) {
     const rect = el.getBoundingClientRect();
     setPicker({ day, period, rect });
   }, []);
+
+  const onDropToCell = useCallback((day, period, payload) => {
+    if (!payload) return;
+    const toKey = `${day}-${period}`;
+    if (payload.type === 'subject') {
+      const subject = STUNDENPLAN_SUBJECTS.find((s) => s.id === payload.subjectId);
+      if (!subject) return;
+      const cell = { id: subject.id, label: subject.label, color: subject.color };
+      if (subject.subjectId) cell.subjectId = subject.subjectId;
+      persist({ ...schedule, [toKey]: cell });
+      return;
+    }
+    if (payload.type === 'cell') {
+      const fromKey = `${payload.day}-${payload.period}`;
+      if (fromKey === toKey || !payload.cell) return;
+      const next = { ...schedule, [toKey]: payload.cell };
+      delete next[fromKey];
+      persist(next);
+    }
+  }, [persist, schedule]);
 
   const exportIcs = useCallback(() => {
     const lines = [
@@ -166,13 +187,27 @@ export default function Schedule({ onNavigate }) {
       {/* Subject legend */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
         {STUNDENPLAN_SUBJECTS.map((s) => (
-          <div key={s.id} style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            padding: '3px 10px', borderRadius: 20,
-            background: s.color + '18',
-            border: `1px solid ${s.color}44`,
-            fontSize: 11, fontWeight: 600, color: s.color,
-          }}>
+          <div
+            key={s.id}
+            draggable
+            onDragStart={(e) => {
+              const payload = JSON.stringify({
+                type: 'subject',
+                subjectId: s.id,
+              });
+              e.dataTransfer.effectAllowed = 'copy';
+              e.dataTransfer.setData('application/x-lehrermaps-schedule', payload);
+              e.dataTransfer.setData('text/plain', payload);
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '3px 10px', borderRadius: 20,
+              background: s.color + '18',
+              border: `1px solid ${s.color}44`,
+              fontSize: 11, fontWeight: 600, color: s.color,
+              cursor: 'grab',
+            }}
+          >
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.color }} />
             {s.label}
           </div>
@@ -211,10 +246,28 @@ export default function Schedule({ onNavigate }) {
               return (
                 <ScheduleCell
                   key={key}
+                  day={d}
+                  period={p}
                   cell={cell}
                   onEdit={(el) => openPicker(d, p, el)}
                   onUnlink={() => unlink(d, p)}
                   onNavigate={onNavigate}
+                  dragOver={dragOverKey === key}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    const payload = readDndPayload(e.dataTransfer);
+                    e.dataTransfer.dropEffect = payload?.type === 'subject' ? 'copy' : 'move';
+                    setDragOverKey(key);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverKey === key) setDragOverKey(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const payload = readDndPayload(e.dataTransfer);
+                    setDragOverKey(null);
+                    onDropToCell(d, p, payload);
+                  }}
                 />
               );
             }),
@@ -234,7 +287,10 @@ export default function Schedule({ onNavigate }) {
   );
 }
 
-function ScheduleCell({ cell, onEdit, onUnlink, onNavigate }) {
+function ScheduleCell({
+  day, period, cell, onEdit, onUnlink, onNavigate,
+  dragOver, onDragOver, onDragLeave, onDrop,
+}) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
   const canNav = cell?.subjectId && onNavigate;
@@ -250,11 +306,32 @@ function ScheduleCell({ cell, onEdit, onUnlink, onNavigate }) {
   return (
     <div
       ref={ref}
+      draggable={!!cell}
+      onDragStart={(e) => {
+        if (!cell) return;
+        const payload = JSON.stringify({
+          type: 'cell',
+          day,
+          period,
+          cell,
+        });
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('application/x-lehrermaps-schedule', payload);
+        e.dataTransfer.setData('text/plain', payload);
+      }}
+      onDragEnd={() => onDragLeave?.()}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
       style={{
         minHeight: 56, borderRadius: 8,
-        border: `1px solid ${cell ? cell.color + '44' : 'var(--c-border)'}`,
-        background: cell ? `${cell.color}12` : 'var(--c-surface)',
-        cursor: 'pointer', position: 'relative',
+        border: dragOver
+          ? `1.5px dashed ${cell ? cell.color : '#0EA5E9'}`
+          : `1px solid ${cell ? cell.color + '44' : 'var(--c-border)'}`,
+        background: dragOver
+          ? (cell ? `${cell.color}20` : 'rgba(14,165,233,0.08)')
+          : (cell ? `${cell.color}12` : 'var(--c-surface)'),
+        cursor: cell ? 'grab' : 'pointer', position: 'relative',
         transition: 'background .1s, border-color .1s',
         overflow: 'hidden',
       }}
@@ -309,6 +386,19 @@ function ScheduleCell({ cell, onEdit, onUnlink, onNavigate }) {
       )}
     </div>
   );
+}
+
+function readDndPayload(dataTransfer) {
+  try {
+    const raw = dataTransfer.getData('application/x-lehrermaps-schedule')
+      || dataTransfer.getData('text/plain');
+    if (!raw) return null;
+    const payload = JSON.parse(raw);
+    if (!payload || typeof payload !== 'object') return null;
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
 const AUFSICHT_COLOR = '#64748B';
