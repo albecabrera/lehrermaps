@@ -161,7 +161,7 @@ export default function App({ onLogout }) {
         document.exitFullscreen();
         return;
       }
-      if (globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen) return;
+      if (globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen || worksheetGenOpen) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setGlobalSearchOpen(true);
@@ -173,6 +173,7 @@ export default function App({ onLogout }) {
         return;
       }
       const isSpaceKey = e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar';
+      if (isSpaceKey && isTyping) return;
       if (isSpaceKey) {
         e.preventDefault();
         e.stopPropagation();

@@ -8,7 +8,9 @@ const router = Router();
 router.use(auth);
 
 const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS || 15000);
+const WORKSHEET_TIMEOUT_MS = Number(process.env.WORKSHEET_TIMEOUT_MS || 45000);
 const AI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-5';
 
 router.get('/status', (req, res) => {
   if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nur für Lehrkräfte verfügbar.' });
@@ -142,6 +144,68 @@ async function generateDocumentContent({ prompt, subject, folderName, lang }) {
     fallback,
   });
   return ai;
+}
+
+async function generateWithClaudeWebSearch({ system, user, fallback }) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return fallback;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), WORKSHEET_TIMEOUT_MS);
+
+  const messages = [{ role: 'user', content: user }];
+
+  try {
+    for (let turn = 0; turn < 6; turn++) {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-beta': 'web-search-2025-03-05',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: ANTHROPIC_MODEL,
+          max_tokens: 4096,
+          system,
+          tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
+          messages,
+        }),
+      });
+
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        console.error('Anthropic error:', err?.error?.message || r.status);
+        return fallback;
+      }
+
+      const data = await r.json();
+      const content = data.content || [];
+
+      if (data.stop_reason === 'end_turn') {
+        const text = content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+        return text || fallback;
+      }
+
+      if (data.stop_reason === 'tool_use') {
+        messages.push({ role: 'assistant', content });
+        const toolResults = content
+          .filter((b) => b.type === 'tool_use')
+          .map((b) => ({ type: 'tool_result', tool_use_id: b.id, content: b.output ?? '' }));
+        if (toolResults.length) messages.push({ role: 'user', content: toolResults });
+        continue;
+      }
+
+      break;
+    }
+    return fallback;
+  } catch {
+    return fallback;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function generateWithAI({ system, user, fallback }) {
@@ -337,7 +401,10 @@ router.post('/worksheet', async (req, res) => {
   const typeLabel = WORKSHEET_TYPE_LABELS[worksheetType] || worksheetType;
   const langName = lang === 'es' ? 'Spanisch' : lang === 'en' ? 'Englisch' : 'Deutsch';
 
+  const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+
   const system = `Du bist ein erfahrener Lehrer und erstellst professionelle, druckfertige Arbeitsblätter.
+${hasAnthropicKey ? `Nutze die Web-Suche, um aktuellen, korrekten und lehrplankonformen Inhalt zum Thema zu finden, bevor du das Arbeitsblatt erstellst.` : ''}
 Schreibe das gesamte Arbeitsblatt auf ${langName}.
 Ausgabe: NUR das Arbeitsblatt in Markdown. Keine Erklärungen davor oder danach.
 Aufbau:
@@ -349,6 +416,7 @@ Aufbau:
    - Bei Lückentext: Wörterkasten oben
    - Bei Multiple Choice: immer (A) (B) (C) (D)
    - Genug Leerzeilen für Antworten
+   - Aufgaben basieren auf korrektem, recherchiertem Inhalt
 6. Horizontale Linie
 7. Fußzeile: *Erstellt von: _____________ | Datum: _____________*`;
 
@@ -382,8 +450,13 @@ Aufbau:
     '',
   ].join('\n');
 
-  const { content, usage } = await generateWithAIWithUsage({ system, user, fallback });
-  return res.json({ content, usage: usage || null });
+  let content;
+  if (hasAnthropicKey) {
+    content = await generateWithClaudeWebSearch({ system, user, fallback });
+    return res.json({ content, provider: 'claude', usage: null });
+  }
+  const result = await generateWithAIWithUsage({ system, user, fallback });
+  return res.json({ content: result.content, provider: 'openai', usage: result.usage || null });
 });
 
 router.post('/worksheet/export', async (req, res) => {

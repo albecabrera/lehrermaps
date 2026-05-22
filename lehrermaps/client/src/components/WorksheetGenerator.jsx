@@ -50,6 +50,7 @@ export default function WorksheetGenerator({ onClose }) {
 
   const [step, setStep] = useState('form'); // 'form' | 'loading' | 'preview'
   const [content, setContent] = useState('');
+  const [provider, setProvider] = useState(null);
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(null); // 'docx' | 'pdf' | null
 
@@ -69,6 +70,7 @@ export default function WorksheetGenerator({ onClose }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Fehler');
       setContent(data.content || '');
+      setProvider(data.provider || null);
       setStep('preview');
     } catch (e) {
       setError(e.message);
@@ -131,7 +133,9 @@ export default function WorksheetGenerator({ onClose }) {
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--c-border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--c-text)' }}>Arbeitsblatt-Generator</div>
-            <div style={{ fontSize: 11, color: 'var(--c-text-3)', marginTop: 2 }}>KI-generiert · druckfertig</div>
+            <div style={{ fontSize: 11, color: 'var(--c-text-3)', marginTop: 2 }}>
+              {provider === 'claude' ? '✦ Claude · Websuche · druckfertig' : 'KI-generiert · druckfertig'}
+            </div>
           </div>
           {step === 'preview' && (
             <button onClick={() => setStep('form')} style={{ ...btnStyle('var(--c-surface-2)', false), color: 'var(--c-text-2)', fontSize: 12, padding: '6px 12px' }}>
