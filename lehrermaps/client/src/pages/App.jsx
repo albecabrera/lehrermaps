@@ -13,7 +13,7 @@ import GlobalSearch from '../components/GlobalSearch';
 import QRModal from '../components/QRModal';
 import KeyboardHelp from '../components/KeyboardHelp';
 import Schedule from '../components/Schedule';
-import { SUBJECTS } from '../constants/structure';
+import { SUBJECTS, detectKind } from '../constants/structure';
 import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
@@ -75,6 +75,7 @@ export default function App({ onLogout }) {
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const [hapticPulse, setHapticPulse] = useState(null);
   const [backSwipe, setBackSwipe] = useState({ active: false, x: 0 });
+  const [heroQrLink, setHeroQrLink] = useState(null);
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
@@ -572,6 +573,8 @@ export default function App({ onLogout }) {
   };
 
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
+  const isCompactPreview = !!activeLink || detectKind(activeFile?.original_name) === 'video';
+  const effectivePreviewWidth = isCompactPreview ? Math.min(previewWidth, 280) : previewWidth;
   const filteredCount = query
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
@@ -1046,7 +1049,7 @@ export default function App({ onLogout }) {
               {/* Tab content */}
               <div style={{ flex: 1, minHeight: 0, overflow: folderTab === 'files' ? 'auto' : 'hidden' }}>
                 {folderTab === 'files' ? (
-                  <div style={{ padding: '18px 28px' }}>
+                  <div style={{ padding: '12px 20px' }}>
                     {filesLoading ? (
                       <FilesSkeleton />
                     ) : filesView === 'gallery' ? (
@@ -1085,6 +1088,7 @@ export default function App({ onLogout }) {
                         onToggleShare={toggleShare}
                         onTogglePublic={togglePublic}
                         onSetDeadline={handleSetFileDeadline}
+                        onShowLinkQr={(link) => setHeroQrLink(link)}
                         onFileDragStart={(file) => {
                           if (!activeFile || activeFile.id !== file.id) {
                             setActiveFile(file);
@@ -1127,7 +1131,7 @@ export default function App({ onLogout }) {
         {activeFolder && (
           <div
             style={{
-              width: previewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden',
+              width: effectivePreviewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden',
               transform: `translate3d(${parallax.x * 3}px, ${parallax.y * 1.5}px, 0)`,
               transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
             }}
@@ -1247,6 +1251,12 @@ export default function App({ onLogout }) {
             pointerEvents: 'none',
             zIndex: 1700,
           }}
+        />
+      )}
+      {heroQrLink && (
+        <HeroQrOverlay
+          link={heroQrLink}
+          onClose={() => setHeroQrLink(null)}
         />
       )}
 
@@ -1374,12 +1384,78 @@ export default function App({ onLogout }) {
 
 function FilesSkeleton() {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 8, padding: 8 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 6, padding: 6 }}>
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="lm-skeleton-shimmer" style={{ height: 64, borderRadius: 10, border: '1px solid var(--c-border)', background: 'var(--c-surface-2)' }} />
+        <div key={i} className="lm-skeleton-shimmer" style={{ height: 58, borderRadius: 10, border: '1px solid var(--c-border)', background: 'var(--c-surface-2)' }} />
       ))}
     </div>
   );
+}
+
+function HeroQrOverlay({ link, onClose }) {
+  const [qrSrc, setQrSrc] = useState(null);
+  const safeUrl = normalizeExternalUrl(link?.url || '');
+
+  useEffect(() => {
+    if (!safeUrl) return;
+    let cancelled = false;
+    import('qrcode')
+      .then(({ default: QRCode }) => QRCode.toDataURL(safeUrl, { width: 980, margin: 2, color: { dark: '#111827', light: '#ffffff' } }))
+      .then((src) => { if (!cancelled) setQrSrc(src); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [safeUrl]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1800,
+        background: 'rgba(0,0,0,0.78)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24, cursor: 'zoom-out',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 'min(92vw, 900px)',
+          maxHeight: '92vh',
+          background: '#fff',
+          borderRadius: 16,
+          padding: 16,
+          boxShadow: '0 24px 60px rgba(0,0,0,0.45)',
+          display: 'flex', flexDirection: 'column', gap: 10,
+        }}
+      >
+        <div style={{ fontSize: 12, color: '#4B5563', fontFamily: '"DM Mono", monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {safeUrl.replace(/^https?:\/\//, '')}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 240 }}>
+          {qrSrc ? (
+            <img src={qrSrc} alt="QR Fullscreen" style={{ width: 'min(78vw, 760px)', height: 'auto' }} />
+          ) : (
+            <div style={{ fontSize: 13, color: '#6B7280' }}>Generando QR…</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function normalizeExternalUrl(url) {
+  if (!url) return '';
+  const trimmed = String(url).trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
 }
 
 function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect, onRecentClick, onNewFolder, t }) {

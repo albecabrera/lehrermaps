@@ -5,12 +5,14 @@ export default function LinkPreview({ link, accent = '#E8472A', onDelete }) {
   const { t } = useLang();
   const [qrSrc, setQrSrc] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [qrFullscreen, setQrFullscreen] = useState(false);
 
   useEffect(() => {
     if (!link?.url) return;
+    const normalized = normalizeExternalUrl(link.url);
     let cancelled = false;
     import('qrcode').then(({ default: QRCode }) =>
-      QRCode.toDataURL(link.url, { width: 260, margin: 2, color: { dark: '#111827', light: '#ffffff' } })
+      QRCode.toDataURL(normalized, { width: 260, margin: 2, color: { dark: '#111827', light: '#ffffff' } })
     ).then((src) => { if (!cancelled) setQrSrc(src); }).catch(() => {});
     return () => { cancelled = true; };
   }, [link?.url]);
@@ -32,7 +34,8 @@ export default function LinkPreview({ link, accent = '#E8472A', onDelete }) {
     );
   }
 
-  const displayUrl = link.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const normalizedUrl = normalizeExternalUrl(link.url);
+  const displayUrl = normalizedUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
   return (
     <div style={{
@@ -58,7 +61,8 @@ export default function LinkPreview({ link, accent = '#E8472A', onDelete }) {
             <img
               src={qrSrc}
               alt="QR-Code"
-              style={{ width: 200, height: 200, borderRadius: 8, border: '1px solid var(--c-border)' }}
+              onClick={() => setQrFullscreen(true)}
+              style={{ width: 200, height: 200, borderRadius: 8, border: '1px solid var(--c-border)', cursor: 'zoom-in' }}
             />
             <div style={{ fontSize: 10, color: 'var(--c-text-3)', textAlign: 'center', fontFamily: '"DM Mono", monospace' }}>
               {t('preview.qr_scan')}
@@ -70,7 +74,7 @@ export default function LinkPreview({ link, accent = '#E8472A', onDelete }) {
       </div>
 
       <div style={{ padding: '10px 14px', borderTop: '1px solid var(--c-border)', display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
-        <a href={link.url} target="_blank" rel="noreferrer" style={btnStyle('#fff', accent)}>
+        <a href={normalizedUrl} target="_blank" rel="noreferrer" style={btnStyle('#fff', accent)}>
           {t('open')}
         </a>
         <button onClick={copyUrl} style={{ ...btnStyle('var(--c-text)', 'var(--c-hover)'), border: 'none', cursor: 'pointer' }}>
@@ -82,6 +86,30 @@ export default function LinkPreview({ link, accent = '#E8472A', onDelete }) {
           </button>
         )}
       </div>
+      {qrFullscreen && qrSrc && (
+        <div
+          onClick={() => setQrFullscreen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1300,
+            background: 'rgba(0,0,0,0.72)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20, cursor: 'zoom-out',
+          }}
+        >
+          <img
+            src={qrSrc}
+            alt="QR-Code Fullscreen"
+            style={{
+              width: 'min(86vw, 720px)',
+              height: 'auto',
+              background: '#fff',
+              borderRadius: 14,
+              padding: 14,
+              boxShadow: '0 18px 48px rgba(0,0,0,0.45)',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -93,4 +121,11 @@ function btnStyle(color, bg) {
     fontFamily: 'inherit', textDecoration: 'none',
     display: 'flex', alignItems: 'center',
   };
+}
+
+function normalizeExternalUrl(url) {
+  if (!url) return '';
+  const trimmed = String(url).trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
 }

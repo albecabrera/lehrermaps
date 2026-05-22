@@ -10,6 +10,7 @@ export default function FileTable({
   query, onDelete, onRename, onDeleteLink, onUpload, onAddLink, onToggleShare,
   onTogglePublic,
   onSetDeadline,
+  onShowLinkQr,
   onFileDragStart,
   hiddenIds = new Set(),
   onBulkDelete, onBulkShare, onBulkUnshare, onBulkDownload, onBulkMove,
@@ -18,6 +19,7 @@ export default function FileTable({
   const [menuFile, setMenuFile] = useState(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [menuLink, setMenuLink] = useState(null);
+  const [linkAction, setLinkAction] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [sortBy, setSortBy] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
@@ -52,6 +54,7 @@ export default function FileTable({
     if (sortBy === 'size') return ((a.size_bytes || 0) - (b.size_bytes || 0)) * dir;
     return (new Date(a.uploaded_at || 0) - new Date(b.uploaded_at || 0)) * dir;
   });
+  const videoFiles = sorted.filter((f) => detectKind(f.original_name) === 'video');
 
   const handleContextMenu = (e, file) => {
     e.preventDefault();
@@ -202,8 +205,14 @@ export default function FileTable({
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: 8,
+            gridTemplateColumns: 'minmax(0, 1fr) minmax(220px, 260px)',
+            gap: 10,
+            alignItems: 'start',
+          }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: 6,
           }}>
           {sorted.map((file, idx) => {
             const on = file.id === activeFileId;
@@ -243,7 +252,7 @@ export default function FileTable({
                   cursor: dndMode ? 'grab' : 'pointer',
                   background: on ? `${accent}12` : on2 ? 'rgba(14,165,233,0.10)' : 'var(--c-surface-2)',
                   border: on ? `1px solid ${accent}66` : on2 ? '1px solid rgba(14,165,233,0.45)' : dndMode ? `1px solid var(--c-border)` : '1px solid var(--c-border-soft)',
-                  borderRadius: 10, padding: '9px 10px',
+                  borderRadius: 10, padding: '7px 8px',
                   transition: 'background .1s, border-color .1s',
                   animationDelay: `${Math.min(14, idx) * 26}ms`,
                 }}
@@ -284,7 +293,7 @@ export default function FileTable({
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >⋯</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 5 }}>
                   {file.is_shared ? (
                     <span style={{
                       fontSize: 9, fontWeight: 700, letterSpacing: 0.4,
@@ -306,79 +315,96 @@ export default function FileTable({
             );
           })}
           </div>
-        </div>
-      )}
 
-      {(links.length > 0 || onAddLink) && (
-        <div style={{ marginTop: 20 }}>
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginBottom: 8,
+            borderLeft: '1px solid var(--c-border)',
+            paddingLeft: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
           }}>
-            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase', color: 'var(--c-text-3)' }}>
-              {t('table.links_section')}
-            </div>
-            {onAddLink && (
-              <button
-                onClick={onAddLink}
-                style={{
-                  height: 24, padding: '0 10px', border: `1px dashed ${accent}66`,
-                  borderRadius: 5, background: `${accent}0A`, color: accent,
-                  fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'flex', alignItems: 'center', gap: 5,
-                }}
-              >
-                <svg width="9" height="9" viewBox="0 0 9 9"><path d="M4.5 1v7M1 4.5h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-                {t('table.add_link')}
-              </button>
+            {videoFiles.length > 0 && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: 'var(--c-text-3)', marginBottom: 6 }}>
+                  {t('table.filter_video')}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {videoFiles.slice(0, 8).map((vf) => {
+                    const onVideo = vf.id === activeFileId;
+                    return (
+                      <button
+                        key={`video-rail-${vf.id}`}
+                        onClick={() => onFileSelect?.(vf)}
+                        style={{
+                          appearance: 'none', border: `1px solid ${onVideo ? accent : 'var(--c-border)'}`,
+                          background: onVideo ? `${accent}12` : 'var(--c-surface-2)',
+                          color: 'var(--c-text)', borderRadius: 8, padding: '6px 8px',
+                          textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                          fontSize: 11.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        }}
+                      >
+                        🎬 {vf.original_name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {(links.length > 0 || onAddLink) && (
+              <div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  marginBottom: 6,
+                }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: 'var(--c-text-3)' }}>
+                    {t('table.links_section')}
+                  </div>
+                  {onAddLink && (
+                    <button
+                      onClick={onAddLink}
+                      style={{
+                        height: 22, padding: '0 8px', border: `1px dashed ${accent}66`,
+                        borderRadius: 5, background: `${accent}0A`, color: accent,
+                        fontSize: 10.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                        display: 'flex', alignItems: 'center', gap: 4,
+                      }}
+                    >
+                      + {t('table.add_link')}
+                    </button>
+                  )}
+                </div>
+                {links.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {links.map((link) => {
+                      const onLink = link.id === activeLinkId;
+                      return (
+                        <button
+                          key={`link-rail-${link.id}`}
+                          onClick={() => setLinkAction(link)}
+                          onContextMenu={(e) => { e.preventDefault(); setMenuLink(link); setMenuPos({ x: e.clientX, y: e.clientY }); }}
+                          style={{
+                            appearance: 'none', border: `1px solid ${onLink ? accent : 'var(--c-border)'}`,
+                            background: onLink ? `${accent}0F` : 'var(--c-surface-2)',
+                            borderRadius: 8, padding: '7px 8px', cursor: 'pointer', textAlign: 'left',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          <div style={{ fontSize: 11.5, fontWeight: onLink ? 700 : 600, color: 'var(--c-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {link.title}
+                          </div>
+                          <div style={{ fontSize: 10, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {link.url.replace(/^https?:\/\//, '')}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             )}
           </div>
-          {links.length > 0 && (
-            <div style={{ background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: 12, overflow: 'hidden' }}>
-              {links.map((link, i) => {
-                const on = link.id === activeLinkId;
-                return (
-                  <button
-                    key={link.id}
-                    onClick={() => onLinkSelect?.(link)}
-                    onContextMenu={(e) => { e.preventDefault(); setMenuLink(link); setMenuPos({ x: e.clientX, y: e.clientY }); }}
-                    style={{
-                      appearance: 'none', border: 'none', font: 'inherit', textAlign: 'left',
-                      width: '100%', padding: '10px 16px', cursor: 'pointer',
-                      background: on ? `${accent}0F` : 'transparent',
-                      borderTop: i > 0 ? '1px solid var(--c-border)' : 'none',
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      transition: 'background .1s',
-                    }}
-                    onMouseEnter={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = on ? `${accent}0F` : 'transparent'; }}
-                    onFocus={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
-                    onBlur={(e) => { if (!on) e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    <div style={{ width: 26, height: 26, borderRadius: 6, background: `${accent}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                        <path d="M6.5 9.5a4 4 0 0 0 5.656 0l1.415-1.414a4 4 0 0 0-5.657-5.657L7.5 3.843" stroke={accent} strokeWidth="1.5" strokeLinecap="round"/>
-                        <path d="M9.5 6.5a4 4 0 0 0-5.656 0L2.43 7.914a4 4 0 0 0 5.657 5.657l.414-.414" stroke={accent} strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: on ? 600 : 500, color: 'var(--c-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {link.title}
-                      </div>
-                      <div style={{ fontSize: 10, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {link.url.replace(/^https?:\/\//, '')}
-                      </div>
-                    </div>
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.3, flexShrink: 0 }}>
-                      <rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
-                      <rect x="5" y="5" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
-                      <path d="M5 3h2v2M3 5v2h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                    </svg>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -403,6 +429,22 @@ export default function FileTable({
           accent={accent}
           onClose={() => setMenuLink(null)}
           onDelete={() => { onDeleteLink?.(menuLink.id); setMenuLink(null); }}
+          t={t}
+        />
+      )}
+      {linkAction && (
+        <LinkActionModal
+          link={linkAction}
+          accent={accent}
+          onClose={() => setLinkAction(null)}
+          onOpenBrowser={() => {
+            window.open(normalizeExternalUrl(linkAction.url), '_blank', 'noopener,noreferrer');
+            setLinkAction(null);
+          }}
+          onShowQr={() => {
+            onShowLinkQr?.(linkAction);
+            setLinkAction(null);
+          }}
           t={t}
         />
       )}
@@ -557,13 +599,64 @@ function LinkContextMenu({ link, x, y, accent, onClose, onDelete, t }) {
           <div style={{ fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{link.title}</div>
           <div style={{ fontSize: 10, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', overflow: 'hidden', textOverflow: 'ellipsis' }}>{link.url.replace(/^https?:\/\//, '')}</div>
         </div>
-        <MenuItem icon="↗" label={t('table.ctx_open_browser')} onClick={() => { window.open(link.url, '_blank'); onClose(); }} />
+        <MenuItem icon="↗" label={t('table.ctx_open_browser')} onClick={() => { window.open(normalizeExternalUrl(link.url), '_blank', 'noopener,noreferrer'); onClose(); }} />
         <MenuItem icon="⎘" label={t('table.ctx_copy_url')} onClick={() => { navigator.clipboard.writeText(link.url); onClose(); }} />
         <div style={{ height: 1, background: 'var(--c-border)', margin: '4px 2px' }} />
         <MenuItem icon="🗑" label={t('delete')} danger onClick={onDelete} />
       </div>
     </>
   );
+}
+
+function LinkActionModal({ link, accent, onClose, onOpenBrowser, onShowQr, t }) {
+  return (
+    <>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 1198, background: 'var(--c-overlay)' }} onClick={onClose} />
+      <div className="lm-modal-surface" style={{
+        position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+        zIndex: 1199, width: 'min(92vw, 380px)',
+        background: 'var(--c-surface)', border: '1px solid var(--c-border-soft)',
+        borderRadius: 14, boxShadow: 'var(--c-shadow-modal)',
+        padding: 14,
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-text)', marginBottom: 4 }}>
+          {t('table.link_action_title')}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--c-text-3)', marginBottom: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {link.title}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={onOpenBrowser}
+            style={{
+              flex: 1, height: 34, borderRadius: 8, border: '1px solid var(--c-border)',
+              background: 'var(--c-surface-2)', color: 'var(--c-text)',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            {t('table.ctx_open_browser')}
+          </button>
+          <button
+            onClick={onShowQr}
+            style={{
+              flex: 1, height: 34, borderRadius: 8, border: 'none',
+              background: accent, color: '#fff',
+              fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            {t('table.show_qr')}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function normalizeExternalUrl(url) {
+  if (!url) return '';
+  const trimmed = String(url).trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
 }
 
 function formatBytes(bytes) {
