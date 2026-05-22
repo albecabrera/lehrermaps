@@ -58,6 +58,7 @@ export default function App({ onLogout }) {
   const [dropFiles, setDropFiles] = useState(null);
   const [dropUploading, setDropUploading] = useState(null);
   const [qrOpen, setQrOpen] = useState(false);
+  const [activeFile2, setActiveFile2] = useState(null);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, setColor: setFolderColor, reload: reloadFolders } = useFolders();
@@ -78,6 +79,10 @@ export default function App({ onLogout }) {
     const tmr = setTimeout(() => setToast(null), toast.duration || 2200);
     return () => clearTimeout(tmr);
   }, [toast]);
+
+  useEffect(() => {
+    if (activeFile2 && previewWidth < 520) setPreviewWidth(640);
+  }, [activeFile2]);
 
   useEffect(() => () => {
     for (const timer of deleteTimersRef.current.values()) clearTimeout(timer);
@@ -187,6 +192,7 @@ export default function App({ onLogout }) {
     setSubjectId(id);
     setActiveFolder(null);
     setActiveFile(null);
+    setActiveFile2(null);
     setQuery('');
     setViewMode('subjects');
   };
@@ -194,6 +200,7 @@ export default function App({ onLogout }) {
   const onFolderSelect = (folder) => {
     setActiveFolder(folder);
     setActiveFile(null);
+    setActiveFile2(null);
     setActiveLink(null);
     setQuery('');
     setFolderTab('files');
@@ -324,6 +331,7 @@ export default function App({ onLogout }) {
       return next;
     });
     if (activeFile?.id === file.id) setActiveFile(null);
+    if (activeFile2?.id === file.id) setActiveFile2(null);
 
     const timer = setTimeout(async () => {
       deleteTimersRef.current.delete(file.id);
@@ -923,8 +931,10 @@ export default function App({ onLogout }) {
                         hiddenIds={pendingDeleteIds}
                         links={links}
                         activeFileId={activeFile?.id}
+                        activeFile2Id={activeFile2?.id}
                         activeLinkId={activeLink?.id}
                         onFileSelect={(f) => { setActiveFile(f); setActiveLink(null); trackFile(f, activeFolder?.id, subjectId); }}
+                        onFileSecondarySelect={(f) => { setActiveFile2(f); trackFile(f, activeFolder?.id, subjectId); }}
                         onLinkSelect={(l) => { setActiveLink(l); setActiveFile(null); }}
                         accent={accent}
                         query={query}
@@ -974,7 +984,7 @@ export default function App({ onLogout }) {
           )}
         </div>
 
-        {/* Preview panel — resizable */}
+        {/* Preview panel — resizable, optional split */}
         {activeFolder && (
           <div style={{ width: previewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden' }}>
             <div
@@ -987,11 +997,31 @@ export default function App({ onLogout }) {
               onMouseEnter={(e) => e.currentTarget.style.background = accent + '55'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             />
-            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-              {activeLink
-                ? <LinkPreview link={activeLink} accent={accent} onDelete={handleDeleteLink} />
-                : <FilePreview file={activeFile} accent={accent} />
-              }
+            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex' }}>
+              {/* Slot 1 */}
+              <div style={{
+                flex: 1, minWidth: 0, overflow: 'hidden',
+                borderRight: activeFile2 ? '1px solid var(--c-border)' : 'none',
+              }}>
+                {activeLink
+                  ? <LinkPreview link={activeLink} accent={accent} onDelete={handleDeleteLink} />
+                  : <FilePreview
+                      file={activeFile}
+                      accent={accent}
+                      onClose={activeFile2 ? () => { setActiveFile(activeFile2); setActiveFile2(null); } : null}
+                    />
+                }
+              </div>
+              {/* Slot 2 */}
+              {activeFile2 && (
+                <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                  <FilePreview
+                    file={activeFile2}
+                    accent={accent}
+                    onClose={() => setActiveFile2(null)}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}

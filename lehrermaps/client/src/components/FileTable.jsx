@@ -5,8 +5,8 @@ import { downloadFile, publicFileUrl } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 
 export default function FileTable({
-  files, links = [], activeFileId, activeLinkId,
-  onFileSelect, onLinkSelect, accent = '#E8472A',
+  files, links = [], activeFileId, activeLinkId, activeFile2Id,
+  onFileSelect, onFileSecondarySelect, onLinkSelect, accent = '#E8472A',
   query, onDelete, onRename, onDeleteLink, onUpload, onAddLink, onToggleShare,
   onTogglePublic,
   onSetDeadline,
@@ -160,6 +160,21 @@ export default function FileTable({
               </svg>
               {t('table.dnd_mode')}
             </button>
+            {onFileSecondarySelect && (
+              <span
+                title="Strg+Klick öffnet Datei in zweiter Ansicht"
+                style={{
+                  fontSize: 9, color: 'var(--c-text-3)', letterSpacing: 0.4,
+                  padding: '2px 6px', borderRadius: 4,
+                  border: '1px solid var(--c-border)',
+                  display: 'flex', alignItems: 'center', gap: 3,
+                  userSelect: 'none',
+                }}
+              >
+                <kbd style={{ fontFamily: '"DM Mono", monospace', fontSize: 9 }}>Strg</kbd>
+                +Klick
+              </span>
+            )}
           </div>
 
           {availableTypes.length > 0 && (
@@ -192,6 +207,7 @@ export default function FileTable({
           }}>
           {sorted.map((file) => {
             const on = file.id === activeFileId;
+            const on2 = file.id === activeFile2Id;
             const kind = detectKind(file.original_name);
             const sizeFmt = file.size_bytes ? formatBytes(file.size_bytes) : '—';
             const dateFmt = file.uploaded_at
@@ -204,7 +220,14 @@ export default function FileTable({
             return (
               <button
                 key={file.id}
-                onClick={() => onFileSelect(file)}
+                onClick={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && onFileSecondarySelect) {
+                    e.preventDefault();
+                    onFileSecondarySelect(file);
+                  } else {
+                    onFileSelect(file);
+                  }
+                }}
                 onDoubleClick={() => onRename?.(file)}
                 onContextMenu={(e) => handleContextMenu(e, file)}
                 draggable={dndMode}
@@ -217,15 +240,15 @@ export default function FileTable({
                   appearance: 'none', border: 'none', font: 'inherit',
                   textAlign: 'left', width: '100%',
                   cursor: dndMode ? 'grab' : 'pointer',
-                  background: on ? `${accent}12` : 'var(--c-surface-2)',
-                  border: on ? `1px solid ${accent}66` : dndMode ? `1px solid var(--c-border)` : '1px solid var(--c-border-soft)',
+                  background: on ? `${accent}12` : on2 ? 'rgba(14,165,233,0.10)' : 'var(--c-surface-2)',
+                  border: on ? `1px solid ${accent}66` : on2 ? '1px solid rgba(14,165,233,0.45)' : dndMode ? `1px solid var(--c-border)` : '1px solid var(--c-border-soft)',
                   borderRadius: 10, padding: '9px 10px',
                   transition: 'background .1s, border-color .1s',
                 }}
-                onMouseEnter={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
-                onMouseLeave={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
-                onFocus={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
-                onBlur={(e) => { if (!on) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
+                onMouseEnter={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
+                onMouseLeave={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
+                onFocus={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
+                onBlur={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {dndMode && (

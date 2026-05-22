@@ -4,7 +4,7 @@ import { detectKind } from '../constants/structure';
 import { downloadFile, viewFile, previewFile, openFileInApp } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 
-export default function FilePreview({ file, accent = '#E8472A' }) {
+export default function FilePreview({ file, accent = '#E8472A', onClose }) {
   const { t } = useLang();
 
   if (!file) {
@@ -62,7 +62,7 @@ export default function FilePreview({ file, accent = '#E8472A' }) {
         display: 'flex', flexDirection: 'column', color: 'var(--c-text)',
       }}>
       <div style={{
-        padding: '14px 16px', borderBottom: '1px solid var(--c-border)',
+        padding: '10px 12px 10px 16px', borderBottom: '1px solid var(--c-border)',
         display: 'flex', gap: 10, alignItems: 'flex-start', flexShrink: 0,
       }}>
         <FileBadge kind={kind} name={file.original_name} size={32} />
@@ -76,6 +76,25 @@ export default function FilePreview({ file, accent = '#E8472A' }) {
             fontFamily: '"DM Mono", monospace',
           }}>{sizeFmt} · {dateFmt}</div>
         </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            title="Schließen"
+            style={{
+              flexShrink: 0, width: 22, height: 22, borderRadius: 5,
+              border: 'none', background: 'transparent', cursor: 'pointer',
+              color: 'var(--c-text-3)', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', marginTop: 2,
+              transition: 'background .1s, color .1s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; e.currentTarget.style.color = 'var(--c-text)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--c-text-3)'; }}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        )}
       </div>
 
       <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
