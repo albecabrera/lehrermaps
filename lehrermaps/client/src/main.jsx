@@ -17,6 +17,16 @@ function parseRole(token) {
 function Root() {
   const [tick, setTick] = useState(0);
 
+  // Bootstrap token from URL ?token= (auto-login), then clean URL
+  const params = new URLSearchParams(window.location.search);
+  const urlToken = params.get('token');
+  if (urlToken) {
+    localStorage.setItem('lm_token', urlToken);
+    params.delete('token');
+    const next = params.toString() ? `?${params}` : window.location.pathname;
+    window.history.replaceState(null, '', next);
+  }
+
   const token = localStorage.getItem('lm_token');
   const role = token ? parseRole(token) : null;
 
