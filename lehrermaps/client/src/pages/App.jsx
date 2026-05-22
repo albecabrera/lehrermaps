@@ -1706,6 +1706,7 @@ const SUBJECT_COVERS = {
 
 function FolderCard({ folder, accent, selected = false, onClick, onHover, t }) {
   const cover = SUBJECT_COVERS[folder.subject] || SUBJECT_COVERS.klasse;
+  const [hovered, setHovered] = useState(false);
 
   return (
     <button
@@ -1721,21 +1722,20 @@ function FolderCard({ folder, accent, selected = false, onClick, onHover, t }) {
       }}
       style={{
         appearance: 'none', border: '1px solid var(--c-border)', borderRadius: 14,
-        background: 'var(--c-surface)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+        background: hovered && !selected ? 'var(--c-hover-2)' : 'var(--c-surface)',
+        cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
         padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        transition: 'box-shadow .18s, transform .12s, border-color .18s',
+        transition: 'background .08s, box-shadow .12s, border-color .12s',
         animation: 'lmStaggerIn .42s cubic-bezier(.22,.9,.2,1) both',
-        boxShadow: selected ? `0 0 0 2px ${accent}66, 0 10px 26px rgba(0,0,0,0.14)` : undefined,
-        borderColor: selected ? `${accent}99` : 'var(--c-border)',
+        boxShadow: selected ? `0 0 0 2px ${accent}66, 0 10px 26px rgba(0,0,0,0.14)` : (hovered ? `0 0 0 1px ${accent}44` : 'none'),
+        borderColor: selected ? `${accent}99` : (hovered ? `${accent}55` : 'var(--c-border)'),
       }}
       onMouseEnter={(e) => {
         onHover?.();
-        e.currentTarget.style.boxShadow = `0 8px 28px rgba(0,0,0,0.16), 0 0 0 1px ${accent}44`;
-        e.currentTarget.style.transform = 'translateY(-2px)';
+        setHovered(true);
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = 'none';
-        e.currentTarget.style.transform = 'none';
+        setHovered(false);
       }}
     >
       {/* Cover area */}

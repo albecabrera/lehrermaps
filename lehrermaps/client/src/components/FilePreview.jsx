@@ -6,6 +6,22 @@ import { useLang } from '../contexts/LangContext';
 
 export default function FilePreview({ file, accent = '#E8472A', onClose }) {
   const { t } = useLang();
+  const containerRef = useRef(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }, []);
 
   if (!file) {
     return (
@@ -36,23 +52,6 @@ export default function FilePreview({ file, accent = '#E8472A', onClose }) {
   const canOpenInline = ['pdf', 'img', 'video', 'audio', 'text', 'markdown', 'code', 'notebook'].includes(kind)
     || convertible.has(ext);
   const canOpenInApp = nativeAppExts.has(ext);
-
-  const containerRef = useRef(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  useEffect(() => {
-    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onChange);
-    return () => document.removeEventListener('fullscreenchange', onChange);
-  }, []);
-
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
-  }, []);
 
   return (
     <div
