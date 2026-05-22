@@ -23,6 +23,7 @@ import { downloadFolderZip, downloadFilesZip, viewFile } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
+import WorksheetGenerator from '../components/WorksheetGenerator';
 import NotesEditor from '../components/NotesEditor';
 import FolderGallery from '../components/FolderGallery';
 import { useTheme } from '../contexts/ThemeContext';
@@ -81,6 +82,7 @@ export default function App({ onLogout }) {
   const [hapticPulse, setHapticPulse] = useState(null);
   const [backSwipe, setBackSwipe] = useState({ active: false, x: 0 });
   const [heroQrLink, setHeroQrLink] = useState(null);
+  const [worksheetGenOpen, setWorksheetGenOpen] = useState(false);
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
@@ -773,6 +775,22 @@ export default function App({ onLogout }) {
 
           <button
             className="lm-spring"
+            onClick={() => setWorksheetGenOpen(true)}
+            title="Arbeitsblatt generieren"
+            style={{
+              height: 30, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 7,
+              background: 'transparent', color: 'var(--c-text-2)',
+              fontSize: 11, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'inherit', letterSpacing: 0.3, transition: 'background .12s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            ✦ Arbeitsblatt
+          </button>
+
+          <button
+            className="lm-spring"
             onClick={async () => {
               const token = localStorage.getItem('lm_token');
               await fetch('/api/shell/open', {
@@ -1429,6 +1447,8 @@ export default function App({ onLogout }) {
           }
         }}
       />
+      {worksheetGenOpen && <WorksheetGenerator onClose={() => setWorksheetGenOpen(false)} />}
+
       {toast && (
         <div style={{
           position: 'fixed', right: 18, bottom: 18, zIndex: 1300,

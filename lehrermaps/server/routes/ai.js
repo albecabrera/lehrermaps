@@ -317,4 +317,160 @@ function buildLocalDraft({ subject, folderName, files, lang, level, durationMin,
   ].join('\n');
 }
 
+const WORKSHEET_TYPE_LABELS = {
+  exercises: 'Offene Aufgaben (freie Antworten)',
+  lueckentext: 'Lückentext (Fill in the blank)',
+  multiple: 'Multiple Choice (4 Optionen A/B/C/D)',
+  aufsatz: 'Schreibaufgabe / Aufsatz',
+  gemischt: 'Gemischte Aufgaben (verschiedene Typen)',
+};
+
+router.post('/worksheet', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nur für Lehrkräfte.' });
+  const {
+    subject = '', topic = '', grade = '',
+    worksheetType = 'gemischt', exerciseCount = 5,
+    lang = 'de', extraInstructions = '',
+  } = req.body || {};
+  if (!topic?.trim()) return res.status(400).json({ error: 'topic obligatorio.' });
+
+  const typeLabel = WORKSHEET_TYPE_LABELS[worksheetType] || worksheetType;
+  const langName = lang === 'es' ? 'Spanisch' : lang === 'en' ? 'Englisch' : 'Deutsch';
+
+  const system = `Du bist ein erfahrener Lehrer und erstellst professionelle, druckfertige Arbeitsblätter.
+Schreibe das gesamte Arbeitsblatt auf ${langName}.
+Ausgabe: NUR das Arbeitsblatt in Markdown. Keine Erklärungen davor oder danach.
+Aufbau:
+1. Titel-Block: # [Fach] — [Thema], dann Zeile mit: **Name:** _____________  **Klasse:** _____________  **Datum:** _____________
+2. Horizontale Linie (---)
+3. **Lernziele:** 2–3 Stichpunkte
+4. Horizontale Linie
+5. Genau ${exerciseCount} nummerierte Aufgaben (### Aufgabe N — Typ)
+   - Bei Lückentext: Wörterkasten oben
+   - Bei Multiple Choice: immer (A) (B) (C) (D)
+   - Genug Leerzeilen für Antworten
+6. Horizontale Linie
+7. Fußzeile: *Erstellt von: _____________ | Datum: _____________*`;
+
+  const user = [
+    `Fach: ${subject || 'Allgemein'}`,
+    `Thema: ${topic}`,
+    `Klasse / Niveau: ${grade || 'nicht angegeben'}`,
+    `Aufgabentyp: ${typeLabel}`,
+    `Anzahl Aufgaben: ${exerciseCount}`,
+    extraInstructions?.trim() ? `Zusätzliche Hinweise: ${extraInstructions}` : '',
+  ].filter(Boolean).join('\n');
+
+  const fallback = [
+    `# ${subject || 'Fach'} — ${topic}`,
+    '',
+    '**Name:** _____________  **Klasse:** _____________  **Datum:** _____________',
+    '',
+    '---',
+    '',
+    `**Lernziele:**`,
+    `- Thema "${topic}" verstehen`,
+    `- Grundlegende Konzepte anwenden`,
+    '',
+    '---',
+    '',
+    `### Aufgabe 1`,
+    '',
+    `_Aufgabe zu ${topic}._`,
+    '',
+    '_________________________________________',
+    '',
+  ].join('\n');
+
+  const { content, usage } = await generateWithAIWithUsage({ system, user, fallback });
+  return res.json({ content, usage: usage || null });
+});
+
+router.post('/worksheet/export', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nur für Lehrkräfte.' });
+  const { content = '', format = 'pdf', subject = '', topic = '' } = req.body || {};
+  if (!content?.trim()) return res.status(400).json({ error: 'content obligatorio.' });
+
+  const outType = format === 'docx' ? 'docx' : 'pdf';
+  const title = [subject, topic].filter(Boolean).join(' — ') || 'Arbeitsblatt';
+  const fileName = slug(title) + '.' + outType;
+
+  try {
+    let buffer;
+    if (outType === 'docx') {
+      buffer = await worksheetToDocx(content, title);
+    } else {
+      buffer = await worksheetToPdf(content);
+    }
+    const mimeType = outType === 'docx'
+      ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      : 'application/pdf';
+    return res.json({ fileName, mimeType, base64: buffer.toString('base64') });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+function parseInlineMarkdown(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/);
+  return parts.map((p) => {
+    if (p.startsWith('**') && p.endsWith('**')) return new TextRun({ text: p.slice(2, -2), bold: true });
+    return new TextRun(p);
+  });
+}
+
+async function worksheetToDocx(markdown, title) {
+  const lines = markdown.split('\n');
+  const children = [];
+  for (const line of lines) {
+    if (line.startsWith('# ')) {
+      children.push(new Paragraph({ text: line.slice(2).trim(), heading: HeadingLevel.HEADING_1, spacing: { after: 200 } }));
+    } else if (line.startsWith('## ') || line.startsWith('### ')) {
+      const lvl = line.startsWith('### ') ? HeadingLevel.HEADING_3 : HeadingLevel.HEADING_2;
+      const txt = line.replace(/^#{2,3} /, '').trim();
+      children.push(new Paragraph({ text: txt, heading: lvl, spacing: { before: 200, after: 100 } }));
+    } else if (/^-{3,}$/.test(line.trim())) {
+      children.push(new Paragraph({ text: '', spacing: { after: 120 }, border: { bottom: { color: 'AAAAAA', size: 6, space: 1, style: 'single' } } }));
+    } else if (line.trim() === '') {
+      children.push(new Paragraph({ text: '', spacing: { after: 80 } }));
+    } else {
+      const runs = parseInlineMarkdown(line);
+      children.push(new Paragraph({ children: runs, spacing: { after: 80 } }));
+    }
+  }
+  const doc = new Document({ sections: [{ children }] });
+  return Packer.toBuffer(doc);
+}
+
+function worksheetToPdf(markdown) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 48, size: 'A4' });
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const lines = markdown.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('# ')) {
+        doc.fontSize(18).font('Helvetica-Bold').text(line.slice(2).trim(), { paragraphGap: 6 });
+        doc.font('Helvetica');
+      } else if (line.startsWith('## ') || line.startsWith('### ')) {
+        const sz = line.startsWith('## ') ? 14 : 12;
+        doc.fontSize(sz).font('Helvetica-Bold').text(line.replace(/^#{2,3} /, '').trim(), { paragraphGap: 4 });
+        doc.font('Helvetica');
+      } else if (/^-{3,}$/.test(line.trim())) {
+        doc.moveDown(0.3);
+        const y = doc.y; doc.moveTo(48, y).lineTo(547, y).strokeColor('#AAAAAA').stroke();
+        doc.moveDown(0.3);
+      } else if (line.trim() === '') {
+        doc.moveDown(0.5);
+      } else {
+        doc.fontSize(11).font('Helvetica').text(line.replace(/\*\*([^*]+)\*\*/g, '$1'), { paragraphGap: 3 });
+      }
+    }
+    doc.end();
+  });
+}
+
 export default router;
