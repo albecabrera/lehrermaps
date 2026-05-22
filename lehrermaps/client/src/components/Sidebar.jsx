@@ -291,6 +291,12 @@ function TreeNode({
         <button
           onClick={handleClick}
           className="lm-spring"
+          onKeyDown={(e) => {
+            if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
+              e.preventDefault();
+              handleClick(e);
+            }
+          }}
           onContextMenu={(e) => { e.preventDefault(); onMenu(node, e.clientX, e.clientY); }}
           style={{
             appearance: 'none', border: 'none', font: 'inherit', textAlign: 'left',

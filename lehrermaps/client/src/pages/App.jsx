@@ -25,6 +25,7 @@ import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
 import NotesEditor from '../components/NotesEditor';
 import FolderGallery from '../components/FolderGallery';
+import TerminalModal from '../components/TerminalModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLang } from '../contexts/LangContext';
 
@@ -59,6 +60,10 @@ export default function App({ onLogout }) {
   const [dropUploading, setDropUploading] = useState(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [activeFile2, setActiveFile2] = useState(null);
+  const [hoveredFile, setHoveredFile] = useState(null);
+  const [hoveredFolder, setHoveredFolder] = useState(null);
+  const [kbdMarkedFileId, setKbdMarkedFileId] = useState(null);
+  const [kbdMarkedFolderId, setKbdMarkedFolderId] = useState(null);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
@@ -67,6 +72,7 @@ export default function App({ onLogout }) {
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
   const { recentFiles, trackFile } = useRecentFiles();
+  const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const [pendingFileId, setPendingFileId] = useState(null);
   const [pendingLinkId, setPendingLinkId] = useState(null);
   const [folderOpenTick, setFolderOpenTick] = useState(0);
@@ -76,6 +82,7 @@ export default function App({ onLogout }) {
   const [hapticPulse, setHapticPulse] = useState(null);
   const [backSwipe, setBackSwipe] = useState({ active: false, x: 0 });
   const [heroQrLink, setHeroQrLink] = useState(null);
+  const [terminalOpen, setTerminalOpen] = useState(false);
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
@@ -115,6 +122,10 @@ export default function App({ onLogout }) {
   }, [links, pendingLinkId]);
 
   useEffect(() => {
+    if (activeFolder) setHoveredFolder(null);
+  }, [activeFolder]);
+
+  useEffect(() => {
     if (!folderZoom) return;
     const raf = requestAnimationFrame(() => {
       setFolderZoom((prev) => (prev ? { ...prev, phase: 'run' } : prev));
@@ -138,12 +149,19 @@ export default function App({ onLogout }) {
     return () => clearTimeout(t);
   }, [hapticPulse]);
 
+
   // Keyboard shortcuts: Cmd/Ctrl+P, j/k navigation, space preview toggle
   useEffect(() => {
     const handler = (e) => {
       const target = e.target;
       const tag = target?.tagName?.toLowerCase();
       const isTyping = tag === 'input' || tag === 'textarea' || target?.isContentEditable;
+      if (e.key === 'Escape' && document.fullscreenElement) {
+        e.preventDefault();
+        document.exitFullscreen();
+        return;
+      }
+      if (globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setGlobalSearchOpen(true);
@@ -154,30 +172,69 @@ export default function App({ onLogout }) {
         setKeyboardHelpOpen((v) => !v);
         return;
       }
+      const isSpaceKey = e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar';
+      if (isSpaceKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (activeFolder && folderTab === 'files' && files.length) {
+          const targetFile = files.find((f) => f.id === kbdMarkedFileId) || hoveredFile || activeFile || files[0] || null;
+          if (!targetFile) return;
+          setActiveLink(null);
+          setActiveFile(targetFile);
+          return;
+        }
+        if (!activeFolder) {
+          const targetFolder = subjectFolders.find((f) => f.id === kbdMarkedFolderId) || hoveredFolder;
+          if (targetFolder) onFolderSelect(targetFolder);
+        }
+        return;
+      }
+
+      if (!isTyping && !activeFolder && subjectFolders.length && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault();
+        const idx = subjectFolders.findIndex((f) => f.id === kbdMarkedFolderId);
+        const base = idx >= 0 ? idx : -1;
+        const nextIdx = e.key === 'ArrowDown'
+          ? Math.min(subjectFolders.length - 1, base + 1)
+          : Math.max(0, (base < 0 ? 0 : base - 1));
+        const nextFolder = subjectFolders[nextIdx];
+        if (nextFolder) {
+          setKbdMarkedFolderId(nextFolder.id);
+          setHoveredFolder(nextFolder);
+        }
+        return;
+      }
+
       if (isTyping || folderTab !== 'files' || !activeFolder || !files.length) return;
       if (e.key === 'j' || e.key === 'ArrowDown') {
         e.preventDefault();
-        if (!activeFile) { setActiveFile(files[0]); return; }
+        if (!activeFile) { setActiveFile(files[0]); setKbdMarkedFileId(files[0]?.id || null); return; }
         const idx = files.findIndex((f) => f.id === activeFile.id);
         const next = files[Math.min(files.length - 1, idx + 1)];
-        if (next) setActiveFile(next);
+        if (next) { setActiveFile(next); setKbdMarkedFileId(next.id); }
       } else if (e.key === 'k' || e.key === 'ArrowUp') {
         e.preventDefault();
-        if (!activeFile) { setActiveFile(files[0]); return; }
+        if (!activeFile) { setActiveFile(files[0]); setKbdMarkedFileId(files[0]?.id || null); return; }
         const idx = files.findIndex((f) => f.id === activeFile.id);
         const prev = files[Math.max(0, idx - 1)];
-        if (prev) setActiveFile(prev);
+        if (prev) { setActiveFile(prev); setKbdMarkedFileId(prev.id); }
       } else if (e.key === 'Delete' && activeFile) {
         e.preventDefault();
         handleDeleteFile(activeFile);
-      } else if (e.key === ' ') {
+      } else if (e.key === 'Enter') {
         e.preventDefault();
-        setActiveFile((prev) => (prev ? null : files[0] || null));
+        const targetFile = hoveredFile || activeFile || files[0] || null;
+        if (!targetFile) return;
+        setActiveLink(null);
+        setActiveFile(targetFile);
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        }
       }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeFolder, files, folderTab]);
+  }, [activeFile, activeFolder, files, folderTab, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectFolders, globalSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, deadlineModal, keyboardHelpOpen, qrOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -572,14 +629,13 @@ export default function App({ onLogout }) {
     }
   };
 
-  const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const isCompactPreview = !!activeLink || detectKind(activeFile?.original_name) === 'video';
   const effectivePreviewWidth = isCompactPreview ? Math.min(previewWidth, 280) : previewWidth;
   const filteredCount = query
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen;
+  const hasModalOpen = globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen || terminalOpen;
 
   return (
     <div style={{
@@ -695,11 +751,32 @@ export default function App({ onLogout }) {
             </svg>
           </button>
 
-          {/* Lang toggle */}
+          {/* Language selector (always visible: DE / EN / ES) */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4, padding: 2,
+            border: '1px solid var(--c-border)', borderRadius: 8, background: 'var(--c-surface)',
+          }}>
+            {['de', 'en', 'es'].map((code) => (
+              <button
+                key={code}
+                onClick={() => setLang(code)}
+                style={{
+                  height: 26, minWidth: 34, border: 'none', borderRadius: 6,
+                  background: lang === code ? 'var(--c-hover)' : 'transparent',
+                  color: 'var(--c-text)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                  fontFamily: 'inherit', letterSpacing: 0.2,
+                }}
+                title={code === 'de' ? 'Deutsch' : code === 'en' ? 'English' : 'Español'}
+              >
+                {code.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           <button
             className="lm-spring"
-            onClick={() => setLang(lang === 'de' ? 'es' : 'de')}
-            title={lang === 'de' ? t('app.lang_es') : t('app.lang_de')}
+            onClick={() => setTerminalOpen(true)}
+            title="Terminal"
             style={{
               height: 30, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 7,
               background: 'transparent', color: 'var(--c-text-2)',
@@ -709,7 +786,7 @@ export default function App({ onLogout }) {
             onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            {lang === 'de' ? 'DE' : 'ES'}
+            Terminal
           </button>
 
           {/* Theme toggle */}
@@ -1089,6 +1166,8 @@ export default function App({ onLogout }) {
                         onTogglePublic={togglePublic}
                         onSetDeadline={handleSetFileDeadline}
                         onShowLinkQr={(link) => setHeroQrLink(link)}
+                        onFileHover={setHoveredFile}
+                        keyboardMarkedFileId={kbdMarkedFileId}
                         onFileDragStart={(file) => {
                           if (!activeFile || activeFile.id !== file.id) {
                             setActiveFile(file);
@@ -1120,6 +1199,8 @@ export default function App({ onLogout }) {
               foldersLoading={foldersLoading}
               recents={recents}
               onFolderSelect={onFolderSelect}
+              onFolderHover={setHoveredFolder}
+              keyboardMarkedFolderId={kbdMarkedFolderId}
               onRecentClick={handleRecentClick}
               onNewFolder={() => setNewFolderOpen(true)}
               t={t}
@@ -1318,6 +1399,7 @@ export default function App({ onLogout }) {
           onClose={() => setQrOpen(false)}
         />
       )}
+      <TerminalModal open={terminalOpen} onClose={() => setTerminalOpen(false)} />
       <DeadlineModal
         open={!!deadlineModal}
         title={deadlineModal?.type === 'folder' ? t('modal.deadline.folder_title') : t('modal.deadline.file_title')}
@@ -1458,7 +1540,7 @@ function normalizeExternalUrl(url) {
   return `https://${trimmed}`;
 }
 
-function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect, onRecentClick, onNewFolder, t }) {
+function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect, onFolderHover, keyboardMarkedFolderId, onRecentClick, onNewFolder, t }) {
   const accent = subject.color;
   return (
     <div style={{ padding: '32px 28px' }}>
@@ -1539,7 +1621,7 @@ function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect
           gap: 12,
         }}>
           {folders.map((f) => (
-            <FolderCard key={f.id} folder={f} accent={accent} onClick={(rect) => onFolderSelect(f, rect)} t={t} />
+            <FolderCard key={f.id} folder={f} accent={accent} selected={keyboardMarkedFolderId === f.id} onClick={(rect) => onFolderSelect(f, rect)} onHover={() => onFolderHover?.(f)} t={t} />
           ))}
           <button
             onClick={onNewFolder}
@@ -1622,21 +1704,32 @@ const SUBJECT_COVERS = {
   },
 };
 
-function FolderCard({ folder, accent, onClick, t }) {
+function FolderCard({ folder, accent, selected = false, onClick, onHover, t }) {
   const cover = SUBJECT_COVERS[folder.subject] || SUBJECT_COVERS.klasse;
 
   return (
     <button
       onClick={(e) => onClick?.(e.currentTarget.getBoundingClientRect())}
       className="lm-spring"
+      onFocus={() => onHover?.()}
+      onMouseMove={() => onHover?.()}
+      onKeyDown={(e) => {
+        if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          onClick?.(e.currentTarget.getBoundingClientRect());
+        }
+      }}
       style={{
         appearance: 'none', border: '1px solid var(--c-border)', borderRadius: 14,
         background: 'var(--c-surface)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
         padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        transition: 'box-shadow .18s, transform .12s',
+        transition: 'box-shadow .18s, transform .12s, border-color .18s',
         animation: 'lmStaggerIn .42s cubic-bezier(.22,.9,.2,1) both',
+        boxShadow: selected ? `0 0 0 2px ${accent}66, 0 10px 26px rgba(0,0,0,0.14)` : undefined,
+        borderColor: selected ? `${accent}99` : 'var(--c-border)',
       }}
       onMouseEnter={(e) => {
+        onHover?.();
         e.currentTarget.style.boxShadow = `0 8px 28px rgba(0,0,0,0.16), 0 0 0 1px ${accent}44`;
         e.currentTarget.style.transform = 'translateY(-2px)';
       }}

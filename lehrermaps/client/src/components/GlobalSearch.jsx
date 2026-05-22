@@ -14,6 +14,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
   const [results, setResults] = useState({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 });
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(null); // 'files' | 'folders' | null
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const timerRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -23,6 +24,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
       setResults({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 });
       setLoading(false);
       setLoadingMore(null);
+      setSelectedIndex(-1);
       setTimeout(() => inputRef.current?.focus(), 40);
     }
   }, [open]);
@@ -73,12 +75,71 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
     doSearch(e.target.value);
   };
 
-  if (!open) return null;
-
   const getColor = (subjectId) => SUBJECTS.find((s) => s.id === subjectId)?.color ?? '#6B7280';
   const hasQuery = q.trim().length > 0;
   const isEmpty = results.files.length === 0 && results.folders.length === 0 && results.links.length === 0;
   const suggestions = buildSuggestions(q, results).slice(0, 8);
+  const options = [
+    ...results.folders.map((f) => ({ type: 'folder', value: f })),
+    ...results.files.map((f) => ({ type: 'file', value: f })),
+    ...results.links.map((l) => ({ type: 'link', value: l })),
+  ];
+
+  const activateOption = useCallback((opt) => {
+    if (!opt) return;
+    if (opt.type === 'folder') {
+      onNavigate(opt.value.subject, opt.value.id);
+      onClose();
+      return;
+    }
+    if (opt.type === 'file') {
+      onNavigate(opt.value.subject, opt.value.folder_id);
+      onClose();
+      return;
+    }
+    if (opt.type === 'link') {
+      onNavigate(opt.value.subject, opt.value.folder_id, { type: 'link', id: opt.value.id });
+      onClose();
+    }
+  }, [doSearch, onClose, onNavigate]);
+
+  const handleInputKeyDown = (e) => {
+    if (!options.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % options.length);
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev <= 0 ? options.length - 1 : prev - 1));
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const idx = selectedIndex >= 0 ? selectedIndex : 0;
+      activateOption(options[idx]);
+    }
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    if (selectedIndex < 0) return;
+    const el = document.querySelector(`[data-gs-option="${selectedIndex}"]`);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selectedIndex, open]);
+
+  useEffect(() => {
+    setSelectedIndex((prev) => {
+      if (!options.length) return -1;
+      if (prev < 0 || prev >= options.length) return 0;
+      return prev;
+    });
+  }, [options.length]);
+
+  if (!open) return null;
 
   return createPortal(
     <div
@@ -126,6 +187,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
             ref={inputRef}
             value={q}
             onChange={handleChange}
+            onKeyDown={handleInputKeyDown}
             placeholder={t('search.placeholder')}
             style={{
               flex: 1, border: 'none', background: 'transparent', outline: 'none',
@@ -156,6 +218,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
               {suggestions.map((s) => (
                 <button
                   key={s}
+                  data-gs-option={-1}
                   onClick={() => { setQ(s); doSearch(s); inputRef.current?.focus(); }}
                   style={{
                     border: '1px solid var(--c-border)', background: 'var(--c-surface-2)', color: 'var(--c-text-2)',
@@ -182,6 +245,8 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
               {results.folders.map((f) => (
                 <ResultRow
                   key={`folder-${f.id}`}
+                  optionIndex={options.findIndex((o) => o.type === 'folder' && o.value.id === f.id)}
+                  active={selectedIndex === options.findIndex((o) => o.type === 'folder' && o.value.id === f.id)}
                   onClick={() => { onNavigate(f.subject, f.id); onClose(); }}
                   icon={<FolderIcon color={getColor(f.subject)} size={15} />}
                   name={f.name}
@@ -199,6 +264,8 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
               {results.files.map((f) => (
                 <ResultRow
                   key={`file-${f.id}`}
+                  optionIndex={options.findIndex((o) => o.type === 'file' && o.value.id === f.id)}
+                  active={selectedIndex === options.findIndex((o) => o.type === 'file' && o.value.id === f.id)}
                   onClick={() => { onNavigate(f.subject, f.folder_id); onClose(); }}
                   icon={<FileBadge kind={detectKind(f.name)} name={f.name} size={20} />}
                   name={f.name}
@@ -216,6 +283,8 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
               {results.links.map((l) => (
                 <ResultRow
                   key={`link-${l.id}`}
+                  optionIndex={options.findIndex((o) => o.type === 'link' && o.value.id === l.id)}
+                  active={selectedIndex === options.findIndex((o) => o.type === 'link' && o.value.id === l.id)}
                   onClick={() => { onNavigate(l.subject, l.folder_id, { type: 'link', id: l.id }); onClose(); }}
                   icon={<FileBadge kind="qr" name="QR" size={20} />}
                   name={l.title || l.url}
@@ -306,18 +375,19 @@ function ShowMoreButton({ loading, onClick, t }) {
   );
 }
 
-function ResultRow({ onClick, icon, name, meta, dotColor }) {
+function ResultRow({ onClick, icon, name, meta, dotColor, active = false, optionIndex }) {
   return (
     <button
+      data-gs-option={optionIndex}
       onClick={onClick}
       style={{
         width: '100%', textAlign: 'left', padding: '8px 18px',
         display: 'flex', alignItems: 'center', gap: 12,
-        background: 'transparent', border: 'none', cursor: 'pointer',
+        background: active ? 'var(--c-hover)' : 'transparent', border: 'none', cursor: 'pointer',
         fontFamily: 'inherit', color: 'var(--c-text)', transition: 'background .1s',
       }}
       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
-      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+      onMouseLeave={(e) => e.currentTarget.style.background = active ? 'var(--c-hover)' : 'transparent'}
     >
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>{icon}</div>
       <div style={{ flex: 1, minWidth: 0 }}>

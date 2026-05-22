@@ -31,15 +31,40 @@ function writeCache(s) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
 }
 
+function hydrateSchedule(raw) {
+  if (!raw || typeof raw !== 'object') return {};
+  const next = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!value || typeof value !== 'object') continue;
+    if (key.startsWith('break-')) {
+      next[key] = value;
+      continue;
+    }
+    const legacyId = value.id || value.subject || value.subjectId;
+    const preset = STUNDENPLAN_SUBJECTS.find((s) => s.id === legacyId);
+    if (preset) {
+      next[key] = {
+        id: preset.id,
+        label: value.label || preset.label,
+        color: value.color || preset.color,
+        ...(preset.subjectId ? { subjectId: value.subjectId || preset.subjectId } : {}),
+      };
+      continue;
+    }
+    if (value.label && value.color) next[key] = value;
+  }
+  return next;
+}
+
 export default function Schedule({ onNavigate }) {
   const { t, lang } = useLang();
-  const [schedule, setSchedule] = useState(loadCache);
+  const [schedule, setSchedule] = useState(() => hydrateSchedule(loadCache()));
   const [picker, setPicker] = useState(null); // { day, period, rect }
   const [dragOverKey, setDragOverKey] = useState(null);
 
   useEffect(() => {
     api.get('/schedule').then((res) => {
-      const data = res.data || {};
+      const data = hydrateSchedule(res.data || {});
       setSchedule(data);
       writeCache(data);
     }).catch(() => {});

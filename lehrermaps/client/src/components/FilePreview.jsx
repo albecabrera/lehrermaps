@@ -56,6 +56,7 @@ export default function FilePreview({ file, accent = '#E8472A', onClose }) {
 
   return (
     <div
+      id="lm-file-preview-root"
       ref={containerRef}
       style={{
         height: '100%', background: 'var(--c-bg)', borderLeft: '1px solid var(--c-border)',

@@ -11,6 +11,8 @@ export default function FileTable({
   onTogglePublic,
   onSetDeadline,
   onShowLinkQr,
+  onFileHover,
+  keyboardMarkedFileId,
   onFileDragStart,
   hiddenIds = new Set(),
   onBulkDelete, onBulkShare, onBulkUnshare, onBulkDownload, onBulkMove,
@@ -217,6 +219,7 @@ export default function FileTable({
           {sorted.map((file, idx) => {
             const on = file.id === activeFileId;
             const on2 = file.id === activeFile2Id;
+            const kbdMarked = keyboardMarkedFileId === file.id;
             const kind = detectKind(file.original_name);
             const sizeFmt = file.size_bytes ? formatBytes(file.size_bytes) : '—';
             const dateFmt = file.uploaded_at
@@ -239,6 +242,12 @@ export default function FileTable({
                 }}
                 className="lm-spring lm-stagger-in"
                 onDoubleClick={() => onRename?.(file)}
+                onKeyDown={(e) => {
+                  if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
+                    e.preventDefault();
+                    onFileSelect?.(file, { sourceRect: e.currentTarget.getBoundingClientRect() });
+                  }
+                }}
                 onContextMenu={(e) => handleContextMenu(e, file)}
                 draggable={dndMode}
                 onDragStart={dndMode ? (e) => {
@@ -250,15 +259,18 @@ export default function FileTable({
                   appearance: 'none', font: 'inherit',
                   textAlign: 'left', width: '100%',
                   cursor: dndMode ? 'grab' : 'pointer',
-                  background: on ? `${accent}12` : on2 ? 'rgba(14,165,233,0.10)' : 'var(--c-surface-2)',
-                  border: on ? `1px solid ${accent}66` : on2 ? '1px solid rgba(14,165,233,0.45)' : dndMode ? `1px solid var(--c-border)` : '1px solid var(--c-border-soft)',
+                  background: on ? `${accent}12` : on2 ? 'rgba(14,165,233,0.10)' : kbdMarked ? `${accent}0D` : 'var(--c-surface-2)',
+                  border: on ? `1px solid ${accent}66` : on2 ? '1px solid rgba(14,165,233,0.45)' : kbdMarked ? `1px solid ${accent}88` : dndMode ? `1px solid var(--c-border)` : '1px solid var(--c-border-soft)',
                   borderRadius: 10, padding: '7px 8px',
                   transition: 'background .1s, border-color .1s',
                   animationDelay: `${Math.min(14, idx) * 26}ms`,
+                  boxShadow: kbdMarked ? `0 0 0 2px ${accent}22, 0 6px 16px ${accent}22` : undefined,
                 }}
                 onMouseEnter={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
+                onMouseEnterCapture={() => onFileHover?.(file)}
+                onMouseMove={() => onFileHover?.(file)}
                 onMouseLeave={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
-                onFocus={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
+                onFocus={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-hover-2)'; onFileHover?.(file); }}
                 onBlur={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

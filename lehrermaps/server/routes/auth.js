@@ -6,9 +6,11 @@ const router = Router();
 router.post('/login', (req, res) => {
   const { password } = req.body;
   const expected = process.env.APP_PASSWORD || 'lehrer123';
+  const legacy = process.env.APP_PASSWORD_LEGACY || 'lehrer';
   const secret   = process.env.JWT_SECRET   || 'dev_secret';
 
-  if (!password || password !== expected) {
+  const ok = password && (password === expected || password === legacy);
+  if (!ok) {
     return res.status(401).json({ error: 'Falsches Passwort' });
   }
 

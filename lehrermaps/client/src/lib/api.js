@@ -94,6 +94,18 @@ export const publicFileUrl = (token) =>
 export const loginStudent = (password) =>
   api.post('/login-student', { password }).then((r) => r.data.token);
 
+export const generateLessonDraft = (payload) =>
+  api.post('/ai/lesson-draft', payload).then((r) => r.data);
+
+export const generateDocument = (payload) =>
+  api.post('/ai/generate-document', payload).then((r) => r.data);
+
+export const getAiStatus = () =>
+  api.get('/ai/status').then((r) => r.data);
+
+export const testAiStatus = () =>
+  api.post('/ai/status/test').then((r) => r.data);
+
 export const deleteFile = (id) =>
   api.delete(`/files/${id}`);
 
