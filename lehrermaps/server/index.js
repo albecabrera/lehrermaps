@@ -5,7 +5,7 @@ import http from 'http';
 import jwt from 'jsonwebtoken';
 import { execFile } from 'child_process';
 import { Server as SocketIOServer } from 'socket.io';
-import pty from 'node-pty';
+import pty from '@homebridge/node-pty-prebuilt-multiarch';
 import { initSchema } from './db.js';
 import authRouter from './routes/auth.js';
 import foldersRouter from './routes/folders.js';
