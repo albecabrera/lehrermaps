@@ -3,11 +3,17 @@ import { Component } from 'react';
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, componentStack: null };
   }
 
   static getDerivedStateFromError(error) {
     return { error };
+  }
+
+  componentDidCatch(error, info) {
+    this.setState({ componentStack: info.componentStack });
+    console.error('[ErrorBoundary]', error.message);
+    console.error(info.componentStack);
   }
 
   render() {
@@ -16,23 +22,25 @@ export default class ErrorBoundary extends Component {
       <div style={{
         position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', gap: 16,
-        background: 'var(--c-bg)', color: 'var(--c-text)',
-        fontFamily: '"DM Sans", -apple-system, sans-serif', padding: 32,
+        background: '#0f172a', color: '#f1f5f9',
+        fontFamily: '"DM Mono", monospace', padding: 32, overflow: 'auto',
       }}>
         <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
           <circle cx="20" cy="20" r="18" stroke="#EF4444" strokeWidth="2"/>
           <path d="M20 12v10M20 26v2" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round"/>
         </svg>
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-text)' }}>
-          Etwas ist schiefgelaufen
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#f87171', fontFamily: '"DM Sans", sans-serif' }}>
+          React Error — Component Stack
         </div>
         <pre style={{
-          fontSize: 11, color: 'var(--c-text-3)', maxWidth: 480,
-          background: 'var(--c-surface)', border: '1px solid var(--c-border)',
+          fontSize: 11, color: '#94a3b8', width: '100%', maxWidth: 720,
+          background: '#1e293b', border: '1px solid #334155',
           borderRadius: 8, padding: '10px 14px', overflow: 'auto',
-          fontFamily: '"DM Mono", monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          whiteSpace: 'pre-wrap', wordBreak: 'break-word', textAlign: 'left',
         }}>
-          {this.state.error.message}
+          <span style={{ color: '#f87171', fontWeight: 700 }}>{this.state.error.message}</span>
+          {'\n\n'}
+          {this.state.componentStack || '(no stack)'}
         </pre>
         <button
           onClick={() => window.location.reload()}

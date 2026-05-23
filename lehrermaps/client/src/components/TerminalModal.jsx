@@ -1,7 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
-import { Terminal } from 'xterm';
-import { FitAddon } from '@xterm/addon-fit';
 import 'xterm/css/xterm.css';
 
 export default function TerminalModal({ open, onClose }) {
@@ -15,89 +12,98 @@ export default function TerminalModal({ open, onClose }) {
   useEffect(() => {
     if (!open) return;
 
+    let term;
+    let socket;
+    let resizeObserver;
+
     const token = localStorage.getItem('lm_token');
 
-    // xterm setup
-    const term = new Terminal({
-      fontFamily: '"DM Mono", "Cascadia Code", "Fira Code", monospace',
-      fontSize: 13,
-      lineHeight: 1.4,
-      theme: {
-        background: '#0D1117',
-        foreground: '#ECF0FA',
-        cursor: '#7C8DB5',
-        selectionBackground: 'rgba(124,141,181,0.3)',
-        black: '#1C2338', red: '#FF6B6B', green: '#6BCB77', yellow: '#FFD93D',
-        blue: '#4D96FF', magenta: '#C77DFF', cyan: '#48CAE4', white: '#ECF0FA',
-        brightBlack: '#636F8A', brightRed: '#FF8E8E', brightGreen: '#8EE5A0',
-        brightYellow: '#FFE66D', brightBlue: '#7DB8FF', brightMagenta: '#D9A7FF',
-        brightCyan: '#7AD7ED', brightWhite: '#FFFFFF',
-      },
-      cursorBlink: true,
-      allowTransparency: true,
-      scrollback: 3000,
-    });
+    Promise.all([
+      import('xterm'),
+      import('@xterm/addon-fit'),
+      import('socket.io-client'),
+    ]).then(([{ Terminal }, { FitAddon }, { io }]) => {
+      term = new Terminal({
+        fontFamily: '"DM Mono", "Cascadia Code", "Fira Code", monospace',
+        fontSize: 13,
+        lineHeight: 1.4,
+        theme: {
+          background: '#0D1117',
+          foreground: '#ECF0FA',
+          cursor: '#7C8DB5',
+          selectionBackground: 'rgba(124,141,181,0.3)',
+          black: '#1C2338', red: '#FF6B6B', green: '#6BCB77', yellow: '#FFD93D',
+          blue: '#4D96FF', magenta: '#C77DFF', cyan: '#48CAE4', white: '#ECF0FA',
+          brightBlack: '#636F8A', brightRed: '#FF8E8E', brightGreen: '#8EE5A0',
+          brightYellow: '#FFE66D', brightBlue: '#7DB8FF', brightMagenta: '#D9A7FF',
+          brightCyan: '#7AD7ED', brightWhite: '#FFFFFF',
+        },
+        cursorBlink: true,
+        allowTransparency: true,
+        scrollback: 3000,
+      });
 
-    const fit = new FitAddon();
-    term.loadAddon(fit);
-    termRef.current = term;
-    fitAddonRef.current = fit;
+      const fit = new FitAddon();
+      term.loadAddon(fit);
+      termRef.current = term;
+      fitAddonRef.current = fit;
 
-    if (containerRef.current) {
-      term.open(containerRef.current);
-      requestAnimationFrame(() => { try { fit.fit(); } catch {} });
-    }
+      if (containerRef.current) {
+        term.open(containerRef.current);
+        requestAnimationFrame(() => { try { fit.fit(); } catch {} });
+      }
 
-    // Socket.io via Vite proxy (/ws → localhost:3001)
-    const socket = io({
-      path: '/ws',
-      auth: { token },
-      transports: ['websocket'],
-      reconnection: false,
-    });
-    socketRef.current = socket;
+      socket = io({
+        path: '/ws',
+        auth: { token },
+        transports: ['websocket'],
+        reconnection: false,
+      });
+      socketRef.current = socket;
 
-    socket.on('connect', () => setStatus('connecting'));
-    socket.on('terminal:ready', ({ shell }) => {
-      setStatus('ready');
-      term.writeln(`\x1b[32m✓ Connected — ${shell}\x1b[0m\r\n`);
-      try { fit.fit(); } catch {}
-    });
-    socket.on('terminal:data', (data) => term.write(data));
-    socket.on('terminal:exit', ({ exitCode }) => {
-      term.writeln(`\r\n\x1b[33m[Process exited with code ${exitCode}]\x1b[0m`);
-    });
-    socket.on('terminal:error', (msg) => {
+      socket.on('connect', () => setStatus('connecting'));
+      socket.on('terminal:ready', ({ shell }) => {
+        setStatus('ready');
+        term.writeln(`\x1b[32m✓ Connected — ${shell}\x1b[0m\r\n`);
+        try { fit.fit(); } catch {}
+      });
+      socket.on('terminal:data', (data) => term.write(data));
+      socket.on('terminal:exit', ({ exitCode }) => {
+        term.writeln(`\r\n\x1b[33m[Process exited with code ${exitCode}]\x1b[0m`);
+      });
+      socket.on('terminal:error', (msg) => {
+        setStatus('error');
+        setErrorMsg(msg || 'Shell error');
+      });
+      socket.on('connect_error', (err) => {
+        setStatus('error');
+        setErrorMsg(err.message || 'Connection failed');
+      });
+      socket.on('disconnect', () => {
+        try { term.writeln('\r\n\x1b[33m[Disconnected]\x1b[0m'); } catch {}
+      });
+
+      term.onData((data) => socket.emit('terminal:input', data));
+
+      resizeObserver = new ResizeObserver(() => {
+        try {
+          fit.fit();
+          socket.emit('terminal:resize', { cols: term.cols, rows: term.rows });
+        } catch {}
+      });
+      if (containerRef.current) resizeObserver.observe(containerRef.current);
+    }).catch((err) => {
       setStatus('error');
-      setErrorMsg(msg || 'Shell error');
+      setErrorMsg(err.message || 'Failed to load terminal');
     });
-    socket.on('connect_error', (err) => {
-      setStatus('error');
-      setErrorMsg(err.message || 'Connection failed');
-    });
-    socket.on('disconnect', () => {
-      if (status !== 'error') term.writeln('\r\n\x1b[33m[Disconnected]\x1b[0m');
-    });
-
-    term.onData((data) => socket.emit('terminal:input', data));
-
-    const resizeObserver = new ResizeObserver(() => {
-      try {
-        fit.fit();
-        socket.emit('terminal:resize', { cols: term.cols, rows: term.rows });
-      } catch {}
-    });
-    if (containerRef.current) resizeObserver.observe(containerRef.current);
 
     return () => {
-      resizeObserver.disconnect();
-      socket.disconnect();
-      term.dispose();
+      try { resizeObserver?.disconnect(); } catch {}
+      try { socket?.disconnect(); } catch {}
+      try { term?.dispose(); } catch {}
       termRef.current = null;
       socketRef.current = null;
       fitAddonRef.current = null;
-      setStatus('connecting');
-      setErrorMsg('');
     };
   }, [open]);
 

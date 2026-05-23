@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'lehrermaps-v1';
+const CACHE_VERSION = 'lehrermaps-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
