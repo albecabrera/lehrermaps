@@ -8,6 +8,16 @@ import LoginPanel from './pages/LoginPanel';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LangProvider } from './contexts/LangContext';
 
+// Bootstrap ?token= before React mounts — runs once, no side effects inside render
+(function bootstrapUrlToken() {
+  const params = new URLSearchParams(window.location.search);
+  const urlToken = params.get('token');
+  if (!urlToken) return;
+  localStorage.setItem('lm_token', urlToken);
+  params.delete('token');
+  window.history.replaceState(null, '', params.toString() ? `?${params}` : window.location.pathname);
+}());
+
 function parseRole(token) {
   try {
     return JSON.parse(atob(token.split('.')[1])).role;
@@ -16,16 +26,6 @@ function parseRole(token) {
 
 function Root() {
   const [tick, setTick] = useState(0);
-
-  // Bootstrap token from URL ?token= (auto-login), then clean URL
-  const params = new URLSearchParams(window.location.search);
-  const urlToken = params.get('token');
-  if (urlToken) {
-    localStorage.setItem('lm_token', urlToken);
-    params.delete('token');
-    const next = params.toString() ? `?${params}` : window.location.pathname;
-    window.history.replaceState(null, '', next);
-  }
 
   const token = localStorage.getItem('lm_token');
   const role = token ? parseRole(token) : null;
