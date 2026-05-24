@@ -104,6 +104,27 @@ export default function App({ onLogout }) {
   const backSwipeRef = useRef({ dragging: false, startX: 0, pointerId: null });
   const pullRef = useRef({ startY: 0, pulling: false, atTop: false });
 
+  // Backfill: seed Unterrichtsreihe for any root folder that doesn't have one yet
+  const backfillDoneRef = useRef(false);
+  useEffect(() => {
+    if (foldersLoading || backfillDoneRef.current || !folders.length) return;
+    backfillDoneRef.current = true;
+    const rootFolders = folders.filter((f) => !f.parent_id);
+    const childNames = new Set(
+      folders.filter((f) => f.parent_id).map((f) => `${f.parent_id}:${f.name}`)
+    );
+    const missing = rootFolders.filter(
+      (f) => !childNames.has(`${f.id}:Unterrichtsreihe`)
+    );
+    if (!missing.length) return;
+    (async () => {
+      for (const f of missing) {
+        try { await initUnterrichtsreihe(f.id); } catch { /* silent */ }
+      }
+      reloadFolders();
+    })();
+  }, [foldersLoading, folders]);
+
   useEffect(() => {
     if (!toast) return;
     const tmr = setTimeout(() => setToast(null), toast.duration || 2200);
