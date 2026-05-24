@@ -135,7 +135,7 @@ export default function WorksheetGenerator({ onClose }) {
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--c-text)' }}>Arbeitsblatt-Generator</div>
             <div style={{ fontSize: 11, color: 'var(--c-text-3)', marginTop: 2 }}>
-              {provider === 'claude' ? '✦ Claude · Websuche · druckfertig' : 'KI-generiert · druckfertig'}
+              {provider === 'claude-cli' ? '✦ Claude Code Pro · druckfertig' : provider === 'claude' ? '✦ Claude · Websuche · druckfertig' : 'KI-generiert · druckfertig'}
             </div>
           </div>
           {step === 'preview' && (

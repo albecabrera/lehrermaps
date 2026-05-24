@@ -1,8 +1,39 @@
 import { Router } from 'express';
+import { spawn } from 'child_process';
 import auth from '../middleware/auth.js';
 import { Document, Packer, Paragraph, HeadingLevel, TextRun } from 'docx';
 import PDFDocument from 'pdfkit';
 import PptxGenJS from 'pptxgenjs';
+
+const CLAUDE_CLI = process.env.CLAUDE_CLI_PATH || '/opt/homebrew/bin/claude';
+
+function generateWithClaudeCLI({ system, user, fallback }) {
+  return new Promise((resolve) => {
+    const fullPrompt = system ? `${system}\n\n---\n\n${user}` : user;
+    const proc = spawn(CLAUDE_CLI, ['--print', '--output-format', 'text'], {
+      env: { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || '') },
+      timeout: 120000,
+    });
+
+    let out = '';
+    let errOut = '';
+    proc.stdin.write(fullPrompt);
+    proc.stdin.end();
+    proc.stdout.on('data', (d) => { out += d.toString(); });
+    proc.stderr.on('data', (d) => { errOut += d.toString(); });
+    proc.on('error', (e) => {
+      console.error('[claude-cli] spawn error:', e.message);
+      resolve(fallback);
+    });
+    proc.on('close', (code) => {
+      if (code === 0 && out.trim()) resolve(out.trim());
+      else {
+        if (errOut) console.error('[claude-cli] stderr:', errOut.slice(0, 300));
+        resolve(fallback);
+      }
+    });
+  });
+}
 
 const router = Router();
 router.use(auth);
@@ -469,9 +500,13 @@ ${isVocab ? vocabStructure : standardStructure}`;
     '',
   ].join('\n');
 
-  let content;
+  // Priority: Claude CLI (Pro membership) → Anthropic API key → OpenAI → fallback
+  const cliContent = await generateWithClaudeCLI({ system, user, fallback });
+  if (cliContent && cliContent !== fallback) {
+    return res.json({ content: cliContent, provider: 'claude-cli', usage: null });
+  }
   if (hasAnthropicKey) {
-    content = await generateWithClaudeWebSearch({ system, user, fallback });
+    const content = await generateWithClaudeWebSearch({ system, user, fallback });
     return res.json({ content, provider: 'claude', usage: null });
   }
   const result = await generateWithAIWithUsage({ system, user, fallback });
