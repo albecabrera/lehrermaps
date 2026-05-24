@@ -19,7 +19,36 @@ function MarkdownPreview({ content }) {
 }
 
 export default function WorksheetGenerator({ onClose }) {
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(`Erstelle ein Arbeitsblatt als .docx und .pdf für:
+
+Fach: [FACH]
+Klasse: [KLASSE]
+Thema: [THEMA]
+
+Aufgaben:
+- [Aufgabe 1 – Typ angeben: Lückentext / Fehlerkorrektur / offene Frage / Übersetzung / etc.]
+- [Aufgabe 2]
+- [Aufgabe 3]
+
+Links zum Selbstlernen (optional):
+- [URL – Beschreibung]
+
+Design-Vorgaben (nicht verhandelbar):
+- Schwarz-Weiß: ausschließlich Schwarz, Grautöne und Weiß — keine Farben
+- Schriftgröße: mindestens 12pt für alle Texte (Fließtext, Aufgaben, Tabellen)
+- Schriftart: Calibri
+- Sektionen klar abgetrennt durch Umrahmungen (Boxen mit Rahmen)
+- Sektions-Header: schwarzer Hintergrund, weißer Text, fett
+- Tabellen: abwechselnd Weiß / Hellgrau, keine Farben
+- Kein Clipart, keine Icons, keine KI-Symbole
+- Ausreichend Platz für handschriftliche Antworten (Linien oder Leerzeilen)
+
+Pflichtstruktur:
+1. Kopfzeile: Fach, Klasse, Thema, Felder für Name / Kurs / Datum
+2. Grammatik- oder Inhaltsübersicht: Tabelle(n) je nach Thema
+3. Aufgaben: nummeriert, mit ausreichend Platz für Antworten
+4. Links zum Selbstlernen (falls angegeben)
+5. Ausgabe: .docx und .pdf`);
   const [lang, setLang] = useState('de');
   const [step, setStep] = useState('form'); // 'form' | 'loading' | 'preview'
   const [content, setContent] = useState('');
@@ -164,7 +193,7 @@ export default function WorksheetGenerator({ onClose }) {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="z.B. Erstelle ein Arbeitsblatt über den Konjunktiv II für Klasse 10, mit 5 Übungen — 2 Lückentexte, 2 Multiple Choice und 1 Schreibaufgabe. Niveau B1."
-                  rows={6}
+                  rows={18}
                   autoFocus
                   style={{
                     width: '100%', padding: '10px 12px', borderRadius: 7, fontSize: 13,
