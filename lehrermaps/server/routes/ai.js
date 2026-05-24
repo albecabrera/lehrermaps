@@ -439,15 +439,8 @@ const WORKSHEET_TYPE_LABELS = {
   vokabular: 'Vokabelliste / Hoja de vocabulario',
 };
 
-router.post('/worksheet', async (req, res) => {
-  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nur für Lehrkräfte.' });
-  const { prompt = '', lang = 'de' } = req.body || {};
-  if (!prompt?.trim()) return res.status(400).json({ error: 'Prompt ist erforderlich.' });
-
-  const langName = lang === 'es' ? 'Spanisch' : lang === 'en' ? 'Englisch' : 'Deutsch';
-  const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
-
-  const system = `Du bist ein erfahrener Lehrer und erstellst professionelle, druckfertige Arbeitsblätter.
+function buildWorksheetSystem(langName, hasAnthropicKey) {
+  return `Du bist ein erfahrener Lehrer und erstellst professionelle, druckfertige Arbeitsblätter.
 ${hasAnthropicKey ? 'Nutze die Web-Suche, um aktuellen und korrekten Inhalt zu finden, bevor du das Arbeitsblatt erstellst.' : ''}
 Schreibe das gesamte Arbeitsblatt auf ${langName}.
 Struktur (immer einhalten):
@@ -458,6 +451,63 @@ Struktur (immer einhalten):
 5. Nummerierte Aufgaben (### Aufgabe N) mit genug Platz für Antworten
 6. Fußzeile: *Erstellt von: _____________ | Datum: _____________*
 Ausgabe: NUR das fertige Arbeitsblatt in Markdown. Kein erklärender Text davor oder danach.`;
+}
+
+router.post('/worksheet/stream', (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nur für Lehrkräfte.' });
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const send = (obj) => { try { res.write(`data: ${JSON.stringify(obj)}\n\n`); } catch {} };
+
+  const { prompt = '', lang = 'de' } = req.body || {};
+  if (!prompt?.trim()) { send({ type: 'error', message: 'Prompt fehlt.' }); return res.end(); }
+
+  const langName = lang === 'es' ? 'Spanisch' : lang === 'en' ? 'Englisch' : 'Deutsch';
+  const system = buildWorksheetSystem(langName, false);
+
+  const args = ['-p', '--output-format', 'text', '--dangerously-skip-permissions', '--system-prompt', system];
+  const proc = spawn(CLAUDE_CLI, args, {
+    env: { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || '') },
+  });
+
+  proc.stdin.write(prompt.trim());
+  proc.stdin.end();
+
+  let fullText = '';
+  proc.stdout.on('data', (chunk) => {
+    const text = chunk.toString();
+    fullText += text;
+    send({ type: 'text', text, chars: fullText.length });
+  });
+  proc.stderr.on('data', (d) => { console.error('[stream-cli] stderr:', d.toString().slice(0, 300)); });
+
+  const timer = setTimeout(() => { proc.kill('SIGTERM'); send({ type: 'timeout' }); res.end(); }, 120000);
+
+  proc.on('error', (e) => { clearTimeout(timer); send({ type: 'error', message: e.message }); res.end(); });
+  proc.on('close', (code) => {
+    clearTimeout(timer);
+    if (code === 0 && fullText.trim()) {
+      send({ type: 'done', content: fullText.trim() });
+    } else {
+      send({ type: 'error', message: 'CLI fehlgeschlagen (code ' + code + ').' });
+    }
+    res.end();
+  });
+  req.on('close', () => { clearTimeout(timer); proc.kill('SIGTERM'); });
+});
+
+router.post('/worksheet', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nur für Lehrkräfte.' });
+  const { prompt = '', lang = 'de' } = req.body || {};
+  if (!prompt?.trim()) return res.status(400).json({ error: 'Prompt ist erforderlich.' });
+
+  const langName = lang === 'es' ? 'Spanisch' : lang === 'en' ? 'Englisch' : 'Deutsch';
+  const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+  const system = buildWorksheetSystem(langName, hasAnthropicKey);
 
   const fallback = [
     '# Arbeitsblatt',
