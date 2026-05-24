@@ -30,7 +30,7 @@ export default function NotebookSidebar() {
   const notebookIds = useMemo(() => notebooks.map((n) => `n-${n.id}`), [notebooks]);
 
   if (loading) {
-    return <div style={{ padding: '10px 16px', fontSize: 12, color: 'var(--c-text-3)' }}>Cargando…</div>;
+    return <div style={{ padding: '10px 16px', fontSize: 12, color: 'var(--c-text-3)' }}>Laden…</div>;
   }
 
   const handleNotebookDragEnd = async ({ active, over }) => {

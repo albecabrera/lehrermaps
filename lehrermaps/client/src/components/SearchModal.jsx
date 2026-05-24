@@ -54,15 +54,15 @@ export default function SearchModal({ open, onClose }) {
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search notebooks, pages, blocks..."
+            placeholder="Notizbücher, Seiten, Blöcke durchsuchen…"
             style={{ flex: 1, border: '1px solid var(--c-border)', background: 'var(--c-bg)', color: 'var(--c-text)', borderRadius: 8, padding: '9px 11px', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
           />
           <kbd style={{ fontSize: 11, color: 'var(--c-text-3)', border: '1px solid var(--c-border)', borderRadius: 6, padding: '3px 6px' }}>Esc</kbd>
         </div>
 
         <div style={{ overflow: 'auto', padding: 10 }}>
-          {loading && <div style={{ fontSize: 12, color: 'var(--c-text-3)', padding: 8 }}>Buscando…</div>}
-          {!loading && !groups.length && q.trim() && <div style={{ fontSize: 12, color: 'var(--c-text-3)', padding: 8 }}>Sin resultados</div>}
+          {loading && <div style={{ fontSize: 12, color: 'var(--c-text-3)', padding: 8 }}>Suche…</div>}
+          {!loading && !groups.length && q.trim() && <div style={{ fontSize: 12, color: 'var(--c-text-3)', padding: 8 }}>Keine Ergebnisse</div>}
 
           {groups.map((g) => (
             <div key={g.notebook_id} style={{ marginBottom: 12, border: '1px solid var(--c-border)', borderRadius: 10 }}>

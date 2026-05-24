@@ -3,7 +3,7 @@ import { useNotebook } from '../../contexts/NotebookContext';
 import OneNoteRichEditor from './OneNoteRichEditor';
 
 const NOTE_KEY = 'lm_editor_note';
-const TABS = ['Inicio', 'Insertar', 'Dibujar', 'Vista', 'Cuaderno'];
+const TABS = ['Start', 'Einfügen', 'Zeichnen', 'Ansicht', 'Notizbuch'];
 
 export default function PageCanvas({ pageId }) {
   const {
@@ -15,7 +15,7 @@ export default function PageCanvas({ pageId }) {
     renameNotebook, renameSection, renamePage,
   } = useNotebook();
 
-  const [activeTab, setActiveTab] = useState('Inicio');
+  const [activeTab, setActiveTab] = useState('Start');
   const [noteText, setNoteText] = useState('');
   const [drawMode, setDrawMode] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -155,7 +155,7 @@ export default function PageCanvas({ pageId }) {
   };
 
   const renderTools = () => {
-    if (activeTab === 'Dibujar') {
+    if (activeTab === 'Zeichnen') {
       return (
         <>
           <ToolBtn onClick={() => setDrawMode((v) => !v)} label={drawMode ? '✍️' : '🖊'} sub={drawMode ? 'Ink ON' : 'Ink OFF'} />
@@ -165,7 +165,7 @@ export default function PageCanvas({ pageId }) {
         </>
       );
     }
-    if (activeTab === 'Vista') {
+    if (activeTab === 'Ansicht') {
       return (
         <>
           <ToolBtn onClick={() => {}} label="100%" sub="Zoom" />
@@ -174,10 +174,10 @@ export default function PageCanvas({ pageId }) {
         </>
       );
     }
-    if (activeTab === 'Insertar') {
+    if (activeTab === 'Einfügen') {
       return (
         <>
-          <ToolBtn onClick={() => insertSnippet('Texto nuevo')} label="📝" sub="Text" />
+          <ToolBtn onClick={() => insertSnippet('Neuer Text')} label="📝" sub="Text" />
           <ToolBtn onClick={() => insertSnippet('__TABLE__')} label="▦" sub="Tabelle" />
           <ToolBtn onClick={() => insertSnippet('__IMAGE__')} label="🖼" sub="Bild" />
           <ToolBtn onClick={() => insertSnippet('__CODE__')} label="</>" sub="Code" />
@@ -187,12 +187,12 @@ export default function PageCanvas({ pageId }) {
     }
     return (
       <>
-        <ToolBtn onClick={() => runCmd('bold')} label="B" sub="Negrita" />
-        <ToolBtn onClick={() => runCmd('italic')} label="I" sub="Cursiva" />
-        <ToolBtn onClick={() => runCmd('underline')} label="U" sub="Subrayar" />
-        <ToolBtn onClick={() => runCmd('insertUnorderedList')} label="•" sub="Lista" />
-        <ToolBtn onClick={() => runCmd('formatBlock', 'h2')} label="H1" sub="Título" />
-        <ToolBtn onClick={() => insertSnippet('__TODO__')} label="☑" sub="Tarea" />
+        <ToolBtn onClick={() => runCmd('bold')} label="B" sub="Fett" />
+        <ToolBtn onClick={() => runCmd('italic')} label="I" sub="Kursiv" />
+        <ToolBtn onClick={() => runCmd('underline')} label="U" sub="Unterl." />
+        <ToolBtn onClick={() => runCmd('insertUnorderedList')} label="•" sub="Liste" />
+        <ToolBtn onClick={() => runCmd('formatBlock', 'h2')} label="H1" sub="Titel" />
+        <ToolBtn onClick={() => insertSnippet('__TODO__')} label="☑" sub="Aufgabe" />
         <ToolBtn onClick={() => insertSnippet('__TABLE__')} label="▦" sub="Tabelle" />
         <ToolBtn onClick={() => insertSnippet('__CODE__')} label="</>" sub="Code" />
         <ToolBtn onClick={() => insertSnippet('__IMAGE__')} label="🖼" sub="Bild" />
@@ -229,19 +229,19 @@ export default function PageCanvas({ pageId }) {
   };
 
   const onCreateNotebook = async () => {
-    const name = window.prompt('Nombre del nuevo notebook:', '');
+    const name = window.prompt('Name des neuen Notizbuchs:', '');
     if (name === null) return;
     await createNotebookQuick(name);
   };
 
   const onCreatePage = async () => {
-    const name = window.prompt('Nombre de la nueva página:', '');
+    const name = window.prompt('Name der neuen Seite:', '');
     if (name === null) return;
     await createPageQuick(null, name);
   };
 
   const onCreateSection = async () => {
-    const name = window.prompt('Nombre de la nueva sección:', '');
+    const name = window.prompt('Name des neuen Abschnitts:', '');
     if (name === null) return;
     await createSectionQuick(nbId, name);
   };
@@ -249,19 +249,19 @@ export default function PageCanvas({ pageId }) {
   const onRenameNotebook = async () => {
     if (!nbId) return;
     const current = notebooks.find((n) => n.id === nbId);
-    const name = window.prompt('Renombrar notebook:', current?.title || '');
+    const name = window.prompt('Notizbuch umbenennen:', current?.title || '');
     if (name === null) return;
     await renameNotebook(nbId, name);
   };
 
   const onRenameSection = async (section) => {
-    const name = window.prompt('Renombrar sección:', section?.title || '');
+    const name = window.prompt('Abschnitt umbenennen:', section?.title || '');
     if (name === null) return;
     await renameSection(section.id, name);
   };
 
   const onRenamePage = async (page) => {
-    const name = window.prompt('Renombrar página:', page?.title || '');
+    const name = window.prompt('Seite umbenennen:', page?.title || '');
     if (name === null) return;
     await renamePage(page.id, name);
   };
@@ -276,7 +276,7 @@ export default function PageCanvas({ pageId }) {
 
       <aside style={{ width: notebookCollapsed ? 0 : notebookColWidth, borderRight: notebookCollapsed ? 'none' : '1px solid #d8d8de', background: '#f3f3f5', minHeight: 0, overflow: 'hidden', transition: 'width .15s ease' }}>
         <div style={{ padding: '10px 12px', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>Notebook</span>
+          <span>Notizbuch</span>
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={onCreateNotebook} style={miniBtnStyle}>＋</button>
             <button onClick={() => setNotebookCollapsed(true)} style={miniBtnStyle}>—</button>
@@ -297,7 +297,7 @@ export default function PageCanvas({ pageId }) {
               <option key={nb.id} value={nb.id}>{nb.title}</option>
             ))}
           </select>
-          <button onClick={onCreateSection} style={{ ...miniBtnStyle, width: '100%', marginTop: 6 }}>＋ Añadir sección</button>
+          <button onClick={onCreateSection} style={{ ...miniBtnStyle, width: '100%', marginTop: 6 }}>＋ Abschnitt hinzufügen</button>
         </div>
         {sectionList.map((sec) => (
           <button
@@ -324,7 +324,7 @@ export default function PageCanvas({ pageId }) {
 
       <aside style={{ width: pagesCollapsed ? 0 : pagesColWidth, borderRight: pagesCollapsed ? 'none' : '1px solid #d8d8de', background: '#fafafa', minHeight: 0, overflow: 'hidden', transition: 'width .15s ease' }}>
         <div style={{ padding: '10px 12px', borderBottom: '1px solid #e5e5e5', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>Páginas{sectionList[0] ? ` · ${sectionList.find((s) => s.id === effectiveSectionId)?.title || sectionList[0].title}` : ''}</span>
+          <span>Seiten{sectionList[0] ? ` · ${sectionList.find((s) => s.id === effectiveSectionId)?.title || sectionList[0].title}` : ''}</span>
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={onCreatePage} style={miniBtnStyle}>＋</button>
             <button onClick={() => setPagesCollapsed(true)} style={miniBtnStyle}>—</button>
@@ -342,7 +342,7 @@ export default function PageCanvas({ pageId }) {
             }}
           >
             <div style={{ fontWeight: 600, fontSize: 13 }}>{p.title}</div>
-            <div style={{ fontSize: 12, color: '#666' }}>Kein zusätzlicher Text</div>
+            <div style={{ fontSize: 12, color: '#666' }}>Kein weiterer Text</div>
           </button>
         ))}
         </div>
@@ -357,12 +357,12 @@ export default function PageCanvas({ pageId }) {
 
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: '#fff' }}>
         <div style={{ height: 38, background: '#7719aa', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 12px', fontSize: 17, fontWeight: 600, letterSpacing: 0.2 }}>
-          <span>Cuaderno</span>
+          <span>Notizbuch</span>
         </div>
         {(notebookCollapsed || pagesCollapsed) ? (
           <div style={{ height: 28, display: 'flex', alignItems: 'center', gap: 8, padding: '0 10px', borderBottom: '1px solid #e5e5ea', background: '#fbfbfd' }}>
-            {notebookCollapsed ? <button onClick={() => setNotebookCollapsed(false)} style={miniBtnStyle}>↔ Notebook</button> : null}
-            {pagesCollapsed ? <button onClick={() => setPagesCollapsed(false)} style={miniBtnStyle}>↔ Páginas</button> : null}
+            {notebookCollapsed ? <button onClick={() => setNotebookCollapsed(false)} style={miniBtnStyle}>↔ Notizbuch</button> : null}
+            {pagesCollapsed ? <button onClick={() => setPagesCollapsed(false)} style={miniBtnStyle}>↔ Seiten</button> : null}
           </div>
         ) : null}
 

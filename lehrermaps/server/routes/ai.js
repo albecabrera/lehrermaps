@@ -441,93 +441,55 @@ const WORKSHEET_TYPE_LABELS = {
 
 router.post('/worksheet', async (req, res) => {
   if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nur für Lehrkräfte.' });
-  const {
-    subject = '', topic = '', grade = '',
-    worksheetType = 'gemischt', exerciseCount = 5,
-    lang = 'de', extraInstructions = '',
-  } = req.body || {};
-  if (!topic?.trim()) return res.status(400).json({ error: 'topic obligatorio.' });
+  const { prompt = '', lang = 'de' } = req.body || {};
+  if (!prompt?.trim()) return res.status(400).json({ error: 'Prompt ist erforderlich.' });
 
-  const typeLabel = WORKSHEET_TYPE_LABELS[worksheetType] || worksheetType;
   const langName = lang === 'es' ? 'Spanisch' : lang === 'en' ? 'Englisch' : 'Deutsch';
-  const isVocab = worksheetType === 'vokabular';
-
   const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
-  const vocabStructure = `
-Aufbau (Vokabelliste / Hoja de vocabulario):
-1. Titel-Block: # [Fach] — [Thema] — Vocabulario, dann Zeile mit: **Name:** _____________  **Klasse:** _____________  **Datum:** _____________
-2. Horizontale Linie (---)
-3. **Lernziele:** 2 Stichpunkte (Vokabular verstehen und anwenden)
-4. Horizontale Linie
-5. Vokabelliste als Markdown-Tabelle mit Spalten: | Nr. | Wort / Palabra | Übersetzung (DE) | Beispielsatz |
-   - Mindestens ${exerciseCount} Einträge mit korrekten, themenrelevanten Vokabeln
-   - Beispielsätze kurz und klar, aus dem Kontext des Themas
-6. Horizontale Linie
-7. Übungsaufgabe: Lückentext mit 5 Vokabeln aus der Tabelle (Wörterkasten oben)
-8. Horizontale Linie
-9. Fußzeile: *Erstellt von: _____________ | Datum: _____________*`;
-
-  const standardStructure = `
-Aufbau:
-1. Titel-Block: # [Fach] — [Thema], dann Zeile mit: **Name:** _____________  **Klasse:** _____________  **Datum:** _____________
+  const system = `Du bist ein erfahrener Lehrer und erstellst professionelle, druckfertige Arbeitsblätter.
+${hasAnthropicKey ? 'Nutze die Web-Suche, um aktuellen und korrekten Inhalt zu finden, bevor du das Arbeitsblatt erstellst.' : ''}
+Schreibe das gesamte Arbeitsblatt auf ${langName}.
+Struktur (immer einhalten):
+1. Titel-Block: # [Titel], darunter: **Name:** _____________  **Klasse:** _____________  **Datum:** _____________
 2. Horizontale Linie (---)
 3. **Lernziele:** 2–3 Stichpunkte
 4. Horizontale Linie
-5. Genau ${exerciseCount} nummerierte Aufgaben (### Aufgabe N — Typ)
-   - Bei Lückentext: Wörterkasten oben
-   - Bei Multiple Choice: immer (A) (B) (C) (D)
-   - Genug Leerzeilen für Antworten
-   - Aufgaben basieren auf korrektem, recherchiertem Inhalt
-6. Horizontale Linie
-7. Fußzeile: *Erstellt von: _____________ | Datum: _____________*`;
-
-  const system = `Du bist ein erfahrener Lehrer und erstellst professionelle, druckfertige Arbeitsblätter.
-${hasAnthropicKey ? `Nutze die Web-Suche, um aktuellen, korrekten und lehrplankonformen Inhalt zum Thema zu finden, bevor du das Arbeitsblatt erstellst.` : ''}
-Schreibe das gesamte Arbeitsblatt auf ${langName}.
-Ausgabe: NUR das Arbeitsblatt in Markdown. Keine Erklärungen davor oder danach.
-${isVocab ? vocabStructure : standardStructure}`;
-
-  const user = [
-    `Fach: ${subject || 'Allgemein'}`,
-    `Thema: ${topic}`,
-    `Klasse / Niveau: ${grade || 'nicht angegeben'}`,
-    `Aufgabentyp: ${typeLabel}`,
-    `Anzahl Aufgaben: ${exerciseCount}`,
-    extraInstructions?.trim() ? `Zusätzliche Hinweise: ${extraInstructions}` : '',
-  ].filter(Boolean).join('\n');
+5. Nummerierte Aufgaben (### Aufgabe N) mit genug Platz für Antworten
+6. Fußzeile: *Erstellt von: _____________ | Datum: _____________*
+Ausgabe: NUR das fertige Arbeitsblatt in Markdown. Kein erklärender Text davor oder danach.`;
 
   const fallback = [
-    `# ${subject || 'Fach'} — ${topic}`,
+    '# Arbeitsblatt',
     '',
     '**Name:** _____________  **Klasse:** _____________  **Datum:** _____________',
     '',
     '---',
     '',
-    `**Lernziele:**`,
-    `- Thema "${topic}" verstehen`,
-    `- Grundlegende Konzepte anwenden`,
+    '**Lernziele:**',
+    '- Inhalte verstehen',
+    '- Grundlegende Konzepte anwenden',
     '',
     '---',
     '',
-    `### Aufgabe 1`,
+    '### Aufgabe 1',
     '',
-    `_Aufgabe zu ${topic}._`,
+    '_Aufgabe hier._',
     '',
     '_________________________________________',
     '',
   ].join('\n');
 
   // Priority: Claude CLI (Pro membership) → Anthropic API key → OpenAI → fallback
-  const cliContent = await generateWithClaudeCLI({ system, user, fallback });
+  const cliContent = await generateWithClaudeCLI({ system, user: prompt.trim(), fallback });
   if (cliContent && cliContent !== fallback) {
     return res.json({ content: cliContent, provider: 'claude-cli', usage: null });
   }
   if (hasAnthropicKey) {
-    const content = await generateWithClaudeWebSearch({ system, user, fallback });
+    const content = await generateWithClaudeWebSearch({ system, user: prompt.trim(), fallback });
     return res.json({ content, provider: 'claude', usage: null });
   }
-  const result = await generateWithAIWithUsage({ system, user, fallback });
+  const result = await generateWithAIWithUsage({ system, user: prompt.trim(), fallback });
   return res.json({ content: result.content, provider: 'openai', usage: result.usage || null });
 });
 
