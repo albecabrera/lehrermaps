@@ -12,10 +12,11 @@ function generateWithClaudeCLI({ system, user, fallback }) {
     const args = [
       '-p',
       '--output-format', 'text',
-      '--tools', '',
-      '--no-session-persistence',
+      '--dangerously-skip-permissions',
     ];
     if (system) args.push('--system-prompt', system);
+
+    console.log('[claude-cli] spawning:', CLAUDE_CLI, args.slice(0, 3).join(' '), '...');
 
     const proc = spawn(CLAUDE_CLI, args, {
       env: { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || '') },
@@ -41,10 +42,11 @@ function generateWithClaudeCLI({ system, user, fallback }) {
     });
     proc.on('close', (code) => {
       clearTimeout(timer);
+      console.log(`[claude-cli] exit code=${code}, out=${out.length} chars`);
+      if (errOut) console.error('[claude-cli] stderr:', errOut.slice(0, 800));
       if (code === 0 && out.trim()) {
         resolve(out.trim());
       } else {
-        if (errOut) console.error('[claude-cli] stderr:', errOut.slice(0, 500));
         resolve(fallback);
       }
     });
