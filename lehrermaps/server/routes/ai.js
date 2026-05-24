@@ -9,26 +9,42 @@ const CLAUDE_CLI = process.env.CLAUDE_CLI_PATH || '/opt/homebrew/bin/claude';
 
 function generateWithClaudeCLI({ system, user, fallback }) {
   return new Promise((resolve) => {
-    const fullPrompt = system ? `${system}\n\n---\n\n${user}` : user;
-    const proc = spawn(CLAUDE_CLI, ['--print', '--output-format', 'text'], {
+    const args = [
+      '-p',
+      '--output-format', 'text',
+      '--tools', '',
+      '--no-session-persistence',
+    ];
+    if (system) args.push('--system-prompt', system);
+
+    const proc = spawn(CLAUDE_CLI, args, {
       env: { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || '') },
-      timeout: 120000,
     });
 
     let out = '';
     let errOut = '';
-    proc.stdin.write(fullPrompt);
+    proc.stdin.write(user);
     proc.stdin.end();
     proc.stdout.on('data', (d) => { out += d.toString(); });
     proc.stderr.on('data', (d) => { errOut += d.toString(); });
+
+    const timer = setTimeout(() => {
+      proc.kill('SIGTERM');
+      console.error('[claude-cli] timeout after 120s');
+      resolve(fallback);
+    }, 120000);
+
     proc.on('error', (e) => {
+      clearTimeout(timer);
       console.error('[claude-cli] spawn error:', e.message);
       resolve(fallback);
     });
     proc.on('close', (code) => {
-      if (code === 0 && out.trim()) resolve(out.trim());
-      else {
-        if (errOut) console.error('[claude-cli] stderr:', errOut.slice(0, 300));
+      clearTimeout(timer);
+      if (code === 0 && out.trim()) {
+        resolve(out.trim());
+      } else {
+        if (errOut) console.error('[claude-cli] stderr:', errOut.slice(0, 500));
         resolve(fallback);
       }
     });
