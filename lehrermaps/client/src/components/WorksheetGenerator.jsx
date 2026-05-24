@@ -202,6 +202,21 @@ Pflichtstruktur:
                     boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.6,
                   }}
                   onKeyDown={(e) => {
+                    if (e.key === 'Tab') {
+                      e.preventDefault();
+                      const ta = e.target;
+                      const text = ta.value;
+                      const cursor = ta.selectionStart;
+                      const regex = /\[[^\]]+\]/g;
+                      const matches = [];
+                      let m;
+                      while ((m = regex.exec(text)) !== null) {
+                        matches.push({ start: m.index, end: m.index + m[0].length });
+                      }
+                      if (!matches.length) return;
+                      const next = matches.find((x) => x.start > cursor) || matches[0];
+                      ta.setSelectionRange(next.start, next.end);
+                    }
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate();
                   }}
                 />
