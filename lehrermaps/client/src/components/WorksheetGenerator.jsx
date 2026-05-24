@@ -8,6 +8,7 @@ const WORKSHEET_TYPES = [
   { id: 'lueckentext', label: 'Lückentext' },
   { id: 'multiple', label: 'Multiple Choice' },
   { id: 'aufsatz', label: 'Schreibaufgabe / Aufsatz' },
+  { id: 'vokabular', label: 'Vocabulario / Wortschatz' },
 ];
 
 function MarkdownPreview({ content }) {

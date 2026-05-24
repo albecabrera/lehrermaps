@@ -13,6 +13,8 @@ import filesRouter from './routes/files.js';
 import linksRouter from './routes/links.js';
 import scheduleRouter from './routes/schedule.js';
 import aiRouter from './routes/ai.js';
+import notebooksRouter from './routes/notebooks.js';
+import searchRouter from './routes/search.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -47,6 +49,8 @@ app.use('/api/files', filesRouter);
 app.use('/api/links', linksRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api', notebooksRouter);
+app.use('/api/search', searchRouter);
 
 app.get('/api/health', (_, res) => res.json({ ok: true }));
 

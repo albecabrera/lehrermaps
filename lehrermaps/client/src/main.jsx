@@ -7,6 +7,7 @@ import StudentApp from './pages/StudentApp';
 import LoginPanel from './pages/LoginPanel';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LangProvider } from './contexts/LangContext';
+import { NotebookProvider } from './contexts/NotebookContext';
 
 // Bootstrap ?token= before React mounts — runs once, no side effects inside render
 (function bootstrapUrlToken() {
@@ -50,7 +51,9 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <ThemeProvider>
         <LangProvider>
-          <Root />
+          <NotebookProvider>
+            <Root />
+          </NotebookProvider>
         </LangProvider>
       </ThemeProvider>
     </ErrorBoundary>

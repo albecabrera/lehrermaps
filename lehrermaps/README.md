@@ -54,18 +54,15 @@ Unterrichtsmaterial-Verwaltung für Lehrer — verwalte Dateien, Links, Notizen 
 - **Unterordner** — verschachtelte Ordnerstruktur
 - Zuletzt geöffnete Ordner in der Sidebar (max. 5)
 
-### Notizen-Editor
+### Notizen (Notebook/Seiten)
 
-- **Rich-Text-Editor** (contentEditable) mit Toolbar:
-  - Fett, Kursiv, Unterstrichen, Durchgestrichen, Inline-Code
-  - Textfarbe (7 Farben) und Textmarkierung (6 Farben)
-  - Aufzählungs- und nummerierte Listen
-  - Link einfügen (⌘K)
-  - Weiteres per `···`-Overflow: Ausrichtung, Einrücken, Checkbox, Trennlinie, Format entfernen, Drucken
-- **Inline-Markdown** — `**text**`, `*text*`, `` `code` `` etc. werden beim Tippen konvertiert
-- **Block-Markdown** — `#↩`, `-↩`, `>↩`, `---↩` für Überschriften, Listen, Zitat, Trennlinie
-- **Auto-Save** mit 1,5 s Debounce; zeigt „vor N Sek. gespeichert" nach dem Speichern
-- **Drucken** mit sauberem Print-Layout
+- **Dokumenten-Editor (Tiptap/ProseMirror-basiert)** mit stabiler Cursor- und Undo/Redo-Logik
+- Toolbar mit: Fett, Kursiv, Listen, Aufgabenliste, Überschrift, Tabelle, Codeblock, Bild, Undo/Redo
+- Struktur: **Notebook → Abschnitt → Seite**
+- Neue Notebooks/Seiten direkt per `+` (inkl. Namenseingabe)
+- Umbenennen per Doppelklick auf Notebook/Abschnitt/Seite
+- Linke Spalten (Notebook/Seiten) sind mit der Maus **resizable** und **minimierbar**
+- Auto-Save im Editor (debounced)
 
 ### Links & QR
 
@@ -102,6 +99,7 @@ Unterrichtsmaterial-Verwaltung für Lehrer — verwalte Dateien, Links, Notizen 
 - **Tastaturnavigation** — `j`/`k` oder Pfeiltasten durch Dateiliste, `Delete` löscht, `?` öffnet Hilfe
 - PWA-fähig (App-Shell, Service Worker, `manifest.json`)
 - Resizeable Sidebar und Vorschau-Panel
+- Notebook-/Seiten-Spalten im Notizbereich sind ebenfalls resizebar
 
 ---
 
@@ -254,6 +252,11 @@ lehrermaps/
 │       │   ├── LinkPreview.jsx    # Link-Vorschau mit URL
 │       │   ├── NewFolderModal.jsx # Neuer Ordner (Fach, Gruppe, Name)
 │       │   ├── NotesEditor.jsx    # Rich-Text-Editor mit Toolbar + Auto-Save
+│       │   ├── Canvas/
+│       │   │   ├── PageCanvas.jsx         # Notebook/Abschnitt/Seiten-Layout
+│       │   │   └── OneNoteRichEditor.jsx  # Tiptap-Editor im Dokumentmodus
+│       │   ├── Notebooks/
+│       │   │   └── NotebookSidebar.jsx    # Notebook-Baum (DND + Farben)
 │       │   ├── QRModal.jsx        # QR-Code-Generator für Schüler-Zugang
 │       │   ├── RenameFolderModal.jsx
 │       │   ├── Schedule.jsx       # Stundenplan-Komponente
@@ -264,6 +267,7 @@ lehrermaps/
 │       │   └── translations.js    # DE/ES Texte (useLang-Hook)
 │       ├── contexts/
 │       │   ├── LangContext.jsx    # Sprache (DE/ES), t()-Funktion mit {{vars}}
+│       │   ├── NotebookContext.jsx # Notebook/Abschnitt/Seiten-State + CRUD
 │       │   └── ThemeContext.jsx   # Dark/Light Mode, CSS-Variablen
 │       ├── hooks/
 │       │   ├── useFiles.js        # CRUD Dateien + Share/Public/Deadline
@@ -534,3 +538,16 @@ server {
 | Dateitypen | PDF, DOCX, PPTX, XLSX, ODT, ODP, ODS, HTML, TXT, MD, PNG, JPG, GIF, SVG, MP4, MP3, WAV, ZIP, PY, JS, TS, JSON, CSV, EPUB, H5P und weitere |
 
 Erlaubte MIME-Typen und Erweiterungen: `client/src/constants/structure.js` → `EXT_TO_KIND`
+
+---
+
+## Änderungen (Mai 2026)
+
+- OneNote-spezifische UI-Einträge wurden aus der sichtbaren Oberfläche entfernt.
+- Schnellnotizen-Panel wurde aus der Hauptansicht entfernt.
+- Notizbereich wurde auf einen stabileren Dokument-Editor (Tiptap/ProseMirror-basiert) umgestellt.
+- Notebook-/Abschnitt-/Seiten-Workflow vereinheitlicht:
+  - Erstellen per `+`
+  - Umbenennen per Doppelklick
+  - Spalten für Notebook und Seiten per Maus resizebar/minimierbar
+- README und Projektstruktur wurden auf den aktuellen Stand gebracht.

@@ -61,6 +61,64 @@ export async function initSchema() {
       updated_at DATETIME DEFAULT NOW() ON UPDATE NOW()
     )
   `);
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS notebooks (
+      id         INT AUTO_INCREMENT PRIMARY KEY,
+      user_id    INT NOT NULL,
+      title      VARCHAR(255) NOT NULL,
+      color      VARCHAR(20) DEFAULT '#3B82F6',
+      position   INT DEFAULT 0,
+      created_at DATETIME DEFAULT NOW(),
+      updated_at DATETIME DEFAULT NOW() ON UPDATE NOW()
+    )
+  `);
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS sections (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      notebook_id INT NOT NULL,
+      title       VARCHAR(255) NOT NULL,
+      color       VARCHAR(20) DEFAULT '#64748B',
+      position    INT DEFAULT 0,
+      created_at  DATETIME DEFAULT NOW(),
+      updated_at  DATETIME DEFAULT NOW() ON UPDATE NOW(),
+      FOREIGN KEY (notebook_id) REFERENCES notebooks(id) ON DELETE CASCADE
+    )
+  `);
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS pages (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      section_id  INT NOT NULL,
+      title       VARCHAR(255) NOT NULL,
+      template_id VARCHAR(64) NULL,
+      position    INT DEFAULT 0,
+      created_at  DATETIME DEFAULT NOW(),
+      updated_at  DATETIME DEFAULT NOW() ON UPDATE NOW(),
+      FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE CASCADE
+    )
+  `);
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS blocks (
+      id         INT AUTO_INCREMENT PRIMARY KEY,
+      page_id    INT NOT NULL,
+      type       VARCHAR(40) NOT NULL,
+      content    JSON,
+      pos_x      INT DEFAULT 0,
+      pos_y      INT DEFAULT 0,
+      width      INT DEFAULT 420,
+      z_index    INT DEFAULT 1,
+      created_at DATETIME DEFAULT NOW(),
+      updated_at DATETIME DEFAULT NOW() ON UPDATE NOW(),
+      FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
+    )
+  `);
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS quick_notes (
+      id         INT AUTO_INCREMENT PRIMARY KEY,
+      user_id    INT NOT NULL,
+      content    LONGTEXT,
+      created_at DATETIME DEFAULT NOW()
+    )
+  `);
   const [rows] = await pool.execute(`SELECT COUNT(*) AS c FROM schedule`);
   if (rows[0].c === 0) await pool.execute(`INSERT INTO schedule (data) VALUES (?)`, ['{}']);
 }

@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import FolderIcon from './FolderIcon';
 import FileBadge from './FileBadge';
+import NotebookSidebar from './Notebooks/NotebookSidebar';
 import { detectKind } from '../constants/structure';
 import { useLang } from '../contexts/LangContext';
 
@@ -141,6 +143,7 @@ export default function Sidebar({
             <div style={{ height: 1, background: 'var(--c-border)', margin: '6px 12px 6px' }} />
           </div>
         )}
+        {!collapsed && <NotebookSidebar />}
         {loading ? (
           <SidebarSkeleton collapsed={collapsed} accent={accent} />
         ) : (
@@ -510,6 +513,20 @@ function GroupHeader({ group, accent, onAdd, t }) {
 
 function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, onNewSubfolder, onSetColor, t }) {
   const ref = useRef(null);
+  const [pos, setPos] = useState({ left: x, top: y, visible: false });
+
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const { width, height } = ref.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const MARGIN = 8;
+    setPos({
+      left: Math.min(x, vw - width - MARGIN),
+      top:  Math.min(y, vh - height - MARGIN),
+      visible: true,
+    });
+  }, [x, y]);
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
@@ -517,18 +534,19 @@ function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, 
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
 
-  return (
+  return createPortal(
     <>
       <div style={{ position: 'fixed', inset: 0, zIndex: 1050 }} onClick={onClose} />
       <div
         ref={ref}
         style={{
-          position: 'fixed', left: x, top: y, zIndex: 1100,
+          position: 'fixed', left: pos.left, top: pos.top, zIndex: 1100,
+          visibility: pos.visible ? 'visible' : 'hidden',
           background: 'var(--c-surface)', borderRadius: 9, padding: 4, minWidth: 190,
           boxShadow: 'var(--c-shadow-pop)',
           fontFamily: '"DM Sans", -apple-system, sans-serif',
           border: '1px solid var(--c-border-soft)',
-          animation: 'lmSlideUp .12s ease-out',
+          animation: pos.visible ? 'lmSlideUp .12s ease-out' : 'none',
         }}
       >
         <div style={{
@@ -601,7 +619,8 @@ function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, 
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 

@@ -10,6 +10,7 @@ import Breadcrumb from '../components/Breadcrumb';
 import ConfirmModal from '../components/ConfirmModal';
 import DeadlineModal from '../components/DeadlineModal';
 import GlobalSearch from '../components/GlobalSearch';
+import SearchModal from '../components/SearchModal';
 import QRModal from '../components/QRModal';
 import KeyboardHelp from '../components/KeyboardHelp';
 import Schedule from '../components/Schedule';
@@ -19,7 +20,7 @@ import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
 import { useRecents } from '../hooks/useRecents';
 import { useRecentFiles } from '../hooks/useRecentFiles';
-import { downloadFolderZip, downloadFilesZip, viewFile } from '../lib/api';
+import { downloadFolderZip, downloadFilesZip, viewFile, initUnterrichtsreihe } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
@@ -27,12 +28,16 @@ import WorksheetGenerator from '../components/WorksheetGenerator';
 import TerminalModal from '../components/TerminalModal';
 import NotesEditor from '../components/NotesEditor';
 import FolderGallery from '../components/FolderGallery';
+import PageCanvas from '../components/Canvas/PageCanvas';
+import FocusMode from '../components/FocusMode';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLang } from '../contexts/LangContext';
+import { useNotebook } from '../contexts/NotebookContext';
 
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { lang, t, setLang } = useLang();
+  const { activePageId, setActivePageId } = useNotebook();
 
   const [subjectId, setSubjectId] = useState('spanisch');
   const [activeFolder, setActiveFolder] = useState(null);
@@ -49,6 +54,7 @@ export default function App({ onLogout }) {
   const [folderTab, setFolderTab] = useState('files');
   const [filesView, setFilesView] = useState('list');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const [oneNoteSearchOpen, setOneNoteSearchOpen] = useState(false);
   const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
   const [deadlineModal, setDeadlineModal] = useState(null);
@@ -74,6 +80,7 @@ export default function App({ onLogout }) {
   const { recents, add: addRecent } = useRecents();
   const { recentFiles, trackFile } = useRecentFiles();
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
+  const subjectRootFolders = subjectFolders.filter((f) => !f.parent_id);
   const [pendingFileId, setPendingFileId] = useState(null);
   const [pendingLinkId, setPendingLinkId] = useState(null);
   const [folderOpenTick, setFolderOpenTick] = useState(0);
@@ -85,6 +92,7 @@ export default function App({ onLogout }) {
   const [heroQrLink, setHeroQrLink] = useState(null);
   const [worksheetGenOpen, setWorksheetGenOpen] = useState(false);
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
@@ -163,10 +171,15 @@ export default function App({ onLogout }) {
         document.exitFullscreen();
         return;
       }
-      if (globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen || worksheetGenOpen) return;
+      if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen || worksheetGenOpen) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setGlobalSearchOpen(true);
+        return;
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setOneNoteSearchOpen(true);
         return;
       }
       if (e.key === '?' && !isTyping) {
@@ -187,20 +200,20 @@ export default function App({ onLogout }) {
           return;
         }
         if (!activeFolder) {
-          const targetFolder = subjectFolders.find((f) => f.id === kbdMarkedFolderId) || hoveredFolder;
+          const targetFolder = subjectRootFolders.find((f) => f.id === kbdMarkedFolderId) || hoveredFolder;
           if (targetFolder) onFolderSelect(targetFolder);
         }
         return;
       }
 
-      if (!isTyping && !activeFolder && subjectFolders.length && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      if (!isTyping && !activeFolder && subjectRootFolders.length && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
         e.preventDefault();
-        const idx = subjectFolders.findIndex((f) => f.id === kbdMarkedFolderId);
+        const idx = subjectRootFolders.findIndex((f) => f.id === kbdMarkedFolderId);
         const base = idx >= 0 ? idx : -1;
         const nextIdx = e.key === 'ArrowDown'
-          ? Math.min(subjectFolders.length - 1, base + 1)
+          ? Math.min(subjectRootFolders.length - 1, base + 1)
           : Math.max(0, (base < 0 ? 0 : base - 1));
-        const nextFolder = subjectFolders[nextIdx];
+        const nextFolder = subjectRootFolders[nextIdx];
         if (nextFolder) {
           setKbdMarkedFolderId(nextFolder.id);
           setHoveredFolder(nextFolder);
@@ -237,7 +250,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeFolder, files, folderTab, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectFolders, globalSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, deadlineModal, keyboardHelpOpen, qrOpen]);
+  }, [activeFile, activeFolder, files, folderTab, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, deadlineModal, keyboardHelpOpen, qrOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -293,6 +306,7 @@ export default function App({ onLogout }) {
 
   const onSubjectChange = (id) => {
     setSubjectId(id);
+    setActivePageId(null);
     setActiveFolder(null);
     setActiveFile(null);
     setActiveFile2(null);
@@ -301,6 +315,7 @@ export default function App({ onLogout }) {
   };
 
   const onFolderSelect = (folder, sourceRect = null) => {
+    setActivePageId(null);
     setActiveFolder(folder);
     setActiveFile(null);
     setActiveFile2(null);
@@ -420,10 +435,21 @@ export default function App({ onLogout }) {
     setTimeout(() => setDropUploading(null), 900);
   }, [activeFolder, reloadFolders, upload]);
 
+  const seedUnterrichtsreihe = async (folder) => {
+    if (!folder?.id) return;
+    try {
+      await initUnterrichtsreihe(folder.id);
+      reloadFolders();
+    } catch {
+      // silencioso — la carpeta principal ya se creó
+    }
+  };
+
   const handleNewFolder = async ({ subject: subjectKey, group_name, name, template, parent_id }) => {
     if (!template || parent_id) {
-      await addFolder(subjectKey, group_name, name, parent_id ?? null);
+      const created = await addFolder(subjectKey, group_name, name, parent_id ?? null);
       setNewFolderParentId(null);
+      if (!parent_id) seedUnterrichtsreihe(created);
       return;
     }
     const templates = {
@@ -432,12 +458,14 @@ export default function App({ onLogout }) {
     };
     const parts = templates[template] || [];
     if (!parts.length) {
-      await addFolder(subjectKey, group_name, name);
+      const created = await addFolder(subjectKey, group_name, name);
       setNewFolderParentId(null);
+      seedUnterrichtsreihe(created);
       return;
     }
     for (const part of parts) {
-      await addFolder(subjectKey, group_name, `${name} · ${part}`);
+      const created = await addFolder(subjectKey, group_name, `${name} · ${part}`);
+      seedUnterrichtsreihe(created);
     }
     setNewFolderParentId(null);
   };
@@ -638,7 +666,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen;
+  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen;
 
   return (
     <div style={{
@@ -733,6 +761,19 @@ export default function App({ onLogout }) {
 
         {/* Right controls */}
         <div style={{ paddingBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button
+            className="lm-spring"
+            onClick={() => setFocusMode((v) => !v)}
+            title={focusMode ? 'Exit Focus (ESC)' : 'Focus mode'}
+            style={{
+              height: 30, padding: '0 10px', border: '0.5px solid var(--c-border)', borderRadius: 7,
+              background: focusMode ? `${accent}20` : 'var(--c-hover)', color: focusMode ? accent : 'var(--c-text-2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              transition: 'background .12s', fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
+            }}
+          >
+            {focusMode ? 'Focus ON' : 'Focus'}
+          </button>
           {/* Global search button */}
           <button
             className="lm-spring"
@@ -885,6 +926,7 @@ export default function App({ onLogout }) {
       </div>
 
       {/* Body */}
+      <FocusMode active={focusMode} onExit={() => setFocusMode(false)}>
       <div
         style={{ flex: 1, minHeight: 0, display: 'flex' }}
         onMouseMove={(e) => {
@@ -900,7 +942,7 @@ export default function App({ onLogout }) {
             <Schedule onNavigate={(subjectId) => { onSubjectChange(subjectId); }} />
           </div>
         ) : <>
-        <div style={{ transform: `translate3d(${parallax.x * -4}px, ${parallax.y * -2}px, 0)`, transition: 'transform .25s cubic-bezier(.2,.8,.2,1)' }}>
+        {!focusMode && <div style={{ transform: `translate3d(${parallax.x * -4}px, ${parallax.y * -2}px, 0)`, transition: 'transform .25s cubic-bezier(.2,.8,.2,1)' }}>
           <Sidebar
             subject={subject}
             groups={subject.groups}
@@ -921,8 +963,8 @@ export default function App({ onLogout }) {
             recentFiles={recentFiles}
             onRecentFileClick={handleRecentFileClick}
           />
-        </div>
-        <div
+        </div>}
+        {!focusMode && <div
           onMouseDown={onSidebarResizeMouseDown}
           style={{
             width: 4, flexShrink: 0, cursor: 'col-resize',
@@ -931,7 +973,7 @@ export default function App({ onLogout }) {
           }}
           onMouseEnter={(e) => e.currentTarget.style.background = accent + '55'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-        />
+        />}
 
         <div
           ref={contentPaneRef}
@@ -1005,7 +1047,11 @@ export default function App({ onLogout }) {
               </span>
             </div>
           )}
-          {activeFolder ? (
+          {activePageId ? (
+            <div style={{ height: '100%', minHeight: 0 }}>
+              <PageCanvas pageId={activePageId} />
+            </div>
+          ) : activeFolder ? (
             <div
               key={`folder-open-${activeFolder.id}-${folderOpenTick}`}
               className="lm-folder-open-shell"
@@ -1214,7 +1260,7 @@ export default function App({ onLogout }) {
           ) : (
             <WelcomeView
               subject={subject}
-              folders={subjectFolders}
+              folders={subjectRootFolders}
               foldersLoading={foldersLoading}
               recents={recents}
               onFolderSelect={onFolderSelect}
@@ -1228,7 +1274,7 @@ export default function App({ onLogout }) {
         </div>
 
         {/* Preview panel — resizable, optional split */}
-        {activeFolder && (
+        {activeFolder && !focusMode && (
           <div
             style={{
               width: effectivePreviewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden',
@@ -1278,6 +1324,7 @@ export default function App({ onLogout }) {
         )}
         </>}
       </div>
+      </FocusMode>
       </div>
 
       <UploadModal
@@ -1409,6 +1456,10 @@ export default function App({ onLogout }) {
         open={globalSearchOpen}
         onClose={() => setGlobalSearchOpen(false)}
         onNavigate={handleGlobalNavigate}
+      />
+      <SearchModal
+        open={oneNoteSearchOpen}
+        onClose={() => setOneNoteSearchOpen(false)}
       />
       {keyboardHelpOpen && <KeyboardHelp onClose={() => setKeyboardHelpOpen(false)} />}
       {qrOpen && (

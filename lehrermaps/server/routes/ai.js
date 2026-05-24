@@ -387,6 +387,7 @@ const WORKSHEET_TYPE_LABELS = {
   multiple: 'Multiple Choice (4 Optionen A/B/C/D)',
   aufsatz: 'Schreibaufgabe / Aufsatz',
   gemischt: 'Gemischte Aufgaben (verschiedene Typen)',
+  vokabular: 'Vokabelliste / Hoja de vocabulario',
 };
 
 router.post('/worksheet', async (req, res) => {
@@ -400,13 +401,25 @@ router.post('/worksheet', async (req, res) => {
 
   const typeLabel = WORKSHEET_TYPE_LABELS[worksheetType] || worksheetType;
   const langName = lang === 'es' ? 'Spanisch' : lang === 'en' ? 'Englisch' : 'Deutsch';
+  const isVocab = worksheetType === 'vokabular';
 
   const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
-  const system = `Du bist ein erfahrener Lehrer und erstellst professionelle, druckfertige Arbeitsblätter.
-${hasAnthropicKey ? `Nutze die Web-Suche, um aktuellen, korrekten und lehrplankonformen Inhalt zum Thema zu finden, bevor du das Arbeitsblatt erstellst.` : ''}
-Schreibe das gesamte Arbeitsblatt auf ${langName}.
-Ausgabe: NUR das Arbeitsblatt in Markdown. Keine Erklärungen davor oder danach.
+  const vocabStructure = `
+Aufbau (Vokabelliste / Hoja de vocabulario):
+1. Titel-Block: # [Fach] — [Thema] — Vocabulario, dann Zeile mit: **Name:** _____________  **Klasse:** _____________  **Datum:** _____________
+2. Horizontale Linie (---)
+3. **Lernziele:** 2 Stichpunkte (Vokabular verstehen und anwenden)
+4. Horizontale Linie
+5. Vokabelliste als Markdown-Tabelle mit Spalten: | Nr. | Wort / Palabra | Übersetzung (DE) | Beispielsatz |
+   - Mindestens ${exerciseCount} Einträge mit korrekten, themenrelevanten Vokabeln
+   - Beispielsätze kurz und klar, aus dem Kontext des Themas
+6. Horizontale Linie
+7. Übungsaufgabe: Lückentext mit 5 Vokabeln aus der Tabelle (Wörterkasten oben)
+8. Horizontale Linie
+9. Fußzeile: *Erstellt von: _____________ | Datum: _____________*`;
+
+  const standardStructure = `
 Aufbau:
 1. Titel-Block: # [Fach] — [Thema], dann Zeile mit: **Name:** _____________  **Klasse:** _____________  **Datum:** _____________
 2. Horizontale Linie (---)
@@ -419,6 +432,12 @@ Aufbau:
    - Aufgaben basieren auf korrektem, recherchiertem Inhalt
 6. Horizontale Linie
 7. Fußzeile: *Erstellt von: _____________ | Datum: _____________*`;
+
+  const system = `Du bist ein erfahrener Lehrer und erstellst professionelle, druckfertige Arbeitsblätter.
+${hasAnthropicKey ? `Nutze die Web-Suche, um aktuellen, korrekten und lehrplankonformen Inhalt zum Thema zu finden, bevor du das Arbeitsblatt erstellst.` : ''}
+Schreibe das gesamte Arbeitsblatt auf ${langName}.
+Ausgabe: NUR das Arbeitsblatt in Markdown. Keine Erklärungen davor oder danach.
+${isVocab ? vocabStructure : standardStructure}`;
 
   const user = [
     `Fach: ${subject || 'Allgemein'}`,
