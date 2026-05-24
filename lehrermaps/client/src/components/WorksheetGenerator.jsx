@@ -151,7 +151,7 @@ export default function WorksheetGenerator({ onClose }) {
               throw new Error(data.message || 'Zeitüberschreitung.');
             }
           } catch (parseErr) {
-            if (parseErr.message && !parseErr.message.startsWith('JSON')) throw parseErr;
+            if (!(parseErr instanceof SyntaxError)) throw parseErr;
           }
         }
       }

@@ -9,14 +9,9 @@ const CLAUDE_CLI = process.env.CLAUDE_CLI_PATH || '/opt/homebrew/bin/claude';
 
 function generateWithClaudeCLI({ system, user, fallback }) {
   return new Promise((resolve) => {
-    const args = [
-      '-p',
-      '--output-format', 'text',
-      '--dangerously-skip-permissions',
-    ];
-    if (system) args.push('--system-prompt', system);
+    const args = ['-p', '--output-format', 'text', '--dangerously-skip-permissions'];
 
-    console.log('[claude-cli] spawning:', CLAUDE_CLI, args.slice(0, 3).join(' '), '...');
+    console.log('[claude-cli] spawning:', CLAUDE_CLI, args.join(' '));
 
     const proc = spawn(CLAUDE_CLI, args, {
       env: { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || '') },
@@ -24,7 +19,8 @@ function generateWithClaudeCLI({ system, user, fallback }) {
 
     let out = '';
     let errOut = '';
-    proc.stdin.write(user);
+    proc.stdin.on('error', () => {});
+    proc.stdin.write(system ? `${system}\n\n---\n\n${user}` : user);
     proc.stdin.end();
     proc.stdout.on('data', (d) => { out += d.toString(); });
     proc.stderr.on('data', (d) => { errOut += d.toString(); });
@@ -469,12 +465,13 @@ router.post('/worksheet/stream', (req, res) => {
   const langName = lang === 'es' ? 'Spanisch' : lang === 'en' ? 'Englisch' : 'Deutsch';
   const system = buildWorksheetSystem(langName, false);
 
-  const args = ['-p', '--output-format', 'text', '--dangerously-skip-permissions', '--system-prompt', system];
+  const args = ['-p', '--output-format', 'text', '--dangerously-skip-permissions'];
   const proc = spawn(CLAUDE_CLI, args, {
     env: { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || '') },
   });
 
-  proc.stdin.write(prompt.trim());
+  proc.stdin.on('error', () => {});
+  proc.stdin.write(`${system}\n\n---\n\n${prompt.trim()}`);
   proc.stdin.end();
 
   let fullText = '';
