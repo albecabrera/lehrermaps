@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { SUBJECTS } from '../constants/structure';
 import { useLang } from '../contexts/LangContext';
 
@@ -54,6 +54,7 @@ export default function WorksheetGenerator({ onClose }) {
   const [provider, setProvider] = useState(null);
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(null); // 'docx' | 'pdf' | null
+  const abortRef = useRef(null);
 
   const selectedSubject = SUBJECTS.find((s) => s.id === subject) || SUBJECTS[0];
 
@@ -61,12 +62,15 @@ export default function WorksheetGenerator({ onClose }) {
     if (!topic.trim()) { setError('Bitte Thema eingeben.'); return; }
     setError('');
     setStep('loading');
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
       const token = localStorage.getItem('lm_token');
       const res = await fetch('/api/ai/worksheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ subject: selectedSubject.name, topic, grade, worksheetType, exerciseCount, lang, extraInstructions }),
+        signal: ctrl.signal,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Fehler');
@@ -74,9 +78,15 @@ export default function WorksheetGenerator({ onClose }) {
       setProvider(data.provider || null);
       setStep('preview');
     } catch (e) {
+      if (e.name === 'AbortError') return;
       setError(e.message);
       setStep('form');
     }
+  };
+
+  const handleCancel = () => {
+    abortRef.current?.abort();
+    setStep('form');
   };
 
   const handleExport = async (format) => {
@@ -154,6 +164,9 @@ export default function WorksheetGenerator({ onClose }) {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '60px 0', color: 'var(--c-text-2)' }}>
               <div style={{ width: 32, height: 32, border: `3px solid ${selectedSubject.color}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
               <div style={{ fontSize: 13 }}>Arbeitsblatt wird generiert…</div>
+              <button onClick={handleCancel} style={{ fontSize: 12, color: 'var(--c-text-3)', background: 'transparent', border: '1px solid var(--c-border)', borderRadius: 7, padding: '5px 14px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                Abbrechen
+              </button>
             </div>
           )}
 

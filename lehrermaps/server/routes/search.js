@@ -49,6 +49,7 @@ router.get('/', async (req, res) => {
       grouped.get(r.notebook_id).results.push({
         page_id: r.page_id,
         page_title: r.page_title,
+        section_id: r.section_id,
         section_title: r.section_title,
         snippet: String(r.snippet || '').replace(/\s+/g, ' ').slice(0, 80),
       });

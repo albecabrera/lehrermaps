@@ -135,7 +135,7 @@ export default function Sidebar({
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
                 <FileBadge kind={detectKind(rf.name)} name={rf.name} size={18} />
-                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <span title={rf.name} style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {rf.name}
                 </span>
               </button>
@@ -356,7 +356,7 @@ function TreeNode({
           />
 
           {!collapsed && (
-            <span style={{
+            <span title={node.name} style={{
               flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               lineHeight: 1.35,
             }}>

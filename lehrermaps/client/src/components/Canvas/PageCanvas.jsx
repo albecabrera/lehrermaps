@@ -15,7 +15,7 @@ export default function PageCanvas({ pageId }) {
     renameNotebook, renameSection, renamePage,
   } = useNotebook();
 
-  const [activeTab, setActiveTab] = useState('Start');
+  const [activeTab, setActiveTab] = useState('Inicio');
   const [noteText, setNoteText] = useState('');
   const [drawMode, setDrawMode] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -155,7 +155,7 @@ export default function PageCanvas({ pageId }) {
   };
 
   const renderTools = () => {
-    if (activeTab === 'Zeichnen') {
+    if (activeTab === 'Dibujar') {
       return (
         <>
           <ToolBtn onClick={() => setDrawMode((v) => !v)} label={drawMode ? '✍️' : '🖊'} sub={drawMode ? 'Ink ON' : 'Ink OFF'} />
@@ -165,7 +165,7 @@ export default function PageCanvas({ pageId }) {
         </>
       );
     }
-    if (activeTab === 'Ansicht') {
+    if (activeTab === 'Vista') {
       return (
         <>
           <ToolBtn onClick={() => {}} label="100%" sub="Zoom" />
@@ -174,7 +174,7 @@ export default function PageCanvas({ pageId }) {
         </>
       );
     }
-    if (activeTab === 'Einfügen') {
+    if (activeTab === 'Insertar') {
       return (
         <>
           <ToolBtn onClick={() => insertSnippet('Texto nuevo')} label="📝" sub="Text" />

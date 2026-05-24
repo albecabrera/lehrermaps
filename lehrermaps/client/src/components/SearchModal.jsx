@@ -4,7 +4,7 @@ import { searchOneNote } from '../lib/api';
 import { useNotebook } from '../contexts/NotebookContext';
 
 export default function SearchModal({ open, onClose }) {
-  const { setActiveNotebookId, setActivePageId } = useNotebook();
+  const { setActiveNotebookId, setActiveSectionId, setActivePageId } = useNotebook();
   const [q, setQ] = useState('');
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -73,6 +73,7 @@ export default function SearchModal({ open, onClose }) {
                     key={`${r.page_id}-${i}`}
                     onClick={() => {
                       setActiveNotebookId(g.notebook_id);
+                      if (r.section_id) setActiveSectionId(r.section_id);
                       setActivePageId(r.page_id);
                       onClose?.();
                     }}
