@@ -68,6 +68,7 @@ export const translations = {
     // File table
     'table.col_size': 'Größe',
     'table.col_date': 'Datum',
+    'table.col_numbering': 'Nummerierung',
     'table.empty_title': 'Dieser Ordner ist leer',
     'table.empty_hint': 'Lade die erste Datei hoch.',
     'table.upload_file': 'Datei hochladen',
@@ -323,6 +324,7 @@ export const translations = {
     // File table
     'table.col_size': 'Tamaño',
     'table.col_date': 'Fecha',
+    'table.col_numbering': 'Numeración',
     'table.empty_title': 'Esta carpeta está vacía',
     'table.empty_hint': 'Subí el primer archivo.',
     'table.upload_file': 'Subir archivo',
@@ -592,6 +594,7 @@ export const translations = {
 
     'table.col_size': 'Size',
     'table.col_date': 'Date',
+    'table.col_numbering': 'Numbering',
     'table.empty_title': 'This folder is empty',
     'table.empty_hint': 'Upload the first file.',
     'table.upload_file': 'Upload file',

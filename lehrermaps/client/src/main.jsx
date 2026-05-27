@@ -9,6 +9,11 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { LangProvider } from './contexts/LangContext';
 import { NotebookProvider } from './contexts/NotebookContext';
 
+// NotebookProvider is intentionally NOT at root — it makes authenticated API
+// calls on mount that fail with 401 during login, causing re-renders that
+// produce compositing flicker in Chromium. It's mounted inside Root only
+// when the user is already authenticated as 'lehrer'.
+
 // Bootstrap ?token= before React mounts — runs once, no side effects inside render
 (function bootstrapUrlToken() {
   const params = new URLSearchParams(window.location.search);
@@ -38,7 +43,7 @@ function Root() {
     setTick((n) => n + 1);
   };
 
-  if (role === 'lehrer') return <App onLogout={handleLogout} />;
+  if (role === 'lehrer') return <NotebookProvider><App onLogout={handleLogout} /></NotebookProvider>;
   if (role === 'student') return <StudentApp onLogout={handleLogout} />;
 
   // Pre-select student role if coming from QR (?student in URL)
@@ -51,9 +56,7 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <ThemeProvider>
         <LangProvider>
-          <NotebookProvider>
-            <Root />
-          </NotebookProvider>
+          <Root />
         </LangProvider>
       </ThemeProvider>
     </ErrorBoundary>

@@ -30,10 +30,11 @@ if (!process.env.STUDENT_PASSWORD) {
   console.warn('\x1b[33m⚠  WARNING: STUDENT_PASSWORD not set — using default "schueler123"\x1b[0m');
 }
 
-const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGIN ||
+  'http://localhost:5173,http://127.0.0.1:5173,http://localhost:4176,http://127.0.0.1:4176,http://localhost:4177,http://127.0.0.1:4177'
+).split(',').map((s) => s.trim()).filter(Boolean);
+
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.includes(origin)) cb(null, true);

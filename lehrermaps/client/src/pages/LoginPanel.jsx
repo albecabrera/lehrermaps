@@ -60,7 +60,7 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
   const accent = isTeacher ? '#E8472A' : '#0EA5E9';
 
   return (
-    <div style={{
+    <div className="lm-login-stable" style={{
       minHeight: '100vh', background: 'var(--c-bg)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
@@ -296,7 +296,7 @@ function WelcomeBanner() {
           background: 'rgba(255,255,255,0.07)',
           border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 20, padding: '5px 13px',
-          marginBottom: 22, backdropFilter: 'blur(4px)',
+          marginBottom: 22,
         }}>
           <div style={{
             width: 18, height: 18, borderRadius: 5,
@@ -382,15 +382,16 @@ function WelcomeBanner() {
 }
 
 /* ── Role card ───────────────────────────────────────────── */
-function RoleCard({ label, desc, accent, onClick, avatar }) {
+function RoleCard({ label, desc, accent, onClick, avatar, loading = false }) {
   const [hovered, setHovered] = useState(false);
   return (
     <button
       onClick={onClick}
+      disabled={loading}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        appearance: 'none', font: 'inherit', cursor: 'pointer',
+        appearance: 'none', font: 'inherit', cursor: loading ? 'wait' : 'pointer',
         width: 200, padding: '28px 20px 22px',
         background: 'var(--c-surface)',
         border: `1.5px solid ${hovered ? accent : 'var(--c-border)'}`,
@@ -400,7 +401,8 @@ function RoleCard({ label, desc, accent, onClick, avatar }) {
           : '0 1px 6px rgba(0,0,0,0.07)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
         transition: 'border-color .15s, box-shadow .18s, transform .12s',
-        transform: hovered ? 'translateY(-3px)' : 'none',
+        transform: hovered && !loading ? 'translateY(-3px)' : 'none',
+        opacity: loading ? 0.7 : 1,
       }}
     >
       {avatar}
@@ -414,37 +416,41 @@ function RoleCard({ label, desc, accent, onClick, avatar }) {
       </div>
       <div style={{
         height: 28, padding: '0 18px', borderRadius: 8,
-        background: hovered ? accent : `${accent}14`,
-        color: hovered ? '#fff' : accent,
+        background: hovered && !loading ? accent : `${accent}14`,
+        color: hovered && !loading ? '#fff' : accent,
         fontSize: 11, fontWeight: 600,
         display: 'flex', alignItems: 'center', gap: 5,
         border: `1px solid ${accent}33`,
         transition: 'background .15s, color .15s',
       }}>
-        Einloggen
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-          <path d="M2 5h6M6 3l2 2-2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
+        {loading ? '...' : 'Einloggen'}
+        {!loading && (
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 5h6M6 3l2 2-2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
       </div>
     </button>
   );
 }
 
 /* ── Teacher avatar (uploadable) ─────────────────────────── */
-function TeacherAvatar({ avatar, onChange, fileRef, hovered, setHovered, size = 72, changeLabel }) {
+function TeacherAvatar({ avatar, onChange, fileRef, hovered, setHovered, size = 72, changeLabel, interactive = true }) {
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={onChange}
-      />
+      {interactive && (
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={onChange}
+        />
+      )}
       <div
-        onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onClick={interactive ? (e) => { e.stopPropagation(); fileRef.current?.click(); } : undefined}
+        onMouseEnter={interactive ? () => setHovered(true) : undefined}
+        onMouseLeave={interactive ? () => setHovered(false) : undefined}
         style={{
           width: size, height: size, borderRadius: '50%',
           overflow: 'hidden', cursor: 'pointer', position: 'relative',

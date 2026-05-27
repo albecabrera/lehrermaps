@@ -44,6 +44,11 @@ export default function FileTable({
     ? byQuery
     : byQuery.filter((f) => TYPE_GROUPS[filterType]?.(detectKind(f.original_name)));
 
+  const getLeadingNumber = (name = '') => {
+    const m = String(name).trim().match(/^(\d+)[.)\-\s]?/);
+    return m ? Number(m[1]) : null;
+  };
+
   const availableTypes = useMemo(() => {
     return ['pdf', 'img', 'doc', 'video', 'audio'].filter((type) =>
       files.some((f) => TYPE_GROUPS[type]?.(detectKind(f.original_name)))
@@ -54,6 +59,14 @@ export default function FileTable({
     const dir = sortDir === 'asc' ? 1 : -1;
     if (sortBy === 'name') return a.original_name.localeCompare(b.original_name) * dir;
     if (sortBy === 'size') return ((a.size_bytes || 0) - (b.size_bytes || 0)) * dir;
+    if (sortBy === 'numbering') {
+      const na = getLeadingNumber(a.original_name);
+      const nb = getLeadingNumber(b.original_name);
+      if (na !== null && nb !== null && na !== nb) return (na - nb) * dir;
+      if (na !== null && nb === null) return -1;
+      if (na === null && nb !== null) return 1;
+      return a.original_name.localeCompare(b.original_name, 'de', { numeric: true, sensitivity: 'base' }) * dir;
+    }
     return (new Date(a.uploaded_at || 0) - new Date(b.uploaded_at || 0)) * dir;
   });
   const videoFiles = sorted.filter((f) => detectKind(f.original_name) === 'video');
@@ -90,7 +103,7 @@ export default function FileTable({
       return;
     }
     setSortBy(key);
-    setSortDir(key === 'name' ? 'asc' : 'desc');
+    setSortDir(key === 'name' || key === 'numbering' ? 'asc' : 'desc');
   };
 
   return (
@@ -142,6 +155,9 @@ export default function FileTable({
             </button>
             <button className="lm-col-date" onClick={() => toggleSort('date')} style={thBtnStyle}>
               {t('table.col_date')} {sortBy === 'date' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+            </button>
+            <button onClick={() => toggleSort('numbering')} style={thBtnStyle}>
+              {t('table.col_numbering')} {sortBy === 'numbering' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
             </button>
             <div style={{ flex: 1 }} />
             <button

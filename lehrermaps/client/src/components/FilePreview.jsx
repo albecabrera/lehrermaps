@@ -49,9 +49,11 @@ export default function FilePreview({ file, accent = '#E8472A', onClose }) {
   const ext = file.original_name.split('.').pop().toLowerCase();
   const convertible = new Set(['doc', 'docx', 'odt', 'rtf', 'ppt', 'pptx', 'odp', 'xls', 'xlsx', 'ods']);
   const nativeAppExts = new Set(['pptx', 'ppt', 'odp', 'doc', 'docx', 'odc', 'odt', 'pdf']);
+  const videoExts = new Set(['mp4', 'mov', 'm4v', 'avi', 'mkv', 'webm']);
   const canOpenInline = ['pdf', 'img', 'video', 'audio', 'text', 'markdown', 'code', 'notebook'].includes(kind)
     || convertible.has(ext);
   const canOpenInApp = nativeAppExts.has(ext);
+  const canOpenVideoInApp = videoExts.has(ext);
 
   return (
     <div
@@ -115,6 +117,9 @@ export default function FilePreview({ file, accent = '#E8472A', onClose }) {
         )}
         {canOpenInApp && (
           <OpenInAppButton fileId={file.id} ext={ext} accent={accent} t={t} />
+        )}
+        {canOpenVideoInApp && (
+          <OpenVideoButtons fileId={file.id} accent={accent} t={t} />
         )}
         {canOpenInline && (
           <button
@@ -304,6 +309,48 @@ function OpenInAppButton({ fileId, ext, accent, t }) {
     >
       {state === 'error' ? t('app_not_found') : state === 'loading' ? t('opening') : t(labelKey)}
     </button>
+  );
+}
+
+function OpenVideoButtons({ fileId, accent, t }) {
+  const [states, setStates] = useState({ VLC: 'idle', 'QuickTime Player': 'idle' });
+
+  const open = async (app) => {
+    setStates((s) => ({ ...s, [app]: 'loading' }));
+    try {
+      await openFileInApp(fileId, app);
+      setStates((s) => ({ ...s, [app]: 'idle' }));
+    } catch {
+      setStates((s) => ({ ...s, [app]: 'error' }));
+      setTimeout(() => setStates((s) => ({ ...s, [app]: 'idle' })), 3000);
+    }
+  };
+
+  const apps = [
+    { id: 'VLC', label: 'VLC', color: '#F97316' },
+  ];
+
+  return (
+    <>
+      {apps.map(({ id, label, color }) => {
+        const state = states[id];
+        return (
+          <button
+            key={id}
+            onClick={() => open(id)}
+            disabled={state === 'loading'}
+            style={{
+              ...btnStyle('#fff', state === 'error' ? '#DC2626' : color),
+              opacity: state === 'loading' ? 0.7 : 1,
+              cursor: state === 'loading' ? 'wait' : 'pointer',
+              border: 'none',
+            }}
+          >
+            {state === 'error' ? t('app_not_found') : state === 'loading' ? t('opening') : label}
+          </button>
+        );
+      })}
+    </>
   );
 }
 

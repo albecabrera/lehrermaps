@@ -22,6 +22,9 @@ api.interceptors.response.use(
 export const login = (password) =>
   api.post('/login', { password }).then((r) => r.data.token);
 
+export const loginStudent = (password) =>
+  api.post('/login-student', { password }).then((r) => r.data.token);
+
 export const getFolders = () =>
   api.get('/folders').then((r) => r.data);
 
@@ -57,7 +60,8 @@ const withToken = (url) => {
 export const downloadFile = (id) => withToken(`/api/files/download/${id}`);
 export const viewFile = (id) => withToken(`/api/files/view/${id}`);
 export const previewFile = (id) => withToken(`/api/files/preview/${id}`);
-export const openFileInApp = (id) => api.get(`/files/open/${id}`);
+export const openFileInApp = (id, app) =>
+  api.get(`/files/open/${id}${app ? `?app=${encodeURIComponent(app)}` : ''}`);
 
 export const getLinks = (folderId) => api.get(`/links/${folderId}`).then((r) => r.data);
 export const createLink = (data) => api.post('/links', data).then((r) => r.data);
@@ -93,9 +97,6 @@ export const setFileDeadline = (id, due_at) =>
   api.put(`/files/${id}/deadline`, { due_at }).then((r) => r.data);
 export const publicFileUrl = (token) =>
   `${window.location.origin}/api/files/public/${encodeURIComponent(token)}`;
-
-export const loginStudent = (password) =>
-  api.post('/login-student', { password }).then((r) => r.data.token);
 
 export const generateLessonDraft = (payload) =>
   api.post('/ai/lesson-draft', payload).then((r) => r.data);

@@ -2,8 +2,9 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { randomUUID } from 'crypto';
-import { createReadStream, existsSync } from 'fs';
+import { createReadStream, existsSync, symlinkSync, unlinkSync, mkdirSync } from 'fs';
 import { copyFile, unlink, mkdir } from 'fs/promises';
+import os from 'os';
 import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
@@ -98,10 +99,21 @@ router.get('/open/:id', async (req, res) => {
       pptx: 'Microsoft PowerPoint', ppt: 'Microsoft PowerPoint', odp: 'LibreOffice Impress',
       doc: 'Microsoft Word', docx: 'Microsoft Word', odc: 'Microsoft Word', odt: 'LibreOffice Writer',
       pdf: 'Preview',
+      mp4: 'VLC', mov: 'QuickTime Player', m4v: 'VLC', avi: 'VLC', mkv: 'VLC',
     };
-    const appFlag = appMap[ext] ? `-a "${appMap[ext]}"` : '';
+    const requestedApp = req.query.app;
+    const resolvedApp = requestedApp || appMap[ext];
+    const appFlag = resolvedApp ? `-a "${resolvedApp}"` : '';
 
-    exec(`open ${appFlag} "${filePath}"`, { timeout: 8000 }, (err) => {
+    // Symlink with original name so apps (VLC etc.) detect format via extension
+    const tmpDir = path.join(os.tmpdir(), 'lehrermaps-open');
+    try { mkdirSync(tmpDir, { recursive: true }); } catch {}
+    const tmpPath = path.join(tmpDir, file.original_name);
+    try { unlinkSync(tmpPath); } catch {}
+    try { symlinkSync(filePath, tmpPath); } catch {}
+    const openPath = existsSync(tmpPath) ? tmpPath : filePath;
+
+    exec(`open ${appFlag} "${openPath}"`, { timeout: 8000 }, (err) => {
       if (err) return res.status(500).json({ error: 'App nicht gefunden oder konnte nicht geöffnet werden' });
       res.json({ ok: true });
     });
@@ -348,6 +360,25 @@ router.get('/:folder_id', async (req, res) => {
       ? 'SELECT * FROM files WHERE folder_id = ? AND is_shared = 1 ORDER BY uploaded_at DESC'
       : 'SELECT * FROM files WHERE folder_id = ? ORDER BY uploaded_at DESC';
     const [rows] = await pool.execute(query, [req.params.folder_id]);
+
+    const parseLeadingNumber = (name = '') => {
+      const m = String(name).trim().match(/^(\d+)[.)\-\s]?/);
+      return m ? Number(m[1]) : null;
+    };
+
+    rows.sort((a, b) => {
+      const na = parseLeadingNumber(a.original_name);
+      const nb = parseLeadingNumber(b.original_name);
+
+      if (na !== null && nb !== null && na !== nb) return na - nb;
+      if (na !== null && nb === null) return -1;
+      if (na === null && nb !== null) return 1;
+      return String(a.original_name || '').localeCompare(String(b.original_name || ''), 'es', {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    });
+
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });

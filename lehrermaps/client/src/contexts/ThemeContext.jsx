@@ -1,13 +1,15 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useLayoutEffect, useState } from 'react';
 
 const ThemeContext = createContext({ isDark: false, toggle: () => {} });
 
 export function ThemeProvider({ children }) {
   const [isDark, setIsDark] = useState(() => localStorage.getItem('lm_theme') === 'dark');
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     localStorage.setItem('lm_theme', isDark ? 'dark' : 'light');
+    // Remove no-transition guard once theme is applied
+    document.documentElement.classList.remove('lm-no-transition');
   }, [isDark]);
 
   return (

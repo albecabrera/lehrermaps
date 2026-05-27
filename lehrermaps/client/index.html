@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#F8F9FB" />
+    <script>
+      (function(){
+        var dark=localStorage.getItem('lm_theme')==='dark';
+        document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+        document.documentElement.style.background=dark?'#0D1117':'#F8F9FB';
+        document.documentElement.style.color=dark?'#ECF0FA':'#111827';
+        document.documentElement.classList.add('lm-no-transition');
+      })();
+    </script>
     <meta name="description" content="LehrerMaps – Unterrichtsmaterial-Verwaltung" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
