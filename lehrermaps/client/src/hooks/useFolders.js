@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getFolders, createFolder, deleteFolder, renameFolder, reorderFolders, toggleFolderFavorite, setFolderDeadline, setFolderColor } from '../lib/api';
+import { getFolders, createFolder, deleteFolder, renameFolder, reorderFolders, toggleFolderFavorite, setFolderDeadline, setFolderColor, moveFolderToParent } from '../lib/api';
 
 export function useFolders() {
   const [folders, setFolders] = useState([]);
@@ -69,11 +69,23 @@ export function useFolders() {
     return updated;
   }, []);
 
+  const moveToParent = useCallback(async (id, newParentId) => {
+    await moveFolderToParent(id, newParentId);
+    setFolders((prev) => prev.map((f) => {
+      if (f.id !== id) return f;
+      if (newParentId) {
+        const parent = prev.find((p) => p.id === newParentId);
+        return { ...f, parent_id: newParentId, group_name: parent?.group_name ?? f.group_name };
+      }
+      return { ...f, parent_id: null };
+    }));
+  }, []);
+
   const bySubjectGroup = useCallback(
     (subject, group_name) =>
       folders.filter((f) => f.subject === subject && f.group_name === group_name),
     [folders]
   );
 
-  return { folders, loading, error, reload: load, add, remove, rename, reorder, toggleFavorite, setDeadline, setColor, bySubjectGroup };
+  return { folders, loading, error, reload: load, add, remove, rename, reorder, toggleFavorite, setDeadline, setColor, moveToParent, bySubjectGroup };
 }

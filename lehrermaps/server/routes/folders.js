@@ -100,6 +100,38 @@ router.put('/:id/favorite', async (req, res) => {
   }
 });
 
+router.put('/:id/move', async (req, res) => {
+  const folderId = Number(req.params.id);
+  const { parent_id } = req.body;
+  const newParentId = parent_id ? Number(parent_id) : null;
+
+  if (newParentId === folderId) return res.status(400).json({ error: 'Zirkelreferenz' });
+
+  try {
+    if (newParentId) {
+      const [all] = await pool.execute('SELECT id, parent_id FROM folders');
+      // Walk up from newParentId to detect cycle
+      let cur = newParentId;
+      while (cur !== null) {
+        if (cur === folderId) return res.status(400).json({ error: 'Zirkelreferenz' });
+        const found = all.find((f) => f.id === cur);
+        cur = found ? (found.parent_id ?? null) : null;
+      }
+      const [target] = await pool.execute('SELECT group_name FROM folders WHERE id = ?', [newParentId]);
+      if (!target.length) return res.status(404).json({ error: 'Zielordner nicht gefunden' });
+      await pool.execute(
+        'UPDATE folders SET parent_id = ?, group_name = ? WHERE id = ?',
+        [newParentId, target[0].group_name, folderId]
+      );
+    } else {
+      await pool.execute('UPDATE folders SET parent_id = NULL WHERE id = ?', [folderId]);
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.put('/:id', async (req, res) => {
   const { name } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'name erforderlich' });

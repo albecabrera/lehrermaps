@@ -37,6 +37,9 @@ export const deleteFolder = (id) =>
 export const renameFolder = (id, name) =>
   api.put(`/folders/${id}`, { name }).then((r) => r.data);
 
+export const moveFolderToParent = (id, parent_id) =>
+  api.put(`/folders/${id}/move`, { parent_id }).then((r) => r.data);
+
 export const getFiles = (folderId) =>
   api.get(`/files/${folderId}`).then((r) => r.data);
 

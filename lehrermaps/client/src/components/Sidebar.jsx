@@ -37,6 +37,7 @@ export default function Sidebar({
   onReorderFolders, onToggleFavorite,
   onSetFolderColor,
   onMoveFileToFolder,
+  onMoveFolder,
   recentFiles = [],
   onRecentFileClick,
 }) {
@@ -45,6 +46,8 @@ export default function Sidebar({
   const [menu, setMenu] = useState(null);
   const [fileDropTargetId, setFileDropTargetId] = useState(null);
   const [draggingFileName, setDraggingFileName] = useState('');
+  const [folderDropTargetId, setFolderDropTargetId] = useState(null);
+  const [draggingFolderId, setDraggingFolderId] = useState(null);
   const accent = subject.color;
 
   const handleDragOver = (e, folderId) => {
@@ -52,6 +55,9 @@ export default function Sidebar({
       e.preventDefault();
       setDraggingFileName(e.dataTransfer.getData('text/plain') || '');
       setFileDropTargetId(folderId);
+    } else if (e.dataTransfer.types.includes('text/x-lm-folder-id')) {
+      e.preventDefault();
+      setFolderDropTargetId(folderId);
     }
   };
 
@@ -65,7 +71,21 @@ export default function Sidebar({
     setDraggingFileName('');
   };
 
-  const clearFileDrop = () => { setFileDropTargetId(null); setDraggingFileName(''); };
+  const handleFolderDrop = async (e, targetFolderId) => {
+    e.preventDefault();
+    const folderId = Number(e.dataTransfer.getData('text/x-lm-folder-id'));
+    if (folderId && folderId !== targetFolderId) {
+      await onMoveFolder?.(folderId, targetFolderId);
+    }
+    setFolderDropTargetId(null);
+    setDraggingFolderId(null);
+  };
+
+  const clearDrop = () => {
+    setFileDropTargetId(null);
+    setDraggingFileName('');
+    setFolderDropTargetId(null);
+  };
 
   return (
     <div className="lm-sidebar" style={{
@@ -172,9 +192,14 @@ export default function Sidebar({
                     onToggleFavorite={onToggleFavorite}
                     fileDropTargetId={fileDropTargetId}
                     draggingFileName={draggingFileName}
+                    folderDropTargetId={folderDropTargetId}
+                    draggingFolderId={draggingFolderId}
+                    onFolderDragStart={(id) => setDraggingFolderId(id)}
+                    onFolderDragEnd={() => { setDraggingFolderId(null); setFolderDropTargetId(null); }}
                     onDragOver={handleDragOver}
-                    onDrop={handleFileDrop}
-                    onDragLeave={clearFileDrop}
+                    onFileDrop={handleFileDrop}
+                    onFolderDrop={handleFolderDrop}
+                    onDragLeave={clearDrop}
                     t={t}
                   />
                 ))}
@@ -236,7 +261,10 @@ export default function Sidebar({
 function TreeNode({
   node, depth, collapsed, accent, activeFolderId,
   onSelect, onMenu, onToggleFavorite,
-  fileDropTargetId, draggingFileName, onDragOver, onDrop, onDragLeave,
+  fileDropTargetId, draggingFileName,
+  folderDropTargetId, draggingFolderId,
+  onFolderDragStart, onFolderDragEnd,
+  onDragOver, onFileDrop, onFolderDrop, onDragLeave,
   t,
 }) {
   const [expanded, setExpanded] = useState(depth < 1);
@@ -245,6 +273,8 @@ function TreeNode({
   const hasChildren = node.children?.length > 0;
   const isActive = node.id === activeFolderId;
   const isFileDrop = node.id === fileDropTargetId;
+  const isFolderDrop = node.id === folderDropTargetId && draggingFolderId !== node.id;
+  const isDragging = node.id === draggingFolderId;
   const isFav = !!node.is_favorite;
   const nodeAccent = node.color || accent;
 
@@ -293,9 +323,27 @@ function TreeNode({
           }}/>
         )}
 
+        {/* Folder drop highlight */}
+        {isFolderDrop && !collapsed && (
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: 6,
+            border: `2px solid ${accent}`, background: `${accent}18`,
+            pointerEvents: 'none', zIndex: 1,
+          }}/>
+        )}
+
         <button
           onClick={handleClick}
           className="lm-spring"
+          draggable={!collapsed}
+          onDragStart={(e) => {
+            e.stopPropagation();
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/x-lm-folder-id', String(node.id));
+            e.dataTransfer.setData('text/plain', node.name);
+            onFolderDragStart?.(node.id);
+          }}
+          onDragEnd={onFolderDragEnd}
           onKeyDown={(e) => {
             if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
               e.preventDefault();
@@ -312,19 +360,28 @@ function TreeNode({
             margin: collapsed ? '2px auto' : 0,
             display: 'flex', alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
-            gap: 5, cursor: 'pointer',
+            gap: 5, cursor: isDragging ? 'grabbing' : 'pointer',
             background: isActive ? `${nodeAccent}14` : 'transparent',
             borderLeft: !collapsed && isActive ? `3px solid ${nodeAccent}` : '3px solid transparent',
             borderRadius: collapsed ? 8 : 0,
             color: isActive ? 'var(--c-text)' : 'var(--c-text-2)',
             fontSize: 12.5, fontWeight: isActive ? 600 : 400,
-            transition: 'background .08s, color .08s',
+            transition: 'background .08s, color .08s, opacity .1s',
             minHeight: ROW_H,
+            opacity: isDragging ? 0.4 : 1,
+            userSelect: 'none',
           }}
           onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
           onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
           onDragOver={(e) => onDragOver(e, node.id)}
-          onDrop={(e) => { e.stopPropagation(); onDrop(e, node.id); }}
+          onDrop={(e) => {
+            e.stopPropagation();
+            if (e.dataTransfer.getData('text/x-lm-folder-id')) {
+              onFolderDrop(e, node.id);
+            } else {
+              onFileDrop(e, node.id);
+            }
+          }}
           onDragLeave={onDragLeave}
         >
           {/* Expand toggle (only when not collapsed) */}
@@ -425,8 +482,13 @@ function TreeNode({
               onToggleFavorite={onToggleFavorite}
               fileDropTargetId={fileDropTargetId}
               draggingFileName={draggingFileName}
+              folderDropTargetId={folderDropTargetId}
+              draggingFolderId={draggingFolderId}
+              onFolderDragStart={onFolderDragStart}
+              onFolderDragEnd={onFolderDragEnd}
               onDragOver={onDragOver}
-              onDrop={onDrop}
+              onFileDrop={onFileDrop}
+              onFolderDrop={onFolderDrop}
               onDragLeave={onDragLeave}
               t={t}
             />

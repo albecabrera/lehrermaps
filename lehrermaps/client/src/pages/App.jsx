@@ -76,7 +76,7 @@ export default function App({ onLogout }) {
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
-  const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, setColor: setFolderColor, reload: reloadFolders } = useFolders();
+  const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
@@ -1003,6 +1003,7 @@ export default function App({ onLogout }) {
             onFolderSelect={onFolderSelect}
             onNewFolder={() => { setNewFolderGroup(null); setNewFolderOpen(true); }}
             onNewFolderInGroup={(g) => { setNewFolderGroup(g); setNewFolderOpen(true); }}
+            onMoveFolder={async (folderId, targetId) => { await moveFolderToParent(folderId, targetId); }}
             onNewHauptordner={(folder) => { setNewFolderParentId(null); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
             onNewOrdner={(folder) => { setNewFolderParentId(folder.parent_id ?? null); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
             onNewSubfolder={(folder) => { setNewFolderParentId(folder.id); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
