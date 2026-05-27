@@ -23,8 +23,8 @@ export default function FileTable({
   const [menuLink, setMenuLink] = useState(null);
   const [linkAction, setLinkAction] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [sortBy, setSortBy] = useState('date');
-  const [sortDir, setSortDir] = useState('desc');
+  const [sortBy, setSortBy] = useState('numbering');
+  const [sortDir, setSortDir] = useState('asc');
   const [dndMode, setDndMode] = useState(false);
   const [filterType, setFilterType] = useState('all');
 
