@@ -80,7 +80,7 @@ export default function App({ onLogout }) {
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
-  const { recentFiles, trackFile } = useRecentFiles();
+  const { recentFiles, trackFile, trackLink } = useRecentFiles();
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const subjectRootFolders = subjectFolders.filter((f) => !f.parent_id);
   const [pendingFileId, setPendingFileId] = useState(null);
@@ -394,13 +394,17 @@ export default function App({ onLogout }) {
     const folder = folders.find((f) => f.id === rf.folderId);
     if (folder) {
       setActiveFolder(folder);
-      setActiveFile(null);
-      setActiveLink(null);
       setQuery('');
       setFolderTab('files');
-      setPendingFileId(rf.id);
       addRecent(folder, SUBJECTS.find((s) => s.id === folder.subject)?.color);
       setFolderOpenTick((v) => v + 1);
+      if (rf.type === 'link') {
+        setActiveFile(null);
+        setPendingLinkId(rf.id);
+      } else {
+        setActiveLink(null);
+        setPendingFileId(rf.id);
+      }
     }
   };
 
@@ -1330,7 +1334,7 @@ export default function App({ onLogout }) {
                           if (from && to) setPreviewHero({ from, to, accent, phase: 'start' });
                         }}
                         onFileSecondarySelect={(f) => { setActiveFile2(f); trackFile(f, activeFolder?.id, subjectId); }}
-                        onLinkSelect={(l) => { setActiveLink(l); setActiveFile(null); }}
+                        onLinkSelect={(l) => { setActiveLink(l); setActiveFile(null); trackLink(l, activeFolder?.id, subjectId); }}
                         accent={accent}
                         query={query}
                         onDelete={handleDeleteFile}

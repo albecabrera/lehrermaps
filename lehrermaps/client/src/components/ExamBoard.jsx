@@ -115,7 +115,7 @@ const COLUMNS = [
 ];
 
 // ── ExamCard ──────────────────────────────────────────────────────────────────
-function ExamCard({ exam, onDelete, onEdit, col, index }) {
+function ExamCard({ exam, onDelete, onEdit, onExpand, col, index }) {
   const [, setTick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setTick(n => n+1), 60000);
@@ -128,6 +128,7 @@ function ExamCard({ exam, onDelete, onEdit, col, index }) {
   return (
     <div
       className="eb-card"
+      onClick={onExpand}
       style={{
         background: `linear-gradient(145deg, var(--c-bg) 0%, ${col.color}08 100%)`,
         border: `1px solid ${col.border}`,
@@ -137,7 +138,7 @@ function ExamCard({ exam, onDelete, onEdit, col, index }) {
         display: 'flex', flexDirection: 'column', gap: 14,
         boxShadow: `0 4px 24px rgba(0,0,0,.14), 0 1px 4px rgba(0,0,0,.08), 0 0 0 0 ${col.glow}`,
         animationDelay: `${index * 60}ms`,
-        cursor: 'default',
+        cursor: 'pointer',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -161,12 +162,12 @@ function ExamCard({ exam, onDelete, onEdit, col, index }) {
           </div>
         </div>
         <div style={{ display:'flex', gap:3, flexShrink:0 }}>
-          <IconBtn title="Bearbeiten" onClick={() => onEdit(exam)}>
+          <IconBtn title="Bearbeiten" onClick={(e) => { e.stopPropagation(); onEdit(exam); }}>
             <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
               <path d="M8 1.5l2.5 2.5-6 6H2V7.5l6-6z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </IconBtn>
-          <IconBtn title="Löschen" onClick={() => onDelete(exam.id)} danger>
+          <IconBtn title="Löschen" onClick={(e) => { e.stopPropagation(); onDelete(exam.id); }} danger>
             <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
               <path d="M2 3h8M5 3V2h2v1M4 3v6h4V3H4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -438,6 +439,7 @@ export default function ExamBoard({ onDismiss }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing]   = useState(null);
+  const [expandedCard, setExpandedCard] = useState(null);
 
   const load = useCallback(async () => {
     try { const d = await getExams(); setExams(d); } catch {}
@@ -446,10 +448,15 @@ export default function ExamBoard({ onDismiss }) {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    const fn = e => { if (e.key === 'Escape') onDismiss(); };
+    const fn = e => {
+      if (e.key === 'Escape') {
+        if (expandedCard) setExpandedCard(null);
+        else onDismiss();
+      }
+    };
     window.addEventListener('keydown', fn);
     return () => window.removeEventListener('keydown', fn);
-  }, [onDismiss]);
+  }, [onDismiss, expandedCard]);
 
   const handleCreate = async form => {
     const c = await createExam(form); setExams(p => [...p, c]); setShowForm(false);
@@ -616,6 +623,7 @@ export default function ExamBoard({ onDismiss }) {
                         key={exam.id} exam={exam} col={col} index={i}
                         onDelete={handleDelete}
                         onEdit={e => setEditing(e)}
+                        onExpand={() => setExpandedCard({ exam, col })}
                       />
                     ))}
                   </div>
@@ -628,6 +636,199 @@ export default function ExamBoard({ onDismiss }) {
         {showForm && <ExamForm onSave={handleCreate} onClose={() => setShowForm(false)}/>}
         {editing  && <ExamForm initial={editing} onSave={handleUpdate} onClose={() => setEditing(null)}/>}
       </div>
+
+      {/* ── Fullscreen card overlay ── */}
+      {expandedCard && <ExpandedCardOverlay
+        exam={expandedCard.exam}
+        col={expandedCard.col}
+        onClose={() => setExpandedCard(null)}
+        onDelete={async (id) => { await handleDelete(id); setExpandedCard(null); }}
+        onEdit={(e) => { setEditing(e); setExpandedCard(null); }}
+      />}
     </>
+  );
+}
+
+// ── ExpandedCardOverlay ───────────────────────────────────────────────────────
+function ExpandedCardOverlay({ exam, col, onClose, onDelete, onEdit }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick(n => n + 1), 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  const pct = progressPct(exam.created_at, exam.exam_date);
+  const pc  = progressColor(pct);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 20000,
+        background: 'rgba(0,0,0,.72)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 32,
+        animation: 'eb-boardIn .22s cubic-bezier(.22,1,.36,1) both',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 680,
+          maxHeight: '90vh', overflowY: 'auto',
+          background: 'var(--c-bg)',
+          border: `2px solid ${col.border}`,
+          borderLeft: `6px solid ${col.color}`,
+          borderRadius: 20,
+          padding: '32px 36px',
+          boxShadow: `0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06), 0 0 60px ${col.glow}`,
+          display: 'flex', flexDirection: 'column', gap: 24,
+          position: 'relative',
+        }}
+      >
+        {/* ESC hint */}
+        <div style={{
+          position: 'absolute', top: 16, right: 16,
+          fontSize: 11, fontWeight: 700, color: 'var(--c-text-3)',
+          background: 'var(--c-hover)', padding: '3px 8px', borderRadius: 6,
+          letterSpacing: .4,
+        }}>
+          ESC
+        </div>
+
+        {/* title + tags */}
+        <div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--c-text)', lineHeight: 1.2, marginBottom: 12 }}>
+            {exam.title}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Tag color={col.color}>{exam.class_name}</Tag>
+            {exam.subject && <Tag color="var(--c-text-3)">{exam.subject}</Tag>}
+            <Tag color={col.color}>{col.label}</Tag>
+          </div>
+        </div>
+
+        {/* date row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 16, color: 'var(--c-text-2)', fontWeight: 600 }}>
+          <svg width="18" height="18" viewBox="0 0 12 12" fill="none" style={{ color: col.color, flexShrink: 0 }}>
+            <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+            <path d="M4 1v2M8 1v2M1 5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+          {fmtDate(exam.exam_date)}
+          {exam.exam_time && (
+            <span style={{
+              fontSize: 13, background: `${col.color}18`, color: col.color,
+              padding: '3px 12px', borderRadius: 20, fontWeight: 800,
+            }}>
+              {exam.exam_time.slice(0, 5)} Uhr
+            </span>
+          )}
+        </div>
+
+        {/* countdown + ring */}
+        <div style={{
+          background: `linear-gradient(135deg, ${col.color}18 0%, ${col.color}08 100%)`,
+          border: `1px solid ${col.border}`,
+          borderRadius: 16, padding: '20px 28px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          boxShadow: `inset 0 1px 0 ${col.color}15`,
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: col.color, opacity: .7 }}>
+              Countdown
+            </span>
+            <span
+              className={col.urgent ? 'eb-pulse' : undefined}
+              style={{ fontSize: 38, fontWeight: 900, color: col.color, fontFamily: '"DM Mono",monospace', lineHeight: 1 }}
+            >
+              {fmtCountdown(exam.exam_date, exam.exam_time)}
+            </span>
+          </div>
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: `conic-gradient(${col.color} ${pct * 3.6}deg, ${col.color}20 0deg)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: `0 0 24px ${col.glow}`,
+            flexShrink: 0,
+          }}>
+            <div style={{
+              width: 58, height: 58, borderRadius: '50%',
+              background: 'var(--c-bg)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 15, fontWeight: 900, color: col.color,
+            }}>
+              {Math.round(pct)}%
+            </div>
+          </div>
+        </div>
+
+        {/* progress bar */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--c-text-3)', letterSpacing: .5, textTransform: 'uppercase' }}>
+              Fortschritt
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: pc }}>{Math.round(pct)}%</span>
+          </div>
+          <div style={{ height: 14, background: 'var(--c-hover)', borderRadius: 99, overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,.15)' }}>
+            <div
+              className="eb-shimmer"
+              style={{
+                '--eb-pc': pc,
+                width: `${pct}%`, height: '100%',
+                borderRadius: 99,
+                boxShadow: `0 0 12px ${pc}88`,
+                transition: 'width .5s ease',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* notes */}
+        {exam.notes && (
+          <div style={{
+            fontSize: 15, color: 'var(--c-text-2)', lineHeight: 1.7,
+            borderTop: `1px solid var(--c-border)`,
+            paddingTop: 16, fontStyle: 'italic',
+          }}>
+            {exam.notes}
+          </div>
+        )}
+
+        {/* action buttons */}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', borderTop: '1px solid var(--c-border)', paddingTop: 16 }}>
+          <button
+            onClick={() => onEdit(exam)}
+            className="eb-btn-ghost"
+            style={{
+              height: 40, padding: '0 20px', border: '1px solid var(--c-border)', borderRadius: 10,
+              background: 'transparent', color: 'var(--c-text-2)', fontSize: 14, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+              <path d="M8 1.5l2.5 2.5-6 6H2V7.5l6-6z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Bearbeiten
+          </button>
+          <button
+            onClick={() => onDelete(exam.id)}
+            className="eb-btn-ghost"
+            style={{
+              height: 40, padding: '0 20px', border: '1px solid rgba(239,68,68,.35)', borderRadius: 10,
+              background: 'rgba(239,68,68,.08)', color: '#EF4444', fontSize: 14, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+              <path d="M2 3h8M5 3V2h2v1M4 3v6h4V3H4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Löschen
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
