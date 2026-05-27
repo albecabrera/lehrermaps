@@ -86,18 +86,18 @@ function ExamCard({ exam, onDelete, onEdit, col }) {
     <div style={{
       background: 'var(--c-bg)',
       border: `1px solid ${col.border}`,
-      borderRadius: 10,
-      padding: '14px 14px 12px',
-      display: 'flex', flexDirection: 'column', gap: 10,
-      boxShadow: '0 2px 8px rgba(0,0,0,.12)',
+      borderRadius: 12,
+      padding: '18px 18px 16px',
+      display: 'flex', flexDirection: 'column', gap: 13,
+      boxShadow: '0 3px 12px rgba(0,0,0,.13)',
     }}>
       {/* header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--c-text)', lineHeight: 1.3 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--c-text)', lineHeight: 1.3 }}>
             {exam.title}
           </div>
-          <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
             <Tag color={col.color}>{exam.class_name}</Tag>
             {exam.subject && <Tag color="var(--c-text-3)">{exam.subject}</Tag>}
           </div>
@@ -117,7 +117,7 @@ function ExamCard({ exam, onDelete, onEdit, col }) {
       </div>
 
       {/* date */}
-      <div style={{ fontSize: 12, color: 'var(--c-text-2)', display: 'flex', gap: 6, alignItems: 'center' }}>
+      <div style={{ fontSize: 13, color: 'var(--c-text-2)', display: 'flex', gap: 6, alignItems: 'center' }}>
         <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
           <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
           <path d="M4 1v2M8 1v2M1 5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
@@ -133,21 +133,21 @@ function ExamCard({ exam, onDelete, onEdit, col }) {
         borderRadius: 6, padding: '6px 10px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
-        <span style={{ fontSize: 11, color: 'var(--c-text-3)' }}>Countdown</span>
-        <span style={{ fontSize: 14, fontWeight: 700, color: col.color, fontFamily: '"DM Mono", monospace' }}>
+        <span style={{ fontSize: 12, color: 'var(--c-text-3)' }}>Countdown</span>
+        <span style={{ fontSize: 17, fontWeight: 700, color: col.color, fontFamily: '"DM Mono", monospace' }}>
           {fmtCountdown(exam.exam_date, exam.exam_time)}
         </span>
       </div>
 
       {/* progress bar */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span style={{ fontSize: 10, color: 'var(--c-text-3)' }}>Fortschritt</span>
-          <span style={{ fontSize: 10, color: progressColor(pct), fontWeight: 600 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+          <span style={{ fontSize: 12, color: 'var(--c-text-3)' }}>Fortschritt</span>
+          <span style={{ fontSize: 12, color: progressColor(pct), fontWeight: 700 }}>
             {Math.round(pct)}%
           </span>
         </div>
-        <div style={{ height: 6, background: 'var(--c-hover)', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ height: 8, background: 'var(--c-hover)', borderRadius: 4, overflow: 'hidden' }}>
           <div style={{
             width: `${pct}%`, height: '100%',
             background: progressColor(pct),
@@ -160,9 +160,9 @@ function ExamCard({ exam, onDelete, onEdit, col }) {
       {/* notes */}
       {exam.notes && (
         <div style={{
-          fontSize: 11, color: 'var(--c-text-3)',
+          fontSize: 13, color: 'var(--c-text-3)',
           borderTop: '1px solid var(--c-border)',
-          paddingTop: 8, lineHeight: 1.5,
+          paddingTop: 10, lineHeight: 1.5,
         }}>
           {exam.notes}
         </div>
@@ -174,7 +174,7 @@ function ExamCard({ exam, onDelete, onEdit, col }) {
 function Tag({ color, children }) {
   return (
     <span style={{
-      fontSize: 10, fontWeight: 600, padding: '2px 7px',
+      fontSize: 11, fontWeight: 600, padding: '3px 9px',
       background: `${color}18`, color, borderRadius: 4,
       border: `1px solid ${color}30`,
     }}>
@@ -335,7 +335,13 @@ export default function ExamBoard({ onDismiss }) {
   };
 
   const byBucket = COLUMNS.reduce((acc, col) => {
-    acc[col.id] = exams.filter((e) => bucket(toDate(e.exam_date)) === col.id);
+    acc[col.id] = exams
+      .filter((e) => bucket(toDate(e.exam_date)) === col.id)
+      .sort((a, b) => {
+        const da = toDate(a.exam_date) + (a.exam_time || '00:00');
+        const db = toDate(b.exam_date) + (b.exam_time || '00:00');
+        return da < db ? -1 : da > db ? 1 : 0;
+      });
     return acc;
   }, {});
 
@@ -411,7 +417,7 @@ export default function ExamBoard({ onDismiss }) {
             const items = byBucket[col.id] || [];
             return (
               <div key={col.id} style={{
-                minWidth: 280, width: 280, flexShrink: 0,
+                minWidth: 320, width: 320, flexShrink: 0,
                 display: 'flex', flexDirection: 'column', gap: 10,
                 height: '100%',
               }}>

@@ -68,6 +68,10 @@ html, body, #root {
   padding: 0;
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-feature-settings: "ss01", "cv11";
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   background: var(--c-bg);
   color: var(--c-text);
   transition: background-color .16s ease, color .16s ease;
