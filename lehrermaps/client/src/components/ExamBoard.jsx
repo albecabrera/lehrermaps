@@ -3,6 +3,8 @@ import { getExams, createExam, deleteExam, updateExam } from '../lib/api';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+function toDate(s) { return s ? s.slice(0, 10) : ''; }
+
 function startOfDay(d) {
   const c = new Date(d);
   c.setHours(0, 0, 0, 0);
@@ -11,12 +13,12 @@ function startOfDay(d) {
 
 function daysUntil(dateStr) {
   const today = startOfDay(new Date());
-  const exam  = startOfDay(new Date(dateStr));
+  const exam  = startOfDay(new Date(toDate(dateStr) + 'T00:00:00'));
   return Math.floor((exam - today) / 86400000);
 }
 
 function bucket(dateStr) {
-  const d = daysUntil(dateStr);
+  const d = daysUntil(toDate(dateStr));
   if (d < 0)  return 'past';
   if (d === 0) return 'today';
   if (d <= 7)  return 'week';
@@ -26,7 +28,7 @@ function bucket(dateStr) {
 
 function progressPct(createdAt, examDate) {
   const start = new Date(createdAt).getTime();
-  const end   = startOfDay(new Date(examDate)).getTime();
+  const end   = startOfDay(new Date(toDate(examDate) + 'T00:00:00')).getTime();
   const now   = Date.now();
   if (end <= start) return 100;
   return Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
@@ -41,12 +43,14 @@ function progressColor(pct) {
 
 function fmtDate(dateStr) {
   if (!dateStr) return '—';
-  const d = new Date(dateStr + 'T00:00:00');
+  const d = new Date(toDate(dateStr) + 'T00:00:00');
   return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function fmtCountdown(dateStr, timeStr) {
-  const base = timeStr ? `${dateStr}T${timeStr}` : `${dateStr}T00:00:00`;
+  const ds = toDate(dateStr);
+  const t = timeStr ? timeStr.slice(0, 5) : '00:00';
+  const base = `${ds}T${t}:00`;
   const diff = new Date(base).getTime() - Date.now();
   if (diff < 0) return 'Vergangen';
   const d = Math.floor(diff / 86400000);
@@ -331,11 +335,11 @@ export default function ExamBoard({ onDismiss }) {
   };
 
   const byBucket = COLUMNS.reduce((acc, col) => {
-    acc[col.id] = exams.filter((e) => bucket(e.exam_date) === col.id);
+    acc[col.id] = exams.filter((e) => bucket(toDate(e.exam_date)) === col.id);
     return acc;
   }, {});
 
-  const upcoming = exams.filter((e) => daysUntil(e.exam_date) >= 0).length;
+  const upcoming = exams.filter((e) => daysUntil(toDate(e.exam_date)) >= 0).length;
 
   return (
     <div style={{
