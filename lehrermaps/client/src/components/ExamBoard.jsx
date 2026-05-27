@@ -359,7 +359,14 @@ function Field({ label, value, onChange, placeholder, type='text', textarea }) {
 const EMPTY = { title:'', class_name:'', subject:'', exam_date:'', exam_time:'', notes:'' };
 
 function ExamForm({ initial, onSave, onClose }) {
-  const [form, setForm] = useState(initial || EMPTY);
+  const [form, setForm] = useState(() => {
+    if (!initial) return EMPTY;
+    return {
+      ...initial,
+      exam_date: toDate(initial.exam_date),
+      exam_time: initial.exam_time ? String(initial.exam_time).slice(0, 5) : '',
+    };
+  });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const set = k => e => setForm(f => ({...f, [k]: e.target.value}));
