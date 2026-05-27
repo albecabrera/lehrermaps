@@ -807,6 +807,64 @@ export default function App({ onLogout }) {
           </span>
         </button>
 
+        {/* Notion */}
+        <a
+          href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="lm-spring"
+          style={{
+            appearance: 'none', textDecoration: 'none', font: 'inherit',
+            padding: '10px 16px 12px', cursor: 'pointer',
+            background: 'transparent',
+            borderRadius: '10px 10px 0 0',
+            display: 'flex', alignItems: 'center', gap: 8,
+            borderLeft: '1px solid transparent',
+            borderRight: '1px solid transparent',
+            transition: 'background .12s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+        >
+          <svg width="13" height="13" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'var(--c-text-3)', flexShrink: 0 }}>
+            <path d="M6.6 7.3C10.5 10.4 11.9 10.2 19.4 9.7L85.3 5.9c1.4 0 0.2-1.4-0.3-1.6L73.9 0.2C71.7-0.3 69.3 0.2 66.5 0.7L3.2 5.1C1.1 5.4 0.6 6.5 1.4 7.3L6.6 7.3z" fill="currentColor"/>
+            <path d="M11.9 18.7v60.5c0 3.3 1.6 4.5 5.3 4.3l73.4-4.3c3.7-0.2 4.6-2.4 4.6-5.2V13.8c0-2.8-1.1-4.3-3.5-4.1l-76.3 4.5c-2.6 0.2-3.5 1.6-3.5 4.5z" fill="currentColor" opacity="0.1"/>
+            <path d="M11.9 18.7v60.5c0 3.3 1.6 4.5 5.3 4.3l73.4-4.3c3.7-0.2 4.6-2.4 4.6-5.2V13.8c0-2.8-1.1-4.3-3.5-4.1l-76.3 4.5c-2.6 0.2-3.5 1.6-3.5 4.5z" stroke="currentColor" strokeWidth="4"/>
+            <path d="M64.1 17.5l-20.2 1.2c-2.4 0.1-3 0.2-3.8 1.7-0.8 1.4-0.5 2.9 0.5 3.8l2.3 1.8v30.7l-3.1 1.9c-2.8 1.7-4 2.4-4 4.3 0 2.1 1.6 3.4 4.3 3.2L62 64.4c2.7-0.2 3.6-1.8 3.6-3.8v-2l-3.5 0.2V32.1l4.2 15.3c1.2 4.3 2.8 6.1 5.8 5.9 3-0.2 5-2.5 5-8.4V19.6c0-1.8-1.2-2.5-3.2-2.4l-2.6 0.2c-2 0.1-3.2 1.2-3.2 3v24.2l-3.5-12.8c-0.9-3.2-2.2-4.8-4.6-4.6-2.4 0.1-3.6 1.9-3.6 5.7v29.5L54.4 62v-29l-3 0.2V19.7c0-1.3 0.8-2.1 2.2-2.2h10.5z" fill="currentColor"/>
+          </svg>
+          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--c-text-2)', letterSpacing: -0.1 }}>
+            Notion
+          </span>
+        </a>
+
+        {/* Miro */}
+        <a
+          href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="lm-spring"
+          style={{
+            appearance: 'none', textDecoration: 'none', font: 'inherit',
+            padding: '10px 16px 12px', cursor: 'pointer',
+            background: 'transparent',
+            borderRadius: '10px 10px 0 0',
+            display: 'flex', alignItems: 'center', gap: 8,
+            borderLeft: '1px solid transparent',
+            borderRight: '1px solid transparent',
+            transition: 'background .12s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+        >
+          <svg width="14" height="14" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+            <rect width="48" height="48" rx="10" fill="#FFD02F"/>
+            <path d="M32.8 8h-5.6l5.4 8.8-6.3-8.8H21l5.4 8.8-6.3-8.8h-5.3l9.6 16-9.6 16h5.3l6.3-8.8L21 40h5.3l6.3-8.8L27.2 40h5.6l8-16-8-16z" fill="#050038"/>
+          </svg>
+          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--c-text-2)', letterSpacing: -0.1 }}>
+            Miro
+          </span>
+        </a>
+
         <div style={{ flex: 1 }} />
 
         {/* Right controls */}
