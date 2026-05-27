@@ -140,4 +140,9 @@ export const createQuickNote = (content) => api.post('/quicknotes', { content })
 export const deleteQuickNote = (id) => api.delete(`/quicknotes/${id}`);
 export const searchOneNote = (q) => api.get('/search', { params: { q } }).then((r) => r.data);
 
+export const getExams = () => api.get('/exams').then((r) => r.data);
+export const createExam = (data) => api.post('/exams', data).then((r) => r.data);
+export const updateExam = (id, data) => api.put(`/exams/${id}`, data).then((r) => r.data);
+export const deleteExam = (id) => api.delete(`/exams/${id}`);
+
 export default api;

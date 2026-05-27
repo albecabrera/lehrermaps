@@ -119,6 +119,18 @@ export async function initSchema() {
       created_at DATETIME DEFAULT NOW()
     )
   `);
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS exams (
+      id         INT AUTO_INCREMENT PRIMARY KEY,
+      title      VARCHAR(255) NOT NULL,
+      class_name VARCHAR(100) NOT NULL,
+      subject    VARCHAR(100),
+      exam_date  DATE NOT NULL,
+      exam_time  TIME,
+      notes      TEXT,
+      created_at DATETIME DEFAULT NOW()
+    )
+  `);
   const [rows] = await pool.execute(`SELECT COUNT(*) AS c FROM schedule`);
   if (rows[0].c === 0) await pool.execute(`INSERT INTO schedule (data) VALUES (?)`, ['{}']);
 }

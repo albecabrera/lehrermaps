@@ -5,6 +5,7 @@ import App from './pages/App';
 import ErrorBoundary from './components/ErrorBoundary';
 import StudentApp from './pages/StudentApp';
 import LoginPanel from './pages/LoginPanel';
+import ExamBoard from './components/ExamBoard';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LangProvider } from './contexts/LangContext';
 import { NotebookProvider } from './contexts/NotebookContext';
@@ -30,20 +31,41 @@ function parseRole(token) {
   } catch { return null; }
 }
 
+const SESSION_EXAMS_KEY = 'lm_exams_board_seen';
+
 function Root() {
   const [tick, setTick] = useState(0);
+  const [examsDismissed, setExamsDismissed] = useState(
+    () => !!sessionStorage.getItem(SESSION_EXAMS_KEY)
+  );
 
   const token = localStorage.getItem('lm_token');
   const role = token ? parseRole(token) : null;
 
-  const handleLogin = () => setTick((n) => n + 1);
+  const handleLogin = () => {
+    sessionStorage.removeItem(SESSION_EXAMS_KEY);
+    setExamsDismissed(false);
+    setTick((n) => n + 1);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('lm_token');
     setTick((n) => n + 1);
   };
 
-  if (role === 'lehrer') return <NotebookProvider><App onLogout={handleLogout} /></NotebookProvider>;
+  const handleExamsDismiss = () => {
+    sessionStorage.setItem(SESSION_EXAMS_KEY, '1');
+    setExamsDismissed(true);
+  };
+
+  if (role === 'lehrer') {
+    return (
+      <NotebookProvider>
+        {!examsDismissed && <ExamBoard onDismiss={handleExamsDismiss} />}
+        <App onLogout={handleLogout} />
+      </NotebookProvider>
+    );
+  }
   if (role === 'student') return <StudentApp onLogout={handleLogout} />;
 
   // Pre-select student role if coming from QR (?student in URL)

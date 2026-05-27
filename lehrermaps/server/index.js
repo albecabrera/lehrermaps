@@ -15,6 +15,7 @@ import scheduleRouter from './routes/schedule.js';
 import aiRouter from './routes/ai.js';
 import notebooksRouter from './routes/notebooks.js';
 import searchRouter from './routes/search.js';
+import examsRouter from './routes/exams.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -52,6 +53,7 @@ app.use('/api/schedule', scheduleRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api', notebooksRouter);
 app.use('/api/search', searchRouter);
+app.use('/api/exams', examsRouter);
 
 app.get('/api/health', (_, res) => res.json({ ok: true }));
 
