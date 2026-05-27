@@ -14,6 +14,7 @@ import SearchModal from '../components/SearchModal';
 import QRModal from '../components/QRModal';
 import KeyboardHelp from '../components/KeyboardHelp';
 import Schedule from '../components/Schedule';
+import ExamBoard from '../components/ExamBoard';
 import { SUBJECTS, detectKind } from '../constants/structure';
 import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
@@ -62,6 +63,7 @@ export default function App({ onLogout }) {
   const [pendingDeleteIds, setPendingDeleteIds] = useState(new Set());
   const deleteTimersRef = useRef(new Map());
   const [viewMode, setViewMode] = useState('subjects');
+  const [examBoardOpen, setExamBoardOpen] = useState(false);
   const [dropOver, setDropOver] = useState(false);
   const [dropFiles, setDropFiles] = useState(null);
   const [dropUploading, setDropUploading] = useState(null);
@@ -776,6 +778,33 @@ export default function App({ onLogout }) {
             color: viewMode === 'schedule' ? 'var(--c-text)' : 'var(--c-text-2)',
             letterSpacing: -0.1,
           }}>{t('schedule.title')}</span>
+        </button>
+
+        {/* Termine (ExamBoard) toggle */}
+        <button
+          className="lm-spring"
+          onClick={() => setExamBoardOpen(true)}
+          style={{
+            appearance: 'none', border: 'none', font: 'inherit',
+            padding: '10px 16px 12px', cursor: 'pointer',
+            background: 'transparent',
+            borderRadius: '10px 10px 0 0',
+            display: 'flex', alignItems: 'center', gap: 8,
+            borderLeft: '1px solid transparent',
+            borderRight: '1px solid transparent',
+            transition: 'background .12s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ color: 'var(--c-text-3)' }}>
+            <rect x="1" y="3" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+            <path d="M1 6h12M5 1v3M9 1v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            <path d="M4 9h2M8 9h2" stroke="#E8472A" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--c-text-2)', letterSpacing: -0.1 }}>
+            Termine
+          </span>
         </button>
 
         <div style={{ flex: 1 }} />
@@ -1518,6 +1547,7 @@ export default function App({ onLogout }) {
       />
       <TerminalModal open={terminalOpen} onClose={() => setTerminalOpen(false)} />
       {worksheetGenOpen && <WorksheetGenerator onClose={() => setWorksheetGenOpen(false)} />}
+      {examBoardOpen && <ExamBoard onDismiss={() => setExamBoardOpen(false)} />}
 
       {toast && (
         <div style={{
