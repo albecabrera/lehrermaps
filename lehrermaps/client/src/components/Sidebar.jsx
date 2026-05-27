@@ -32,7 +32,7 @@ const FOLDER_COLORS = [
 export default function Sidebar({
   subject, groups, folders, loading = false, width = 260,
   activeFolderId, onFolderSelect,
-  onNewFolder, onNewFolderInGroup, onNewSubfolder,
+  onNewFolder, onNewFolderInGroup, onNewSubfolder, onNewOrdner, onNewHauptordner,
   onRenameFolder, onDeleteFolder,
   onReorderFolders, onToggleFavorite,
   onSetFolderColor,
@@ -221,6 +221,8 @@ export default function Sidebar({
           onClose={() => setMenu(null)}
           onRename={() => { onRenameFolder?.(menu.folder); setMenu(null); }}
           onDelete={() => { onDeleteFolder?.(menu.folder); setMenu(null); }}
+          onNewHauptordner={() => { onNewHauptordner?.(menu.folder); setMenu(null); }}
+          onNewOrdner={() => { onNewOrdner?.(menu.folder); setMenu(null); }}
           onNewSubfolder={() => { onNewSubfolder?.(menu.folder); setMenu(null); }}
           onSetColor={(color) => { onSetFolderColor?.(menu.folder.id, color); setMenu(null); }}
           t={t}
@@ -511,7 +513,7 @@ function GroupHeader({ group, accent, onAdd, t }) {
   );
 }
 
-function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, onNewSubfolder, onSetColor, t }) {
+function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, onNewHauptordner, onNewOrdner, onNewSubfolder, onSetColor, t }) {
   const ref = useRef(null);
   const [pos, setPos] = useState({ left: x, top: y, visible: false });
 
@@ -578,15 +580,39 @@ function FolderContextMenu({ folder, x, y, accent, onClose, onRename, onDelete, 
           onClick={onDelete}
         />
         <div style={{ height: 1, background: 'var(--c-border)', margin: '4px 2px' }} />
+        <div style={{ padding: '5px 10px 3px', fontSize: 9.5, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--c-text-3)' }}>Neu erstellen</div>
         <CMenuItem
           icon={
             <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-              <path d="M1 3.5h3V1.5h5.5v8H1V3.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
-              <path d="M4 3.5V1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <path d="M6 5.5h2M6 7h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              <rect x="1" y="3" width="9" height="7" rx="1.2" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M1 5h9" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M3.5 1.5h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
             </svg>
           }
-          label="Neue Unterordner"
+          label="Hauptordner"
+          onClick={onNewHauptordner}
+          accent={accent}
+        />
+        <CMenuItem
+          icon={
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path d="M1 4h9v5.5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4z" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M1 4V3a1 1 0 0 1 1-1h2.5l1 1.5H9a1 1 0 0 1 1 1" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+            </svg>
+          }
+          label="Ordner"
+          onClick={onNewOrdner}
+          accent={accent}
+        />
+        <CMenuItem
+          icon={
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path d="M3 2.5h6v7H3z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              <path d="M1 1h4.5l1 1.5H10v7" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              <path d="M5 5.5h2M5 7h2" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+            </svg>
+          }
+          label="Unterordner"
           onClick={onNewSubfolder}
           accent={accent}
         />

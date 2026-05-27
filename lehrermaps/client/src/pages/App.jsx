@@ -1003,6 +1003,8 @@ export default function App({ onLogout }) {
             onFolderSelect={onFolderSelect}
             onNewFolder={() => { setNewFolderGroup(null); setNewFolderOpen(true); }}
             onNewFolderInGroup={(g) => { setNewFolderGroup(g); setNewFolderOpen(true); }}
+            onNewHauptordner={(folder) => { setNewFolderParentId(null); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
+            onNewOrdner={(folder) => { setNewFolderParentId(folder.parent_id ?? null); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
             onNewSubfolder={(folder) => { setNewFolderParentId(folder.id); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
             onRenameFolder={setRenamingFolder}
             onDeleteFolder={handleDeleteFolder}
