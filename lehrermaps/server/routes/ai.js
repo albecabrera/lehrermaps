@@ -7,15 +7,28 @@ import PptxGenJS from 'pptxgenjs';
 
 const CLAUDE_CLI = process.env.CLAUDE_CLI_PATH || '/opt/homebrew/bin/claude';
 
+function getClaudeSpawnOptions() {
+  const filteredEnv = Object.fromEntries(
+    Object.entries(process.env).filter(([k]) => !k.startsWith('MCP_'))
+  );
+  const projectCwd = process.env.CLAUDE_WORKDIR || process.cwd();
+  return {
+    env: {
+      ...filteredEnv,
+      PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || ''),
+      HOME: process.env.HOME || '/tmp',
+    },
+    cwd: projectCwd,
+  };
+}
+
 function generateWithClaudeCLI({ system, user, fallback }) {
   return new Promise((resolve) => {
     const args = ['-p', '--output-format', 'text', '--dangerously-skip-permissions'];
 
     console.log('[claude-cli] spawning:', CLAUDE_CLI, args.join(' '));
 
-    const proc = spawn(CLAUDE_CLI, args, {
-      env: { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || '') },
-    });
+    const proc = spawn(CLAUDE_CLI, args, getClaudeSpawnOptions());
 
     let out = '';
     let errOut = '';
@@ -463,12 +476,31 @@ router.post('/worksheet/stream', (req, res) => {
   if (!prompt?.trim()) { send({ type: 'error', message: 'Prompt fehlt.' }); return res.end(); }
 
   const langName = lang === 'es' ? 'Spanisch' : lang === 'en' ? 'Englisch' : 'Deutsch';
+  const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
   const system = buildWorksheetSystem(langName, false);
+  const fallback = [
+    '# Arbeitsblatt',
+    '',
+    '**Name:** _____________  **Klasse:** _____________  **Datum:** _____________',
+    '',
+    '---',
+    '',
+    '**Lernziele:**',
+    '- Inhalte verstehen',
+    '- Grundlegende Konzepte anwenden',
+    '',
+    '---',
+    '',
+    '### Aufgabe 1',
+    '',
+    '_Aufgabe hier._',
+    '',
+    '_________________________________________',
+    '',
+  ].join('\n');
 
   const args = ['-p', '--output-format', 'text', '--dangerously-skip-permissions'];
-  const proc = spawn(CLAUDE_CLI, args, {
-    env: { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:' + (process.env.PATH || '') },
-  });
+  const proc = spawn(CLAUDE_CLI, args, getClaudeSpawnOptions());
 
   proc.stdin.on('error', () => {});
   proc.stdin.write(`${system}\n\n---\n\n${prompt.trim()}`);
@@ -480,17 +512,45 @@ router.post('/worksheet/stream', (req, res) => {
     fullText += text;
     send({ type: 'text', text, chars: fullText.length });
   });
-  proc.stderr.on('data', (d) => { console.error('[stream-cli] stderr:', d.toString().slice(0, 300)); });
+  proc.stderr.on('data', (d) => { console.error('[stream-cli] stderr:', d.toString().slice(0, 500)); });
 
   const timer = setTimeout(() => { proc.kill('SIGTERM'); send({ type: 'timeout' }); res.end(); }, 120000);
 
   proc.on('error', (e) => { clearTimeout(timer); send({ type: 'error', message: e.message }); res.end(); });
-  proc.on('close', (code) => {
+  proc.on('close', async (code, signal) => {
     clearTimeout(timer);
+    console.log(`[stream-cli] close code=${code} signal=${signal} chars=${fullText.length}`);
     if (code === 0 && fullText.trim()) {
       send({ type: 'done', content: fullText.trim() });
-    } else {
-      send({ type: 'error', message: 'CLI fehlgeschlagen (code ' + code + ').' });
+      res.end();
+      return;
+    }
+    try {
+      const hasOpenAiKey = Boolean(process.env.OPENAI_API_KEY);
+      const looksLikeNotLoggedIn = /not logged in|please run \/login/i.test(fullText);
+      if (!hasAnthropicKey && !hasOpenAiKey && looksLikeNotLoggedIn) {
+        send({
+          type: 'error',
+          message: 'Claude CLI ist nicht angemeldet und es gibt keinen ANTHROPIC_API_KEY/OPENAI_API_KEY. Bitte `claude` einloggen oder API-Key setzen.',
+        });
+        res.end();
+        return;
+      }
+      // Fallback chain identical to /worksheet endpoint (without streaming tokens).
+      let content = fallback;
+      if (hasAnthropicKey) {
+        content = await generateWithClaudeWebSearch({
+          system: buildWorksheetSystem(langName, true),
+          user: prompt.trim(),
+          fallback,
+        });
+      } else {
+        const result = await generateWithAIWithUsage({ system, user: prompt.trim(), fallback });
+        content = result.content || fallback;
+      }
+      send({ type: 'done', content });
+    } catch (e) {
+      send({ type: 'error', message: `CLI fehlgeschlagen (code=${code} signal=${signal}) und Fallback auch fehlgeschlagen: ${String(e?.message || e)}` });
     }
     res.end();
   });
@@ -535,6 +595,12 @@ router.post('/worksheet', async (req, res) => {
   if (hasAnthropicKey) {
     const content = await generateWithClaudeWebSearch({ system, user: prompt.trim(), fallback });
     return res.json({ content, provider: 'claude', usage: null });
+  }
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(503).json({
+      error: 'Kein KI-Provider verfügbar: Claude CLI ist nicht angemeldet und es gibt keinen ANTHROPIC_API_KEY/OPENAI_API_KEY.',
+      hint: 'Bitte `claude` einloggen oder API-Key in der Server-Umgebung setzen.',
+    });
   }
   const result = await generateWithAIWithUsage({ system, user: prompt.trim(), fallback });
   return res.json({ content: result.content, provider: 'openai', usage: result.usage || null });

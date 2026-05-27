@@ -9,6 +9,13 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { LangProvider } from './contexts/LangContext';
 import { NotebookProvider } from './contexts/NotebookContext';
 
+const urlParams = new URLSearchParams(window.location.search);
+const arcSafeMode = urlParams.has('no-devtools') || urlParams.has('arc-safe');
+
+if (arcSafeMode) {
+  document.documentElement.classList.add('lm-arc-safe');
+}
+
 // Bootstrap ?token= before React mounts — runs once, no side effects inside render
 (function bootstrapUrlToken() {
   const params = new URLSearchParams(window.location.search);
@@ -46,18 +53,20 @@ function Root() {
   return <LoginPanel onLogin={handleLogin} initialRole={initialRole} />;
 }
 
+const appTree = (
+  <ErrorBoundary>
+    <ThemeProvider>
+      <LangProvider>
+        <NotebookProvider>
+          <Root />
+        </NotebookProvider>
+      </LangProvider>
+    </ThemeProvider>
+  </ErrorBoundary>
+);
+
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <ThemeProvider>
-        <LangProvider>
-          <NotebookProvider>
-            <Root />
-          </NotebookProvider>
-        </LangProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
-  </StrictMode>
+  arcSafeMode ? appTree : <StrictMode>{appTree}</StrictMode>
 );
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
