@@ -1,6 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getExams, createExam, deleteExam, updateExam } from '../lib/api';
 
+const FAECHER = ['Spanisch', 'Informatik', 'Sport', 'Klassenleitung'];
+const KLASSEN = [
+  '5a','5b','5c','5d',
+  '6a','6b','6c','6d',
+  '7a','7b','7c',
+  '8a','8b','8c',
+  '9a','9b','9c',
+  '10a','10b','10c',
+  'Q1','Q2',
+];
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function toDate(s) { return s ? s.slice(0, 10) : ''; }
@@ -204,6 +215,44 @@ function IconBtn({ onClick, title, danger, children }) {
   );
 }
 
+// ── SelectField ───────────────────────────────────────────────────────────────
+
+function SelectField({ label, value, onChange, options, placeholder, allowCustom }) {
+  const inputStyle = {
+    width: '100%', padding: '7px 10px', borderRadius: 7, boxSizing: 'border-box',
+    border: '1px solid var(--c-border)', background: 'var(--c-hover)',
+    color: 'var(--c-text)', fontSize: 13, outline: 'none', fontFamily: 'inherit',
+    cursor: 'pointer',
+  };
+  const listId = `sel-${label.replace(/\s/g, '')}`;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text-2)' }}>{label}</label>
+      {allowCustom ? (
+        <>
+          <input
+            list={listId}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            style={inputStyle}
+          />
+          <datalist id={listId}>
+            {options.map((o) => <option key={o} value={o} />)}
+          </datalist>
+        </>
+      ) : (
+        <select value={value} onChange={onChange} style={inputStyle}>
+          <option value="">{placeholder}</option>
+          {options.map((o) => (
+            <option key={o} value={o}>{o}</option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
+
 // ── ExamForm (add / edit) ─────────────────────────────────────────────────────
 
 const EMPTY = { title: '', class_name: '', subject: '', exam_date: '', exam_time: '', notes: '' };
@@ -252,8 +301,10 @@ function ExamForm({ initial, onSave, onClose }) {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <Field label="Titel *" value={form.title} onChange={set('title')} placeholder="z.B. Klassenarbeit Nr. 2" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Field label="Klasse *" value={form.class_name} onChange={set('class_name')} placeholder="z.B. 10b" />
-            <Field label="Fach" value={form.subject} onChange={set('subject')} placeholder="z.B. Spanisch" />
+            <SelectField label="Klasse *" value={form.class_name} onChange={set('class_name')}
+              options={KLASSEN} placeholder="Klasse wählen…" allowCustom />
+            <SelectField label="Fach" value={form.subject} onChange={set('subject')}
+              options={FAECHER} placeholder="Fach wählen…" />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <Field label="Datum *" type="date" value={form.exam_date} onChange={set('exam_date')} />
