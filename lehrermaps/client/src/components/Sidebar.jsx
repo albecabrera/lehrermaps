@@ -38,8 +38,7 @@ export default function Sidebar({
   onSetFolderColor,
   onMoveFileToFolder,
   onMoveFolder,
-  recentFiles = [],
-  onRecentFileClick,
+
 }) {
   const { t } = useLang();
   const [collapsed, setCollapsed] = useState(false);
@@ -133,45 +132,7 @@ export default function Sidebar({
 
       {/* Tree area */}
       <div style={{ flex: 1, overflow: 'auto', padding: collapsed ? '8px 4px' : '8px 0' }}>
-        {!collapsed && recentFiles.length > 0 && (
-          <div style={{ marginBottom: 10 }}>
-            <div style={{
-              padding: '0 8px 4px 16px', fontSize: 9.5, fontWeight: 700, letterSpacing: 0.7,
-              textTransform: 'uppercase', color: 'var(--c-text-3)',
-            }}>{t('sidebar.recent_files')}</div>
-            {recentFiles.slice(0, 6).map((rf) => (
-              <button
-                key={`${rf.type || 'file'}-${rf.id}`}
-                onClick={() => onRecentFileClick?.(rf)}
-                style={{
-                  appearance: 'none', border: 'none', font: 'inherit',
-                  width: '100%', padding: '5px 10px 5px 16px',
-                  display: 'flex', alignItems: 'center', gap: 7,
-                  cursor: 'pointer', textAlign: 'left',
-                  background: 'transparent', color: 'var(--c-text-2)',
-                  fontSize: 12, transition: 'background .08s',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover-2)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                {rf.type === 'link' ? (
-                  <span style={{ width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: accent }}>
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <path d="M5 8.5l3-3M7.5 5.5l1.5-1.5a2.12 2.12 0 0 1 3 3L10.5 8.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                      <path d="M5.5 7.5L4 9a2.12 2.12 0 0 1-3-3L2.5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                    </svg>
-                  </span>
-                ) : (
-                  <FileBadge kind={detectKind(rf.name)} name={rf.name} size={18} />
-                )}
-                <span title={rf.name} style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {rf.name}
-                </span>
-              </button>
-            ))}
-            <div style={{ height: 1, background: 'var(--c-border)', margin: '6px 12px 6px' }} />
-          </div>
-        )}
+
         {!collapsed && <NotebookSidebar />}
         {loading ? (
           <SidebarSkeleton collapsed={collapsed} accent={accent} />

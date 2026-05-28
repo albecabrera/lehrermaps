@@ -15,15 +15,19 @@ const KLASSEN = [
 // ── CSS animations ────────────────────────────────────────────────────────────
 const ANIM_STYLES = `
   @keyframes eb-boardIn   { from{opacity:0;transform:scale(.98)} to{opacity:1;transform:scale(1)} }
-  @keyframes eb-cardIn    { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes eb-pulse     { 0%,100%{opacity:1} 50%{opacity:.55} }
+  @keyframes eb-cardIn    { from{opacity:0;transform:translateY(24px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+  @keyframes eb-pulse     { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.15)} }
   @keyframes eb-shimmer   { 0%{background-position:-200% center} 100%{background-position:200% center} }
   @keyframes eb-spin      { to{transform:rotate(360deg)} }
+  @keyframes eb-glow      { 0%,100%{box-shadow:0 0 8px var(--eb-col)} 50%{box-shadow:0 0 20px var(--eb-col)} }
 
   .eb-board   { animation: eb-boardIn .3s cubic-bezier(.22,1,.36,1) both }
-  .eb-card    { animation: eb-cardIn .36s cubic-bezier(.22,1,.36,1) both;
-                transition: transform .22s cubic-bezier(.22,1.3,.36,1), box-shadow .22s ease; }
-  .eb-card:hover { transform: translateY(-6px) !important; }
+  .eb-card    {
+    animation: eb-cardIn .4s cubic-bezier(.22,1,.36,1) both;
+    transition: transform .28s cubic-bezier(.22,1.3,.36,1), box-shadow .28s ease, border-color .2s ease;
+    will-change: transform;
+  }
+  .eb-card:hover { transform: translateY(-8px) scale(1.015) !important; }
 
   .eb-btn-primary {
     transition: transform .18s cubic-bezier(.22,1.3,.36,1), box-shadow .18s ease, opacity .15s;
@@ -40,16 +44,27 @@ const ANIM_STYLES = `
   .eb-icon-btn {
     transition: background .1s, color .1s, transform .14s cubic-bezier(.22,1.3,.36,1);
   }
-  .eb-icon-btn:hover  { transform: scale(1.15); }
+  .eb-icon-btn:hover  { transform: scale(1.18); }
   .eb-icon-btn:active { transform: scale(.9); }
 
-  .eb-pulse   { animation: eb-pulse 1.8s ease-in-out infinite; }
+  .eb-pulse-dot { animation: eb-pulse 1.6s ease-in-out infinite; }
   .eb-shimmer {
     background: linear-gradient(90deg,
       var(--eb-pc) 0%, var(--eb-pc) 40%,
       rgba(255,255,255,.45) 60%, var(--eb-pc) 80%);
     background-size: 250% auto;
     animation: eb-shimmer 2.2s linear infinite;
+  }
+  .eb-card-actions {
+    opacity: 0; transition: opacity .18s;
+  }
+  .eb-card:hover .eb-card-actions { opacity: 1; }
+  .eb-card:hover {
+    box-shadow:
+      0 16px 48px rgba(0,0,0,.14),
+      0 0 32px var(--eb-col-glow),
+      0 0 0 1px var(--eb-col-border) !important;
+    border-color: var(--eb-col-border) !important;
   }
 `;
 
@@ -114,154 +129,143 @@ const COLUMNS = [
   { id:'past',      label:'Vergangen',     color:'#6B7280', glow:'rgba(107,114,128,.2)',  bg:'rgba(107,114,128,.05)',border:'rgba(107,114,128,.2)',urgent:false },
 ];
 
-// ── ExamCard ──────────────────────────────────────────────────────────────────
+// ── ExamCard (premium grid card) ─────────────────────────────────────────────
 function ExamCard({ exam, onDelete, onEdit, onExpand, col, index }) {
   const [, setTick] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setTick(n => n+1), 60000);
+    const t = setInterval(() => setTick(n => n + 1), 60000);
     return () => clearInterval(t);
   }, []);
 
   const pct = progressPct(exam.created_at, exam.exam_date);
-  const pc  = progressColor(pct);
 
   return (
     <div
       className="eb-card"
       onClick={onExpand}
       style={{
-        background: `linear-gradient(145deg, var(--c-bg) 0%, ${col.color}08 100%)`,
-        border: `1px solid ${col.border}`,
-        borderLeft: `4px solid ${col.color}`,
-        borderRadius: 14,
-        padding: '20px 18px 18px',
-        display: 'flex', flexDirection: 'column', gap: 14,
-        boxShadow: `0 4px 24px rgba(0,0,0,.14), 0 1px 4px rgba(0,0,0,.08), 0 0 0 0 ${col.glow}`,
-        animationDelay: `${index * 60}ms`,
-        cursor: 'pointer',
-        position: 'relative',
+        '--eb-col-glow': col.glow,
+        '--eb-col-border': col.border,
+        background: 'var(--c-surface)',
+        border: `1px solid var(--c-border)`,
+        borderRadius: 20,
         overflow: 'hidden',
+        cursor: 'pointer',
+        animationDelay: `${index * 55}ms`,
+        boxShadow: '0 2px 12px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04)',
+        display: 'flex', flexDirection: 'column',
+        position: 'relative',
       }}
     >
-      {/* glow accent top */}
+      {/* top accent bar */}
       <div style={{
-        position:'absolute', top:0, left:0, right:0, height:2,
-        background: `linear-gradient(90deg, ${col.color}00, ${col.color}cc, ${col.color}00)`,
-        borderRadius:'14px 14px 0 0',
+        height: 4,
+        background: `linear-gradient(90deg, ${col.color} 0%, ${col.color}88 100%)`,
+        flexShrink: 0,
       }}/>
 
-      {/* header */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:17, fontWeight:800, color:'var(--c-text)', lineHeight:1.25, marginBottom:7 }}>
+      {/* card body */}
+      <div style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}>
+
+        {/* header: urgency dot + title + actions */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <div
+            className={col.urgent ? 'eb-pulse-dot' : undefined}
+            style={{
+              width: 9, height: 9, borderRadius: '50%',
+              background: col.color,
+              boxShadow: col.urgent ? `0 0 8px ${col.color}` : 'none',
+              flexShrink: 0, marginTop: 5,
+            }}
+          />
+          <div style={{
+            flex: 1, minWidth: 0,
+            fontSize: 15, fontWeight: 800, lineHeight: 1.3,
+            color: 'var(--c-text)',
+          }}>
             {exam.title}
           </div>
-          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-            <Tag color={col.color}>{exam.class_name}</Tag>
-            {exam.subject && <Tag color="var(--c-text-3)">{exam.subject}</Tag>}
+          <div className="eb-card-actions" style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+            <IconBtn title="Bearbeiten" onClick={e => { e.stopPropagation(); onEdit(exam); }}>
+              <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
+                <path d="M8 1.5l2.5 2.5-6 6H2V7.5l6-6z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </IconBtn>
+            <IconBtn title="Löschen" onClick={e => { e.stopPropagation(); onDelete(exam.id); }} danger>
+              <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
+                <path d="M2 3h8M5 3V2h2v1M4 3v6h4V3H4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </IconBtn>
           </div>
         </div>
-        <div style={{ display:'flex', gap:3, flexShrink:0 }}>
-          <IconBtn title="Bearbeiten" onClick={(e) => { e.stopPropagation(); onEdit(exam); }}>
-            <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
-              <path d="M8 1.5l2.5 2.5-6 6H2V7.5l6-6z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </IconBtn>
-          <IconBtn title="Löschen" onClick={(e) => { e.stopPropagation(); onDelete(exam.id); }} danger>
-            <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
-              <path d="M2 3h8M5 3V2h2v1M4 3v6h4V3H4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </IconBtn>
+
+        {/* tags */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <Tag color={col.color}>{exam.class_name}</Tag>
+          {exam.subject && <Tag color="var(--c-text-3)">{exam.subject}</Tag>}
+          <Tag color={col.color}>{col.label}</Tag>
         </div>
-      </div>
 
-      {/* date */}
-      <div style={{ display:'flex', alignItems:'center', gap:7, fontSize:13, color:'var(--c-text-2)' }}>
-        <svg width="13" height="13" viewBox="0 0 12 12" fill="none" style={{ color:col.color, flexShrink:0 }}>
-          <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
-          <path d="M4 1v2M8 1v2M1 5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-        </svg>
-        <span style={{ fontWeight:600 }}>{fmtDate(exam.exam_date)}</span>
-        {exam.exam_time && (
+        {/* date */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          fontSize: 13, fontWeight: 600, color: 'var(--c-text-2)',
+        }}>
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none" style={{ color: col.color, flexShrink: 0 }}>
+            <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+            <path d="M4 1v2M8 1v2M1 5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+          {fmtDate(exam.exam_date)}
+          {exam.exam_time && (
+            <span style={{
+              fontSize: 12, fontWeight: 800,
+              background: `${col.color}18`, color: col.color,
+              padding: '1px 8px', borderRadius: 12,
+              border: `1px solid ${col.color}28`,
+            }}>
+              {exam.exam_time.slice(0, 5)}
+            </span>
+          )}
+        </div>
+
+        {/* progress bar */}
+        <div style={{ height: 3, background: 'var(--c-border)', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{
+            width: `${pct}%`, height: '100%',
+            background: `linear-gradient(90deg, ${col.color} 0%, ${col.color}bb 100%)`,
+            borderRadius: 99,
+            transition: 'width .4s ease',
+          }}/>
+        </div>
+
+        {/* countdown */}
+        <div style={{
+          marginTop: 'auto',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
           <span style={{
-            fontSize:11, background:`${col.color}18`, color:col.color,
-            padding:'2px 8px', borderRadius:20, fontWeight:700,
+            fontSize: 11, fontWeight: 700, letterSpacing: .6,
+            textTransform: 'uppercase', color: 'var(--c-text-3)',
           }}>
-            {exam.exam_time.slice(0,5)} Uhr
-          </span>
-        )}
-      </div>
-
-      {/* countdown */}
-      <div style={{
-        background: `linear-gradient(135deg, ${col.color}18 0%, ${col.color}0a 100%)`,
-        border: `1px solid ${col.border}`,
-        borderRadius: 10,
-        padding: '10px 14px',
-        display: 'flex', justifyContent:'space-between', alignItems:'center',
-        boxShadow: `inset 0 1px 0 ${col.color}15`,
-      }}>
-        <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-          <span style={{ fontSize:10, fontWeight:700, letterSpacing:.8, textTransform:'uppercase', color:col.color, opacity:.7 }}>
             Countdown
           </span>
           <span
-            className={col.urgent ? 'eb-pulse' : undefined}
-            style={{ fontSize:22, fontWeight:900, color:col.color, fontFamily:'"DM Mono",monospace', lineHeight:1 }}
+            className={col.urgent ? 'eb-pulse-dot' : undefined}
+            style={{
+              fontSize: 15, fontWeight: 900,
+              color: col.color,
+              fontFamily: '"DM Mono", monospace',
+              background: `${col.color}12`,
+              padding: '4px 14px', borderRadius: 20,
+              border: `1px solid ${col.color}28`,
+              letterSpacing: -.3,
+            }}
           >
             {fmtCountdown(exam.exam_date, exam.exam_time)}
           </span>
         </div>
-        <div style={{
-          width:44, height:44, borderRadius:'50%',
-          background: `conic-gradient(${col.color} ${pct * 3.6}deg, ${col.color}20 0deg)`,
-          display:'flex', alignItems:'center', justifyContent:'center',
-          boxShadow: `0 0 12px ${col.glow}`,
-        }}>
-          <div style={{
-            width:32, height:32, borderRadius:'50%',
-            background:'var(--c-bg)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            fontSize:10, fontWeight:800, color:col.color,
-          }}>
-            {Math.round(pct)}%
-          </div>
-        </div>
       </div>
 
-      {/* progress bar */}
-      <div>
-        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-          <span style={{ fontSize:11, fontWeight:600, color:'var(--c-text-3)', letterSpacing:.4, textTransform:'uppercase' }}>
-            Fortschritt
-          </span>
-          <span style={{ fontSize:11, fontWeight:800, color:pc }}>{Math.round(pct)}%</span>
-        </div>
-        <div style={{ height:9, background:'var(--c-hover)', borderRadius:99, overflow:'hidden', boxShadow:'inset 0 1px 2px rgba(0,0,0,.1)' }}>
-          <div
-            className="eb-shimmer"
-            style={{
-              '--eb-pc': pc,
-              width:`${pct}%`, height:'100%',
-              borderRadius:99,
-              boxShadow: `0 0 8px ${pc}88`,
-              transition:'width .5s ease',
-            }}
-          />
-        </div>
-      </div>
-
-      {/* notes */}
-      {exam.notes && (
-        <div style={{
-          fontSize:13, color:'var(--c-text-3)', lineHeight:1.6,
-          borderTop:`1px solid ${col.border}`,
-          paddingTop:12,
-          fontStyle:'italic',
-        }}>
-          {exam.notes}
-        </div>
-      )}
     </div>
   );
 }
@@ -476,16 +480,11 @@ export default function ExamBoard({ onDismiss }) {
     await deleteExam(id); setExams(p => p.filter(e => e.id !== id));
   };
 
-  const byBucket = COLUMNS.reduce((acc, col) => {
-    acc[col.id] = exams
-      .filter(e => bucket(toDate(e.exam_date)) === col.id)
-      .sort((a, b) => {
-        const da = toDate(a.exam_date) + (a.exam_time || '00:00');
-        const db = toDate(b.exam_date) + (b.exam_time || '00:00');
-        return da < db ? -1 : da > db ? 1 : 0;
-      });
-    return acc;
-  }, {});
+  const sortedExams = [...exams].sort((a, b) => {
+    const da = toDate(a.exam_date) + (a.exam_time || '00:00');
+    const db = toDate(b.exam_date) + (b.exam_time || '00:00');
+    return da < db ? -1 : da > db ? 1 : 0;
+  });
 
   const upcoming = exams.filter(e => daysUntil(toDate(e.exam_date)) >= 0).length;
 
@@ -526,7 +525,7 @@ export default function ExamBoard({ onDismiss }) {
                 background:'linear-gradient(135deg, var(--c-text) 0%, var(--c-text-2) 100%)',
                 WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
               }}>
-                Klassenarbeiten & Prüfungen
+                Termine
               </div>
               <div style={{ fontSize:13, color:'var(--c-text-3)', marginTop:3 }}>
                 <span style={{ color:'#E8472A', fontWeight:700 }}>{upcoming}</span> bevorstehend
@@ -562,7 +561,7 @@ export default function ExamBoard({ onDismiss }) {
           </button>
         </div>
 
-        {/* ── Board ── */}
+        {/* ── Chronological list ── */}
         {loading ? (
           <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:10, color:'var(--c-text-3)' }}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ animation:'eb-spin 1s linear infinite' }}>
@@ -571,70 +570,28 @@ export default function ExamBoard({ onDismiss }) {
             </svg>
             Lädt…
           </div>
+        ) : sortedExams.length === 0 ? (
+          <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--c-text-3)', fontSize:15 }}>
+            Keine Termine eingetragen.
+          </div>
         ) : (
           <div style={{
-            flex:1, display:'flex', gap:18,
-            padding:'24px 28px', overflowX:'auto', overflowY:'hidden',
-            alignItems:'flex-start',
+            flex:1, overflowY:'auto',
+            padding:'28px 32px',
+            display:'grid',
+            gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))',
+            gap:20,
+            alignContent:'start',
           }}>
-            {COLUMNS.map(col => {
-              const items = byBucket[col.id] || [];
+            {sortedExams.map((exam, i) => {
+              const col = COLUMNS.find(c => c.id === bucket(toDate(exam.exam_date))) || COLUMNS[3];
               return (
-                <div key={col.id} style={{
-                  minWidth:350, width:350, flexShrink:0,
-                  display:'flex', flexDirection:'column', gap:12,
-                  height:'100%',
-                }}>
-                  {/* column header */}
-                  <div style={{
-                    display:'flex', alignItems:'center', gap:10,
-                    padding:'11px 16px',
-                    background:`linear-gradient(135deg, ${col.bg} 0%, transparent 100%)`,
-                    border:`1px solid ${col.border}`,
-                    borderRadius:12,
-                    boxShadow:`0 2px 12px ${col.glow}`,
-                  }}>
-                    <div style={{
-                      width:10, height:10, borderRadius:'50%',
-                      background:col.color,
-                      boxShadow:`0 0 8px ${col.color}`,
-                      flexShrink:0,
-                    }}/>
-                    <span style={{ fontSize:13, fontWeight:800, color:col.color, flex:1, letterSpacing:.3 }}>
-                      {col.label}
-                    </span>
-                    <span style={{
-                      fontSize:12, fontWeight:800,
-                      background:col.color, color:'#fff',
-                      padding:'2px 10px', borderRadius:20,
-                      boxShadow:`0 2px 8px ${col.glow}`,
-                      minWidth:24, textAlign:'center',
-                    }}>
-                      {items.length}
-                    </span>
-                  </div>
-
-                  {/* cards */}
-                  <div style={{ display:'flex', flexDirection:'column', gap:12, overflowY:'auto', flex:1, paddingBottom:4 }}>
-                    {items.length === 0 ? (
-                      <div style={{
-                        border:`2px dashed ${col.border}`,
-                        borderRadius:12, padding:'28px 0',
-                        textAlign:'center', fontSize:13, color:'var(--c-text-3)',
-                        opacity:.6,
-                      }}>
-                        Keine Prüfungen
-                      </div>
-                    ) : items.map((exam, i) => (
-                      <ExamCard
-                        key={exam.id} exam={exam} col={col} index={i}
-                        onDelete={handleDelete}
-                        onEdit={e => setEditing(e)}
-                        onExpand={() => setExpandedCard({ exam, col })}
-                      />
-                    ))}
-                  </div>
-                </div>
+                <ExamCard
+                  key={exam.id} exam={exam} col={col} index={i}
+                  onDelete={handleDelete}
+                  onEdit={e => setEditing(e)}
+                  onExpand={() => setExpandedCard({ exam, col })}
+                />
               );
             })}
           </div>

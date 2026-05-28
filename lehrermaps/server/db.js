@@ -9,6 +9,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME     || 'lehrermaps',
   waitForConnections: true,
   connectionLimit: 10,
+  dateStrings: true,
 });
 
 export async function initSchema() {

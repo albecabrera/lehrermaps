@@ -80,7 +80,7 @@ export default function App({ onLogout }) {
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
-  const { recentFiles, trackFile, trackLink } = useRecentFiles();
+  const { trackFile, trackLink } = useRecentFiles();
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const subjectRootFolders = subjectFolders.filter((f) => !f.parent_id);
   const [pendingFileId, setPendingFileId] = useState(null);
@@ -389,24 +389,6 @@ export default function App({ onLogout }) {
     }
   };
 
-  const handleRecentFileClick = (rf) => {
-    setSubjectId(rf.subjectId);
-    const folder = folders.find((f) => f.id === rf.folderId);
-    if (folder) {
-      setActiveFolder(folder);
-      setQuery('');
-      setFolderTab('files');
-      addRecent(folder, SUBJECTS.find((s) => s.id === folder.subject)?.color);
-      setFolderOpenTick((v) => v + 1);
-      if (rf.type === 'link') {
-        setActiveFile(null);
-        setPendingLinkId(rf.id);
-      } else {
-        setActiveLink(null);
-        setPendingFileId(rf.id);
-      }
-    }
-  };
 
   const handleUpload = async (file, onProgress, signal) => {
     try {
@@ -1075,8 +1057,7 @@ export default function App({ onLogout }) {
             onToggleFavorite={toggleFavorite}
             onSetFolderColor={setFolderColor}
             onMoveFileToFolder={handleMoveFileToFolder}
-            recentFiles={recentFiles}
-            onRecentFileClick={handleRecentFileClick}
+
           />
         </div>}
         {!focusMode && <div
