@@ -59,6 +59,17 @@ const ANIM_STYLES = `
     opacity: 0; transition: opacity .18s;
   }
   .eb-card:hover .eb-card-actions { opacity: 1; }
+
+  /* Grid background — light mode only */
+  :root .eb-grid-bg {
+    background:
+      radial-gradient(ellipse 60% 40% at 8% 12%, rgba(232,71,42,.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 45% at 92% 88%, rgba(99,102,241,.07) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 50% at 50% 50%, rgba(234,179,8,.04) 0%, transparent 70%),
+      linear-gradient(160deg, #fdf6f4 0%, #f5f7ff 55%, #faf4ff 100%);
+  }
+  [data-theme="dark"] .eb-grid-bg { background: var(--c-bg); }
+
   .eb-card:hover {
     box-shadow:
       0 16px 48px rgba(0,0,0,.14),
@@ -584,7 +595,7 @@ export default function ExamBoard({ onDismiss }) {
             Keine Termine eingetragen.
           </div>
         ) : (
-          <div style={{
+          <div className="eb-grid-bg" style={{
             flex:1, overflowY:'auto',
             padding:'28px 32px',
             display:'grid',
