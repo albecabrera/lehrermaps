@@ -412,7 +412,7 @@ function ExamForm({ initial, onSave, onClose }) {
         animation:'eb-boardIn .25s cubic-bezier(.22,1,.36,1) both',
       }}>
         <div style={{ fontSize:20, fontWeight:800, marginBottom:24, color:'var(--c-text)' }}>
-          {initial ? '✏️ Prüfung bearbeiten' : '＋ Neue Prüfung'}
+          {initial ? '✏️ Termin bearbeiten' : '＋ Neuer Termin'}
         </div>
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }}>
           <Field label="Titel *" value={form.title} onChange={set('title')} placeholder="z.B. Klassenarbeit Nr. 2"/>
@@ -554,7 +554,7 @@ export default function ExamBoard({ onDismiss }) {
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M6 1v10M1 6h10" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-            Neue Prüfung
+            Neuer Termin
           </button>
 
           <button onClick={onDismiss} className="eb-btn-ghost" style={{
