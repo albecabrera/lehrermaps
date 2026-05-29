@@ -69,7 +69,16 @@ const ANIM_STYLES = `
 `;
 
 // ── helpers ───────────────────────────────────────────────────────────────────
-function toDate(s) { return s ? s.slice(0, 10) : ''; }
+function toDate(s) {
+  if (!s) return '';
+  const str = String(s);
+  // UTC ISO string ("2026-05-31T22:00:00.000Z") → extract LOCAL date components
+  if (str.includes('T') || str.endsWith('Z')) {
+    const d = new Date(str);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  return str.slice(0, 10);
+}
 function startOfDay(d) { const c = new Date(d); c.setHours(0,0,0,0); return c; }
 
 function daysUntil(ds) {
