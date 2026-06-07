@@ -11,7 +11,7 @@ export default function FocusMode({ active, onExit, children }) {
   }, [active, onExit]);
 
   return (
-    <div style={{ height: '100%', minHeight: 0 }} data-focus-mode={active ? 'on' : 'off'}>
+    <div style={{ display: 'contents' }} data-focus-mode={active ? 'on' : 'off'}>
       {children}
     </div>
   );
