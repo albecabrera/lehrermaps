@@ -691,7 +691,7 @@ export default function App({ onLogout }) {
         display: 'flex', alignItems: 'flex-end', padding: '8px 16px 0',
         background: 'var(--c-tab-bg)', borderBottom: '1px solid var(--c-border)',
         position: 'relative', flexShrink: 0, gap: 2,
-        minHeight: 56,
+        minHeight: 56, overflowX: 'auto', overflowY: 'visible',
       }}>
         {SUBJECTS.map((s) => {
           const on = s.id === subjectId;
@@ -1073,7 +1073,7 @@ export default function App({ onLogout }) {
 
         <div
           ref={contentPaneRef}
-          style={{ flex: 1, minWidth: 0, overflow: 'auto', position: 'relative' }}
+          style={{ flex: 1, minWidth: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}
           onPointerDown={(e) => {
             if (!activeFolder || e.pointerType === 'mouse' && e.clientX > 28) return;
             if (e.clientX > 28) return;
@@ -1144,7 +1144,7 @@ export default function App({ onLogout }) {
             </div>
           )}
           {activePageId ? (
-            <div style={{ height: '100%', minHeight: 0 }}>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
               <PageCanvas pageId={activePageId} />
             </div>
           ) : activeFolder ? (
@@ -1152,7 +1152,7 @@ export default function App({ onLogout }) {
               key={`folder-open-${activeFolder.id}-${folderOpenTick}`}
               className="lm-folder-open-shell"
               style={{
-                height: '100%',
+                flex: 1, minHeight: 0,
                 display: 'flex',
                 flexDirection: 'column',
                 transform: `translate3d(${parallax.x * 2 + (backSwipe.active ? backSwipe.x : 0)}px, ${parallax.y * 1.5}px, 0)`,
@@ -1354,18 +1354,20 @@ export default function App({ onLogout }) {
               </div>
             </div>
           ) : (
-            <WelcomeView
-              subject={subject}
-              folders={subjectRootFolders}
-              foldersLoading={foldersLoading}
-              recents={recents}
-              onFolderSelect={onFolderSelect}
-              onFolderHover={setHoveredFolder}
-              keyboardMarkedFolderId={kbdMarkedFolderId}
-              onRecentClick={handleRecentClick}
-              onNewFolder={() => setNewFolderOpen(true)}
-              t={t}
-            />
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              <WelcomeView
+                subject={subject}
+                folders={subjectRootFolders}
+                foldersLoading={foldersLoading}
+                recents={recents}
+                onFolderSelect={onFolderSelect}
+                onFolderHover={setHoveredFolder}
+                keyboardMarkedFolderId={kbdMarkedFolderId}
+                onRecentClick={handleRecentClick}
+                onNewFolder={() => setNewFolderOpen(true)}
+                t={t}
+              />
+            </div>
           )}
         </div>
 

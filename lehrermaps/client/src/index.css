@@ -93,6 +93,34 @@ html, body, #root {
   filter: none !important;
 }
 
+/* ── Arc-only login flicker fix ─────────────────────────────
+   Arc's compositor flickers on the login screen due to layered
+   gradients, gradient-clipped text, large blurred shadows and the
+   global body color transition. These rules apply ONLY when the
+   .lm-arc class is present (set in main.jsx for Arc only), so Chrome
+   keeps the full design untouched. */
+.lm-arc body,
+.lm-arc #root {
+  transition: none !important;
+}
+
+/* Collapse promoted layers + neutralize repaint-heavy paint on login */
+.lm-arc .lm-login-stable,
+.lm-arc .lm-login-stable * {
+  animation: none !important;
+  transition: none !important;
+  will-change: auto !important;
+  transform: none !important;
+}
+
+/* Heavy blurred shadows are the main flicker source — flatten them.
+   Gradient-clipped text is left intact (forcing it solid would hide the
+   banner headings that rely on color:transparent + background-clip:text). */
+.lm-arc .lm-login-stable,
+.lm-arc .lm-login-stable * {
+  box-shadow: none !important;
+}
+
 [data-theme="dark"] body,
 [data-theme="dark"] #root {
   background:
@@ -305,6 +333,9 @@ button:active {
   border-color: var(--c-glass-border) !important;
   box-shadow: var(--c-glass-shadow);
 }
+
+.lm-tabbar::-webkit-scrollbar { display: none; }
+.lm-tabbar { scrollbar-width: none; }
 
 [data-theme="dark"] .lm-tabbar {
   background: rgba(10, 12, 22, 0.80) !important;
