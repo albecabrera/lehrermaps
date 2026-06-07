@@ -1297,6 +1297,7 @@ export default function App({ onLogout }) {
                         onFileSelect={(f, meta) => {
                           setActiveFile(f);
                           setActiveLink(null);
+                          if (meta?.fromKeyboard) setActiveFile2(null);
                           trackFile(f, activeFolder?.id, subjectId);
                           const from = meta?.sourceRect;
                           const to = previewPaneRef.current?.getBoundingClientRect();

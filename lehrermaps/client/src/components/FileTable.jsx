@@ -159,7 +159,7 @@ export default function FileTable({
 
       const nextFile = items[nextIdx];
       if (nextFile) {
-        onFileSelectRef.current?.(nextFile, {});
+        onFileSelectRef.current?.(nextFile, { fromKeyboard: true });
         setTimeout(() => {
           btnRefsMap.current.get(nextFile.id)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }, 0);
