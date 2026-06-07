@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import FileBadge from './FileBadge';
 import { detectKind } from '../constants/structure';
 import { downloadFile, publicFileUrl } from '../lib/api';
@@ -105,6 +105,70 @@ export default function FileTable({
     setSortBy(key);
     setSortDir(key === 'name' || key === 'numbering' ? 'asc' : 'desc');
   };
+
+  // Refs for keyboard navigation
+  const gridRef = useRef(null);
+  const btnRefsMap = useRef(new Map());
+  const sortedRef = useRef(sorted);
+  const activeFileIdRef = useRef(activeFileId);
+  const onFileSelectRef = useRef(onFileSelect);
+
+  useEffect(() => { sortedRef.current = sorted; }, [sorted]);
+  useEffect(() => { activeFileIdRef.current = activeFileId; }, [activeFileId]);
+  useEffect(() => { onFileSelectRef.current = onFileSelect; }, [onFileSelect]);
+
+  useEffect(() => {
+    const getColumns = () => {
+      if (!gridRef.current) return 1;
+      const items = gridRef.current.children;
+      if (items.length < 2) return 1;
+      const firstY = items[0].getBoundingClientRect().top;
+      let count = 1;
+      for (let i = 1; i < items.length; i++) {
+        if (Math.abs(items[i].getBoundingClientRect().top - firstY) < 4) count++;
+        else break;
+      }
+      return count;
+    };
+
+    const handler = (e) => {
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+
+      const items = sortedRef.current;
+      if (!items.length) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const cols = getColumns();
+      const curIdx = activeFileIdRef.current
+        ? items.findIndex((f) => f.id === activeFileIdRef.current)
+        : -1;
+
+      let delta = 0;
+      if (e.key === 'ArrowRight') delta = 1;
+      else if (e.key === 'ArrowLeft') delta = -1;
+      else if (e.key === 'ArrowDown') delta = cols;
+      else if (e.key === 'ArrowUp') delta = -cols;
+
+      const nextIdx = curIdx < 0
+        ? 0
+        : Math.max(0, Math.min(items.length - 1, curIdx + delta));
+
+      const nextFile = items[nextIdx];
+      if (nextFile) {
+        onFileSelectRef.current?.(nextFile, {});
+        setTimeout(() => {
+          btnRefsMap.current.get(nextFile.id)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }, 0);
+      }
+    };
+
+    document.addEventListener('keydown', handler, true);
+    return () => document.removeEventListener('keydown', handler, true);
+  }, []);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -227,11 +291,14 @@ export default function FileTable({
             gap: 10,
             alignItems: 'start',
           }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: 6,
-          }}>
+          <div
+            ref={gridRef}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 6,
+            }}
+          >
           {sorted.map((file, idx) => {
             const on = file.id === activeFileId;
             const on2 = file.id === activeFile2Id;
@@ -248,6 +315,8 @@ export default function FileTable({
             return (
               <button
                 key={file.id}
+                ref={(el) => { if (el) btnRefsMap.current.set(file.id, el); else btnRefsMap.current.delete(file.id); }}
+                data-file-btn
                 onClick={(e) => {
                   if ((e.ctrlKey || e.metaKey) && onFileSecondarySelect) {
                     e.preventDefault();

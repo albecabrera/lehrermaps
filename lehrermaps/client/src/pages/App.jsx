@@ -245,19 +245,7 @@ export default function App({ onLogout }) {
       }
 
       if (isTyping || folderTab !== 'files' || !activeFolder || !files.length) return;
-      if (e.key === 'j' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (!activeFile) { setActiveFile(files[0]); setKbdMarkedFileId(files[0]?.id || null); return; }
-        const idx = files.findIndex((f) => f.id === activeFile.id);
-        const next = files[Math.min(files.length - 1, idx + 1)];
-        if (next) { setActiveFile(next); setKbdMarkedFileId(next.id); }
-      } else if (e.key === 'k' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (!activeFile) { setActiveFile(files[0]); setKbdMarkedFileId(files[0]?.id || null); return; }
-        const idx = files.findIndex((f) => f.id === activeFile.id);
-        const prev = files[Math.max(0, idx - 1)];
-        if (prev) { setActiveFile(prev); setKbdMarkedFileId(prev.id); }
-      } else if (e.key === 'Delete' && activeFile) {
+      if (e.key === 'Delete' && activeFile) {
         e.preventDefault();
         handleDeleteFile(activeFile);
       } else if (e.key === 'Enter') {
