@@ -15,6 +15,29 @@ import { NotebookProvider } from './contexts/NotebookContext';
 // produce compositing flicker in Chromium. It's mounted inside Root only
 // when the user is already authenticated as 'lehrer'.
 
+// Arc-only flicker guard. Arc's compositor repaints heavy gradient/shadow layers
+// on the login screen (Chrome does not). Arc injects --arc-palette-* CSS vars on
+// the document element; Chrome never does — so this tags Arc only, leaving Chrome
+// untouched (the prior lm-arc-safe attempt wrongly targeted all of Chromium).
+(function tagArc() {
+  const detect = () => {
+    const v = getComputedStyle(document.documentElement)
+      .getPropertyValue('--arc-palette-title');
+    if (v && v.trim() !== '') {
+      document.documentElement.classList.add('lm-arc');
+      return true;
+    }
+    return false;
+  };
+  if (!detect()) {
+    // Arc may inject its palette vars slightly after first paint — retry briefly.
+    let tries = 0;
+    const id = setInterval(() => {
+      if (detect() || ++tries > 10) clearInterval(id);
+    }, 50);
+  }
+}());
+
 // Bootstrap ?token= before React mounts — runs once, no side effects inside render
 (function bootstrapUrlToken() {
   const params = new URLSearchParams(window.location.search);

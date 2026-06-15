@@ -2,6 +2,9 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 import { execFile } from 'child_process';
 import { Server as SocketIOServer } from 'socket.io';
@@ -31,20 +34,26 @@ if (!process.env.STUDENT_PASSWORD) {
   console.warn('\x1b[33m⚠  WARNING: STUDENT_PASSWORD not set — using default "schueler123"\x1b[0m');
 }
 
-const allowedOrigins = (
+const _configuredOrigins = (
   process.env.ALLOWED_ORIGIN ||
   'http://localhost:5173,http://127.0.0.1:5173,http://localhost:4176,http://127.0.0.1:4176,http://localhost:4177,http://127.0.0.1:4177'
 ).split(',').map((s) => s.trim()).filter(Boolean);
+const allowedOrigins = [
+  ..._configuredOrigins,
+  `http://localhost:${PORT}`,
+  `http://127.0.0.1:${PORT}`,
+];
 
-app.use(cors({
+const corsMiddleware = cors({
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.includes(origin)) cb(null, true);
     else cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
-}));
+});
 app.use(express.json({ limit: '1mb' }));
 
+app.use('/api', corsMiddleware);
 app.use('/api', authRouter);
 app.use('/api/folders', foldersRouter);
 app.use('/api/files', filesRouter);
@@ -86,6 +95,20 @@ app.post('/api/shell/open', requireLehrer, (req, res) => {
     }
   });
 });
+
+// ── Cliente estático (build de producción) ─────────────────────────────────
+// Sirve client/dist si existe, con fallback SPA — permite usar la app
+// completa desde http://localhost:3001 sin levantar Vite.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const CLIENT_DIST = path.join(__dirname, '..', 'client', 'dist');
+
+if (fs.existsSync(path.join(CLIENT_DIST, 'index.html'))) {
+  app.use(express.static(CLIENT_DIST));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/ws')) return next();
+    res.sendFile(path.join(CLIENT_DIST, 'index.html'));
+  });
+}
 
 // ── WebSocket terminal ──────────────────────────────────────────────────────
 const io = new SocketIOServer(server, {
