@@ -9,9 +9,10 @@ import FolderIcon from '../components/FolderIcon';
 import { useLang } from '../contexts/LangContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/MobileNav';
 
 export default function StudentApp({ onLogout }) {
-  const { t } = useLang();
+  const { t, lang, setLang } = useLang();
   const { isDark, toggle: toggleTheme } = useTheme();
   const isMobile = useIsMobile();
   const [subjectId, setSubjectId] = useState('spanisch');
@@ -19,6 +20,7 @@ export default function StudentApp({ onLogout }) {
   const [activeFile, setActiveFile] = useState(null);
   const [studentQuery, setStudentQuery] = useState('');
   const [folderDrawerOpen, setFolderDrawerOpen] = useState(false);
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const { folders, loading } = useFolders();
@@ -124,26 +126,12 @@ export default function StudentApp({ onLogout }) {
         background: 'var(--c-surface)', borderBottom: '1px solid var(--c-border)',
         gap: 12, flexShrink: 0,
       }}>
-        {isMobile && (
-          <button
-            onClick={() => setFolderDrawerOpen(true)}
-            title={t('sidebar.expand')}
-            aria-label={t('sidebar.expand')}
-            style={{
-              width: 28, height: 28, border: '1px solid var(--c-border)', borderRadius: 6,
-              background: 'transparent', cursor: 'pointer', color: 'var(--c-text-2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
-              <path d="M1.5 4h12M1.5 7.5h12M1.5 11h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </button>
-        )}
         <div style={{ width: 8, height: 8, borderRadius: 2, background: accent }} />
         <span style={{ fontSize: 14, fontWeight: 700, flex: 1, color: 'var(--c-text)', letterSpacing: -0.2 }}>
           LehrerMaps · {t('student.view')}
         </span>
+        {/* Mobil wandern Theme/Logout ins Mehr-Sheet der Bottom-Nav */}
+        {!isMobile && <>
         <button
           onClick={toggleTheme}
           title={isDark ? t('app.theme_light') : t('app.theme_dark')}
@@ -170,6 +158,7 @@ export default function StudentApp({ onLogout }) {
           onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         >{t('student.exit')}</button>
+        </>}
       </div>
 
       {/* Subject tabs */}
@@ -320,6 +309,30 @@ export default function StudentApp({ onLogout }) {
           document.body
         )}
       </div>
+
+      {/* Mobile Bottom-Navigation — Daumen-Zone. Flex-Kind, verdeckt nie Inhalt. */}
+      {isMobile && (
+        <MobileBottomNav
+          accent={accent}
+          active={moreSheetOpen ? 'more' : 'folders'}
+          items={[
+            { id: 'folders', label: t('mobile.folders'), icon: navIcons.subjects, onClick: () => setFolderDrawerOpen(true) },
+            { id: 'more', label: t('mobile.more'), icon: navIcons.more, onClick: () => setMoreSheetOpen(true) },
+          ]}
+        />
+      )}
+
+      <MobileMoreSheet
+        open={isMobile && moreSheetOpen}
+        onClose={() => setMoreSheetOpen(false)}
+        t={t}
+        accent={accent}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
+        lang={lang}
+        setLang={setLang}
+        onLogout={onLogout}
+      />
     </div>
   );
 }

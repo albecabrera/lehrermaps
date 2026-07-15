@@ -36,7 +36,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLang } from '../contexts/LangContext';
 import { useNotebook } from '../contexts/NotebookContext';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { MobileBottomNav, MobileMoreSheet } from '../components/MobileNav';
+import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/MobileNav';
 
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -1593,12 +1593,13 @@ export default function App({ onLogout }) {
       {isMobile && !focusMode && (
         <MobileBottomNav
           accent={accent}
-          t={t}
           active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'home'}
-          onHome={() => { setViewMode('subjects'); setActivePageId(null); closeFolderView(); }}
-          onSearch={() => setGlobalSearchOpen(true)}
-          onSchedule={() => setViewMode('schedule')}
-          onMore={() => setMoreSheetOpen(true)}
+          items={[
+            { id: 'home', label: t('mobile.subjects'), icon: navIcons.subjects, onClick: () => { setViewMode('subjects'); setActivePageId(null); closeFolderView(); } },
+            { id: 'search', label: t('mobile.search'), icon: navIcons.search, onClick: () => setGlobalSearchOpen(true) },
+            { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => setViewMode('schedule') },
+            { id: 'more', label: t('mobile.more'), icon: navIcons.more, onClick: () => setMoreSheetOpen(true) },
+          ]}
         />
       )}
       </div>
@@ -1617,6 +1618,7 @@ export default function App({ onLogout }) {
         onUpload={() => setUploadOpen(true)}
         uploadDisabled={!activeFolder}
         onLogout={onLogout}
+        showTeacherLinks
       />
 
       <UploadModal

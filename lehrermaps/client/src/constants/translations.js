@@ -10,6 +10,7 @@ export const translations = {
     'mobile.subjects': 'Fächer',
     'mobile.search': 'Suche',
     'mobile.more': 'Mehr',
+    'mobile.folders': 'Ordner',
 
     // Quick notes
     'quicknotes.title': 'Schnellnotizen',
@@ -283,6 +284,7 @@ export const translations = {
     'mobile.subjects': 'Materias',
     'mobile.search': 'Buscar',
     'mobile.more': 'Más',
+    'mobile.folders': 'Carpetas',
 
     // Quick notes
     'quicknotes.title': 'Notas rápidas',
@@ -555,6 +557,7 @@ export const translations = {
     'mobile.subjects': 'Subjects',
     'mobile.search': 'Search',
     'mobile.more': 'More',
+    'mobile.folders': 'Folders',
 
     'quicknotes.title': 'Quick notes',
     'quicknotes.placeholder': 'New quick note…',

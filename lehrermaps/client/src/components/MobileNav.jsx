@@ -1,50 +1,39 @@
 import { createPortal } from 'react-dom';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
+// Gemeinsame Icons für Bottom-Nav-Ziele (Lehrer- und Studenten-App)
+export const navIcons = {
+  subjects: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M2 6a2 2 0 0 1 2-2h4l1.5 1.5H16a2 2 0 0 1 2 2V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6Z"
+        stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    </svg>
+  ),
+  search: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M13.5 13.5l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  ),
+  schedule: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect x="2.5" y="4" width="15" height="13" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M2.5 8h15M7 2v4M13 2v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  ),
+  more: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="4.5" cy="10" r="1.6" fill="currentColor"/>
+      <circle cx="10" cy="10" r="1.6" fill="currentColor"/>
+      <circle cx="15.5" cy="10" r="1.6" fill="currentColor"/>
+    </svg>
+  ),
+};
+
 // Mobile Bottom-Navigation — Daumen-Zone statt überladener Top-Leiste.
 // Wird als letztes Flex-Kind des App-Roots gerendert (nicht fixed),
-// verdeckt daher nie Inhalt.
-export function MobileBottomNav({ accent, t, active, onHome, onSearch, onSchedule, onMore }) {
-  const items = [
-    {
-      id: 'home', label: t('mobile.subjects'), onClick: onHome,
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M2 6a2 2 0 0 1 2-2h4l1.5 1.5H16a2 2 0 0 1 2 2V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6Z"
-            stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-        </svg>
-      ),
-    },
-    {
-      id: 'search', label: t('mobile.search'), onClick: onSearch,
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.5"/>
-          <path d="M13.5 13.5l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
-      ),
-    },
-    {
-      id: 'schedule', label: t('schedule.title'), onClick: onSchedule,
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <rect x="2.5" y="4" width="15" height="13" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-          <path d="M2.5 8h15M7 2v4M13 2v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
-      ),
-    },
-    {
-      id: 'more', label: t('mobile.more'), onClick: onMore,
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <circle cx="4.5" cy="10" r="1.6" fill="currentColor"/>
-          <circle cx="10" cy="10" r="1.6" fill="currentColor"/>
-          <circle cx="15.5" cy="10" r="1.6" fill="currentColor"/>
-        </svg>
-      ),
-    },
-  ];
-
+// verdeckt daher nie Inhalt. items: [{ id, label, icon, onClick }]
+export function MobileBottomNav({ accent, items, active }) {
   return (
     <nav style={{
       flexShrink: 0, display: 'flex',
@@ -78,12 +67,16 @@ export function MobileBottomNav({ accent, t, active, onHome, onSearch, onSchedul
   );
 }
 
-// „Mehr"-Bottom-Sheet: alles, was auf Desktop in der Top-Leiste wohnt,
+// „Mehr"-Bottom-Sheet: alles, was auf Desktop in der Kopfleiste wohnt,
 // aber mobil zu selten gebraucht wird, um Platz zu verdienen.
+// Lehrer-Einträge (Termine/Upload/Arbeitsblatt/Notion/Miro) erscheinen nur,
+// wenn die zugehörigen Handler übergeben werden — die Studenten-App
+// nutzt dasselbe Sheet nur mit Theme/Sprache/Abmelden.
 export function MobileMoreSheet({
   open, onClose, t, accent,
   isDark, toggleTheme, lang, setLang,
   onExams, onWorksheet, onUpload, uploadDisabled, onLogout,
+  showTeacherLinks = false,
 }) {
   useEscapeKey(open, onClose);
   if (!open) return null;
@@ -106,6 +99,9 @@ export function MobileMoreSheet({
       {label}
     </button>
   );
+
+  const divider = <div style={{ height: 1, background: 'var(--c-border)', margin: '8px 6px' }} />;
+  const hasActions = onExams || onUpload || onWorksheet;
 
   return createPortal(
     <div
@@ -134,7 +130,7 @@ export function MobileMoreSheet({
         {/* Grabber */}
         <div style={{ width: 36, height: 4, borderRadius: 999, background: 'var(--c-border)', margin: '2px auto 10px' }} />
 
-        {row('Termine', onExams, {
+        {onExams && row('Termine', onExams, {
           icon: (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <rect x="1.5" y="3" width="13" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
@@ -142,7 +138,7 @@ export function MobileMoreSheet({
             </svg>
           ),
         })}
-        {row(t('app.upload'), onUpload, {
+        {onUpload && row(t('app.upload'), onUpload, {
           disabled: uploadDisabled,
           icon: (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -150,18 +146,21 @@ export function MobileMoreSheet({
             </svg>
           ),
         })}
-        {row('✦ Arbeitsblatt', onWorksheet)}
+        {onWorksheet && row('✦ Arbeitsblatt', onWorksheet)}
 
-        <div style={{ height: 1, background: 'var(--c-border)', margin: '8px 6px' }} />
+        {hasActions && divider}
 
-        {row('Notion', () => window.open('https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link', '_blank', 'noopener,noreferrer'), {
-          icon: <span style={{ fontSize: 13, fontWeight: 700 }}>N</span>,
-        })}
-        {row('Miro', () => window.open('https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230', '_blank', 'noopener,noreferrer'), {
-          icon: <span style={{ fontSize: 13, fontWeight: 700 }}>M</span>,
-        })}
-
-        <div style={{ height: 1, background: 'var(--c-border)', margin: '8px 6px' }} />
+        {showTeacherLinks && (
+          <>
+            {row('Notion', () => window.open('https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link', '_blank', 'noopener,noreferrer'), {
+              icon: <span style={{ fontSize: 13, fontWeight: 700 }}>N</span>,
+            })}
+            {row('Miro', () => window.open('https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230', '_blank', 'noopener,noreferrer'), {
+              icon: <span style={{ fontSize: 13, fontWeight: 700 }}>M</span>,
+            })}
+            {divider}
+          </>
+        )}
 
         {/* Theme + Sprache in einer Zeile — Einstellungen, keine Navigation */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px' }}>
@@ -198,7 +197,7 @@ export function MobileMoreSheet({
           </div>
         </div>
 
-        <div style={{ height: 1, background: 'var(--c-border)', margin: '8px 6px' }} />
+        {divider}
 
         {row(t('app.logout'), onLogout, {
           danger: true,
