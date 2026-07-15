@@ -6,6 +6,11 @@ export const translations = {
     'subject.sport': 'Sport',
     'subject.klasse': 'Klassenleitung',
 
+    // Mobile Navigation
+    'mobile.subjects': 'Fächer',
+    'mobile.search': 'Suche',
+    'mobile.more': 'Mehr',
+
     // Quick notes
     'quicknotes.title': 'Schnellnotizen',
     'quicknotes.placeholder': 'Neue Schnellnotiz…',
@@ -274,6 +279,11 @@ export const translations = {
     'subject.sport': 'Deporte',
     'subject.klasse': 'Tutoría',
 
+    // Mobile Navigation
+    'mobile.subjects': 'Materias',
+    'mobile.search': 'Buscar',
+    'mobile.more': 'Más',
+
     // Quick notes
     'quicknotes.title': 'Notas rápidas',
     'quicknotes.placeholder': 'Nueva nota rápida…',
@@ -541,6 +551,10 @@ export const translations = {
     'subject.informatik': 'Computer Science',
     'subject.sport': 'Sports',
     'subject.klasse': 'Class Tutor',
+
+    'mobile.subjects': 'Subjects',
+    'mobile.search': 'Search',
+    'mobile.more': 'More',
 
     'quicknotes.title': 'Quick notes',
     'quicknotes.placeholder': 'New quick note…',

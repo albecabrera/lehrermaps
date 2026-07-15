@@ -36,6 +36,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLang } from '../contexts/LangContext';
 import { useNotebook } from '../contexts/NotebookContext';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { MobileBottomNav, MobileMoreSheet } from '../components/MobileNav';
 
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -43,6 +44,7 @@ export default function App({ onLogout }) {
   const { activePageId, setActivePageId } = useNotebook();
   const isMobile = useIsMobile();
   const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
 
   const [subjectId, setSubjectId] = useState('spanisch');
   const [activeFolder, setActiveFolder] = useState(null);
@@ -799,6 +801,8 @@ export default function App({ onLogout }) {
           borderRadius: '2px 2px 0 0',
         }} />
 
+        {/* Mobil wandern Stundenplan/Termine/Notion/Miro in Bottom-Nav + Mehr-Sheet */}
+        {!isMobile && <>
         {/* Stundenplan toggle */}
         <button
           className="lm-spring"
@@ -910,11 +914,12 @@ export default function App({ onLogout }) {
             Miro
           </span>
         </a>
+        </>}
 
         <div style={{ flex: 1 }} />
 
-        {/* Right controls */}
-        <div style={{ paddingBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
+        {/* Right controls — mobil ersetzt durch Bottom-Nav + Mehr-Sheet */}
+        {!isMobile && <div style={{ paddingBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
           <button
             className="lm-spring"
             onClick={() => setFocusMode((v) => !v)}
@@ -1079,7 +1084,7 @@ export default function App({ onLogout }) {
                 stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-        </div>
+        </div>}
       </div>
 
       {/* Body */}
@@ -1128,6 +1133,7 @@ export default function App({ onLogout }) {
             <div className="lm-drawer" style={{
               position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 1221,
               width: 'min(84vw, 300px)', boxShadow: 'var(--c-shadow-modal)',
+              display: 'flex', alignItems: 'stretch',
               animation: 'lmSlideInLeft .22s cubic-bezier(.4,.7,.3,1)',
             }}>
               <Sidebar
@@ -1582,7 +1588,36 @@ export default function App({ onLogout }) {
         </>}
       </div>
       </FocusMode>
+
+      {/* Mobile Bottom-Navigation — Daumen-Zone. Flex-Kind, verdeckt nie Inhalt. */}
+      {isMobile && !focusMode && (
+        <MobileBottomNav
+          accent={accent}
+          t={t}
+          active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'home'}
+          onHome={() => { setViewMode('subjects'); setActivePageId(null); closeFolderView(); }}
+          onSearch={() => setGlobalSearchOpen(true)}
+          onSchedule={() => setViewMode('schedule')}
+          onMore={() => setMoreSheetOpen(true)}
+        />
+      )}
       </div>
+
+      <MobileMoreSheet
+        open={isMobile && moreSheetOpen}
+        onClose={() => setMoreSheetOpen(false)}
+        t={t}
+        accent={accent}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
+        lang={lang}
+        setLang={setLang}
+        onExams={() => setExamBoardOpen(true)}
+        onWorksheet={() => setWorksheetGenOpen(true)}
+        onUpload={() => setUploadOpen(true)}
+        uploadDisabled={!activeFolder}
+        onLogout={onLogout}
+      />
 
       <UploadModal
         open={uploadOpen}
