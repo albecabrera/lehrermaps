@@ -11,7 +11,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    // 401 = Session abgelaufen → zurück zum Login. Ausnahme: der Login-Request
+    // selbst — dort bedeutet 401 nur „falsches Passwort" und das Formular muss
+    // den Fehler anzeigen dürfen statt hart neu zu laden.
+    const isLoginRequest = (err.config?.url || '').includes('/login');
+    if (err.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('lm_token');
       window.location.href = '/';
     }
