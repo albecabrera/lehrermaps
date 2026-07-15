@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Voll ausgefuelltes Quadrat, keine runden Ecken: Plattform legt eigene Maske an -->
+  <rect width="512" height="512" fill="#E8472A"/>
+  <!-- Ordner-Glyph, zentriert in der Maskable-Safe-Zone (~62%) -->
+  <path fill="#ffffff"
+    d="M150 176h64l24 24h124a20 20 0 0 1 20 20v92a20 20 0 0 1-20 20H150a20 20 0 0 1-20-20V196a20 20 0 0 1 20-20Z"/>
+</svg>
