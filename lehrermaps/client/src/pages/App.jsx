@@ -29,6 +29,7 @@ import WorksheetGenerator from '../components/WorksheetGenerator';
 import TerminalModal from '../components/TerminalModal';
 import NotesEditor from '../components/NotesEditor';
 import FolderGallery from '../components/FolderGallery';
+import FolderIcon from '../components/FolderIcon';
 import PageCanvas from '../components/Canvas/PageCanvas';
 import FocusMode from '../components/FocusMode';
 import { useTheme } from '../contexts/ThemeContext';
@@ -83,6 +84,28 @@ export default function App({ onLogout }) {
   const { trackFile, trackLink } = useRecentFiles();
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const subjectRootFolders = subjectFolders.filter((f) => !f.parent_id);
+  // Ahnenkette des aktiven Ordners (Wurzel → aktiv) für den Breadcrumb
+  const activeFolderPath = (() => {
+    if (!activeFolder) return [];
+    const byId = new Map(folders.map((f) => [f.id, f]));
+    const chain = [];
+    let cur = byId.get(activeFolder.id) || activeFolder;
+    let guard = 0;
+    while (cur && guard++ < 20) {
+      chain.unshift(cur);
+      cur = cur.parent_id != null ? byId.get(cur.parent_id) : null;
+    }
+    return chain;
+  })();
+  // Direkte Unterordner des aktiven Ordners (gleiche Sortierung wie im Sidebar-Baum)
+  const childFolders = activeFolder
+    ? folders
+        .filter((f) => (f.parent_id ?? null) === activeFolder.id)
+        .sort((a, b) =>
+          ((b.is_favorite || 0) - (a.is_favorite || 0)) ||
+          ((a.sort_order || 0) - (b.sort_order || 0)) ||
+          a.name.localeCompare(b.name))
+    : [];
   const [pendingFileId, setPendingFileId] = useState(null);
   const [pendingLinkId, setPendingLinkId] = useState(null);
   const [folderOpenTick, setFolderOpenTick] = useState(0);
@@ -1161,9 +1184,13 @@ export default function App({ onLogout }) {
               <div style={{ padding: '20px 28px 0', flexShrink: 0 }}>
                 <Breadcrumb
                   items={[
-                    t('subject.' + subjectId),
-                    activeFolder.group_name,
-                    activeFolder.name,
+                    { label: t('subject.' + subjectId), onClick: closeFolderView },
+                    { label: activeFolder.group_name, onClick: closeFolderView },
+                    ...activeFolderPath.slice(0, -1).map((f) => ({
+                      label: f.name,
+                      onClick: () => onFolderSelect(f),
+                    })),
+                    { label: activeFolder.name },
                   ]}
                   accent={accent}
                 />
@@ -1286,6 +1313,46 @@ export default function App({ onLogout }) {
               <div style={{ flex: 1, minHeight: 0, overflow: folderTab === 'files' ? 'auto' : 'hidden' }}>
                 {folderTab === 'files' ? (
                   <div style={{ padding: '12px 20px' }}>
+                    {/* Unterordner direkt im Inhalt — Struktur bleibt ohne Sidebar greifbar */}
+                    {childFolders.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                        {childFolders.map((cf) => (
+                          <button
+                            key={cf.id}
+                            className="lm-spring"
+                            onClick={(e) => onFolderSelect(cf, e.currentTarget.getBoundingClientRect())}
+                            title={cf.name}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 7,
+                              height: 32, padding: '0 12px 0 10px',
+                              border: '1px solid var(--c-border)', borderRadius: 8,
+                              background: 'var(--c-surface)', cursor: 'pointer',
+                              fontFamily: 'inherit', fontSize: 12.5, fontWeight: 500,
+                              color: 'var(--c-text)', maxWidth: 260,
+                              transition: 'border-color .12s, background .12s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = `${cf.color || accent}66`;
+                              e.currentTarget.style.background = `${cf.color || accent}0d`;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = 'var(--c-border)';
+                              e.currentTarget.style.background = 'var(--c-surface)';
+                            }}
+                          >
+                            <FolderIcon color={cf.color || accent} size={14} />
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {cf.name}
+                            </span>
+                            {cf.file_count > 0 && (
+                              <span style={{ fontSize: 10, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', flexShrink: 0 }}>
+                                {cf.file_count}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     {filesLoading ? (
                       <FilesSkeleton />
                     ) : filesView === 'gallery' ? (
@@ -1766,7 +1833,19 @@ function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect
       </div>
 
       {foldersLoading ? (
-        <div style={{ color: 'var(--c-text-3)', fontSize: 13 }}>{t('loading')}</div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gap: 12,
+        }}>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="lm-skeleton-shimmer" style={{
+              height: 168, borderRadius: 14,
+              background: 'var(--c-surface-2)', border: '1px solid var(--c-border)',
+              opacity: 1 - i * 0.12,
+            }} />
+          ))}
+        </div>
       ) : folders.length === 0 ? (
         <div style={{
           padding: '48px 24px', textAlign: 'center',
