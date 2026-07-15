@@ -39,9 +39,35 @@ Los docentes manejan material disperso: PDFs, presentaciones, videos, links y ap
 - **Links y QR** — guardar URLs por carpeta, generar QR para compartir con estudiantes
 - **Horario semanal** — vincular carpetas a bloques horarios, exportar como `.ics`
 - **Vista estudiante** — login separado, solo ve archivos marcados como compartidos
-- **Búsqueda global** — ⌘K busca en archivos, carpetas y contenido de notas
-- **Dark mode** — detección automática del sistema
-- **PWA-ready** — manifest + service worker
+- **Búsqueda global** — ⌘K abre la búsqueda en archivos, carpetas y contenido de notas
+- **Navegación estructural** — breadcrumb clicable (materia › grupo › carpetas ancestro) + chips de subcarpetas dentro del contenido: la estructura siempre está a mano, sin depender de la sidebar
+- **Atajos de teclado** — `⌘K` búsqueda · `?` ayuda · `Esc` cierra cualquier modal/preview · `j`/`k` y flechas para navegar archivos
+- **Interfaz móvil** — bottom-nav en la zona del pulgar, sidebar como drawer, vista previa a pantalla completa (ver [PWA e interfaz móvil](#pwa-e-interfaz-móvil))
+- **Dark mode** — detección automática del sistema, con `theme-color` sincronizado (barra de estado en modo standalone)
+- **PWA instalable** — instalable en iOS y Android, app-shell offline, iconos maskable + apple-touch, service worker con actualización automática
+
+---
+
+## PWA e interfaz móvil
+
+**PWA** — la app es instalable como aplicación nativa:
+
+- `manifest.json` completo (`id`, `scope`, `display: standalone`, `categories`, orientación)
+- Iconos: 192/512 (`any`), `icon-maskable.svg` (Android) y `apple-touch-icon.png` 180px (iOS)
+- Meta Apple (`apple-mobile-web-app-*`) + `viewport-fit=cover` para la safe-area del iPhone
+- `theme-color` dinámico según claro/oscuro
+- Service worker (`stale-while-revalidate`): el app-shell carga offline tras la primera visita; los datos (archivos/carpetas) siguen requiriendo red
+- **Requiere HTTPS** — el navegador solo registra el service worker en contexto seguro. Ver [`DEPLOY.md`](DEPLOY.md)
+
+**Interfaz móvil** (< 860 px, hook `useIsMobile`) — no es el escritorio comprimido, sino un patrón app nativo:
+
+- **Bottom-nav** en la zona del pulgar — docente: Materias · Buscar · Horario · Más; estudiante: Carpetas · Más
+- **Sheet "Más"** con lo secundario (subir, examen, hoja de trabajo, Notion/Miro, tema, idioma, cerrar sesión)
+- **Sidebar como drawer** deslizante con backdrop; se cierra al elegir carpeta
+- **Vista previa a pantalla completa** con botón atrás (en escritorio es panel lateral redimensionable)
+- La barra superior en móvil solo muestra hamburguesa + pestañas de materia
+
+Componentes/hooks clave: `components/MobileNav.jsx`, `hooks/useIsMobile.js`, `hooks/useEscapeKey.js`.
 
 ---
 
@@ -84,12 +110,13 @@ Browser
 lehrermaps/
 ├── client/                   # Frontend React (Vite)
 │   └── src/
-│       ├── components/       # Componentes UI
+│       ├── components/       # Componentes UI (incl. MobileNav — bottom-nav + sheet)
 │       ├── constants/        # SUBJECTS, traducciones, tipos de archivo
 │       ├── contexts/         # Theme, Lang, Notebook
-│       ├── hooks/            # useFiles, useFolders, useLinks, useRecentFiles
+│       ├── hooks/            # useFiles/Folders/Links/Recents, useIsMobile, useEscapeKey
 │       ├── lib/api.js        # Axios wrapper + token
-│       └── pages/            # App, Login, StudentApp, StudentLogin
+│       └── pages/            # App, LoginPanel, StudentApp, StudentLogin
+│   └── public/               # manifest.json, service-worker.js, icons/ (PWA)
 ├── server/
 │   ├── routes/               # auth, files, folders, links, schedule, notebooks, search, exams, ai
 │   ├── middleware/auth.js    # Verificación JWT → req.user
@@ -97,8 +124,10 @@ lehrermaps/
 │   ├── uploads/              # Archivos subidos (en .gitignore)
 │   ├── index.js              # Entry point Express + Socket.io + node-pty
 │   └── env.txt               # Plantilla de .env
+├── deploy/nginx.conf         # Config Nginx lista para prod (TLS, caché, /ws)
 ├── schema.sql                # Schema inicial de BD
 ├── start.sh                  # Script de arranque automático
+├── DEPLOY.md                 # Guía de deploy + checklist PWA
 └── README.md
 ```
 
