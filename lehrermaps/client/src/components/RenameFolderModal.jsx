@@ -28,13 +28,14 @@ export default function RenameFolderModal({ folder, accent = '#E8472A', onClose,
         position: 'fixed', inset: 0, zIndex: 1200,
         background: 'var(--c-overlay)', backdropFilter: 'blur(6px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24,
         fontFamily: '"DM Sans", -apple-system, sans-serif',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 340, background: 'var(--c-surface)', borderRadius: 12,
+          width: '100%', maxWidth: 340, background: 'var(--c-surface)', borderRadius: 12,
           boxShadow: 'var(--c-shadow-modal)', overflow: 'hidden',
         }}
       >

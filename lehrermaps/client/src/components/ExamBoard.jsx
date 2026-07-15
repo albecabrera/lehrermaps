@@ -521,7 +521,7 @@ export default function ExamBoard({ onDismiss }) {
         <div style={{
           padding:'20px 28px',
           borderBottom:'1px solid var(--c-border)',
-          display:'flex', alignItems:'center', gap:16, flexShrink:0,
+          display:'flex', alignItems:'center', flexWrap:'wrap', gap:'10px 16px', flexShrink:0,
           background:'var(--c-bg)',
           boxShadow:'0 1px 0 var(--c-border)',
         }}>

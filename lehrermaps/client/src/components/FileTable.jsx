@@ -16,6 +16,7 @@ export default function FileTable({
   onFileDragStart,
   hiddenIds = new Set(),
   onBulkDelete, onBulkShare, onBulkUnshare, onBulkDownload, onBulkMove,
+  isMobile = false,
 }) {
   const { t } = useLang();
   const [menuFile, setMenuFile] = useState(null);
@@ -287,7 +288,9 @@ export default function FileTable({
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) minmax(220px, 260px)',
+            // Mobil: Video-/Link-Rail passt nicht neben die Dateikarten (min. 220px
+            // Rail + min. 220px Karten > 390px Bildschirmbreite) — untereinander stapeln.
+            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) minmax(220px, 260px)',
             gap: 10,
             alignItems: 'start',
           }}>
@@ -295,7 +298,7 @@ export default function FileTable({
             ref={gridRef}
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? 150 : 220}px, 1fr))`,
               gap: 6,
             }}
           >
@@ -414,8 +417,10 @@ export default function FileTable({
           </div>
 
           <div style={{
-            borderLeft: '1px solid var(--c-border)',
-            paddingLeft: 10,
+            borderLeft: isMobile ? 'none' : '1px solid var(--c-border)',
+            borderTop: isMobile ? '1px solid var(--c-border)' : 'none',
+            paddingLeft: isMobile ? 0 : 10,
+            paddingTop: isMobile ? 10 : 0,
             display: 'flex',
             flexDirection: 'column',
             gap: 10,

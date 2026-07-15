@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLang } from '../contexts/LangContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A' }) {
   const { t } = useLang();
@@ -8,6 +9,7 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
   const [qrSrc, setQrSrc] = useState(null);
   const [saving, setSaving] = useState(false);
   const titleRef = useRef(null);
+  useEscapeKey(open, onClose);
 
   useEffect(() => {
     if (open) { setTitle(''); setUrl(''); setQrSrc(null); setSaving(false); setTimeout(() => titleRef.current?.focus(), 60); }
@@ -39,12 +41,12 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
     <div style={{
       position: 'fixed', inset: 0, zIndex: 2000,
       background: 'var(--c-overlay)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center',
+      alignItems: 'center', justifyContent: 'center', padding: 24,
     }} onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'var(--c-surface)', borderRadius: 14, width: 440,
+          background: 'var(--c-surface)', borderRadius: 14, width: '100%', maxWidth: 440,
           boxShadow: 'var(--c-shadow-modal)', overflow: 'hidden',
           fontFamily: '"DM Sans", -apple-system, sans-serif',
           border: '1px solid var(--c-border-soft)',

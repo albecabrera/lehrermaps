@@ -65,7 +65,11 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       fontFamily: '"DM Sans", -apple-system, sans-serif',
-      padding: '24px 24px 40px',
+      // paddingTop 64 statt 24: garantiert Abstand zu den fixed
+      // Sprach-/Theme-Buttons (top:16, Höhe 32) — Flexbox respektiert
+      // padding als Mindestabstand auch wenn justifyContent:center bei
+      // langem Inhalt (kurze Bildschirme) wirkungslos wird.
+      padding: '64px 24px 40px',
       position: 'relative',
     }}>
 

@@ -16,6 +16,7 @@ export default function BulkMoveModal({ files, folders, targetId, onTargetChange
         position: 'fixed', inset: 0, zIndex: 1400,
         background: 'var(--c-overlay)', backdropFilter: 'blur(6px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24,
         fontFamily: '"DM Sans", -apple-system, sans-serif',
       }}
     >
@@ -25,7 +26,7 @@ export default function BulkMoveModal({ files, folders, targetId, onTargetChange
         style={{
           background: 'var(--c-surface)', border: '1px solid var(--c-border-soft)',
           borderRadius: 14, boxShadow: 'var(--c-shadow-modal)',
-          width: 400, maxHeight: '70vh', display: 'flex', flexDirection: 'column',
+          width: '100%', maxWidth: 400, maxHeight: '70vh', display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
           animation: 'lmSlideUp .16s cubic-bezier(.4,.7,.3,1)',
         }}

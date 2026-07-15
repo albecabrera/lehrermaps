@@ -35,11 +35,14 @@ import FocusMode from '../components/FocusMode';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLang } from '../contexts/LangContext';
 import { useNotebook } from '../contexts/NotebookContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { lang, t, setLang } = useLang();
   const { activePageId, setActivePageId } = useNotebook();
+  const isMobile = useIsMobile();
+  const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
 
   const [subjectId, setSubjectId] = useState('spanisch');
   const [activeFolder, setActiveFolder] = useState(null);
@@ -695,6 +698,27 @@ export default function App({ onLogout }) {
 
   const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen;
 
+  // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
+  const sidebarProps = {
+    subject,
+    groups: subject.groups,
+    folders: subjectFolders,
+    loading: foldersLoading,
+    activeFolderId: activeFolder?.id,
+    onNewFolder: () => { setNewFolderGroup(null); setNewFolderOpen(true); },
+    onNewFolderInGroup: (g) => { setNewFolderGroup(g); setNewFolderOpen(true); },
+    onMoveFolder: async (folderId, targetId) => { await moveFolderToParent(folderId, targetId); },
+    onNewHauptordner: (folder) => { setNewFolderParentId(null); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); },
+    onNewOrdner: (folder) => { setNewFolderParentId(folder.parent_id ?? null); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); },
+    onNewSubfolder: (folder) => { setNewFolderParentId(folder.id); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); },
+    onRenameFolder: setRenamingFolder,
+    onDeleteFolder: handleDeleteFolder,
+    onReorderFolders: reorderFolders,
+    onToggleFavorite: toggleFavorite,
+    onSetFolderColor: setFolderColor,
+    onMoveFileToFolder: handleMoveFileToFolder,
+  };
+
   return (
     <div style={{
       position: 'fixed', inset: 0,
@@ -711,6 +735,24 @@ export default function App({ onLogout }) {
         position: 'relative', flexShrink: 0, gap: 2,
         minHeight: 56, overflowX: 'auto', overflowY: 'visible',
       }}>
+        {isMobile && (
+          <button
+            className="lm-spring"
+            onClick={() => setSidebarDrawerOpen(true)}
+            title={t('sidebar.expand')}
+            aria-label={t('sidebar.expand')}
+            style={{
+              flexShrink: 0, width: 34, height: 34, marginBottom: 10,
+              border: '1px solid var(--c-border)', borderRadius: 8,
+              background: 'var(--c-surface)', color: 'var(--c-text-2)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M1.5 4h12M1.5 7.5h12M1.5 11h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        )}
         {SUBJECTS.map((s) => {
           const on = s.id === subjectId;
           const hovered = hoverSubject === s.id;
@@ -1057,31 +1099,14 @@ export default function App({ onLogout }) {
             <Schedule onNavigate={(subjectId) => { onSubjectChange(subjectId); }} />
           </div>
         ) : <>
-        {!focusMode && <div style={{ transform: `translate3d(${parallax.x * -4}px, ${parallax.y * -2}px, 0)`, transition: 'transform .25s cubic-bezier(.2,.8,.2,1)' }}>
+        {!focusMode && !isMobile && <div style={{ transform: `translate3d(${parallax.x * -4}px, ${parallax.y * -2}px, 0)`, transition: 'transform .25s cubic-bezier(.2,.8,.2,1)' }}>
           <Sidebar
-            subject={subject}
-            groups={subject.groups}
-            folders={subjectFolders}
-            loading={foldersLoading}
+            {...sidebarProps}
             width={sidebarWidth}
-            activeFolderId={activeFolder?.id}
             onFolderSelect={onFolderSelect}
-            onNewFolder={() => { setNewFolderGroup(null); setNewFolderOpen(true); }}
-            onNewFolderInGroup={(g) => { setNewFolderGroup(g); setNewFolderOpen(true); }}
-            onMoveFolder={async (folderId, targetId) => { await moveFolderToParent(folderId, targetId); }}
-            onNewHauptordner={(folder) => { setNewFolderParentId(null); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
-            onNewOrdner={(folder) => { setNewFolderParentId(folder.parent_id ?? null); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
-            onNewSubfolder={(folder) => { setNewFolderParentId(folder.id); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); }}
-            onRenameFolder={setRenamingFolder}
-            onDeleteFolder={handleDeleteFolder}
-            onReorderFolders={reorderFolders}
-            onToggleFavorite={toggleFavorite}
-            onSetFolderColor={setFolderColor}
-            onMoveFileToFolder={handleMoveFileToFolder}
-
           />
         </div>}
-        {!focusMode && <div
+        {!focusMode && !isMobile && <div
           onMouseDown={onSidebarResizeMouseDown}
           style={{
             width: 4, flexShrink: 0, cursor: 'col-resize',
@@ -1091,6 +1116,29 @@ export default function App({ onLogout }) {
           onMouseEnter={(e) => e.currentTarget.style.background = accent + '55'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         />}
+
+        {/* Mobile: Sidebar als Drawer statt fester Spalte — 260px+Vorschau
+            passen nicht auf ein Telefon, also Overlay mit Backdrop. */}
+        {!focusMode && isMobile && sidebarDrawerOpen && createPortal(
+          <>
+            <div
+              onClick={() => setSidebarDrawerOpen(false)}
+              style={{ position: 'fixed', inset: 0, zIndex: 1220, background: 'var(--c-overlay)', backdropFilter: 'blur(4px)', animation: 'lmFadeIn .15s ease-out' }}
+            />
+            <div className="lm-drawer" style={{
+              position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 1221,
+              width: 'min(84vw, 300px)', boxShadow: 'var(--c-shadow-modal)',
+              animation: 'lmSlideInLeft .22s cubic-bezier(.4,.7,.3,1)',
+            }}>
+              <Sidebar
+                {...sidebarProps}
+                width={280}
+                onFolderSelect={(folder, rect) => { onFolderSelect(folder, rect); setSidebarDrawerOpen(false); }}
+              />
+            </div>
+          </>,
+          document.body
+        )}
 
         <div
           ref={contentPaneRef}
@@ -1365,6 +1413,7 @@ export default function App({ onLogout }) {
                     ) : (
                       <FileTable
                         key={activeFolder?.id}
+                        isMobile={isMobile}
                         files={files}
                         hiddenIds={pendingDeleteIds}
                         links={links}
@@ -1437,8 +1486,8 @@ export default function App({ onLogout }) {
           )}
         </div>
 
-        {/* Preview panel — resizable, optional split */}
-        {activeFolder && !focusMode && (
+        {/* Preview panel — resizable, optional split (Desktop) */}
+        {activeFolder && !focusMode && !isMobile && (
           <div
             style={{
               width: effectivePreviewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden',
@@ -1485,6 +1534,50 @@ export default function App({ onLogout }) {
               )}
             </div>
           </div>
+        )}
+
+        {/* Mobile: Vorschau als Vollbild-Overlay statt Seitenspalte —
+            geöffnete Datei/Link verdeckt den Ordnerinhalt, Zurück schließt sie. */}
+        {isMobile && !focusMode && (activeFile || activeLink) && createPortal(
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 1230,
+            background: 'var(--c-bg)', display: 'flex', flexDirection: 'column',
+            animation: 'lmSlideUp .18s cubic-bezier(.4,.7,.3,1)',
+          }}>
+            {activeLink ? (
+              <>
+                <div style={{
+                  padding: '10px 8px', borderBottom: '1px solid var(--c-border)',
+                  display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                }}>
+                  <button
+                    onClick={() => setActiveLink(null)}
+                    title={t('login.back')}
+                    aria-label={t('login.back')}
+                    style={{
+                      width: 30, height: 30, border: 'none', borderRadius: 7,
+                      background: 'transparent', color: 'var(--c-text)', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+                <div style={{ flex: 1, minHeight: 0 }}>
+                  <LinkPreview link={activeLink} accent={accent} onDelete={handleDeleteLink} />
+                </div>
+              </>
+            ) : (
+              <FilePreview
+                file={activeFile}
+                accent={accent}
+                onClose={() => { setActiveFile(null); setActiveFile2(null); }}
+              />
+            )}
+          </div>,
+          document.body
         )}
         </>}
       </div>

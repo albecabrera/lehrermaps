@@ -276,6 +276,11 @@ button:active {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes lmSlideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
 @keyframes lmStaggerIn {
   from {
     opacity: 0;
@@ -323,6 +328,9 @@ button:active {
   .lm-depth-overlay {
     animation: none !important;
   }
+  .lm-drawer {
+    animation: none !important;
+  }
 }
 
 /* ── Liquid Glass utilities ─────────────────────────────────────────────── */
@@ -336,6 +344,9 @@ button:active {
 
 .lm-tabbar::-webkit-scrollbar { display: none; }
 .lm-tabbar { scrollbar-width: none; }
+
+.lm-hscroll::-webkit-scrollbar { display: none; }
+.lm-hscroll { scrollbar-width: none; -ms-overflow-style: none; }
 
 [data-theme="dark"] .lm-tabbar {
   background: rgba(10, 12, 22, 0.80) !important;
