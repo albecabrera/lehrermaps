@@ -49,6 +49,11 @@ export default function FolderGallery({ files, activeFileId, onSelect, accent = 
               <img
                 src={`/api/files/view/${file.id}?token=${encodeURIComponent(localStorage.getItem('lm_token') || '')}`}
                 alt={file.original_name}
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement.textContent = '🖼';
+                }}
                 style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }}
               />
             </div>

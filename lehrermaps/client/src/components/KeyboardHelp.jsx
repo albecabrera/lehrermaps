@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useLang } from '../contexts/LangContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const SHORTCUTS = [
   { keys: ['⌘', 'K'], label: 'Globale Suche öffnen' },
@@ -11,6 +12,7 @@ const SHORTCUTS = [
 ];
 
 export default function KeyboardHelp({ onClose }) {
+  useEscapeKey(true, onClose);
   return createPortal(
     <div
       onClick={onClose}

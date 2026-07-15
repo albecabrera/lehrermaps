@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLang } from '../contexts/LangContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 export default function DeadlineModal({ open, title, initialDate, accent, onClose, onSave }) {
+  useEscapeKey(open, onClose);
   const { t } = useLang();
   const [value, setValue] = useState('');
 

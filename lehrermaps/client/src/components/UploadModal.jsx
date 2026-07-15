@@ -3,12 +3,14 @@ import { createPortal } from 'react-dom';
 import { fileKindColor, detectKind } from '../constants/structure';
 import { SUPPORTED_TYPES } from '../constants/structure';
 import { useLang } from '../contexts/LangContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 export default function UploadModal({ open, onClose, accent, targetFolder, onUpload, initialFiles }) {
   const { t } = useLang();
   const [dragOver, setDragOver] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
+  useEscapeKey(open && !uploading, onClose);
   const inputRef = useRef(null);
   const folderInputRef = useRef(null);
   const abortRef = useRef(null);

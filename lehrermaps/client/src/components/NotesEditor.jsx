@@ -536,6 +536,7 @@ function ToolBtn({ children, onClick, title, active, accent }) {
   return (
     <button
       title={title}
+      aria-label={title}
       onMouseDown={(e) => { e.preventDefault(); onClick(); }}
       style={{
         width: 28, height: 26, border: active ? `1px solid ${accent}55` : '1px solid transparent',

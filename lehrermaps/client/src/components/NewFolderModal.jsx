@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { SUBJECTS } from '../constants/structure';
 import { useLang } from '../contexts/LangContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 export default function NewFolderModal({ open, onClose, onSave, subject, defaultGroup, parentFolder = null }) {
   const { t } = useLang();
+  useEscapeKey(open, onClose);
   const [name, setName] = useState('');
   const [groupName, setGroupName] = useState('');
   const [template, setTemplate] = useState('');

@@ -82,6 +82,7 @@ export default function FilePreview({ file, accent = '#E8472A', onClose }) {
           <button
             onClick={onClose}
             title="Schließen"
+            aria-label="Schließen"
             style={{
               flexShrink: 0, width: 22, height: 22, borderRadius: 5,
               border: 'none', background: 'transparent', cursor: 'pointer',
@@ -125,6 +126,7 @@ export default function FilePreview({ file, accent = '#E8472A', onClose }) {
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? t('preview.fullscreen_exit') : t('preview.fullscreen')}
+            aria-label={isFullscreen ? t('preview.fullscreen_exit') : t('preview.fullscreen')}
             style={{ ...btnStyle('var(--c-text-2)', 'var(--c-hover)'), border: 'none', cursor: 'pointer' }}
           >
             {isFullscreen ? (

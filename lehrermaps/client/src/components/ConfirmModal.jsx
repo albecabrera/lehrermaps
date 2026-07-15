@@ -1,9 +1,16 @@
 import { createPortal } from 'react-dom';
 import { useLang } from '../contexts/LangContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
-export default function ConfirmModal({ open, title, message, warning, onConfirm, onClose }) {
+export default function ConfirmModal({
+  open, title, message, warning, onConfirm, onClose,
+  confirmLabel, confirmColor = '#DC2626',
+}) {
   const { t } = useLang();
+  useEscapeKey(open, onClose);
   if (!open) return null;
+
+  const label = confirmLabel || t('delete');
 
   return createPortal(
     <div
@@ -58,12 +65,12 @@ export default function ConfirmModal({ open, title, message, warning, onConfirm,
             onClick={onConfirm}
             style={{
               height: 34, padding: '0 16px', border: 'none', borderRadius: 8,
-              background: '#DC2626', color: '#fff', fontSize: 13, fontWeight: 600,
+              background: confirmColor, color: '#fff', fontSize: 13, fontWeight: 600,
               cursor: 'pointer', fontFamily: 'inherit',
             }}
             onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
             onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-          >{t('delete')}</button>
+          >{label}</button>
         </div>
       </div>
     </div>,

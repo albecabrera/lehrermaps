@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 export default function BulkMoveModal({ files, folders, targetId, onTargetChange, onConfirm, onClose, accent, t }) {
+  useEscapeKey(true, onClose);
   const [search, setSearch] = useState('');
   const filtered = search.trim()
     ? folders.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))

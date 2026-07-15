@@ -200,6 +200,13 @@ export default function App({ onLogout }) {
         setGlobalSearchOpen(true);
         return;
       }
+      // ⌘K abre la búsqueda global (contrato documentado en KeyboardHelp).
+      // Ctrl+K queda para la búsqueda de notas (OneNote) en Windows/Linux.
+      if (e.metaKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setGlobalSearchOpen(true);
+        return;
+      }
       if (e.ctrlKey && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setOneNoteSearchOpen(true);
@@ -862,6 +869,7 @@ export default function App({ onLogout }) {
             onClick={() => setGlobalSearchOpen(true)}
             onMouseDown={(e) => triggerHapticAt(e.clientX, e.clientY, accent)}
             title="Suche (⌘P)"
+            aria-label="Suche"
             style={{
               width: 30, height: 30, padding: 0, border: '0.5px solid var(--c-border)', borderRadius: 7,
               background: 'var(--c-hover)', color: 'var(--c-text-2)',
@@ -936,6 +944,7 @@ export default function App({ onLogout }) {
             className="lm-spring"
             onClick={toggleTheme}
             title={isDark ? t('app.theme_light') : t('app.theme_dark')}
+            aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}
             style={{
               width: 30, height: 30, border: '1px solid var(--c-border)', borderRadius: 7,
               background: 'transparent', cursor: 'pointer', color: 'var(--c-text-2)',
@@ -991,6 +1000,7 @@ export default function App({ onLogout }) {
             className="lm-spring"
             onClick={onLogout}
             title={t('app.logout')}
+            aria-label={t('app.logout')}
             style={{
               width: 30, height: 30, border: 'none', borderRadius: 7,
               background: 'transparent', cursor: 'pointer', color: 'var(--c-text-2)',
@@ -1534,6 +1544,8 @@ export default function App({ onLogout }) {
           title={confirmModal.title}
           message={confirmModal.message}
           warning={confirmModal.warning}
+          confirmLabel={confirmModal.confirmLabel}
+          confirmColor={confirmModal.confirmColor}
           onConfirm={confirmModal.onConfirm}
           onClose={() => setConfirmModal(null)}
         />

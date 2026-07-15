@@ -2,10 +2,12 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { useLang } from '../contexts/LangContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 export default function QRModal({ url, title, onClose }) {
   const { t } = useLang();
   const canvasRef = useRef(null);
+  useEscapeKey(true, onClose);
 
   useEffect(() => {
     if (!canvasRef.current || !url) return;

@@ -306,7 +306,7 @@ function Tag({ color, children }) {
 function IconBtn({ onClick, title, danger, children }) {
   return (
     <button
-      onClick={onClick} title={title}
+      onClick={onClick} title={title} aria-label={title}
       className="eb-icon-btn"
       style={{
         width:28, height:28, borderRadius:7, border:'none',

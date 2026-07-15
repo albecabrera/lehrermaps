@@ -113,6 +113,7 @@ export default function Sidebar({
         <button
           onClick={() => setCollapsed((c) => !c)}
           title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+          aria-label={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
           style={{
             width: 26, height: 26, border: 'none', borderRadius: 6,
             background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer',
@@ -413,6 +414,7 @@ function TreeNode({
             <button
               onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); onToggleFavorite?.(node.id); }}
               title={isFav ? t('sidebar.unpin') : t('sidebar.pin')}
+              aria-label={isFav ? t('sidebar.unpin') : t('sidebar.pin')}
               style={hoverBtnStyle(isFav ? 'rgba(245,158,11,0.15)' : undefined, isFav ? '#F59E0B' : undefined)}
             >
               {isFav ? '★' : '☆'}
