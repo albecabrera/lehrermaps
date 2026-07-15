@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'lehrermaps-v3';
+const CACHE_VERSION = 'lehrermaps-v4';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -38,15 +38,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Stale-while-revalidate: sofort aus dem Cache antworten, aber im
+  // Hintergrund IMMER das Netz fragen und den Cache aktualisieren.
+  // Cache-first ohne Revalidierung klebte Geräte dauerhaft an alten
+  // Bundles fest — Updates kamen ohne manuellen Versions-Bump nie an.
   event.respondWith(
     caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).then((res) => {
-        if (!res || res.status !== 200 || res.type !== 'basic') return res;
-        const copy = res.clone();
-        caches.open(CACHE_VERSION).then((cache) => cache.put(req, copy));
+      const network = fetch(req).then((res) => {
+        if (res && res.status === 200 && res.type === 'basic') {
+          const copy = res.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(req, copy));
+        }
         return res;
-      });
+      }).catch(() => cached);
+      return cached || network;
     })
   );
 });

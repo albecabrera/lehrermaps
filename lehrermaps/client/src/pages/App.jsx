@@ -1497,6 +1497,9 @@ export default function App({ onLogout }) {
           <div
             style={{
               width: effectivePreviewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden',
+              // Klammer: Vorschau darf den Inhalt nie unter ~300px quetschen
+              // (schmale Desktop-Fenster + 640px-Split-Vorschau)
+              maxWidth: `calc(100vw - ${sidebarWidth + 300}px)`,
               transform: `translate3d(${parallax.x * 3}px, ${parallax.y * 1.5}px, 0)`,
               transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
             }}
