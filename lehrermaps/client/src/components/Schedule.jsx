@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLang } from '../contexts/LangContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import api from '../lib/api';
 
 const STORAGE_KEY = 'lm_schedule';
@@ -316,6 +317,7 @@ function ScheduleCell({
   day, period, cell, onEdit, onUnlink, onNavigate,
   dragOver, onDragOver, onDragLeave, onDrop,
 }) {
+  const { t } = useLang();
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
   const canNav = cell?.subjectId && onNavigate;
@@ -374,7 +376,7 @@ function ScheduleCell({
             }}>{cell.label}</div>
           </div>
           {canNav && hovered && (
-            <div style={{ fontSize: 9, color: cell.color, marginTop: 2, opacity: 0.8 }}>→ öffnen</div>
+            <div style={{ fontSize: 9, color: cell.color, marginTop: 2, opacity: 0.8 }}>→ {t('schedule.navigate')}</div>
           )}
         </div>
       ) : (
@@ -391,7 +393,8 @@ function ScheduleCell({
           {canNav && (
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(ref.current); }}
-              title="Bearbeiten"
+              title={t('schedule.pick_folder')}
+              aria-label={t('schedule.pick_folder')}
               style={{
                 width: 18, height: 18, border: 'none', borderRadius: 4,
                 background: 'rgba(0,0,0,0.25)', color: '#fff', cursor: 'pointer',
@@ -401,6 +404,8 @@ function ScheduleCell({
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onUnlink(); }}
+            title={t('schedule.unlink')}
+            aria-label={t('schedule.unlink')}
             style={{
               width: 18, height: 18, border: 'none', borderRadius: 4,
               background: 'rgba(0,0,0,0.25)', color: '#fff', cursor: 'pointer',
@@ -468,6 +473,7 @@ function BreakDayCell({ active, onToggle }) {
 }
 
 function SubjectPicker({ rect, current, onSelect, onClose }) {
+  useEscapeKey(true, onClose);
   const PICKER_W = 220;
   const PICKER_MAX_H = Math.min(360, window.innerHeight - 80);
   const vw = window.innerWidth;

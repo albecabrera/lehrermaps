@@ -6,6 +6,11 @@ export const translations = {
     'subject.sport': 'Sport',
     'subject.klasse': 'Klassenleitung',
 
+    // Quick notes
+    'quicknotes.title': 'Schnellnotizen',
+    'quicknotes.placeholder': 'Neue Schnellnotiz…',
+    'quicknotes.empty': 'Noch keine Notizen.',
+
     // Common actions
     'cancel': 'Abbrechen',
     'save': 'Speichern',
@@ -269,6 +274,11 @@ export const translations = {
     'subject.sport': 'Deporte',
     'subject.klasse': 'Tutoría',
 
+    // Quick notes
+    'quicknotes.title': 'Notas rápidas',
+    'quicknotes.placeholder': 'Nueva nota rápida…',
+    'quicknotes.empty': 'Todavía no hay notas.',
+
     // Common actions
     'cancel': 'Cancelar',
     'save': 'Guardar',
@@ -531,6 +541,10 @@ export const translations = {
     'subject.informatik': 'Computer Science',
     'subject.sport': 'Sports',
     'subject.klasse': 'Class Tutor',
+
+    'quicknotes.title': 'Quick notes',
+    'quicknotes.placeholder': 'New quick note…',
+    'quicknotes.empty': 'No notes yet.',
 
     'cancel': 'Cancel',
     'save': 'Save',

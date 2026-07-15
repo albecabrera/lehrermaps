@@ -23,6 +23,36 @@ export default function StudentApp({ onLogout }) {
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const accent = subject.color;
 
+  // Baumreihenfolge mit Tiefe — Unterordner erscheinen eingerückt unter ihrem Elternordner
+  const orderedFolders = (() => {
+    const byParent = new Map();
+    subjectFolders.forEach((f) => {
+      const k = f.parent_id ?? null;
+      if (!byParent.has(k)) byParent.set(k, []);
+      byParent.get(k).push(f);
+    });
+    const sortFn = (a, b) =>
+      ((b.is_favorite || 0) - (a.is_favorite || 0)) ||
+      ((a.sort_order || 0) - (b.sort_order || 0)) ||
+      a.name.localeCompare(b.name);
+    const out = [];
+    const seen = new Set();
+    const walk = (pid, depth) => {
+      (byParent.get(pid) || []).sort(sortFn).forEach((f) => {
+        if (seen.has(f.id)) return;
+        seen.add(f.id);
+        out.push({ ...f, depth });
+        walk(f.id, depth + 1);
+      });
+    };
+    walk(null, 0);
+    // Waisen (Elternordner nicht sichtbar/anderes Fach) trotzdem anzeigen
+    subjectFolders.forEach((f) => {
+      if (!seen.has(f.id)) out.push({ ...f, depth: 0 });
+    });
+    return out;
+  })();
+
   return (
     <div style={{
       position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column',
@@ -41,6 +71,8 @@ export default function StudentApp({ onLogout }) {
         </span>
         <button
           onClick={toggleTheme}
+          title={isDark ? t('app.theme_light') : t('app.theme_dark')}
+          aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}
           style={{
             width: 28, height: 28, border: '1px solid var(--c-border)', borderRadius: 6,
             background: 'transparent', cursor: 'pointer', color: 'var(--c-text-2)',
@@ -101,8 +133,20 @@ export default function StudentApp({ onLogout }) {
           overflow: 'auto', padding: '10px 0', flexShrink: 0,
         }}>
           {loading ? (
-            <div style={{ padding: 16, fontSize: 12, color: 'var(--c-text-3)' }}>{t('loading')}</div>
-          ) : subjectFolders.map((f) => {
+            <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="lm-skeleton-shimmer" style={{
+                  height: 30, borderRadius: 7,
+                  background: 'var(--c-surface-2)', border: '1px solid var(--c-border)',
+                  opacity: 1 - i * 0.18,
+                }} />
+              ))}
+            </div>
+          ) : orderedFolders.length === 0 ? (
+            <div style={{ padding: 16, fontSize: 12, color: 'var(--c-text-3)', lineHeight: 1.5 }}>
+              {t('folders.no_folders_title')}
+            </div>
+          ) : orderedFolders.map((f) => {
             const on = f.id === activeFolder?.id;
             return (
               <button
@@ -110,7 +154,7 @@ export default function StudentApp({ onLogout }) {
                 onClick={() => { setActiveFolder(f); setActiveFile(null); setStudentQuery(''); }}
                 style={{
                   appearance: 'none', border: 'none', font: 'inherit',
-                  width: '100%', padding: '8px 14px 8px 16px',
+                  width: '100%', padding: `8px 14px 8px ${16 + f.depth * 14}px`,
                   display: 'flex', alignItems: 'center', gap: 10,
                   cursor: 'pointer', textAlign: 'left',
                   background: on ? `${accent}14` : 'transparent',
