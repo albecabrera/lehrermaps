@@ -1,175 +1,117 @@
 # LehrerMaps
 
-Aplicación web para que docentes organicen y compartan material didáctico por materia y grupo. Centraliza archivos, enlaces, notas y horario semanal en un panel privado con vista separada para estudiantes.
+LehrerMaps es una aplicación web para docentes que necesitan organizar, preparar y compartir material de clase sin depender de carpetas sueltas, enlaces perdidos o unidades compartidas caóticas.
+
+La idea es simple: **materia → grupo → carpeta → archivos, enlaces, notas y planificación**. El docente trabaja en un panel privado y el alumnado accede solo al material marcado como compartido.
 
 ---
 
-## Stack tecnológico
+## Qué problema resuelve
 
-| Capa | Tecnología |
-|------|-----------|
-| **Frontend** | React 18 + Vite 5 |
-| **Estilos** | Tailwind CSS 3 |
-| **Editor de texto** | Tiptap / ProseMirror |
-| **Drag & Drop** | dnd-kit |
-| **Terminal integrada** | xterm.js + node-pty |
-| **Comunicación en tiempo real** | Socket.io (WS) |
-| **HTTP client** | Axios |
-| **Backend** | Node.js 18 ESM + Express 4 |
-| **Base de datos** | MySQL / MariaDB |
-| **Autenticación** | JWT (30 días, roles: lehrer / student) |
-| **Uploads** | Multer → filesystem local |
-| **Generación de docs** | PDFKit · docx · pptxgenjs |
-| **Empaquetado** | Archiver (ZIP) |
-| **Proceso en producción** | PM2 |
+Un docente no necesita otro “drive bonito”. Necesita una herramienta que acompañe su flujo real de aula:
 
----
+- preparar material por clase, tema o unidad;
+- guardar PDFs, presentaciones, vídeos, imágenes, código y enlaces;
+- tomar notas de preparación sin salir de la app;
+- compartir material con estudiantes de forma controlada;
+- abrir rápidamente lo importante durante la clase;
+- usar la app también en móvil como PWA.
 
-## Razón de ser
-
-Los docentes manejan material disperso: PDFs, presentaciones, videos, links y apuntes por materia, grupo y unidad. LehrerMaps estructura todo eso en carpetas navegables, permite previsualizar archivos sin descargarlos, y ofrece una vista de estudiante con solo el material publicado. Elimina el uso de unidades compartidas genéricas y centraliza el flujo en una sola herramienta.
+LehrerMaps intenta convertir esa estructura docente en una interfaz clara, rápida y práctica.
 
 ---
 
 ## Funcionalidades principales
 
-- **Gestión de archivos** — upload drag & drop, bulk actions, mover entre carpetas, ZIP, previsualización inline (PDF, imagen, video, audio, DOCX, Markdown)
-- **Carpetas** — por materia y grupo, drag & drop para reordenar, favoritos, colores, deadlines, thumbnails automáticos, subcarpetas
-- **Editor de notas** — Tiptap con Notebook → Sección → Página, auto-guardado, tablas, listas de tareas, imágenes
-- **Links y QR** — guardar URLs por carpeta, generar QR para compartir con estudiantes
-- **Horario semanal** — vincular carpetas a bloques horarios, exportar como `.ics`
-- **Vista estudiante** — login separado, solo ve archivos marcados como compartidos
-- **Búsqueda global** — ⌘K abre la búsqueda en archivos, carpetas y contenido de notas
-- **Navegación estructural** — breadcrumb clicable (materia › grupo › carpetas ancestro) + chips de subcarpetas dentro del contenido: la estructura siempre está a mano, sin depender de la sidebar
-- **Atajos de teclado** — `⌘K` búsqueda · `?` ayuda · `Esc` cierra cualquier modal/preview · `j`/`k` y flechas para navegar archivos
-- **Interfaz móvil** — bottom-nav en la zona del pulgar, sidebar como drawer, vista previa a pantalla completa (ver [PWA e interfaz móvil](#pwa-e-interfaz-móvil))
-- **Dark mode** — detección automática del sistema, con `theme-color` sincronizado (barra de estado en modo standalone)
-- **PWA instalable** — instalable en iOS y Android, app-shell offline, iconos maskable + apple-touch, service worker con actualización automática
+- **Organización por materias y grupos**: carpetas jerárquicas, colores, favoritos y orden manual.
+- **Gestión de archivos**: subida de archivos, vista previa, descarga, renombrado, eliminación y movimiento entre carpetas.
+- **Previsualización integrada**: soporte para PDF, imágenes, vídeo, audio, Markdown, DOCX y otros formatos comunes.
+- **Vista para estudiantes**: acceso separado con rol `student`; solo muestra contenido compartido.
+- **Links por carpeta**: guarda recursos externos junto al material de clase.
+- **QR de acceso**: genera códigos QR para compartir enlaces con el alumnado.
+- **Notas y cuadernos**: editor enriquecido con Tiptap, notebooks, secciones y páginas.
+- **Horario semanal**: planificación de clases y vinculación con carpetas/materiales.
+- **Búsqueda global**: acceso rápido a carpetas, archivos y contenido relevante.
+- **PWA instalable**: usable como app en móvil/escritorio cuando se sirve por HTTPS.
+- **Terminal integrada para docente**: acceso protegido por JWT mediante Socket.io + xterm.js.
 
 ---
 
-## PWA e interfaz móvil
+## Stack
 
-**PWA** — la app es instalable como aplicación nativa:
-
-- `manifest.json` completo (`id`, `scope`, `display: standalone`, `categories`, orientación)
-- Iconos: 192/512 (`any`), `icon-maskable.svg` (Android) y `apple-touch-icon.png` 180px (iOS)
-- Meta Apple (`apple-mobile-web-app-*`) + `viewport-fit=cover` para la safe-area del iPhone
-- `theme-color` dinámico según claro/oscuro
-- Service worker (`stale-while-revalidate`): el app-shell carga offline tras la primera visita; los datos (archivos/carpetas) siguen requiriendo red
-- **Requiere HTTPS** — el navegador solo registra el service worker en contexto seguro. Ver [`DEPLOY.md`](DEPLOY.md)
-
-**Interfaz móvil** (< 860 px, hook `useIsMobile`) — no es el escritorio comprimido, sino un patrón app nativo:
-
-- **Bottom-nav** en la zona del pulgar — docente: Materias · Buscar · Horario · Más; estudiante: Carpetas · Más
-- **Sheet "Más"** con lo secundario (subir, examen, hoja de trabajo, Notion/Miro, tema, idioma, cerrar sesión)
-- **Sidebar como drawer** deslizante con backdrop; se cierra al elegir carpeta
-- **Vista previa a pantalla completa** con botón atrás (en escritorio es panel lateral redimensionable)
-- La barra superior en móvil solo muestra hamburguesa + pestañas de materia
-
-Componentes/hooks clave: `components/MobileNav.jsx`, `hooks/useIsMobile.js`, `hooks/useEscapeKey.js`.
-
----
-
-## Arquitectura
-
-```
-Browser
-  │
-  ├─ Vite Dev Server (:5173)         client/src/
-  │     └─ /api/* → proxy      →     Express (:3001)
-  │     └─ /ws   → proxy ws    →       ├─ auth.js       JWT login / student login
-  │                                     ├─ folders.js    CRUD + notas + color + deadline
-  │                                     ├─ files.js      upload + download + share + public
-  │                                     ├─ links.js      links por carpeta
-  │                                     ├─ schedule.js   horario semanal
-  │                                     ├─ notebooks.js  notebooks + secciones + páginas
-  │                                     ├─ search.js     búsqueda global
-  │                                     ├─ exams.js      generador de exámenes
-  │                                     └─ ai.js         asistente IA
-  │
-  └─ MySQL / MariaDB (:3306)
-       folders · files · links · schedule · notebooks · pages · sections · exams
-```
-
-**Auth flow:**
-1. `POST /api/login` → JWT `role: lehrer` (30 d)
-2. `POST /api/login-student` → JWT `role: student` (30 d)
-3. Todos los endpoints protegidos: `Authorization: Bearer <token>`
-
-**Upload flow:**
-1. `UploadModal` construye `FormData` + `AbortController`
-2. `POST /api/files/upload` → Multer guarda con nombre UUID en `server/uploads/`
-3. Row en DB con `original_name`, `stored_name`, `mime_type`, `size_bytes`
+| Capa | Tecnología |
+| --- | --- |
+| Frontend | React 18 + Vite |
+| Estilos | Tailwind CSS |
+| Editor | Tiptap / ProseMirror |
+| Drag & Drop | dnd-kit |
+| Backend | Node.js + Express |
+| Base de datos | MySQL / MariaDB |
+| Auth | JWT con roles `lehrer` y `student` |
+| Uploads | Multer + filesystem local |
+| Tiempo real | Socket.io |
+| Terminal | xterm.js + node-pty |
+| PWA | Manifest + Service Worker |
 
 ---
 
 ## Estructura del proyecto
 
-```
+```txt
 lehrermaps/
-├── client/                   # Frontend React (Vite)
+├── client/                 # Frontend React/Vite
+│   ├── public/             # Manifest, service worker e iconos PWA
 │   └── src/
-│       ├── components/       # Componentes UI (incl. MobileNav — bottom-nav + sheet)
-│       ├── constants/        # SUBJECTS, traducciones, tipos de archivo
-│       ├── contexts/         # Theme, Lang, Notebook
-│       ├── hooks/            # useFiles/Folders/Links/Recents, useIsMobile, useEscapeKey
-│       ├── lib/api.js        # Axios wrapper + token
-│       └── pages/            # App, LoginPanel, StudentApp, StudentLogin
-│   └── public/               # manifest.json, service-worker.js, icons/ (PWA)
+│       ├── components/     # UI: modales, tabla de archivos, navegación, notas
+│       ├── constants/      # Traducciones y configuración visual
+│       ├── contexts/       # Theme, idioma y estado compartido
+│       ├── hooks/          # Hooks de carpetas, archivos, responsive, etc.
+│       ├── lib/api.js      # Cliente Axios + token
+│       └── pages/          # App docente, login y vista estudiante
 ├── server/
-│   ├── routes/               # auth, files, folders, links, schedule, notebooks, search, exams, ai
-│   ├── middleware/auth.js    # Verificación JWT → req.user
-│   ├── db.js                 # Pool MySQL + initSchema() (auto-migraciones)
-│   ├── uploads/              # Archivos subidos (en .gitignore)
-│   ├── index.js              # Entry point Express + Socket.io + node-pty
-│   └── env.txt               # Plantilla de .env
-├── deploy/nginx.conf         # Config Nginx lista para prod (TLS, caché, /ws)
-├── schema.sql                # Schema inicial de BD
-├── start.sh                  # Script de arranque automático
-├── DEPLOY.md                 # Guía de deploy + checklist PWA
+│   ├── routes/             # Endpoints de auth, folders, files, links, schedule, etc.
+│   ├── db.js               # Pool MySQL + initSchema()
+│   ├── index.js            # Express + Socket.io + servidor estático
+│   └── uploads/            # Archivos subidos localmente
+├── deploy/nginx.conf       # Ejemplo de reverse proxy para producción
+├── schema.sql              # Schema base
+├── start.sh                # Arranque asistido local
+├── start-server.sh         # Arranque del backend
+├── DEPLOY.md               # Guía de despliegue
 └── README.md
 ```
 
 ---
 
-## Requisitos del sistema
+## Requisitos
 
-- **Node.js 18+**
-- **npm 9+**
-- **MySQL 8** o **MariaDB 10.6+** corriendo localmente o en Docker
-- macOS / Linux (el script `start.sh` detecta ambos)
+- Node.js 18+
+- npm 9+
+- MySQL 8 o MariaDB 10.6+
+- macOS o Linux
 
 ---
 
-## Setup inicial
-
-### 1. Clonar e instalar dependencias
+## Instalación
 
 ```bash
-git clone <repo-url>
-cd lehrermaps
 npm run install:all
 ```
 
-### 2. Crear base de datos
+Crear la base de datos:
 
 ```bash
-# MySQL / MariaDB local
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS lehrermaps CHARACTER SET utf8mb4;"
 mysql -u root -p lehrermaps < schema.sql
-
-# O con Docker (XAMPP)
-docker exec -i xampp-mariadb mysql -u root lehrermaps < schema.sql
 ```
 
-### 3. Configurar variables de entorno
+Crear la configuración del servidor:
 
 ```bash
 cp server/env.txt server/.env
 ```
 
-Editar `server/.env`:
+Ejemplo de `server/.env`:
 
 ```env
 DB_HOST=127.0.0.1
@@ -177,130 +119,92 @@ DB_PORT=3306
 DB_USER=root
 DB_PASS=
 DB_NAME=lehrermaps
-JWT_SECRET=cambia_esto_por_32_caracteres_random
-APP_PASSWORD=contraseña_del_docente
-STUDENT_PASSWORD=contraseña_del_alumno
+JWT_SECRET=cambia_esto_por_un_secreto_largo
+APP_PASSWORD=contraseña_docente
+STUDENT_PASSWORD=contraseña_estudiante
 PORT=3001
 ALLOWED_ORIGIN=http://localhost:5173
 ```
 
-> Cambiar `JWT_SECRET`, `APP_PASSWORD` y `STUDENT_PASSWORD` **antes de cualquier deploy**.
+IMPORTANTE: en producción no uses los valores por defecto. Cambiá `JWT_SECRET`, `APP_PASSWORD` y `STUDENT_PASSWORD`.
 
 ---
 
-## Arranque rápido
+## Arranque local
+
+Arranque recomendado:
 
 ```bash
 ./start.sh
 ```
 
-El script verifica todos los requisitos, instala dependencias si faltan, levanta backend y frontend, y abre el navegador automáticamente en `http://localhost:5173`.
-
-| Rol | URL | Contraseña |
-|-----|-----|-----------|
-| Docente | `http://localhost:5173` | `APP_PASSWORD` de `.env` |
-| Estudiante | `http://localhost:5173/?student` | `STUDENT_PASSWORD` de `.env` |
-
----
-
-## Arranque manual
+Arranque manual:
 
 ```bash
-# Terminal 1 — Backend
-cd server && node index.js
-
-# Terminal 2 — Frontend
-cd client && npm run dev
-```
-
----
-
-## Deploy en producción
-
-> **Guía paso a paso + checklist PWA:** [`DEPLOY.md`](DEPLOY.md) ·
-> **Config Nginx completa (TLS, cabeceras de caché, `/ws`):** [`deploy/nginx.conf`](deploy/nginx.conf).
-> HTTPS es obligatorio: sin certificado válido el navegador no registra el
-> Service Worker y la app no es instalable ni offline.
-
-### 1. Build del frontend
-
-```bash
-cd client && npm run build
-# El directorio dist/ se sirve como archivos estáticos
-```
-
-### 2. Backend con PM2
-
-```bash
+# Terminal 1
 cd server
-npm install --omit=dev
-pm2 start index.js --name lehrermaps
-pm2 save
-pm2 startup   # configura auto-start al reiniciar el servidor
+node index.js
+
+# Terminal 2
+cd client
+npm run dev
 ```
 
-### 3. Variables de entorno en servidor
+URLs locales habituales:
 
-```env
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=lehrermaps_user
-DB_PASS=contraseña_segura
-DB_NAME=lehrermaps
-JWT_SECRET=32_caracteres_random_aqui
-APP_PASSWORD=contraseña_docente
-STUDENT_PASSWORD=contraseña_alumno
-PORT=3001
-ALLOWED_ORIGIN=https://tu-dominio.com
-```
-
-### 4. Nginx (reverse proxy)
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name tu-dominio.com;
-
-    root /var/www/lehrermaps/dist;
-    index index.html;
-    try_files $uri $uri/ /index.html;
-
-    location /api/ {
-        proxy_pass http://127.0.0.1:3001;
-        proxy_http_version 1.1;
-        client_max_body_size 300m;
-    }
-
-    # Socket.io / Terminal usa el path /ws (no /socket.io)
-    location /ws {
-        proxy_pass http://127.0.0.1:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-```
-
-> Este bloque es mínimo. Para producción usa [`deploy/nginx.conf`](deploy/nginx.conf)
-> — incluye redirección 80→443, rutas de certificado (certbot) y cabeceras de
-> caché correctas para `service-worker.js` (si no, los updates no llegan).
+| Rol | URL |
+| --- | --- |
+| Docente | `http://localhost:5173` |
+| Estudiante | `http://localhost:5173/?student` |
+| API backend | `http://localhost:3001/api/health` |
 
 ---
 
-## API — endpoints principales
+## Scripts npm
 
-### Auth
+Desde la raíz:
+
+```bash
+npm run dev          # frontend + backend con concurrently
+npm run build        # build del frontend
+npm run install:all  # instala raíz, client y server
 ```
-POST /api/login              { password }      → { token }
-POST /api/login-student      { password }      → { token }
+
+> Nota para agentes: no ejecutar build automáticamente después de cambios. Este proyecto lo prohíbe en sus instrucciones.
+
+---
+
+## Modelo de datos principal
+
+La app inicializa/migra tablas desde `server/db.js`:
+
+- `folders`: carpetas por materia, grupo, padre, color, favorito, deadline y notas.
+- `files`: archivos subidos, metadatos, visibilidad, token público y deadline.
+- `links`: recursos externos asociados a carpetas.
+- `schedule`: planificación semanal.
+- `notebooks`, `sections`, `pages`, `blocks`: sistema de notas/cuadernos.
+- `quick_notes`: notas rápidas.
+- `exams`: planificación o gestión de exámenes.
+
+---
+
+## API principal
+
+### Autenticación
+
+```http
+POST /api/login
+POST /api/login-student
+GET  /api/health
 ```
 
 ### Carpetas
-```
+
+```http
 GET    /api/folders
-POST   /api/folders          { subject, group_name, name, parent_id? }
-PUT    /api/folders/reorder  { items: [{id, sort_order}] }
+POST   /api/folders
 PUT    /api/folders/:id
+PUT    /api/folders/reorder
 PUT    /api/folders/:id/notes
 PUT    /api/folders/:id/favorite
 PUT    /api/folders/:id/color
@@ -309,37 +213,53 @@ DELETE /api/folders/:id
 ```
 
 ### Archivos
-```
+
+```http
 GET    /api/files/:folder_id
-POST   /api/files/upload             multipart: folder_id + file
-GET    /api/files/view/:id           inline
-GET    /api/files/download/:id       attachment
-GET    /api/files/zip/:folder_id     ZIP de carpeta
-GET    /api/files/search?q=          búsqueda global
-GET    /api/files/public/:token      sin autenticación
+POST   /api/files/upload
+GET    /api/files/view/:id
+GET    /api/files/download/:id
+GET    /api/files/zip/:folder_id
+PUT    /api/files/:id
 PUT    /api/files/:id/share
 PUT    /api/files/:id/public
 PUT    /api/files/:id/deadline
-PUT    /api/files/:id                { original_name }
-PUT    /api/files/:id/folder         { folder_id }
+PUT    /api/files/:id/folder
 DELETE /api/files/:id
 ```
 
----
-
-## Límites
-
-| Parámetro | Valor |
-|-----------|-------|
-| Tamaño máximo por archivo | 300 MB |
-| Tipos permitidos | PDF, DOCX, PPTX, XLSX, imágenes, video, audio, texto, código, ZIP, EPUB y más |
+También existen rutas para `links`, `schedule`, `notebooks`, `search`, `exams` y `ai` bajo `/api`.
 
 ---
 
 ## Seguridad
 
-- JWT almacenado en `localStorage`, expiración 30 días
-- `JWT_SECRET` mínimo 32 caracteres — nunca usar el valor por defecto en producción
-- Archivos guardados con nombre UUID — no hay acceso por nombre original
-- Tokens públicos son hex aleatorio de 32 bytes
-- Rol `student` no puede crear, eliminar ni modificar — solo leer archivos compartidos
+- Autenticación con JWT.
+- Roles separados: `lehrer` y `student`.
+- La vista estudiante no debe modificar datos.
+- Los archivos no se sirven por nombre original, sino por rutas controladas.
+- Los enlaces públicos usan token.
+- CORS se limita mediante `ALLOWED_ORIGIN`.
+- `JWT_SECRET` debe ser largo y único en producción.
+
+---
+
+## Producción
+
+El backend puede servir el frontend compilado desde `client/dist` si existe. Para despliegue real:
+
+1. Configurar `.env` seguro.
+2. Levantar MySQL/MariaDB.
+3. Ejecutar el backend con PM2, systemd o Docker.
+4. Poner Nginx delante con HTTPS.
+5. Configurar proxy para `/api` y `/ws`.
+
+Ver detalles en [`DEPLOY.md`](DEPLOY.md) y [`deploy/nginx.conf`](deploy/nginx.conf).
+
+---
+
+## Filosofía del proyecto
+
+LehrerMaps no está pensada como una demo técnica. Está pensada como una herramienta docente: menos ruido, más estructura, acceso rápido y control claro sobre qué ve cada grupo.
+
+La arquitectura debe proteger esa idea. Primero el flujo del profesor. Después la tecnología.
