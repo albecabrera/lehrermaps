@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import FileBadge from './FileBadge';
 import { detectKind } from '../constants/structure';
-import { downloadFile, viewFile, previewFile, openFileInApp } from '../lib/api';
+import { downloadFile, viewFile, previewFile, openFileInApp, openEditCopy, getFileVersions } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 
-export default function FilePreview({ file, accent = '#E8472A', onClose }) {
+export default function FilePreview({ file, accent = '#E8472A', onClose, onCommitVersion }) {
   const { t } = useLang();
   const containerRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -119,6 +119,9 @@ export default function FilePreview({ file, accent = '#E8472A', onClose }) {
         {canOpenInApp && (
           <OpenInAppButton fileId={file.id} ext={ext} accent={accent} t={t} />
         )}
+        {canOpenInApp && onCommitVersion && (
+          <EditCopyActions file={file} accent={accent} t={t} onCommitVersion={onCommitVersion} />
+        )}
         {canOpenVideoInApp && (
           <OpenVideoButtons fileId={file.id} accent={accent} t={t} />
         )}
@@ -148,6 +151,59 @@ export default function FilePreview({ file, accent = '#E8472A', onClose }) {
         >{t('download')}</a>
       </div>
     </div>
+  );
+}
+
+
+function EditCopyActions({ file, accent, t, onCommitVersion }) {
+  const [state, setState] = useState('idle');
+  const [commitState, setCommitState] = useState('idle');
+  const [versions, setVersions] = useState([]);
+
+  useEffect(() => {
+    if (!file?.id) return;
+    getFileVersions(file.id).then(setVersions).catch(() => setVersions([]));
+  }, [file?.id]);
+
+  const openCopy = async () => {
+    setState('loading');
+    try {
+      await openEditCopy(file.id);
+      setState('ready');
+      setTimeout(() => setState('idle'), 2600);
+    } catch {
+      setState('error');
+      setTimeout(() => setState('idle'), 3000);
+    }
+  };
+
+  const commitCopy = async () => {
+    setCommitState('loading');
+    try {
+      const updated = await onCommitVersion?.(file.id);
+      setCommitState('done');
+      if (updated?.id) getFileVersions(updated.id).then(setVersions).catch(() => {});
+      setTimeout(() => setCommitState('idle'), 2600);
+    } catch {
+      setCommitState('error');
+      setTimeout(() => setCommitState('idle'), 3000);
+    }
+  };
+
+  return (
+    <>
+      <button onClick={openCopy} disabled={state === 'loading'} style={{ ...btnStyle('#fff', state === 'error' ? '#DC2626' : accent), border: 'none' }}>
+        {state === 'loading' ? t('versions.copy_opening') : state === 'ready' ? t('versions.copy_opened') : state === 'error' ? t('versions.copy_error') : t('versions.edit_copy')}
+      </button>
+      <button onClick={commitCopy} disabled={commitState === 'loading'} style={{ ...btnStyle('var(--c-text-2)', 'var(--c-hover)'), border: 'none' }}>
+        {commitState === 'loading' ? t('versions.saving') : commitState === 'done' ? t('versions.saved') : commitState === 'error' ? t('versions.save_error') : t('versions.commit')}
+      </button>
+      {versions.length > 1 && (
+        <span style={{ alignSelf: 'center', fontSize: 11, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace' }}>
+          v{file.version_number || versions[0]?.version_number || 1} · {versions.length} {t('versions.count')}
+        </span>
+      )}
+    </>
   );
 }
 

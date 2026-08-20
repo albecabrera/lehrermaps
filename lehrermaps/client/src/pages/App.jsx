@@ -2,7 +2,7 @@ import { useState, useRef, useLayoutEffect, useCallback, useEffect } from 'react
 import { createPortal } from 'react-dom';
 import Sidebar from '../components/Sidebar';
 import BulkMoveModal from '../components/BulkMoveModal';
-import FileTable from '../components/FileTable';
+import FileTable, { MATERIAL_ROLES } from '../components/FileTable';
 import FilePreview from '../components/FilePreview';
 import UploadModal from '../components/UploadModal';
 import NewFolderModal from '../components/NewFolderModal';
@@ -83,7 +83,7 @@ export default function App({ onLogout }) {
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
-  const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic } = useFiles(activeFolder?.id);
+  const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
   const { trackFile, trackLink } = useRecentFiles();
@@ -123,6 +123,7 @@ export default function App({ onLogout }) {
   const [worksheetGenOpen, setWorksheetGenOpen] = useState(false);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [teachingMode, setTeachingMode] = useState(false);
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
@@ -616,6 +617,34 @@ export default function App({ onLogout }) {
   const handleBulkDownloadFiles = (selectedFiles) => {
     if (!selectedFiles.length) return;
     window.location.href = downloadFilesZip(selectedFiles.map((f) => f.id));
+  };
+
+  const handleSetFileRole = async (fileId, role) => {
+    try {
+      const updated = await setFileRole(fileId, role);
+      if (activeFile?.id === fileId) setActiveFile(updated);
+      if (activeFile2?.id === fileId) setActiveFile2(updated);
+      setToast({ type: 'success', msg: t('toast.role_saved') });
+    } catch {
+      setToast({ type: 'error', msg: t('toast.role_error') });
+    }
+  };
+
+  const handleBulkSetFileRole = async (selectedFiles, role) => {
+    try {
+      await setFilesRole(selectedFiles, role);
+      setToast({ type: 'success', msg: t('toast.role_saved') });
+    } catch {
+      setToast({ type: 'error', msg: t('toast.role_error') });
+    }
+  };
+
+  const handleCommitFileVersion = async (fileId) => {
+    const updated = await commitFileVersion(fileId);
+    setActiveFile(updated);
+    setActiveFile2(null);
+    setToast({ type: 'success', msg: t('toast.version_saved') });
+    return updated;
   };
 
   const [bulkMoveFiles, setBulkMoveFiles] = useState(null); // array of files to move
@@ -1316,6 +1345,18 @@ export default function App({ onLogout }) {
                       </svg>
                       QR
                     </button>
+                    <button
+                      onClick={() => setTeachingMode(true)}
+                      title={t('teach.open')}
+                      style={{
+                        marginLeft: 8, height: 26, padding: '0 12px',
+                        border: 'none', borderRadius: 6, background: accent, color: '#fff',
+                        fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'inherit',
+                      }}
+                    >
+                      ▶ {t('teach.open')}
+                    </button>
                   </div>
                 </div>
 
@@ -1461,6 +1502,8 @@ export default function App({ onLogout }) {
                         onBulkUnshare={handleBulkUnshareFiles}
                         onBulkDownload={handleBulkDownloadFiles}
                         onBulkMove={handleBulkMoveFiles}
+                        onSetRole={handleSetFileRole}
+                        onBulkRole={handleBulkSetFileRole}
                       />
                     )}
                   </div>
@@ -1527,6 +1570,7 @@ export default function App({ onLogout }) {
                   : <FilePreview
                       file={activeFile}
                       accent={accent}
+                      onCommitVersion={handleCommitFileVersion}
                       onClose={activeFile2 ? () => { setActiveFile(activeFile2); setActiveFile2(null); } : null}
                     />
                 }
@@ -1537,6 +1581,7 @@ export default function App({ onLogout }) {
                   <FilePreview
                     file={activeFile2}
                     accent={accent}
+                    onCommitVersion={handleCommitFileVersion}
                     onClose={() => setActiveFile2(null)}
                   />
                 </div>
@@ -1590,6 +1635,16 @@ export default function App({ onLogout }) {
         )}
         </>}
       </div>
+      {teachingMode && activeFolder && (
+        <TeachingMode
+          folder={activeFolder}
+          files={files}
+          links={links}
+          accent={accent}
+          t={t}
+          onClose={() => setTeachingMode(false)}
+        />
+      )}
       </FocusMode>
 
       {/* Mobile Bottom-Navigation — Daumen-Zone. Flex-Kind, verdeckt nie Inhalt. */}
@@ -1910,6 +1965,67 @@ function normalizeExternalUrl(url) {
   const trimmed = String(url).trim();
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   return `https://${trimmed}`;
+}
+
+
+function TeachingMode({ folder, files, links, accent, t, onClose }) {
+  const [active, setActive] = useState(null);
+  const [showSolutions, setShowSolutions] = useState(false);
+  const visibleFiles = files.filter((file) => showSolutions || (file.material_role || 'other') !== 'solution');
+  const grouped = MATERIAL_ROLES
+    .filter((role) => showSolutions || role.key !== 'solution')
+    .map((role) => ({ ...role, files: visibleFiles.filter((file) => (file.material_role || 'other') === role.key) }))
+    .filter((role) => role.files.length > 0);
+  const current = active || visibleFiles[0] || null;
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return createPortal(
+    <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'var(--c-bg)', color: 'var(--c-text)', display: 'grid', gridTemplateColumns: 'minmax(260px, 340px) minmax(0, 1fr)' }}>
+      <aside style={{ borderRight: '1px solid var(--c-border)', background: 'var(--c-surface)', padding: 18, overflow: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 18 }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, textTransform: 'uppercase', color: accent }}>{t('teach.mode')}</div>
+            <h2 style={{ margin: '4px 0 0', fontSize: 20, letterSpacing: -0.4 }}>{folder.name}</h2>
+          </div>
+          <button onClick={onClose} style={{ width: 30, height: 30, border: '1px solid var(--c-border)', borderRadius: 8, background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer' }}>×</button>
+        </div>
+        <button onClick={() => setShowSolutions((v) => !v)} style={{ width: '100%', height: 34, border: `1px solid ${showSolutions ? '#DC262655' : 'var(--c-border)'}`, borderRadius: 9, background: showSolutions ? '#DC262611' : 'var(--c-surface-2)', color: showSolutions ? '#DC2626' : 'var(--c-text-2)', fontWeight: 700, fontSize: 12, cursor: 'pointer', marginBottom: 14 }}>
+          {showSolutions ? t('teach.hide_solutions') : t('teach.show_solutions')}
+        </button>
+        {grouped.map((group) => (
+          <section key={group.key} style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--c-text-3)', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 6 }}>{t(group.labelKey)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {group.files.map((file) => (
+                <button key={file.id} onClick={() => setActive(file)} style={{ appearance: 'none', border: `1px solid ${current?.id === file.id ? accent : 'var(--c-border)'}`, background: current?.id === file.id ? `${accent}12` : 'var(--c-surface-2)', borderRadius: 9, padding: '9px 10px', color: 'var(--c-text)', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {file.original_name}
+                </button>
+              ))}
+            </div>
+          </section>
+        ))}
+        {links.length > 0 && (
+          <section>
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--c-text-3)', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 6 }}>{t('table.links_section')}</div>
+            {links.map((link) => <a key={link.id} href={link.url} target="_blank" rel="noreferrer" style={{ display: 'block', padding: '8px 0', color: accent, fontSize: 12, fontWeight: 700 }}>{link.title}</a>)}
+          </section>
+        )}
+      </aside>
+      <main style={{ minWidth: 0, overflow: 'hidden', background: '#0B0E14' }}>
+        {current ? (
+          <iframe title={current.original_name} src={viewFile(current.id)} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} />
+        ) : (
+          <div style={{ height: '100%', display: 'grid', placeItems: 'center', color: 'rgba(255,255,255,0.65)', fontSize: 16 }}>{t('teach.empty')}</div>
+        )}
+      </main>
+    </div>,
+    document.body
+  );
 }
 
 function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect, onFolderHover, keyboardMarkedFolderId, onRecentClick, onNewFolder, t }) {

@@ -53,6 +53,8 @@ const corsMiddleware = cors({
 });
 app.use(express.json({ limit: '1mb' }));
 
+app.get('/api/health', (_, res) => res.json({ ok: true }));
+
 app.use('/api', corsMiddleware);
 app.use('/api', authRouter);
 app.use('/api/folders', foldersRouter);
@@ -63,8 +65,6 @@ app.use('/api/ai', aiRouter);
 app.use('/api', notebooksRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/exams', examsRouter);
-
-app.get('/api/health', (_, res) => res.json({ ok: true }));
 
 function requireLehrer(req, res, next) {
   try {

@@ -9,3 +9,4 @@ server/previews/*
 server/.env
 .env
 .logs/
+server/edit-copies/*

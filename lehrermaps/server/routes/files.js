@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { createReadStream, existsSync, symlinkSync, unlinkSync, mkdirSync } from 'fs';
-import { copyFile, unlink, mkdir } from 'fs/promises';
+import { copyFile, unlink, mkdir, stat } from 'fs/promises';
 import os from 'os';
 import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -16,9 +16,11 @@ import auth from '../middleware/auth.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
 const PREVIEWS_DIR = path.join(__dirname, '..', 'previews');
+const EDITS_DIR = path.join(__dirname, '..', 'edit-copies');
 
 const CONVERTIBLE_EXTS = new Set(['doc', 'docx', 'odt', 'rtf', 'ppt', 'pptx', 'odp', 'xls', 'xlsx', 'ods']);
 const converting = new Set();
+const MATERIAL_ROLES = new Set(['starter', 'work', 'secure', 'homework', 'solution', 'exam', 'other']);
 
 async function convertToPdf(storedName, ext) {
   const tmpName = `${storedName}.${ext}`;
@@ -63,6 +65,16 @@ const upload = multer({
 });
 
 const router = Router();
+
+
+function safeOriginalName(name = 'material') {
+  return String(name).replace(/[\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim() || 'material';
+}
+
+async function getFileById(id) {
+  const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [id]);
+  return rows[0] || null;
+}
 
 router.get('/public/:token', async (req, res) => {
   try {
@@ -357,8 +369,8 @@ router.get('/:folder_id', async (req, res) => {
   try {
     const isStudent = req.user?.role === 'student';
     const query = isStudent
-      ? 'SELECT * FROM files WHERE folder_id = ? AND is_shared = 1 ORDER BY uploaded_at DESC'
-      : 'SELECT * FROM files WHERE folder_id = ? ORDER BY uploaded_at DESC';
+      ? 'SELECT * FROM files WHERE folder_id = ? AND is_shared = 1 AND is_current_version = 1 ORDER BY uploaded_at DESC'
+      : 'SELECT * FROM files WHERE folder_id = ? AND is_current_version = 1 ORDER BY uploaded_at DESC';
     const [rows] = await pool.execute(query, [req.params.folder_id]);
 
     const parseLeadingNumber = (name = '') => {
@@ -436,8 +448,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
   try {
     const [result] = await pool.execute(
-      'INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes) VALUES (?, ?, ?, ?, ?)',
-      [folder_id, req.file.originalname, req.file.filename, req.file.mimetype, req.file.size]
+      'INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, version_group_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [folder_id, req.file.originalname, req.file.filename, req.file.mimetype, req.file.size, randomUUID().replace(/-/g, '')]
     );
     const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
@@ -446,16 +458,106 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
+
+router.put('/roles/bulk', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+  const ids = Array.isArray(req.body.ids) ? req.body.ids.map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 200) : [];
+  const role = req.body.material_role;
+  if (!ids.length || !MATERIAL_ROLES.has(role)) return res.status(400).json({ error: 'Ungültige Rolle oder Auswahl' });
+  try {
+    const placeholders = ids.map(() => '?').join(',');
+    await pool.execute(`UPDATE files SET material_role = ? WHERE id IN (${placeholders})`, [role, ...ids]);
+    const [rows] = await pool.execute(`SELECT * FROM files WHERE id IN (${placeholders})`, ids);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.get('/:id/versions', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+  try {
+    const file = await getFileById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
+    const [rows] = await pool.execute(
+      'SELECT id, original_name, size_bytes, uploaded_at, version_number, is_current_version FROM files WHERE version_group_id = ? ORDER BY version_number DESC, uploaded_at DESC',
+      [file.version_group_id]
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/:id/edit-copy', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+  try {
+    const file = await getFileById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
+    const sourcePath = path.join(UPLOADS_DIR, file.stored_name);
+    if (!existsSync(sourcePath)) return res.status(404).json({ error: 'Datei nicht auf Disk' });
+
+    await mkdir(EDITS_DIR, { recursive: true });
+    const copyName = `${file.id}-${Date.now()}-${safeOriginalName(file.original_name)}`;
+    const copyPath = path.join(EDITS_DIR, copyName);
+    await copyFile(sourcePath, copyPath);
+    await pool.execute('INSERT INTO file_edit_copies (file_id, copy_name) VALUES (?, ?)', [file.id, copyName]);
+
+    exec(`open "${copyPath}"`, { timeout: 8000 }, (err) => {
+      if (err) return res.status(500).json({ error: 'Arbeitskopie konnte nicht geöffnet werden' });
+      res.json({ ok: true, copy_name: copyName });
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/:id/versions/commit', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+  try {
+    const file = await getFileById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
+    const [copies] = await pool.execute('SELECT * FROM file_edit_copies WHERE file_id = ? ORDER BY created_at DESC, id DESC LIMIT 1', [file.id]);
+    if (!copies.length) return res.status(404).json({ error: 'Keine Arbeitskopie gefunden' });
+
+    const copyPath = path.join(EDITS_DIR, copies[0].copy_name);
+    if (!existsSync(copyPath)) return res.status(404).json({ error: 'Arbeitskopie nicht auf Disk' });
+    const info = await stat(copyPath);
+    const storedName = randomUUID();
+    await copyFile(copyPath, path.join(UPLOADS_DIR, storedName));
+
+    const [[{ nextVersion }]] = await pool.execute(
+      'SELECT COALESCE(MAX(version_number), 0) + 1 AS nextVersion FROM files WHERE version_group_id = ?',
+      [file.version_group_id]
+    );
+    await pool.execute('UPDATE files SET is_current_version = 0 WHERE version_group_id = ?', [file.version_group_id]);
+    const [result] = await pool.execute(
+      `INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, is_shared, due_at, is_public, public_token, material_role, version_group_id, version_number, is_current_version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, 1)`,
+      [file.folder_id, file.original_name, storedName, file.mime_type, info.size, file.is_shared || 0, file.due_at || null, file.material_role || 'other', file.version_group_id, nextVersion]
+    );
+    await pool.execute('DELETE FROM file_edit_copies WHERE id = ?', [copies[0].id]);
+    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [result.insertId]);
+    res.status(201).json(rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.put('/:id', async (req, res) => {
-  const { original_name, folder_id } = req.body;
+  const { original_name, folder_id, material_role } = req.body;
+  const hasRole = typeof material_role === 'string' && MATERIAL_ROLES.has(material_role);
   const hasName = typeof original_name === 'string' && original_name.trim();
   const hasFolder = Number.isInteger(Number(folder_id)) && Number(folder_id) > 0;
-  if (!hasName && !hasFolder) {
-    return res.status(400).json({ error: 'original_name oder folder_id erforderlich' });
+  if (!hasName && !hasFolder && !hasRole) {
+    return res.status(400).json({ error: 'original_name, folder_id oder material_role erforderlich' });
   }
   try {
     if (hasName) {
       await pool.execute('UPDATE files SET original_name = ? WHERE id = ?', [original_name.trim(), req.params.id]);
+    }
+    if (hasRole) {
+      await pool.execute('UPDATE files SET material_role = ? WHERE id = ?', [material_role, req.params.id]);
     }
     if (hasFolder) {
       const [target] = await pool.execute('SELECT id FROM folders WHERE id = ? LIMIT 1', [Number(folder_id)]);

@@ -4,6 +4,16 @@ import { detectKind } from '../constants/structure';
 import { downloadFile, publicFileUrl } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 
+export const MATERIAL_ROLES = [
+  { key: 'starter', labelKey: 'role.starter' },
+  { key: 'work', labelKey: 'role.work' },
+  { key: 'secure', labelKey: 'role.secure' },
+  { key: 'homework', labelKey: 'role.homework' },
+  { key: 'solution', labelKey: 'role.solution' },
+  { key: 'exam', labelKey: 'role.exam' },
+  { key: 'other', labelKey: 'role.other' },
+];
+
 export default function FileTable({
   files, links = [], activeFileId, activeLinkId, activeFile2Id,
   onFileSelect, onFileSecondarySelect, onLinkSelect, accent = '#E8472A',
@@ -16,6 +26,7 @@ export default function FileTable({
   onFileDragStart,
   hiddenIds = new Set(),
   onBulkDelete, onBulkShare, onBulkUnshare, onBulkDownload, onBulkMove,
+  onSetRole, onBulkRole,
   isMobile = false,
 }) {
   const { t } = useLang();
@@ -28,6 +39,7 @@ export default function FileTable({
   const [sortDir, setSortDir] = useState('asc');
   const [dndMode, setDndMode] = useState(false);
   const [filterType, setFilterType] = useState('all');
+  const [groupByRole, setGroupByRole] = useState(true);
 
   const TYPE_GROUPS = useMemo(() => ({
     pdf: (k) => k === 'pdf',
@@ -71,6 +83,10 @@ export default function FileTable({
     return (new Date(a.uploaded_at || 0) - new Date(b.uploaded_at || 0)) * dir;
   });
   const videoFiles = sorted.filter((f) => detectKind(f.original_name) === 'video');
+  const groupedFiles = MATERIAL_ROLES.map((role) => ({
+    ...role,
+    files: sorted.filter((f) => (f.material_role || 'other') === role.key),
+  })).filter((group) => group.files.length > 0);
 
   const handleContextMenu = (e, file) => {
     e.preventDefault();
@@ -171,9 +187,138 @@ export default function FileTable({
     return () => document.removeEventListener('keydown', handler, true);
   }, []);
 
+
+  const renderFileCard = (file, idx) => {
+    const on = file.id === activeFileId;
+    const on2 = file.id === activeFile2Id;
+    const kbdMarked = keyboardMarkedFileId === file.id;
+    const kind = detectKind(file.original_name);
+    const sizeFmt = file.size_bytes ? formatBytes(file.size_bytes) : '—';
+    const dateFmt = file.uploaded_at
+      ? new Date(file.uploaded_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
+      : '—';
+    const dueFmt = file.due_at
+      ? new Date(file.due_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
+      : null;
+
+    return (
+      <button
+        key={file.id}
+        ref={(el) => { if (el) btnRefsMap.current.set(file.id, el); else btnRefsMap.current.delete(file.id); }}
+        data-file-btn
+        onClick={(e) => {
+          if ((e.ctrlKey || e.metaKey) && onFileSecondarySelect) {
+            e.preventDefault();
+            onFileSecondarySelect(file);
+          } else {
+            onFileSelect(file, { sourceRect: e.currentTarget.getBoundingClientRect() });
+          }
+        }}
+        className="lm-spring lm-stagger-in"
+        onDoubleClick={() => onRename?.(file)}
+        onKeyDown={(e) => {
+          if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
+            e.preventDefault();
+            onFileSelect?.(file, { sourceRect: e.currentTarget.getBoundingClientRect() });
+          }
+        }}
+        onContextMenu={(e) => handleContextMenu(e, file)}
+        draggable={dndMode}
+        onDragStart={dndMode ? (e) => {
+          e.dataTransfer.setData('text/x-lm-file-id', String(file.id));
+          e.dataTransfer.setData('text/plain', file.original_name);
+          onFileDragStart?.(file);
+        } : undefined}
+        style={{
+          appearance: 'none', font: 'inherit',
+          textAlign: 'left', width: '100%',
+          cursor: dndMode ? 'grab' : 'pointer',
+          background: on ? `${accent}12` : on2 ? 'rgba(14,165,233,0.10)' : kbdMarked ? `${accent}0D` : 'var(--c-surface-2)',
+          border: on ? `1px solid ${accent}66` : on2 ? '1px solid rgba(14,165,233,0.45)' : kbdMarked ? `1px solid ${accent}88` : dndMode ? `1px solid var(--c-border)` : '1px solid var(--c-border-soft)',
+          borderRadius: 10, padding: '7px 8px',
+          transition: 'background .1s, border-color .1s',
+          animationDelay: `${Math.min(14, idx) * 26}ms`,
+          boxShadow: kbdMarked ? `0 0 0 2px ${accent}22, 0 6px 16px ${accent}22` : undefined,
+        }}
+        onMouseEnter={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
+        onMouseEnterCapture={() => onFileHover?.(file)}
+        onMouseMove={() => onFileHover?.(file)}
+        onMouseLeave={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
+        onFocus={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-hover-2)'; onFileHover?.(file); }}
+        onBlur={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {dndMode && (
+            <span style={{ color: 'var(--c-text-3)', display: 'flex', alignItems: 'center', flexShrink: 0, opacity: 0.5 }}>
+              <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+                <circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
+                <circle cx="2" cy="6" r="1.2"/><circle cx="6" cy="6" r="1.2"/>
+                <circle cx="2" cy="10" r="1.2"/><circle cx="6" cy="10" r="1.2"/>
+              </svg>
+            </span>
+          )}
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={(e) => { e.stopPropagation(); toggleSelected(file.id); }}>
+            <input type="checkbox" checked={selectedIds.has(file.id)} readOnly />
+          </span>
+          <FileBadge kind={kind} name={file.original_name} size={24} />
+          <span style={{
+            fontSize: 12.5, fontWeight: on ? 600 : 500,
+            color: 'var(--c-text)', minWidth: 0, flex: 1,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {file.original_name}
+          </span>
+          <span
+            onClick={(e) => { e.stopPropagation(); handleContextMenu(e, file); }}
+            style={{
+              width: 24, height: 24, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', borderRadius: 6, color: 'var(--c-text-3)',
+              fontSize: 13, cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >⋯</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 5, flexWrap: 'wrap' }}>
+          {file.is_shared ? (
+            <span style={{
+              fontSize: 9, fontWeight: 700, letterSpacing: 0.4,
+              color: '#16A34A', background: 'rgba(22,163,74,0.12)',
+              border: '1px solid rgba(22,163,74,0.25)',
+              borderRadius: 4, padding: '1px 5px', flexShrink: 0,
+            }}>✓</span>
+          ) : null}
+          {(file.version_number || 1) > 1 && (
+            <span style={{ fontSize: 9, fontWeight: 700, color: accent, background: `${accent}12`, border: `1px solid ${accent}30`, borderRadius: 4, padding: '1px 5px' }}>
+              v{file.version_number}
+            </span>
+          )}
+          {onSetRole && (
+            <select
+              value={file.material_role || 'other'}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => onSetRole(file.id, e.target.value)}
+              style={{ height: 20, maxWidth: 118, border: '1px solid var(--c-border)', borderRadius: 5, background: 'var(--c-surface)', color: 'var(--c-text-2)', fontSize: 10, fontFamily: 'inherit' }}
+            >
+              {MATERIAL_ROLES.map((role) => <option key={role.key} value={role.key}>{t(role.labelKey)}</option>)}
+            </select>
+          )}
+          <span style={{ fontSize: 10.5, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', letterSpacing: 0.2 }}>{sizeFmt}</span>
+          <span style={{
+            fontSize: 10.5, fontFamily: '"DM Mono", monospace', letterSpacing: 0.2,
+            color: dueFmt && new Date(file.due_at) < new Date() ? '#EF4444' : 'var(--c-text-3)',
+            fontWeight: dueFmt && new Date(file.due_at) < new Date() ? 700 : 400,
+          }}>
+            {dueFmt ? `⏰ ${dueFmt}` : dateFmt}
+          </span>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <div style={{ position: 'relative' }}>
-      {selectedFiles.length > 0 && (onBulkDownload || onBulkShare || onBulkUnshare || onBulkDelete || onBulkMove) && (
+      {selectedFiles.length > 0 && (onBulkDownload || onBulkShare || onBulkUnshare || onBulkDelete || onBulkMove || onBulkRole) && (
         <div style={{
           marginBottom: 12,
           display: 'flex',
@@ -192,6 +337,17 @@ export default function FileTable({
           <button onClick={() => onBulkUnshare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.unshare')}</button>
           {onBulkMove && (
             <button onClick={() => onBulkMove(selectedFiles)} style={bulkBtnStyle}>{t('table.bulk_move')}</button>
+          )}
+          {onBulkRole && (
+            <select
+              value=""
+              onChange={(e) => { if (e.target.value) onBulkRole(selectedFiles, e.target.value); e.target.value = ''; }}
+              style={{ ...bulkBtnStyle, height: 26, background: 'var(--c-surface)', color: 'var(--c-text-2)' }}
+              aria-label={t('roles.bulk_assign')}
+            >
+              <option value="">{t('roles.bulk_assign')}</option>
+              {MATERIAL_ROLES.map((role) => <option key={role.key} value={role.key}>{t(role.labelKey)}</option>)}
+            </select>
           )}
           <button onClick={() => onBulkDelete?.(selectedFiles)} style={{ ...bulkBtnStyle, color: 'var(--c-danger-text)' }}>{t('delete')}</button>
           <button onClick={() => setSelectedIds(new Set())} style={{ ...bulkBtnStyle, marginLeft: 'auto' }}>{t('table.clear_selection')}</button>
@@ -225,6 +381,20 @@ export default function FileTable({
               {t('table.col_numbering')} {sortBy === 'numbering' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
             </button>
             <div style={{ flex: 1 }} />
+            <button
+              onClick={() => setGroupByRole((v) => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '3px 8px', borderRadius: 5, cursor: 'pointer',
+                border: `1px solid ${groupByRole ? accent : 'var(--c-border)'}`,
+                background: groupByRole ? `${accent}14` : 'transparent',
+                color: groupByRole ? accent : 'var(--c-text-3)',
+                fontSize: 9, fontWeight: 700, letterSpacing: 0.6,
+                textTransform: 'uppercase', fontFamily: 'inherit',
+              }}
+            >
+              {t('roles.grouped')}
+            </button>
             <button
               onClick={() => setDndMode((v) => !v)}
               title={t('table.dnd_mode')}
@@ -302,118 +472,14 @@ export default function FileTable({
               gap: 6,
             }}
           >
-          {sorted.map((file, idx) => {
-            const on = file.id === activeFileId;
-            const on2 = file.id === activeFile2Id;
-            const kbdMarked = keyboardMarkedFileId === file.id;
-            const kind = detectKind(file.original_name);
-            const sizeFmt = file.size_bytes ? formatBytes(file.size_bytes) : '—';
-            const dateFmt = file.uploaded_at
-              ? new Date(file.uploaded_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
-              : '—';
-            const dueFmt = file.due_at
-              ? new Date(file.due_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
-              : null;
-
-            return (
-              <button
-                key={file.id}
-                ref={(el) => { if (el) btnRefsMap.current.set(file.id, el); else btnRefsMap.current.delete(file.id); }}
-                data-file-btn
-                onClick={(e) => {
-                  if ((e.ctrlKey || e.metaKey) && onFileSecondarySelect) {
-                    e.preventDefault();
-                    onFileSecondarySelect(file);
-                  } else {
-                    onFileSelect(file, { sourceRect: e.currentTarget.getBoundingClientRect() });
-                  }
-                }}
-                className="lm-spring lm-stagger-in"
-                onDoubleClick={() => onRename?.(file)}
-                onKeyDown={(e) => {
-                  if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
-                    e.preventDefault();
-                    onFileSelect?.(file, { sourceRect: e.currentTarget.getBoundingClientRect() });
-                  }
-                }}
-                onContextMenu={(e) => handleContextMenu(e, file)}
-                draggable={dndMode}
-                onDragStart={dndMode ? (e) => {
-                  e.dataTransfer.setData('text/x-lm-file-id', String(file.id));
-                  e.dataTransfer.setData('text/plain', file.original_name);
-                  onFileDragStart?.(file);
-                } : undefined}
-                style={{
-                  appearance: 'none', font: 'inherit',
-                  textAlign: 'left', width: '100%',
-                  cursor: dndMode ? 'grab' : 'pointer',
-                  background: on ? `${accent}12` : on2 ? 'rgba(14,165,233,0.10)' : kbdMarked ? `${accent}0D` : 'var(--c-surface-2)',
-                  border: on ? `1px solid ${accent}66` : on2 ? '1px solid rgba(14,165,233,0.45)' : kbdMarked ? `1px solid ${accent}88` : dndMode ? `1px solid var(--c-border)` : '1px solid var(--c-border-soft)',
-                  borderRadius: 10, padding: '7px 8px',
-                  transition: 'background .1s, border-color .1s',
-                  animationDelay: `${Math.min(14, idx) * 26}ms`,
-                  boxShadow: kbdMarked ? `0 0 0 2px ${accent}22, 0 6px 16px ${accent}22` : undefined,
-                }}
-                onMouseEnter={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
-                onMouseEnterCapture={() => onFileHover?.(file)}
-                onMouseMove={() => onFileHover?.(file)}
-                onMouseLeave={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
-                onFocus={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-hover-2)'; onFileHover?.(file); }}
-                onBlur={(e) => { if (!on && !on2) e.currentTarget.style.background = 'var(--c-surface-2)'; }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {dndMode && (
-                    <span style={{ color: 'var(--c-text-3)', display: 'flex', alignItems: 'center', flexShrink: 0, opacity: 0.5 }}>
-                      <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
-                        <circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
-                        <circle cx="2" cy="6" r="1.2"/><circle cx="6" cy="6" r="1.2"/>
-                        <circle cx="2" cy="10" r="1.2"/><circle cx="6" cy="10" r="1.2"/>
-                      </svg>
-                    </span>
-                  )}
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={(e) => { e.stopPropagation(); toggleSelected(file.id); }}>
-                    <input type="checkbox" checked={selectedIds.has(file.id)} readOnly />
-                  </span>
-                  <FileBadge kind={kind} name={file.original_name} size={24} />
-                  <span style={{
-                    fontSize: 12.5, fontWeight: on ? 600 : 500,
-                    color: 'var(--c-text)', minWidth: 0, flex: 1,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}>
-                    {file.original_name}
-                  </span>
-                  <span
-                    onClick={(e) => { e.stopPropagation(); handleContextMenu(e, file); }}
-                    style={{
-                      width: 24, height: 24, display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', borderRadius: 6, color: 'var(--c-text-3)',
-                      fontSize: 13, cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >⋯</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 5 }}>
-                  {file.is_shared ? (
-                    <span style={{
-                      fontSize: 9, fontWeight: 700, letterSpacing: 0.4,
-                      color: '#16A34A', background: 'rgba(22,163,74,0.12)',
-                      border: '1px solid rgba(22,163,74,0.25)',
-                      borderRadius: 4, padding: '1px 5px', flexShrink: 0,
-                    }}>✓</span>
-                  ) : null}
-                  <span style={{ fontSize: 10.5, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', letterSpacing: 0.2 }}>{sizeFmt}</span>
-                  <span style={{
-                    fontSize: 10.5, fontFamily: '"DM Mono", monospace', letterSpacing: 0.2,
-                    color: dueFmt && new Date(file.due_at) < new Date() ? '#EF4444' : 'var(--c-text-3)',
-                    fontWeight: dueFmt && new Date(file.due_at) < new Date() ? 700 : 400,
-                  }}>
-                    {dueFmt ? `⏰ ${dueFmt}` : dateFmt}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+          {groupByRole ? groupedFiles.map((group) => (
+            <div key={group.key} style={{ display: 'contents' }}>
+              <div style={{ gridColumn: '1 / -1', marginTop: 4, padding: '6px 4px 2px', fontSize: 10, fontWeight: 800, letterSpacing: 0.7, textTransform: 'uppercase', color: 'var(--c-text-3)', borderBottom: '1px solid var(--c-border)' }}>
+                {t(group.labelKey)} · {group.files.length}
+              </div>
+              {group.files.map((file, idx) => renderFileCard(file, idx))}
+            </div>
+          )) : sorted.map((file, idx) => renderFileCard(file, idx))}
           </div>
 
           <div style={{

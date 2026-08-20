@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getFiles, uploadFile, deleteFile, renameFile, moveFile, toggleFileShare, setFileDeadline, toggleFilePublic } from '../lib/api';
+import { getFiles, uploadFile, deleteFile, renameFile, moveFile, toggleFileShare, setFileDeadline, toggleFilePublic, setFileRole, setFilesRole, commitEditCopy } from '../lib/api';
 
 export function useFiles(folderId) {
   const [files, setFiles] = useState([]);
@@ -62,5 +62,25 @@ export function useFiles(folderId) {
     return updated;
   }, []);
 
-  return { files, loading, error, reload: load, upload, remove, rename, move, toggleShare, setDeadline, togglePublic };
+  const setRole = useCallback(async (id, material_role) => {
+    const updated = await setFileRole(id, material_role);
+    setFiles((prev) => prev.map((f) => (f.id === id ? updated : f)));
+    return updated;
+  }, []);
+
+  const setBulkRole = useCallback(async (items, material_role) => {
+    const ids = items.map((f) => f.id);
+    const updated = await setFilesRole(ids, material_role);
+    const byId = new Map(updated.map((f) => [f.id, f]));
+    setFiles((prev) => prev.map((f) => byId.get(f.id) || f));
+    return updated;
+  }, []);
+
+  const commitVersion = useCallback(async (id) => {
+    const updated = await commitEditCopy(id);
+    setFiles((prev) => [updated, ...prev.filter((f) => f.version_group_id !== updated.version_group_id)]);
+    return updated;
+  }, []);
+
+  return { files, loading, error, reload: load, upload, remove, rename, move, toggleShare, setDeadline, togglePublic, setRole, setBulkRole, commitVersion };
 }

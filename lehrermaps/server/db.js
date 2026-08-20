@@ -62,6 +62,20 @@ export async function initSchema() {
   try { await pool.execute(`ALTER TABLE files ADD COLUMN due_at DATETIME NULL`); } catch {}
   try { await pool.execute(`ALTER TABLE files ADD COLUMN is_public TINYINT(1) DEFAULT 0`); } catch {}
   try { await pool.execute(`ALTER TABLE files ADD COLUMN public_token VARCHAR(64) NULL`); } catch {}
+  try { await pool.execute(`ALTER TABLE files ADD COLUMN material_role VARCHAR(40) NOT NULL DEFAULT 'other'`); } catch {}
+  try { await pool.execute(`ALTER TABLE files ADD COLUMN version_group_id VARCHAR(64) NULL`); } catch {}
+  try { await pool.execute(`ALTER TABLE files ADD COLUMN version_number INT NOT NULL DEFAULT 1`); } catch {}
+  try { await pool.execute(`ALTER TABLE files ADD COLUMN is_current_version TINYINT(1) NOT NULL DEFAULT 1`); } catch {}
+  try { await pool.execute(`UPDATE files SET version_group_id = COALESCE(version_group_id, REPLACE(UUID(), '-', '')) WHERE version_group_id IS NULL`); } catch {}
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS file_edit_copies (
+      id           INT AUTO_INCREMENT PRIMARY KEY,
+      file_id      INT NOT NULL,
+      copy_name    VARCHAR(255) NOT NULL,
+      created_at   DATETIME DEFAULT NOW(),
+      FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+    )
+  `);
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS schedule (
       id         INT AUTO_INCREMENT PRIMARY KEY,
