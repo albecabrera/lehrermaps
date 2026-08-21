@@ -13,7 +13,7 @@ function readTasks() {
 
 export default function TodayDashboard({
   subject, folders = [], recents = [], onRecentClick,
-  onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenWorksheet, onOpenNotes, onUpload,
+  onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
 }) {
   const [tasks, setTasks] = useState(readTasks);
   const [taskText, setTaskText] = useState('');
@@ -62,7 +62,6 @@ export default function TodayDashboard({
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button onClick={onOpenSubjects} style={actionStyle}>📚 Fächer anzeigen</button>
             <button onClick={onOpenSchedule} style={actionStyle}>📅 Stundenplan</button>
-            <button onClick={onOpenWorksheet} style={{ ...actionStyle, background: subject.color, color: '#fff', borderColor: subject.color }}>✦ Arbeitsblatt</button>
           </div>
         </div>
 
@@ -118,7 +117,6 @@ export default function TodayDashboard({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
               <button onClick={onOpenSearch} style={actionStyle}>⌕ Material suchen</button>
               <button onClick={onUpload} style={actionStyle}>↑ Hochladen</button>
-              <button onClick={onOpenWorksheet} style={actionStyle}>✦ Generator</button>
               <button onClick={onOpenNotes} style={actionStyle}>✎ Notizen</button>
             </div>
           </section>

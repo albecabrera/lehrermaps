@@ -25,9 +25,7 @@ import { downloadFolderZip, downloadFilesZip, viewFile, initUnterrichtsreihe } f
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
-import WorksheetGenerator from '../components/WorksheetGenerator';
 import TodayDashboard from '../components/TodayDashboard';
-import TerminalModal from '../components/TerminalModal';
 import NotesEditor from '../components/NotesEditor';
 import FolderGallery from '../components/FolderGallery';
 import FolderIcon from '../components/FolderIcon';
@@ -120,9 +118,6 @@ export default function App({ onLogout }) {
   const [hapticPulse, setHapticPulse] = useState(null);
   const [backSwipe, setBackSwipe] = useState({ active: false, x: 0 });
   const [heroQrLink, setHeroQrLink] = useState(null);
-  const [worksheetGenOpen, setWorksheetGenOpen] = useState(false);
-  const [terminalOpen, setTerminalOpen] = useState(false);
-  const [terminalPrompt, setTerminalPrompt] = useState('');
   const [focusMode, setFocusMode] = useState(false);
   const [teachingMode, setTeachingMode] = useState(false);
 
@@ -224,7 +219,7 @@ export default function App({ onLogout }) {
         document.exitFullscreen();
         return;
       }
-      if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen || worksheetGenOpen) return;
+      if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setGlobalSearchOpen(true);
@@ -416,22 +411,6 @@ export default function App({ onLogout }) {
       if (e.name === 'CanceledError' || e.name === 'AbortError') throw e;
       setToast({ type: 'error', msg: t('toast.upload_error') });
       throw e;
-    }
-  };
-
-  const handleSaveGeneratedMaterial = async ({ name, content }) => {
-    if (!activeFolder) {
-      setToast({ type: 'warning', msg: 'Bitte zuerst einen Ordner auswählen.' });
-      return false;
-    }
-    try {
-      const safeName = (name || 'Arbeitsblatt').replace(/[\\/:*?"<>|]/g, ' ').trim() || 'Arbeitsblatt';
-      await upload(new File([content], `${safeName}.md`, { type: 'text/markdown' }));
-      setToast({ type: 'success', msg: 'Arbeitsblatt als Material gespeichert.' });
-      return true;
-    } catch {
-      setToast({ type: 'error', msg: 'Arbeitsblatt konnte nicht gespeichert werden.' });
-      return false;
     }
   };
 
@@ -967,38 +946,6 @@ export default function App({ onLogout }) {
             </svg>
           </button>
 
-          <button
-            className="lm-spring"
-            onClick={() => setWorksheetGenOpen(true)}
-            title="Arbeitsblatt generieren"
-            style={{
-              height: 30, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 7,
-              background: 'transparent', color: 'var(--c-text-2)',
-              fontSize: 11, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'inherit', letterSpacing: 0.3, transition: 'background .12s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            ✦ Arbeitsblatt
-          </button>
-
-          <button
-            className="lm-spring"
-            onClick={() => { setTerminalPrompt(''); setTerminalOpen(true); }}
-            title="Terminal"
-            style={{
-              height: 30, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 7,
-              background: 'transparent', color: 'var(--c-text-2)',
-              fontSize: 11, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'inherit', letterSpacing: 0.3, transition: 'background .12s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            Terminal
-          </button>
-
           {/* Theme toggle */}
           <button
             className="lm-spring"
@@ -1103,8 +1050,7 @@ export default function App({ onLogout }) {
               onOpenSubjects={() => { setViewMode('subjects'); if (isMobile) setSidebarDrawerOpen(true); }}
               onOpenSchedule={() => setViewMode('schedule')}
               onOpenSearch={() => setGlobalSearchOpen(true)}
-              onOpenWorksheet={() => setWorksheetGenOpen(true)}
-              onOpenNotes={() => { setViewMode('subjects'); setActiveFolder(subjectRootFolders[0] || null); setFolderTab('notes'); }}
+            onOpenNotes={() => { setViewMode('subjects'); setActiveFolder(subjectRootFolders[0] || null); setFolderTab('notes'); }}
               onUpload={() => activeFolder ? setUploadOpen(true) : setToast({ type: 'warning', msg: 'Bitte zuerst einen Ordner auswählen.' })}
             />
           </div>
@@ -1828,8 +1774,6 @@ export default function App({ onLogout }) {
           }
         }}
       />
-      <TerminalModal open={terminalOpen} initialPrompt={terminalPrompt} onClose={() => { setTerminalOpen(false); setTerminalPrompt(''); }} />
-      {worksheetGenOpen && <WorksheetGenerator onClose={() => setWorksheetGenOpen(false)} onOpenTerminal={(prompt) => { setTerminalPrompt(prompt); setWorksheetGenOpen(false); setTerminalOpen(true); }} onSaveMaterial={handleSaveGeneratedMaterial} initialSubject={subjectId} hasTargetFolder={!!activeFolder} />}
       {examBoardOpen && <ExamBoard onDismiss={() => setExamBoardOpen(false)} />}
 
       {toast && (
