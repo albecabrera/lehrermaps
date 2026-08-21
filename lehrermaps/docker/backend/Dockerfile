@@ -10,6 +10,7 @@ RUN apt-get update \
      make \
      g++ \
      pkg-config \
+     fish \
   && rm -rf /var/lib/apt/lists/*
 
 COPY server/package*.json ./

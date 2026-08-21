@@ -15,6 +15,7 @@ services:
       DB_PASS: ""
       DB_NAME: lehrermaps
       PROJECT_DIR: /app
+      TERMINAL_SHELL: /usr/bin/fish
       ALLOWED_ORIGIN: http://localhost,http://127.0.0.1,http://localhost:8090,http://127.0.0.1:8090,http://localhost:3001,http://127.0.0.1:3001
     expose:
       - "3001"
