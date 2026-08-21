@@ -30,8 +30,9 @@ const FOLDER_COLORS = [
 ];
 
 export default function Sidebar({
-  subject, groups, folders, loading = false, width = 260,
+  subject, subjects = [], groups, folders, loading = false, width = 260,
   activeFolderId, onFolderSelect,
+  activeSubjectId, onSubjectSelect,
   onNewFolder, onNewFolderInGroup, onNewSubfolder, onNewOrdner, onNewHauptordner,
   onRenameFolder, onDeleteFolder,
   onReorderFolders, onToggleFavorite,
@@ -48,6 +49,7 @@ export default function Sidebar({
   const [folderDropTargetId, setFolderDropTargetId] = useState(null);
   const [draggingFolderId, setDraggingFolderId] = useState(null);
   const accent = subject.color;
+  const subjectList = (subjects.length ? subjects : [subject]).filter(Boolean);
 
   const handleDragOver = (e, folderId) => {
     if (e.dataTransfer.types.includes('text/x-lm-file-id')) {
@@ -95,6 +97,67 @@ export default function Sidebar({
       transition: collapsed ? 'width .22s cubic-bezier(.4,.7,.3,1)' : 'none',
       overflow: 'hidden',
     }}>
+      {/* Subjects */}
+      <div style={{
+        padding: collapsed ? '8px 4px 6px' : '10px 10px 8px',
+        borderBottom: '1px solid var(--c-border)',
+        flexShrink: 0,
+      }}>
+        {!collapsed && (
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: 0.7,
+            textTransform: 'uppercase', color: 'var(--c-text-3)',
+            marginBottom: 8, padding: '0 6px',
+          }}>
+            Fächer
+          </div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {subjectList.map((s) => {
+            const on = s.id === activeSubjectId;
+            return (
+              <button
+                key={s.id}
+                onClick={() => onSubjectSelect?.(s.id)}
+                title={t('subject.' + s.id)}
+                style={{
+                  height: collapsed ? 30 : 34,
+                  width: '100%',
+                  border: '1px solid',
+                  borderColor: on ? `${s.color}66` : 'var(--c-border)',
+                  borderRadius: 8,
+                  background: on ? `${s.color}14` : 'transparent',
+                  color: on ? 'var(--c-text)' : 'var(--c-text-2)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                  gap: collapsed ? 0 : 8,
+                  padding: collapsed ? 0 : '0 10px',
+                  fontSize: collapsed ? 11 : 12,
+                  fontWeight: on ? 700 : 600,
+                  transition: 'background .12s, border-color .12s, color .12s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!on) e.currentTarget.style.background = 'var(--c-hover-2)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!on) e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <span style={{
+                  width: 8, height: 8, borderRadius: 3, background: s.color,
+                  flexShrink: 0,
+                }} />
+                {!collapsed && <span style={{ flex: 1, textAlign: 'left' }}>{t('subject.' + s.id)}</span>}
+                {collapsed && <span style={{ fontSize: 10, letterSpacing: 0.2 }}>{s.short}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Header */}
       <div style={{
         height: 44, display: 'flex', alignItems: 'center',

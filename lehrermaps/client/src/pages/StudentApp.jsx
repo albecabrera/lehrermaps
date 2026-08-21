@@ -12,7 +12,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/MobileNav';
 
 export default function StudentApp({ onLogout }) {
-  const { t, lang, setLang } = useLang();
+  const { t } = useLang();
   const { isDark, toggle: toggleTheme } = useTheme();
   const isMobile = useIsMobile();
   const [subjectId, setSubjectId] = useState('spanisch');
@@ -114,6 +114,42 @@ export default function StudentApp({ onLogout }) {
     });
   };
 
+  const renderSubjectList = (onAfterSelect) => (
+    <div style={{ padding: '10px', borderBottom: '1px solid var(--c-border)' }}>
+      <div style={{ padding: '0 6px 8px', fontSize: 10, fontWeight: 700, letterSpacing: 0.7, textTransform: 'uppercase', color: 'var(--c-text-3)' }}>
+        Fächer
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {SUBJECTS.map((s) => {
+          const on = s.id === subjectId;
+          return (
+            <button
+              key={s.id}
+              onClick={() => {
+                setSubjectId(s.id);
+                setActiveFolder(null);
+                setActiveFile(null);
+                setStudentQuery('');
+                onAfterSelect?.();
+              }}
+              style={{
+                height: 34, width: '100%', border: '1px solid',
+                borderColor: on ? `${s.color}66` : 'var(--c-border)',
+                borderRadius: 8, background: on ? `${s.color}14` : 'transparent',
+                color: on ? 'var(--c-text)' : 'var(--c-text-2)', cursor: 'pointer',
+                fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8,
+                padding: '0 10px', fontSize: 12, fontWeight: on ? 700 : 600,
+              }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: 3, background: s.color }} />
+              <span style={{ flex: 1, textAlign: 'left' }}>{t('subject.' + s.id)}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <div style={{
       position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column',
@@ -161,42 +197,15 @@ export default function StudentApp({ onLogout }) {
         </>}
       </div>
 
-      {/* Subject tabs */}
-      <div className="lm-hscroll" style={{
-        display: 'flex', borderBottom: '1px solid var(--c-border)',
-        background: 'var(--c-tab-bg)', flexShrink: 0, overflowX: 'auto',
-      }}>
-        {SUBJECTS.map((s) => {
-          const on = s.id === subjectId;
-          return (
-            <button
-              key={s.id}
-              onClick={() => { setSubjectId(s.id); setActiveFolder(null); setActiveFile(null); setStudentQuery(''); }}
-              style={{
-                appearance: 'none', border: 'none', font: 'inherit',
-                padding: '10px 18px', cursor: 'pointer',
-                background: 'transparent', borderBottom: on ? `2px solid ${s.color}` : '2px solid transparent',
-                fontSize: 13, fontWeight: on ? 600 : 500,
-                color: on ? 'var(--c-text)' : 'var(--c-text-2)',
-                display: 'flex', alignItems: 'center', gap: 8,
-                transition: 'color .12s',
-              }}
-            >
-              <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, opacity: on ? 1 : 0.5 }} />
-              {t('subject.' + s.id)}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Body */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         {/* Folder list (Desktop: feste Spalte) */}
         {!isMobile && (
           <div style={{
             width: 220, background: 'var(--c-surface)', borderRight: '1px solid var(--c-border)',
-            overflow: 'auto', padding: '10px 0', flexShrink: 0,
+            overflow: 'auto', flexShrink: 0,
           }}>
+            {renderSubjectList()}
             {renderFolderList()}
           </div>
         )}
@@ -215,6 +224,7 @@ export default function StudentApp({ onLogout }) {
               boxShadow: 'var(--c-shadow-modal)', overflow: 'auto', padding: '10px 0',
               animation: 'lmSlideInLeft .22s cubic-bezier(.4,.7,.3,1)',
             }}>
+              {renderSubjectList(() => setFolderDrawerOpen(false))}
               {renderFolderList(() => setFolderDrawerOpen(false))}
             </div>
           </>,
@@ -329,8 +339,6 @@ export default function StudentApp({ onLogout }) {
         accent={accent}
         isDark={isDark}
         toggleTheme={toggleTheme}
-        lang={lang}
-        setLang={setLang}
         onLogout={onLogout}
       />
     </div>

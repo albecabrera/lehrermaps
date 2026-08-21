@@ -68,7 +68,7 @@ function ProgressBar({ tokens, accent }) {
 
 export default function WorksheetGenerator({ onClose }) {
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
-  const [lang, setLang] = useState('de');
+  const lang = 'de';
   const [step, setStep] = useState('form');
   const [content, setContent] = useState('');
   const [streamText, setStreamText] = useState('');
@@ -283,19 +283,6 @@ export default function WorksheetGenerator({ onClose }) {
           {/* ── FORM ── */}
           {step === 'form' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text-2)', display: 'block', marginBottom: 5, letterSpacing: 0.4 }}>AUSGABESPRACHE</label>
-                <select
-                  value={lang}
-                  onChange={(e) => setLang(e.target.value)}
-                  style={{ padding: '8px 10px', borderRadius: 7, fontSize: 13, border: '1px solid var(--c-border)', background: 'var(--c-surface-2)', color: 'var(--c-text)', fontFamily: 'inherit', outline: 'none' }}
-                >
-                  <option value="de">Deutsch</option>
-                  <option value="es">Español</option>
-                  <option value="en">English</option>
-                </select>
-              </div>
-
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text-2)', display: 'block', marginBottom: 5, letterSpacing: 0.4 }}>BESCHREIBE DAS ARBEITSBLATT *</label>
                 <textarea

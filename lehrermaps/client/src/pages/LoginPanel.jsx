@@ -6,7 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 const DEFAULT_AVATAR = '/teacher-avatar.jpg';
 
 export default function LoginPanel({ onLogin, initialRole = null }) {
-  const { t, lang, setLang } = useLang();
+  const { t } = useLang();
   const { isDark, toggle: toggleTheme } = useTheme();
 
   const [step, setStep] = useState(initialRole || 'select');
@@ -75,28 +75,6 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
 
       {/* Top-right controls */}
       <div style={{ position: 'fixed', top: 16, right: 16, display: 'flex', gap: 8 }}>
-        <div style={{
-          display: 'flex', gap: 4, padding: 2,
-          border: '1px solid var(--c-border)', borderRadius: 8, background: 'var(--c-surface)',
-        }}>
-          {['de', 'en', 'es'].map((code) => (
-            <button
-              key={code}
-              onClick={() => setLang(code)}
-              style={{
-                ...topBtnStyle,
-                height: 28,
-                minWidth: 34,
-                border: 'none',
-                background: lang === code ? 'var(--c-hover)' : 'transparent',
-                color: 'var(--c-text)',
-              }}
-              title={code === 'de' ? 'Deutsch' : code === 'en' ? 'English' : 'Español'}
-            >
-              {code.toUpperCase()}
-            </button>
-          ))}
-        </div>
         <button onClick={toggleTheme} style={topBtnStyle}>
           {isDark
             ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>

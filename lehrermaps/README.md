@@ -4,6 +4,8 @@ LehrerMaps es una aplicación web para docentes que necesitan organizar, prepara
 
 La idea es simple: **materia → grupo → carpeta → archivos, enlaces, notas y planificación**. El docente trabaja en un panel privado y el alumnado accede solo al material marcado como compartido.
 
+La versión actual añade un flujo docente más claro: **material por roles de clase**, **modo de enseñanza para mostrar una hora**, y **versionado local para editar copias sin romper el original**.
+
 ---
 
 ## Qué problema resuelve
@@ -25,6 +27,9 @@ LehrerMaps intenta convertir esa estructura docente en una interfaz clara, rápi
 
 - **Organización por materias y grupos**: carpetas jerárquicas, colores, favoritos y orden manual.
 - **Gestión de archivos**: subida de archivos, vista previa, descarga, renombrado, eliminación y movimiento entre carpetas.
+- **Material por roles de clase**: etiquetas como inicio, desarrollo, cierre, tarea, solución o examen para ordenar mejor una hora.
+- **Modo de enseñanza**: vista limpia para proyectar la clase y ocultar soluciones hasta que el docente las muestre.
+- **Versionado local**: abrir una copia de trabajo, editarla fuera de la app y convertirla luego en una nueva versión sin perder el original.
 - **Previsualización integrada**: soporte para PDF, imágenes, vídeo, audio, Markdown, DOCX y otros formatos comunes.
 - **Vista para estudiantes**: acceso separado con rol `student`; solo muestra contenido compartido.
 - **Links por carpeta**: guarda recursos externos junto al material de clase.
@@ -49,6 +54,7 @@ LehrerMaps intenta convertir esa estructura docente en una interfaz clara, rápi
 | Base de datos | MySQL / MariaDB |
 | Auth | JWT con roles `lehrer` y `student` |
 | Uploads | Multer + filesystem local |
+| Versionado | Copias locales + nuevas versiones en DB |
 | Tiempo real | Socket.io |
 | Terminal | xterm.js + node-pty |
 | PWA | Manifest + Service Worker |
@@ -72,7 +78,8 @@ lehrermaps/
 │   ├── routes/             # Endpoints de auth, folders, files, links, schedule, etc.
 │   ├── db.js               # Pool MySQL + initSchema()
 │   ├── index.js            # Express + Socket.io + servidor estático
-│   └── uploads/            # Archivos subidos localmente
+│   ├── uploads/            # Archivos subidos localmente
+│   └── edit-copies/        # Copias de trabajo para editar y versionar
 ├── deploy/nginx.conf       # Ejemplo de reverse proxy para producción
 ├── schema.sql              # Schema base
 ├── start.sh                # Arranque asistido local
@@ -120,7 +127,7 @@ DB_USER=root
 DB_PASS=
 DB_NAME=lehrermaps
 JWT_SECRET=cambia_esto_por_un_secreto_largo
-APP_PASSWORD=contraseña_docente
+APP_PASSWORD=lehrer
 STUDENT_PASSWORD=contraseña_estudiante
 PORT=3001
 ALLOWED_ORIGIN=http://localhost:5173
@@ -179,7 +186,8 @@ npm run install:all  # instala raíz, client y server
 La app inicializa/migra tablas desde `server/db.js`:
 
 - `folders`: carpetas por materia, grupo, padre, color, favorito, deadline y notas.
-- `files`: archivos subidos, metadatos, visibilidad, token público y deadline.
+- `files`: archivos subidos, metadatos, visibilidad, token público, deadline, rol de material y datos de versión.
+- `file_edit_copies`: copias de trabajo temporales para editar antes de crear una nueva versión.
 - `links`: recursos externos asociados a carpetas.
 - `schedule`: planificación semanal.
 - `notebooks`, `sections`, `pages`, `blocks`: sistema de notas/cuadernos.
@@ -225,6 +233,11 @@ PUT    /api/files/:id/share
 PUT    /api/files/:id/public
 PUT    /api/files/:id/deadline
 PUT    /api/files/:id/folder
+PUT    /api/files/:id           # también acepta material_role, rename o folder_id
+PUT    /api/files/roles/bulk
+GET    /api/files/:id/versions
+POST   /api/files/:id/edit-copy
+POST   /api/files/:id/versions/commit
 DELETE /api/files/:id
 ```
 
@@ -238,13 +251,14 @@ También existen rutas para `links`, `schedule`, `notebooks`, `search`, `exams` 
 - Roles separados: `lehrer` y `student`.
 - La vista estudiante no debe modificar datos.
 - Los archivos no se sirven por nombre original, sino por rutas controladas.
+- Las copias de trabajo para editar quedan fuera de `uploads/` y se ignoran en Git.
 - Los enlaces públicos usan token.
 - CORS se limita mediante `ALLOWED_ORIGIN`.
 - `JWT_SECRET` debe ser largo y único en producción.
 
 ---
 
-## Producción
+## Producción y entorno local
 
 El backend puede servir el frontend compilado desde `client/dist` si existe. Para despliegue real:
 
@@ -254,7 +268,19 @@ El backend puede servir el frontend compilado desde `client/dist` si existe. Par
 4. Poner Nginx delante con HTTPS.
 5. Configurar proxy para `/api` y `/ws`.
 
-Ver detalles en [`DEPLOY.md`](DEPLOY.md) y [`deploy/nginx.conf`](deploy/nginx.conf).
+En macOS con XAMPP Docker, la app puede quedar detrás de Apache y el backend corre en un contenedor propio de LehrerMaps dentro de la red Docker compartida. El repo ya contiene un helper en `deploy/xampp-apache-vhost.conf` con el bloque listo para pegar.
+La URL estable queda en `http://localhost:8080` y el panel de XAMPP queda en `8090`.
+Si querés automatizar el arranque sin tocar las configuraciones base, ejecutá `./scripts/start-xampp-docker.sh`.
+
+Ver detalles en [`DEPLOY.md`](DEPLOY.md), [`deploy/nginx.conf`](deploy/nginx.conf) y [`deploy/xampp-apache-vhost.conf`](deploy/xampp-apache-vhost.conf).
+
+## Flujo docente recomendado
+
+1. Elegí la materia y el grupo.
+2. Abrí la carpeta de la unidad o la hora.
+3. Clasificá materiales con roles de clase.
+4. Usá **Stunde zeigen / Mostrar clase** para proyectar solo lo necesario.
+5. Si vas a revisar un documento, abrí una copia de trabajo y guardá una nueva versión cuando esté lista.
 
 ---
 

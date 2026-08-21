@@ -74,7 +74,7 @@ export function MobileBottomNav({ accent, items, active }) {
 // nutzt dasselbe Sheet nur mit Theme/Sprache/Abmelden.
 export function MobileMoreSheet({
   open, onClose, t, accent,
-  isDark, toggleTheme, lang, setLang,
+  isDark, toggleTheme,
   onExams, onWorksheet, onUpload, uploadDisabled, onLogout,
   showTeacherLinks = false,
 }) {
@@ -162,7 +162,7 @@ export function MobileMoreSheet({
           </>
         )}
 
-        {/* Theme + Sprache in einer Zeile — Einstellungen, keine Navigation */}
+        {/* Theme — Einstellungen, keine Navigation */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px' }}>
           <button
             onClick={toggleTheme}
@@ -176,25 +176,6 @@ export function MobileMoreSheet({
           >
             {isDark ? '☀️' : '🌙'} {isDark ? t('app.theme_light') : t('app.theme_dark')}
           </button>
-          <div style={{
-            display: 'flex', gap: 4, padding: 3,
-            border: '1px solid var(--c-border)', borderRadius: 9,
-          }}>
-            {['de', 'en', 'es'].map((code) => (
-              <button
-                key={code}
-                onClick={() => setLang(code)}
-                style={{
-                  height: 30, minWidth: 36, border: 'none', borderRadius: 6,
-                  background: lang === code ? `${accent}18` : 'transparent',
-                  color: lang === code ? accent : 'var(--c-text-2)',
-                  fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                {code.toUpperCase()}
-              </button>
-            ))}
-          </div>
         </div>
 
         {divider}

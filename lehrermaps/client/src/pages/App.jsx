@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Sidebar from '../components/Sidebar';
 import BulkMoveModal from '../components/BulkMoveModal';
@@ -40,7 +40,7 @@ import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/Mobile
 
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
-  const { lang, t, setLang } = useLang();
+  const { t } = useLang();
   const { activePageId, setActivePageId } = useNotebook();
   const isMobile = useIsMobile();
   const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
@@ -57,7 +57,6 @@ export default function App({ onLogout }) {
   const [newFolderGroup, setNewFolderGroup] = useState(null);
   const [renamingFolder, setRenamingFolder] = useState(null);
   const [renamingFile, setRenamingFile] = useState(null);
-  const [hoverSubject, setHoverSubject] = useState(null);
   const [folderTab, setFolderTab] = useState('files');
   const [filesView, setFilesView] = useState('list');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
@@ -342,14 +341,6 @@ export default function App({ onLogout }) {
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
   }, [previewWidth]);
-
-  const tabRefs = useRef({});
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
-
-  useLayoutEffect(() => {
-    const el = tabRefs.current[subjectId];
-    if (el) setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
-  }, [subjectId]);
 
   const onSubjectChange = (id) => {
     setSubjectId(id);
@@ -732,9 +723,12 @@ export default function App({ onLogout }) {
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
   const sidebarProps = {
     subject,
+    subjects: SUBJECTS,
     groups: subject.groups,
     folders: subjectFolders,
     loading: foldersLoading,
+    activeSubjectId: subjectId,
+    onSubjectSelect: onSubjectChange,
     activeFolderId: activeFolder?.id,
     onNewFolder: () => { setNewFolderGroup(null); setNewFolderOpen(true); },
     onNewFolderInGroup: (g) => { setNewFolderGroup(g); setNewFolderOpen(true); },
@@ -784,52 +778,6 @@ export default function App({ onLogout }) {
             </svg>
           </button>
         )}
-        {SUBJECTS.map((s) => {
-          const on = s.id === subjectId;
-          const hovered = hoverSubject === s.id;
-          return (
-            <button
-              key={s.id}
-              className="lm-spring"
-              ref={(el) => (tabRefs.current[s.id] = el)}
-              onClick={() => onSubjectChange(s.id)}
-              onMouseEnter={() => setHoverSubject(s.id)}
-              onMouseLeave={() => setHoverSubject(null)}
-              style={{
-                appearance: 'none', border: 'none', font: 'inherit',
-                padding: '10px 18px 12px', cursor: 'pointer',
-                background: on ? 'var(--c-surface)' : hovered ? 'var(--c-hover-2)' : 'transparent',
-                borderRadius: '10px 10px 0 0',
-                marginBottom: on ? -1 : 0,
-                display: 'flex', alignItems: 'center', gap: 9,
-                borderLeft: on ? '1px solid var(--c-border)' : '1px solid transparent',
-                borderRight: on ? '1px solid var(--c-border)' : '1px solid transparent',
-                position: 'relative', transition: 'background .12s',
-              }}
-            >
-              <span style={{
-                width: 9, height: 9, borderRadius: 3, background: s.color,
-                opacity: on || hovered ? 1 : 0.55,
-                boxShadow: on ? `0 0 0 2px ${s.color}26` : 'none',
-                transition: 'all .15s',
-              }} />
-              <span style={{
-                fontSize: 13, fontWeight: on ? 600 : 500,
-                color: on ? 'var(--c-text)' : 'var(--c-text-2)', letterSpacing: -0.1,
-              }}>{t('subject.' + s.id)}</span>
-            </button>
-          );
-        })}
-
-        {/* Sliding tab indicator */}
-        <div style={{
-          position: 'absolute', bottom: -1, height: 2,
-          left: indicator.left, width: indicator.width,
-          background: accent,
-          transition: 'left .25s cubic-bezier(.4,.7,.3,1), width .25s cubic-bezier(.4,.7,.3,1)',
-          borderRadius: '2px 2px 0 0',
-        }} />
-
         {/* Mobil wandern Stundenplan/Termine/Notion/Miro in Bottom-Nav + Mehr-Sheet */}
         {!isMobile && <>
         {/* Stundenplan toggle */}
@@ -983,28 +931,6 @@ export default function App({ onLogout }) {
               <path d="M8.5 8.5l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
             </svg>
           </button>
-
-          {/* Language selector (always visible: DE / EN / ES) */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 4, padding: 2,
-            border: '1px solid var(--c-border)', borderRadius: 8, background: 'var(--c-surface)',
-          }}>
-            {['de', 'en', 'es'].map((code) => (
-              <button
-                key={code}
-                onClick={() => setLang(code)}
-                style={{
-                  height: 26, minWidth: 34, border: 'none', borderRadius: 6,
-                  background: lang === code ? 'var(--c-hover)' : 'transparent',
-                  color: 'var(--c-text)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                  fontFamily: 'inherit', letterSpacing: 0.2,
-                }}
-                title={code === 'de' ? 'Deutsch' : code === 'en' ? 'English' : 'Español'}
-              >
-                {code.toUpperCase()}
-              </button>
-            ))}
-          </div>
 
           <button
             className="lm-spring"
@@ -1168,6 +1094,7 @@ export default function App({ onLogout }) {
               <Sidebar
                 {...sidebarProps}
                 width={280}
+                onSubjectSelect={(id) => { onSubjectChange(id); setSidebarDrawerOpen(false); }}
                 onFolderSelect={(folder, rect) => { onFolderSelect(folder, rect); setSidebarDrawerOpen(false); }}
               />
             </div>
@@ -1669,8 +1596,6 @@ export default function App({ onLogout }) {
         accent={accent}
         isDark={isDark}
         toggleTheme={toggleTheme}
-        lang={lang}
-        setLang={setLang}
         onExams={() => setExamBoardOpen(true)}
         onWorksheet={() => setWorksheetGenOpen(true)}
         onUpload={() => setUploadOpen(true)}
