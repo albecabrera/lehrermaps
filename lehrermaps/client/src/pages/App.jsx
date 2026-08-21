@@ -1265,9 +1265,9 @@ export default function App({ onLogout }) {
                 {/* Tab switcher */}
                 <div style={{ display: 'flex', gap: 0, marginTop: 12, borderBottom: '1px solid var(--c-border)' }}>
                   {[
+                    { key: 'annual', label: t('annual.tab') },
                     { key: 'files', label: t('notes.files_tab') },
                     { key: 'notes', label: t('notes.tab') },
-                    { key: 'annual', label: t('annual.tab') },
                   ].map(({ key, label }) => {
                     const on = folderTab === key;
                     return (
