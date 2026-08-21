@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_COMPOSE_FILE="$ROOT_DIR/docker-compose.backend.yml"
-APP_URL="http://localhost:8080"
+APP_URL="http://localhost:8090"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {

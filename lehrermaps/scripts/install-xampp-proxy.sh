@@ -6,8 +6,8 @@ HTTPD_CONF="$XAMPP_ETC/httpd.conf"
 VHOSTS_CONF="$XAMPP_ETC/extra/httpd-vhosts.conf"
 BACKUP_TS=$(date +%Y%m%d-%H%M%S)
 VHOST_NAME="localhost"
-BACKEND_URL="http://lehrermaps-backend:3001"
-LISTEN_PORT="8080"
+BACKEND_URL="${LEHRERMAPS_BACKEND_URL:-http://lehrermaps-backend:3001}"
+LISTEN_PORT="${LEHRERMAPS_PROXY_PORT:-8090}"
 MARKER_BEGIN="# --- LehrerMaps reverse proxy BEGIN ---"
 MARKER_END="# --- LehrerMaps reverse proxy END ---"
 
@@ -56,8 +56,8 @@ block = f'''{listen_line}
 '''
 
 vhosts_text = vhosts.read_text()
-vhosts_text = vhosts_text.replace('Listen 8090', 'Listen 8080')
-vhosts_text = vhosts_text.replace('<VirtualHost *:8090>', '<VirtualHost *:8080>')
+vhosts_text = vhosts_text.replace('Listen 8090', listen_line)
+vhosts_text = vhosts_text.replace('<VirtualHost *:8090>', f'<VirtualHost *:{sys.argv[7]}>')
 if not re.search(rf'(?m)^{re.escape(listen_line)}$', vhosts_text):
     if not vhosts_text.endswith('\n'):
         vhosts_text += '\n'

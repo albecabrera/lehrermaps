@@ -269,7 +269,7 @@ El backend puede servir el frontend compilado desde `client/dist` si existe. Par
 5. Configurar proxy para `/api` y `/ws`.
 
 En macOS con XAMPP Docker, la app puede quedar detrás de Apache y el backend corre en un contenedor propio de LehrerMaps dentro de la red Docker compartida. El repo ya contiene un helper en `deploy/xampp-apache-vhost.conf` con el bloque listo para pegar.
-La URL estable queda en `http://localhost:8080` y el panel de XAMPP queda en `8090`.
+La URL estable de LehrerMaps queda en `http://localhost:8090` y el panel de XAMPP queda en `8080`.
 Si querés automatizar el arranque sin tocar las configuraciones base, ejecutá `./scripts/start-xampp-docker.sh`.
 
 Ver detalles en [`DEPLOY.md`](DEPLOY.md), [`deploy/nginx.conf`](deploy/nginx.conf) y [`deploy/xampp-apache-vhost.conf`](deploy/xampp-apache-vhost.conf).

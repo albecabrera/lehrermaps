@@ -5,7 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVER_DIR="$ROOT_DIR/server"
 LOG_DIR="$ROOT_DIR/.logs"
 PORT=3001
-APP_URL="http://localhost:8080"
+APP_URL="http://localhost:8090"
+PROXY_PORT="8090"
 BACKEND_URL="http://127.0.0.1:$PORT"
 
 mkdir -p "$LOG_DIR"
@@ -31,7 +32,7 @@ fi
 
 # 1) Instalar/actualizar el proxy de Apache en XAMPP.
 echo "→ Configurando Apache de XAMPP para apuntar al backend..."
-sudo "$ROOT_DIR/scripts/install-xampp-proxy.sh"
+sudo LEHRERMAPS_BACKEND_URL="$BACKEND_URL" LEHRERMAPS_PROXY_PORT="$PROXY_PORT" "$ROOT_DIR/scripts/install-xampp-proxy.sh"
 
 # 2) Reiniciar Apache.
 echo "→ Reiniciando Apache de XAMPP..."
