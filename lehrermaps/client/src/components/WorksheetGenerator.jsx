@@ -66,9 +66,14 @@ function ProgressBar({ tokens, accent }) {
   );
 }
 
-export default function WorksheetGenerator({ onClose }) {
+export default function WorksheetGenerator({ onClose, onOpenTerminal, onSaveMaterial, initialSubject = 'spanisch', hasTargetFolder = false }) {
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const lang = 'de';
+  const [meta, setMeta] = useState({
+    subject: initialSubject,
+    grade: '', curriculum: '', level: 'Gemischt', difficulty: 'Mittel',
+    taskTypes: ['Offene Fragen', 'Lückentext'], differentiation: 'Ohne', lrs: false,
+  });
   const [step, setStep] = useState('form');
   const [content, setContent] = useState('');
   const [streamText, setStreamText] = useState('');
@@ -80,6 +85,41 @@ export default function WorksheetGenerator({ onClose }) {
   const startTimeRef = useRef(null);
   const timerRef = useRef(null);
   const previewRef = useRef(null);
+
+  const updateMeta = (key, value) => setMeta((prev) => ({ ...prev, [key]: value }));
+  const toggleTaskType = (type) => setMeta((prev) => ({
+    ...prev,
+    taskTypes: prev.taskTypes.includes(type)
+      ? prev.taskTypes.filter((item) => item !== type)
+      : [...prev.taskTypes, type],
+  }));
+  const buildPrompt = () => {
+    const subjectName = SUBJECTS.find((item) => item.id === meta.subject)?.name || meta.subject;
+    const structured = [
+      'Strukturvorgaben für das Arbeitsblatt:',
+      `- Thema und Fach: ${subjectName}`,
+      `- Klassenstufe: ${meta.grade || 'passend zur Beschreibung'}`,
+      `- Lehrplanbezug: ${meta.curriculum || 'nicht angegeben'}`,
+      `- Anforderungsbereich: ${meta.level}`,
+      `- Schwierigkeitsgrad: ${meta.difficulty}`,
+      `- Aufgabenformen: ${meta.taskTypes.join(', ') || 'frei wählen'}`,
+      `- Differenzierung: ${meta.differentiation}`,
+      `- LRS-freundliche Sprache: ${meta.lrs ? 'Ja' : 'Nein'}`,
+      '',
+      'Aufgabenbeschreibung:',
+      prompt.trim(),
+    ].join('\n');
+    return structured;
+  };
+
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(buildPrompt());
+      setError('Prompt kopiert. Du kannst ihn jetzt in ChatGPT Plus oder Codex einfügen.');
+    } catch {
+      setError('Prompt konnte nicht kopiert werden.');
+    }
+  };
 
   const accentColor = SUBJECTS[0]?.color || '#6c47ff';
 
@@ -117,7 +157,7 @@ export default function WorksheetGenerator({ onClose }) {
       const res = await fetch('/api/ai/worksheet/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ prompt: prompt.trim(), lang }),
+        body: JSON.stringify({ prompt: buildPrompt(), lang }),
         signal: ctrl.signal,
       });
 
@@ -174,7 +214,7 @@ export default function WorksheetGenerator({ onClose }) {
       const res = await fetch('/api/ai/worksheet/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ content, format, subject: '', topic: '' }),
+        body: JSON.stringify({ content, format, subject: meta.subject, topic: meta.curriculum }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Export-Fehler');
@@ -283,6 +323,49 @@ export default function WorksheetGenerator({ onClose }) {
           {/* ── FORM ── */}
           {step === 'form' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ padding: 12, border: '1px solid var(--c-border)', borderRadius: 10, background: 'var(--c-surface-2)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--c-text-2)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>Struktur</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 9 }}>
+                  <Field label="Thema und Fach">
+                    <select value={meta.subject} onChange={(e) => updateMeta('subject', e.target.value)} style={fieldStyle}>
+                      {SUBJECTS.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Klassenstufe">
+                    <select value={meta.grade} onChange={(e) => updateMeta('grade', e.target.value)} style={fieldStyle}>
+                      <option value="">Nicht angegeben</option>
+                      {Array.from({ length: 13 }, (_, i) => <option key={i + 1}>{`${i + 1}. Klasse`}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Lehrplanbezug">
+                    <input value={meta.curriculum} onChange={(e) => updateMeta('curriculum', e.target.value)} placeholder="z.B. LB 3.2" style={fieldStyle} />
+                  </Field>
+                  <Field label="Anforderungsbereich">
+                    <select value={meta.level} onChange={(e) => updateMeta('level', e.target.value)} style={fieldStyle}>
+                      {['Gemischt', 'AB I · Reproduktion', 'AB II · Transfer', 'AB III · Reflexion'].map((item) => <option key={item}>{item}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Schwierigkeitsgrad">
+                    <select value={meta.difficulty} onChange={(e) => updateMeta('difficulty', e.target.value)} style={fieldStyle}>
+                      {['Einfach', 'Mittel', 'Schwer'].map((item) => <option key={item}>{item}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Differenzierung">
+                    <select value={meta.differentiation} onChange={(e) => updateMeta('differentiation', e.target.value)} style={fieldStyle}>
+                      {['Ohne', 'Basis · Standard · Experte', 'Scaffolding', 'Sprachsensibel / DaZ'].map((item) => <option key={item}>{item}</option>)}
+                    </select>
+                  </Field>
+                </div>
+                <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {['Offene Fragen', 'Lückentext', 'Multiple Choice', 'Zuordnung', 'Tabelle'].map((type) => (
+                    <button key={type} onClick={() => toggleTaskType(type)} style={{ border: `1px solid ${meta.taskTypes.includes(type) ? accentColor : 'var(--c-border)'}`, borderRadius: 999, background: meta.taskTypes.includes(type) ? `${accentColor}18` : 'transparent', color: meta.taskTypes.includes(type) ? accentColor : 'var(--c-text-2)', padding: '5px 8px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>{type}</button>
+                  ))}
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--c-text-2)', padding: '0 5px' }}><input type="checkbox" checked={meta.lrs} onChange={(e) => updateMeta('lrs', e.target.checked)} /> LRS-freundlich</label>
+                </div>
+              </div>
+              <div style={{ padding: '9px 11px', borderRadius: 8, border: '1px solid #2563EB33', background: '#2563EB0D', color: 'var(--c-text-2)', fontSize: 11, lineHeight: 1.5 }}>
+                <strong style={{ color: '#2563EB' }}>Kostenloser Workflow:</strong> Prompt kopieren → in deinem ChatGPT-Plus-Konto oder Codex im Terminal ausführen → die fertige Datei anschließend in den gewählten LehrerMaps-Ordner hochladen.
+              </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text-2)', display: 'block', marginBottom: 5, letterSpacing: 0.4 }}>BESCHREIBE DAS ARBEITSBLATT *</label>
                 <textarea
@@ -339,12 +422,15 @@ export default function WorksheetGenerator({ onClose }) {
         {/* Footer */}
         <div style={{ padding: '14px 20px', borderTop: '1px solid var(--c-border)', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
           {step === 'form' && (
-            <button onClick={handleGenerate} disabled={!prompt.trim()} style={btnStyle(accentColor, !prompt.trim())}>
-              ✦ Generieren
-            </button>
+            <>
+              <button onClick={copyPrompt} disabled={!prompt.trim()} style={btnStyle('var(--c-text)', !prompt.trim())}>⌘ Prompt kopieren</button>
+              <button onClick={async () => { await copyPrompt(); onOpenTerminal?.(); }} disabled={!prompt.trim()} style={btnStyle(accentColor, !prompt.trim())}>▣ Terminal öffnen</button>
+              <a href="https://chatgpt.com/" target="_blank" rel="noreferrer" style={{ ...btnStyle('transparent', false), color: 'var(--c-text-2)', border: '1px solid var(--c-border)', textDecoration: 'none' }}>↗ ChatGPT Plus</a>
+            </>
           )}
           {step === 'preview' && (
             <>
+              <button onClick={async () => { const saved = await onSaveMaterial?.({ name: meta.curriculum || 'Arbeitsblatt', content }); if (saved) onClose(); }} disabled={!hasTargetFolder || !onSaveMaterial} style={btnStyle('#16A34A', !hasTargetFolder || !onSaveMaterial)}>{hasTargetFolder ? '✓ Als Material speichern' : 'Ordner auswählen zum Speichern'}</button>
               <button onClick={() => handleExport('docx')} disabled={!!exporting} style={btnStyle('#2563EB', !!exporting)}>
                 {exporting === 'docx' ? '…' : '↓ DOCX'}
               </button>
@@ -366,5 +452,20 @@ function Stat({ label, value, accent }) {
       <div style={{ fontSize: 16, fontWeight: 700, color: accent, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.5 }}>{value}</div>
       <div style={{ fontSize: 10, color: 'var(--c-text-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
     </div>
+  );
+}
+
+const fieldStyle = {
+  width: '100%', boxSizing: 'border-box', height: 32, padding: '0 8px',
+  border: '1px solid var(--c-border)', borderRadius: 7,
+  background: 'var(--c-bg)', color: 'var(--c-text)', fontFamily: 'inherit', fontSize: 12,
+};
+
+function Field({ label, children }) {
+  return (
+    <label style={{ display: 'grid', gap: 4, fontSize: 10, fontWeight: 700, color: 'var(--c-text-3)', letterSpacing: 0.3 }}>
+      {label}
+      {children}
+    </label>
   );
 }

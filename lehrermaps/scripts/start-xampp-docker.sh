@@ -16,6 +16,8 @@ require_cmd docker
 require_cmd sudo
 require_cmd open
 
+bash "$ROOT_DIR/scripts/start-client-build-watch.sh"
+
 if ! docker network inspect xampp_xampp-net >/dev/null 2>&1; then
   echo "La red Docker xampp_xampp-net no existe."
   echo "Primero levantá tu stack XAMPP Docker."

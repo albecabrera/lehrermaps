@@ -26,6 +26,7 @@ import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
 import WorksheetGenerator from '../components/WorksheetGenerator';
+import TodayDashboard from '../components/TodayDashboard';
 import TerminalModal from '../components/TerminalModal';
 import NotesEditor from '../components/NotesEditor';
 import FolderGallery from '../components/FolderGallery';
@@ -417,6 +418,22 @@ export default function App({ onLogout }) {
     }
   };
 
+  const handleSaveGeneratedMaterial = async ({ name, content }) => {
+    if (!activeFolder) {
+      setToast({ type: 'warning', msg: 'Bitte zuerst einen Ordner auswählen.' });
+      return false;
+    }
+    try {
+      const safeName = (name || 'Arbeitsblatt').replace(/[\\/:*?"<>|]/g, ' ').trim() || 'Arbeitsblatt';
+      await upload(new File([content], `${safeName}.md`, { type: 'text/markdown' }));
+      setToast({ type: 'success', msg: 'Arbeitsblatt als Material gespeichert.' });
+      return true;
+    } catch {
+      setToast({ type: 'error', msg: 'Arbeitsblatt konnte nicht gespeichert werden.' });
+      return false;
+    }
+  };
+
   const triggerHapticAt = useCallback((x, y, color = accent) => {
     setHapticPulse({ x, y, color });
   }, [accent]);
@@ -780,6 +797,23 @@ export default function App({ onLogout }) {
         )}
         {/* Mobil wandern Stundenplan/Termine/Notion/Miro in Bottom-Nav + Mehr-Sheet */}
         {!isMobile && <>
+        {/* Heute / Startseite */}
+        <button
+          className="lm-spring"
+          onClick={() => { setViewMode('today'); setActivePageId(null); closeFolderView(); }}
+          style={{
+            appearance: 'none', border: 'none', font: 'inherit',
+            padding: '10px 16px 12px', cursor: 'pointer',
+            background: viewMode === 'today' ? 'var(--c-surface)' : 'transparent',
+            borderRadius: '10px 10px 0 0', marginBottom: viewMode === 'today' ? -1 : 0,
+            display: 'flex', alignItems: 'center', gap: 8,
+            borderLeft: viewMode === 'today' ? '1px solid var(--c-border)' : '1px solid transparent',
+            borderRight: viewMode === 'today' ? '1px solid var(--c-border)' : '1px solid transparent',
+          }}
+        >
+          <span style={{ fontSize: 13 }}>⌂</span>
+          <span style={{ fontSize: 13, fontWeight: viewMode === 'today' ? 600 : 500, color: viewMode === 'today' ? 'var(--c-text)' : 'var(--c-text-2)' }}>Heute</span>
+        </button>
         {/* Stundenplan toggle */}
         <button
           className="lm-spring"
@@ -1054,7 +1088,26 @@ export default function App({ onLogout }) {
         }}
         onMouseLeave={() => setParallax({ x: 0, y: 0 })}
       >
-        {viewMode === 'schedule' ? (
+        {viewMode === 'today' ? (
+          <div style={{ display: 'flex', flex: 1, minWidth: 0 }}>
+            {!focusMode && !isMobile && <>
+              <Sidebar {...sidebarProps} width={sidebarWidth} onFolderSelect={onFolderSelect} />
+              <div onMouseDown={onSidebarResizeMouseDown} style={{ width: 4, flexShrink: 0, cursor: 'col-resize', background: 'transparent' }} />
+            </>}
+            <TodayDashboard
+              subject={subject}
+              folders={subjectFolders}
+              recents={recents}
+              onRecentClick={handleRecentClick}
+              onOpenSubjects={() => { setViewMode('subjects'); if (isMobile) setSidebarDrawerOpen(true); }}
+              onOpenSchedule={() => setViewMode('schedule')}
+              onOpenSearch={() => setGlobalSearchOpen(true)}
+              onOpenWorksheet={() => setWorksheetGenOpen(true)}
+              onOpenNotes={() => { setViewMode('subjects'); setActiveFolder(subjectRootFolders[0] || null); setFolderTab('notes'); }}
+              onUpload={() => activeFolder ? setUploadOpen(true) : setToast({ type: 'warning', msg: 'Bitte zuerst einen Ordner auswählen.' })}
+            />
+          </div>
+        ) : viewMode === 'schedule' ? (
           <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
             <Schedule onNavigate={(subjectId) => { onSubjectChange(subjectId); }} />
           </div>
@@ -1580,7 +1633,7 @@ export default function App({ onLogout }) {
           accent={accent}
           active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'home'}
           items={[
-            { id: 'home', label: t('mobile.subjects'), icon: navIcons.subjects, onClick: () => { setViewMode('subjects'); setActivePageId(null); closeFolderView(); } },
+            { id: 'home', label: 'Heute', icon: navIcons.subjects, onClick: () => { setViewMode('today'); setActivePageId(null); closeFolderView(); } },
             { id: 'search', label: t('mobile.search'), icon: navIcons.search, onClick: () => setGlobalSearchOpen(true) },
             { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => setViewMode('schedule') },
             { id: 'more', label: t('mobile.more'), icon: navIcons.more, onClick: () => setMoreSheetOpen(true) },
@@ -1775,7 +1828,7 @@ export default function App({ onLogout }) {
         }}
       />
       <TerminalModal open={terminalOpen} onClose={() => setTerminalOpen(false)} />
-      {worksheetGenOpen && <WorksheetGenerator onClose={() => setWorksheetGenOpen(false)} />}
+      {worksheetGenOpen && <WorksheetGenerator onClose={() => setWorksheetGenOpen(false)} onOpenTerminal={() => { setWorksheetGenOpen(false); setTerminalOpen(true); }} onSaveMaterial={handleSaveGeneratedMaterial} initialSubject={subjectId} hasTargetFolder={!!activeFolder} />}
       {examBoardOpen && <ExamBoard onDismiss={() => setExamBoardOpen(false)} />}
 
       {toast && (

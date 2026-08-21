@@ -174,8 +174,12 @@ Desde la raíz:
 ```bash
 npm run dev          # frontend + backend con concurrently
 npm run build        # build del frontend
+npm run build:watch  # actualiza client/dist automáticamente al guardar cambios
+npm run dev:8090     # watcher del bundle + backend para la app servida por XAMPP en 8090
 npm run install:all  # instala raíz, client y server
 ```
+
+Los launchers `scripts/start-xampp-docker.sh` y `scripts/start-xampp-local.sh` inician también el watcher del frontend. Así, la app que XAMPP sirve en `http://localhost:8090` recibe automáticamente cada cambio guardado en `client/src`, sin tener que regenerar el bundle manualmente.
 
 > Nota para agentes: no ejecutar build automáticamente después de cambios. Este proyecto lo prohíbe en sus instrucciones.
 

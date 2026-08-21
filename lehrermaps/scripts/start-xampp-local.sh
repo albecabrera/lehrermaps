@@ -20,6 +20,8 @@ need curl
 need sudo
 need open
 
+bash "$ROOT_DIR/scripts/start-client-build-watch.sh"
+
 if [ ! -f "$SERVER_DIR/.env" ]; then
   if [ -f "$SERVER_DIR/env.txt" ]; then
     cp "$SERVER_DIR/env.txt" "$SERVER_DIR/.env"
