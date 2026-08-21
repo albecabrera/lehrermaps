@@ -18,7 +18,7 @@ import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
 import { useRecents } from '../hooks/useRecents';
 import { useRecentFiles } from '../hooks/useRecentFiles';
-import { downloadFolderZip, downloadFilesZip, viewFile, initUnterrichtsreihe } from '../lib/api';
+import { downloadFolderZip, downloadFilesZip, viewFile } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
@@ -134,27 +134,6 @@ export default function App({ onLogout }) {
   const previewPaneRef = useRef(null);
   const backSwipeRef = useRef({ dragging: false, startX: 0, pointerId: null });
   const pullRef = useRef({ startY: 0, pulling: false, atTop: false });
-
-  // Backfill: seed Unterrichtsreihe for any root folder that doesn't have one yet
-  const backfillDoneRef = useRef(false);
-  useEffect(() => {
-    if (foldersLoading || backfillDoneRef.current || !folders.length) return;
-    backfillDoneRef.current = true;
-    const rootFolders = folders.filter((f) => !f.parent_id);
-    const childNames = new Set(
-      folders.filter((f) => f.parent_id).map((f) => `${f.parent_id}:${f.name}`)
-    );
-    const missing = rootFolders.filter(
-      (f) => !childNames.has(`${f.id}:Unterrichtsreihe`)
-    );
-    if (!missing.length) return;
-    (async () => {
-      for (const f of missing) {
-        try { await initUnterrichtsreihe(f.id); } catch { /* silent */ }
-      }
-      reloadFolders();
-    })();
-  }, [foldersLoading, folders]);
 
   useEffect(() => {
     if (!toast) return;
@@ -460,21 +439,10 @@ export default function App({ onLogout }) {
     setTimeout(() => setDropUploading(null), 900);
   }, [activeFolder, reloadFolders, upload]);
 
-  const seedUnterrichtsreihe = async (folder) => {
-    if (!folder?.id) return;
-    try {
-      await initUnterrichtsreihe(folder.id);
-      reloadFolders();
-    } catch {
-      // silencioso — la carpeta principal ya se creó
-    }
-  };
-
   const handleNewFolder = async ({ subject: subjectKey, group_name, name, template, parent_id }) => {
     if (!template || parent_id) {
-      const created = await addFolder(subjectKey, group_name, name, parent_id ?? null);
+      await addFolder(subjectKey, group_name, name, parent_id ?? null);
       setNewFolderParentId(null);
-      if (!parent_id) seedUnterrichtsreihe(created);
       return;
     }
     const templates = {
@@ -483,14 +451,12 @@ export default function App({ onLogout }) {
     };
     const parts = templates[template] || [];
     if (!parts.length) {
-      const created = await addFolder(subjectKey, group_name, name);
+      await addFolder(subjectKey, group_name, name);
       setNewFolderParentId(null);
-      seedUnterrichtsreihe(created);
       return;
     }
     for (const part of parts) {
-      const created = await addFolder(subjectKey, group_name, `${name} · ${part}`);
-      seedUnterrichtsreihe(created);
+      await addFolder(subjectKey, group_name, `${name} · ${part}`);
     }
     setNewFolderParentId(null);
   };
