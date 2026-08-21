@@ -631,8 +631,8 @@ export default function App({ onLogout }) {
     }
   };
 
-  const handleCommitFileVersion = async (fileId) => {
-    const updated = await commitFileVersion(fileId);
+  const handleCommitFileVersion = async (fileId, file) => {
+    const updated = await commitFileVersion(fileId, file);
     setActiveFile(updated);
     setActiveFile2(null);
     setToast({ type: 'success', msg: t('toast.version_saved') });

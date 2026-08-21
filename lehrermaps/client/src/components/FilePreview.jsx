@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import FileBadge from './FileBadge';
 import { detectKind } from '../constants/structure';
-import { downloadFile, viewFile, previewFile, openFileInApp, openEditCopy, getFileVersions } from '../lib/api';
+import { downloadFile, viewFile, previewFile, downloadEditCopy, openEditCopy, getFileVersions } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 
 export default function FilePreview({ file, accent = '#E8472A', onClose, onCommitVersion }) {
@@ -159,6 +159,8 @@ function EditCopyActions({ file, accent, t, onCommitVersion }) {
   const [state, setState] = useState('idle');
   const [commitState, setCommitState] = useState('idle');
   const [versions, setVersions] = useState([]);
+  const [copyReady, setCopyReady] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!file?.id) return;
@@ -169,6 +171,12 @@ function EditCopyActions({ file, accent, t, onCommitVersion }) {
     setState('loading');
     try {
       await openEditCopy(file.id);
+      const link = document.createElement('a');
+      link.href = downloadEditCopy(file.id);
+      link.target = '_blank';
+      link.rel = 'noreferrer';
+      link.click();
+      setCopyReady(true);
       setState('ready');
       setTimeout(() => setState('idle'), 2600);
     } catch {
@@ -177,11 +185,17 @@ function EditCopyActions({ file, accent, t, onCommitVersion }) {
     }
   };
 
-  const commitCopy = async () => {
+  const chooseEditedFile = () => fileInputRef.current?.click();
+
+  const commitSelectedFile = async (event) => {
+    const editedFile = event.target.files?.[0];
+    event.target.value = '';
+    if (!editedFile) return;
     setCommitState('loading');
     try {
-      const updated = await onCommitVersion?.(file.id);
+      const updated = await onCommitVersion?.(file.id, editedFile);
       setCommitState('done');
+      setCopyReady(false);
       if (updated?.id) getFileVersions(updated.id).then(setVersions).catch(() => {});
       setTimeout(() => setCommitState('idle'), 2600);
     } catch {
@@ -195,8 +209,9 @@ function EditCopyActions({ file, accent, t, onCommitVersion }) {
       <button onClick={openCopy} disabled={state === 'loading'} style={{ ...btnStyle('#fff', state === 'error' ? '#DC2626' : accent), border: 'none' }}>
         {state === 'loading' ? t('versions.copy_opening') : state === 'ready' ? t('versions.copy_opened') : state === 'error' ? t('versions.copy_error') : t('versions.edit_copy')}
       </button>
-      <button onClick={commitCopy} disabled={commitState === 'loading'} style={{ ...btnStyle('var(--c-text-2)', 'var(--c-hover)'), border: 'none' }}>
-        {commitState === 'loading' ? t('versions.saving') : commitState === 'done' ? t('versions.saved') : commitState === 'error' ? t('versions.save_error') : t('versions.commit')}
+      <input ref={fileInputRef} type="file" accept=".doc,.docx,.odt,.rtf,.ppt,.pptx,.odp,.xls,.xlsx,.ods" onChange={commitSelectedFile} style={{ display: 'none' }} />
+      <button onClick={chooseEditedFile} disabled={commitState === 'loading' || !copyReady} style={{ ...btnStyle('var(--c-text-2)', 'var(--c-hover)'), border: 'none', opacity: copyReady ? 1 : 0.55 }}>
+        {commitState === 'loading' ? t('versions.saving') : commitState === 'done' ? t('versions.saved') : commitState === 'error' ? t('versions.save_error') : copyReady ? t('versions.commit') : t('versions.choose_file')}
       </button>
       {versions.length > 1 && (
         <span style={{ alignSelf: 'center', fontSize: 11, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace' }}>
@@ -340,33 +355,18 @@ const APP_LABEL_KEYS = {
 };
 
 function OpenInAppButton({ fileId, ext, accent, t }) {
-  const [state, setState] = useState('idle');
   const labelKey = APP_LABEL_KEYS[ext] || 'open';
 
-  const handle = async () => {
-    setState('loading');
-    try {
-      await openFileInApp(fileId);
-      setState('idle');
-    } catch {
-      setState('error');
-      setTimeout(() => setState('idle'), 3000);
-    }
-  };
-
   return (
-    <button
-      onClick={handle}
-      disabled={state === 'loading'}
+    <a
+      href={downloadFile(fileId)}
+      target="_blank"
+      rel="noreferrer"
       style={{
-        ...btnStyle('#fff', state === 'error' ? '#DC2626' : '#F97316'),
-        opacity: state === 'loading' ? 0.7 : 1,
-        cursor: state === 'loading' ? 'wait' : 'pointer',
-        border: 'none',
+        ...btnStyle('#fff', '#F97316'),
+        textDecoration: 'none',
       }}
-    >
-      {state === 'error' ? t('app_not_found') : state === 'loading' ? t('opening') : t(labelKey)}
-    </button>
+    >{t(labelKey)}</a>
   );
 }
 

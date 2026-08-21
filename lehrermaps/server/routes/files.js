@@ -72,6 +72,10 @@ const upload = multer({
     }
   },
 });
+const editUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 300 * 1024 * 1024 },
+});
 
 const router = Router();
 
@@ -512,34 +516,54 @@ router.post('/:id/edit-copy', async (req, res) => {
     await copyFile(sourcePath, copyPath);
     await pool.execute('INSERT INTO file_edit_copies (file_id, copy_name) VALUES (?, ?)', [file.id, copyName]);
 
-    // Automated clients and containerized deployments can create the copy
-    // without trying to launch a desktop application.
-    if (req.body?.open === false) {
-      return res.json({ ok: true, copy_name: copyName });
-    }
-
-    exec(`open "${copyPath}"`, { timeout: 8000 }, (err) => {
-      if (err) return res.status(500).json({ error: 'Arbeitskopie konnte nicht geöffnet werden' });
-      res.json({ ok: true, copy_name: copyName });
-    });
+    // The backend may run inside Docker and cannot launch Word/Writer on the
+    // user's computer. The browser downloads the copy via the dedicated route.
+    res.json({ ok: true, copy_name: copyName });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-router.post('/:id/versions/commit', async (req, res) => {
+router.get('/:id/edit-copy/download', async (req, res) => {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+  try {
+    const file = await getFileById(req.params.id);
+    if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
+    const [copies] = await pool.execute(
+      'SELECT copy_name FROM file_edit_copies WHERE file_id = ? ORDER BY created_at DESC, id DESC LIMIT 1',
+      [file.id]
+    );
+    if (!copies.length) return res.status(404).json({ error: 'Keine Arbeitskopie gefunden' });
+    const copyPath = path.join(EDITS_DIR, copies[0].copy_name);
+    if (!existsSync(copyPath)) return res.status(404).json({ error: 'Arbeitskopie nicht auf Disk' });
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(file.original_name)}`);
+    res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
+    createReadStream(copyPath).pipe(res);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/:id/versions/commit', editUpload.single('file'), async (req, res) => {
   if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
   try {
     const file = await getFileById(req.params.id);
     if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
     const [copies] = await pool.execute('SELECT * FROM file_edit_copies WHERE file_id = ? ORDER BY created_at DESC, id DESC LIMIT 1', [file.id]);
-    if (!copies.length) return res.status(404).json({ error: 'Keine Arbeitskopie gefunden' });
+    if (!req.file && !copies.length) return res.status(404).json({ error: 'Keine Arbeitskopie gefunden' });
 
-    const copyPath = path.join(EDITS_DIR, copies[0].copy_name);
-    if (!existsSync(copyPath)) return res.status(404).json({ error: 'Arbeitskopie nicht auf Disk' });
-    const info = await stat(copyPath);
+    let size;
     const storedName = randomUUID();
-    await copyFile(copyPath, path.join(UPLOADS_DIR, storedName));
+    if (req.file) {
+      size = req.file.size;
+      await writeFile(path.join(UPLOADS_DIR, storedName), req.file.buffer);
+    } else {
+      const copyPath = path.join(EDITS_DIR, copies[0].copy_name);
+      if (!existsSync(copyPath)) return res.status(404).json({ error: 'Arbeitskopie nicht auf Disk' });
+      const info = await stat(copyPath);
+      size = info.size;
+      await copyFile(copyPath, path.join(UPLOADS_DIR, storedName));
+    }
 
     const [[{ nextVersion }]] = await pool.execute(
       'SELECT COALESCE(MAX(version_number), 0) + 1 AS nextVersion FROM files WHERE version_group_id = ?',
@@ -549,9 +573,9 @@ router.post('/:id/versions/commit', async (req, res) => {
     const [result] = await pool.execute(
       `INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, is_shared, due_at, is_public, public_token, material_role, version_group_id, version_number, is_current_version)
        VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, 1)`,
-      [file.folder_id, file.original_name, storedName, file.mime_type, info.size, file.is_shared || 0, file.due_at || null, file.material_role || 'other', file.version_group_id, nextVersion]
+      [file.folder_id, file.original_name, storedName, file.mime_type, size, file.is_shared || 0, file.due_at || null, file.material_role || 'other', file.version_group_id, nextVersion]
     );
-    await pool.execute('DELETE FROM file_edit_copies WHERE id = ?', [copies[0].id]);
+    if (copies.length) await pool.execute('DELETE FROM file_edit_copies WHERE id = ?', [copies[0].id]);
     const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (e) {

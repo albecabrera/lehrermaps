@@ -76,8 +76,8 @@ export function useFiles(folderId) {
     return updated;
   }, []);
 
-  const commitVersion = useCallback(async (id) => {
-    const updated = await commitEditCopy(id);
+  const commitVersion = useCallback(async (id, file) => {
+    const updated = await commitEditCopy(id, file);
     setFiles((prev) => [updated, ...prev.filter((f) => f.version_group_id !== updated.version_group_id)]);
     return updated;
   }, []);

@@ -309,6 +309,7 @@ export const translations = {
     'versions.copy_opening': 'Öffne Kopie…',
     'versions.copy_opened': 'Kopie geöffnet',
     'versions.copy_error': 'Kopie fehlgeschlagen',
+    'versions.choose_file': 'Bearbeitete Datei auswählen',
     'versions.commit': 'Neue Version übernehmen',
     'versions.saving': 'Speichere Version…',
     'versions.saved': 'Version gespeichert',

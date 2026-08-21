@@ -69,8 +69,16 @@ export const viewFile = (id) => withToken(`/api/files/view/${id}`);
 export const previewFile = (id) => withToken(`/api/files/preview/${id}`);
 export const openFileInApp = (id, app) =>
   api.get(`/files/open/${id}${app ? `?app=${encodeURIComponent(app)}` : ''}`);
-export const openEditCopy = (id) => api.post(`/files/${id}/edit-copy`).then((r) => r.data);
-export const commitEditCopy = (id) => api.post(`/files/${id}/versions/commit`).then((r) => r.data);
+export const openEditCopy = (id) => api.post(`/files/${id}/edit-copy`, { open: false }).then((r) => r.data);
+export const downloadEditCopy = (id) => withToken(`/api/files/${id}/edit-copy/download`);
+export const commitEditCopy = (id, file) => {
+  if (!file) return api.post(`/files/${id}/versions/commit`).then((r) => r.data);
+  const form = new FormData();
+  form.append('file', file);
+  return api.post(`/files/${id}/versions/commit`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then((r) => r.data);
+};
 export const getFileVersions = (id) => api.get(`/files/${id}/versions`).then((r) => r.data);
 export const setFileRole = (id, material_role) => api.put(`/files/${id}`, { material_role }).then((r) => r.data);
 export const setFilesRole = (ids, material_role) => api.put('/files/roles/bulk', { ids, material_role }).then((r) => r.data);
