@@ -95,6 +95,19 @@ export const setFolderColor = (id, color) =>
 export const initUnterrichtsreihe = (id) =>
   api.post(`/folders/${id}/init-unterrichtsreihe`).then((r) => r.data);
 
+export const getAnnualPlan = (rootFolderId, schoolYear) =>
+  api.get('/plans', { params: { folder_id: rootFolderId, school_year: schoolYear } }).then((r) => r.data);
+export const createAnnualPlan = (data) => api.post('/plans', data).then((r) => r.data);
+export const updateAnnualPlan = (id, data) => api.patch(`/plans/${id}`, data).then((r) => r.data);
+export const deleteAnnualPlan = (id) => api.delete(`/plans/${id}`);
+export const getAnnualPlanMaterials = (rootFolderId, q = '') =>
+  api.get('/plans/materials', { params: { root_folder_id: rootFolderId, q } }).then((r) => r.data);
+export const createAnnualPlanEntry = (planId, data) => api.post(`/plans/${planId}/entries`, data).then((r) => r.data);
+export const updateAnnualPlanEntry = (id, data) => api.patch(`/plans/entries/${id}`, data).then((r) => r.data);
+export const duplicateAnnualPlanEntry = (id) => api.post(`/plans/entries/${id}/duplicate`).then((r) => r.data);
+export const deleteAnnualPlanEntry = (id) => api.delete(`/plans/entries/${id}`);
+export const annualPlanExportUrl = (id) => withToken(`/api/plans/${id}/export.csv`);
+
 export const searchGlobal = (q, fileOffset = 0, folderOffset = 0, linkOffset = 0) =>
   api.get('/files/search', { params: { q, fileOffset, folderOffset, linkOffset } }).then((r) => r.data);
 

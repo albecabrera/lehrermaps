@@ -153,6 +153,46 @@ export async function initSchema() {
       created_at DATETIME DEFAULT NOW()
     )
   `);
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS annual_plans (
+      id             INT AUTO_INCREMENT PRIMARY KEY,
+      root_folder_id INT NOT NULL,
+      school_year    VARCHAR(20) NOT NULL,
+      start_date     DATE NULL,
+      end_date       DATE NULL,
+      created_at     DATETIME DEFAULT NOW(),
+      updated_at     DATETIME DEFAULT NOW() ON UPDATE NOW(),
+      UNIQUE KEY annual_plan_scope (root_folder_id, school_year),
+      FOREIGN KEY (root_folder_id) REFERENCES folders(id) ON DELETE CASCADE
+    )
+  `);
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS annual_plan_entries (
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      plan_id       INT NOT NULL,
+      entry_date    DATE NOT NULL,
+      end_date      DATE NULL,
+      entry_type    VARCHAR(32) NOT NULL DEFAULT 'lesson',
+      lesson_number VARCHAR(40) NULL,
+      title         VARCHAR(255) NOT NULL,
+      notes         TEXT NULL,
+      sort_order    INT NOT NULL DEFAULT 0,
+      created_at    DATETIME DEFAULT NOW(),
+      updated_at    DATETIME DEFAULT NOW() ON UPDATE NOW(),
+      FOREIGN KEY (plan_id) REFERENCES annual_plans(id) ON DELETE CASCADE
+    )
+  `);
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS annual_plan_materials (
+      id        INT AUTO_INCREMENT PRIMARY KEY,
+      entry_id  INT NOT NULL,
+      file_id   INT NULL,
+      folder_id INT NULL,
+      FOREIGN KEY (entry_id) REFERENCES annual_plan_entries(id) ON DELETE CASCADE,
+      FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
+      FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE
+    )
+  `);
   const [rows] = await pool.execute(`SELECT COUNT(*) AS c FROM schedule`);
   if (rows[0].c === 0) await pool.execute(`INSERT INTO schedule (data) VALUES (?)`, ['{}']);
 }

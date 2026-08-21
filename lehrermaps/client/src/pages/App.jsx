@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Sidebar from '../components/Sidebar';
 import BulkMoveModal from '../components/BulkMoveModal';
@@ -11,10 +11,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import DeadlineModal from '../components/DeadlineModal';
 import GlobalSearch from '../components/GlobalSearch';
 import SearchModal from '../components/SearchModal';
-import QRModal from '../components/QRModal';
 import KeyboardHelp from '../components/KeyboardHelp';
-import Schedule from '../components/Schedule';
-import ExamBoard from '../components/ExamBoard';
 import { SUBJECTS, detectKind } from '../constants/structure';
 import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
@@ -26,16 +23,22 @@ import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
 import TodayDashboard from '../components/TodayDashboard';
-import NotesEditor from '../components/NotesEditor';
 import FolderGallery from '../components/FolderGallery';
 import FolderIcon from '../components/FolderIcon';
-import PageCanvas from '../components/Canvas/PageCanvas';
-import FocusMode from '../components/FocusMode';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLang } from '../contexts/LangContext';
 import { useNotebook } from '../contexts/NotebookContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/MobileNav';
+
+// Opened views are split into on-demand chunks without changing their layout.
+const QRModal = lazy(() => import('../components/QRModal'));
+const Schedule = lazy(() => import('../components/Schedule'));
+const ExamBoard = lazy(() => import('../components/ExamBoard'));
+const NotesEditor = lazy(() => import('../components/NotesEditor'));
+const AnnualPlanning = lazy(() => import('../components/AnnualPlanning'));
+const PageCanvas = lazy(() => import('../components/Canvas/PageCanvas'));
+const FocusMode = lazy(() => import('../components/FocusMode'));
 
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -100,6 +103,7 @@ export default function App({ onLogout }) {
     }
     return chain;
   })();
+  const planningFolder = activeFolderPath[0] || activeFolder;
   // Direkte Unterordner des aktiven Ordners (gleiche Sortierung wie im Sidebar-Baum)
   const childFolders = activeFolder
     ? folders
@@ -742,6 +746,7 @@ export default function App({ onLogout }) {
   };
 
   return (
+    <Suspense fallback={null}>
     <div style={{
       position: 'fixed', inset: 0,
       display: 'flex', flexDirection: 'column',
@@ -1292,6 +1297,7 @@ export default function App({ onLogout }) {
                   {[
                     { key: 'files', label: t('notes.files_tab') },
                     { key: 'notes', label: t('notes.tab') },
+                    { key: 'annual', label: t('annual.tab') },
                   ].map(({ key, label }) => {
                     const on = folderTab === key;
                     return (
@@ -1332,7 +1338,7 @@ export default function App({ onLogout }) {
               </div>
 
               {/* Tab content */}
-              <div style={{ flex: 1, minHeight: 0, overflow: folderTab === 'files' ? 'auto' : 'hidden' }}>
+              <div style={{ flex: 1, minHeight: 0, overflow: folderTab === 'notes' ? 'hidden' : 'auto' }}>
                 {folderTab === 'files' ? (
                   <div style={{ padding: '12px 20px' }}>
                     {/* Unterordner direkt im Inhalt — Struktur bleibt ohne Sidebar greifbar */}
@@ -1434,13 +1440,15 @@ export default function App({ onLogout }) {
                       />
                     )}
                   </div>
-                ) : (
+                ) : folderTab === 'notes' ? (
                   <NotesEditor
                     folderId={activeFolder.id}
                     folderName={activeFolder.name}
                     initialContent={activeFolder.notes || ''}
                     accent={accent}
                   />
+                ) : (
+                  <AnnualPlanning rootFolder={planningFolder} accent={accent} />
                 )}
               </div>
             </div>
@@ -1811,6 +1819,7 @@ export default function App({ onLogout }) {
         </div>
       )}
     </div>
+    </Suspense>
   );
 }
 

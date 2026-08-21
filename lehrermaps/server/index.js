@@ -19,6 +19,7 @@ import aiRouter from './routes/ai.js';
 import notebooksRouter from './routes/notebooks.js';
 import searchRouter from './routes/search.js';
 import examsRouter from './routes/exams.js';
+import plansRouter from './routes/plans.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -65,6 +66,7 @@ app.use('/api/ai', aiRouter);
 app.use('/api', notebooksRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/exams', examsRouter);
+app.use('/api/plans', plansRouter);
 
 function requireLehrer(req, res, next) {
   try {

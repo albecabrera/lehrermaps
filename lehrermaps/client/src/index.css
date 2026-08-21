@@ -368,3 +368,29 @@ button:active {
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
+/* Jahresplanung: compact cards on narrow screens, table on desktop. */
+.lm-annual-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.lm-annual-table th { text-align: left; padding: 9px 8px; color: var(--c-text-3); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--c-border); }
+.lm-annual-table td { padding: 10px 8px; border-bottom: 1px solid var(--c-border-soft); vertical-align: top; }
+.lm-annual-type { display: inline-flex; padding: 3px 7px; border-radius: 999px; background: var(--c-surface-2); color: var(--c-text-2); font-size: 10px; white-space: nowrap; }
+.lm-annual-type[data-type="exam"], .lm-annual-type[data-type="classwork"] { color: #B91C1C; background: #FEE2E2; }
+.lm-annual-type[data-type="holiday"] { color: #047857; background: #D1FAE5; }
+.lm-annual-type[data-type="presentation"] { color: #7C3AED; background: #EDE9FE; }
+.lm-annual-type[data-type="school_event"] { color: #0369A1; background: #E0F2FE; }
+.lm-annual-cards { display: none; }
+@media (max-width: 760px) {
+  .lm-annual-table-wrap { display: none; }
+  .lm-annual-cards { display: grid; gap: 8px; }
+  .lm-annual-card { display: grid; gap: 7px; padding: 12px; border: 1px solid var(--c-border); border-radius: 9px; background: var(--c-surface); }
+  .lm-annual-card > div:first-child { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .lm-annual-card p { margin: 0; color: var(--c-text-3); font-size: 12px; }
+  .lm-annual-editor label { grid-column: auto !important; }
+}
+@media print {
+  body.lm-print-planning #root > * { visibility: hidden; }
+  body.lm-print-planning .lm-annual-print, body.lm-print-planning .lm-annual-print * { visibility: visible; }
+  body.lm-print-planning .lm-annual-print { position: absolute; inset: 0; padding: 12px; overflow: visible; }
+  body.lm-print-planning .lm-annual-no-print { display: none !important; }
+  body.lm-print-planning .lm-annual-cards { display: none !important; }
+  body.lm-print-planning .lm-annual-table-wrap { display: block !important; }
+}

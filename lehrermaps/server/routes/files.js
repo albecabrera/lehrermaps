@@ -9,7 +9,7 @@ import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const archiver = require('archiver');
+const { ZipArchive } = require('archiver');
 import pool from '../db.js';
 import auth from '../middleware/auth.js';
 
@@ -210,7 +210,7 @@ router.get('/zip/:folder_id', async (req, res) => {
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(safeName)}.zip`);
 
-    const archive = archiver('zip', { zlib: { level: 6 } });
+    const archive = new ZipArchive({ zlib: { level: 6 } });
     archive.on('error', (err) => { if (!res.headersSent) res.status(500).end(); else res.end(); console.error(err); });
     archive.pipe(res);
     for (const file of files) {
@@ -241,7 +241,7 @@ router.get('/zip-selected', async (req, res) => {
 
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent('selected-files.zip')}`);
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
     archive.on('error', (e) => { throw e; });
     archive.pipe(res);
     for (const file of files) {
@@ -502,6 +502,12 @@ router.post('/:id/edit-copy', async (req, res) => {
     const copyPath = path.join(EDITS_DIR, copyName);
     await copyFile(sourcePath, copyPath);
     await pool.execute('INSERT INTO file_edit_copies (file_id, copy_name) VALUES (?, ?)', [file.id, copyName]);
+
+    // Automated clients and containerized deployments can create the copy
+    // without trying to launch a desktop application.
+    if (req.body?.open === false) {
+      return res.json({ ok: true, copy_name: copyName });
+    }
 
     exec(`open "${copyPath}"`, { timeout: 8000 }, (err) => {
       if (err) return res.status(500).json({ error: 'Arbeitskopie konnte nicht geöffnet werden' });

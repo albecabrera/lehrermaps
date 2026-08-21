@@ -7,6 +7,7 @@
     "dev:8090": "concurrently \"npm run build:watch\" \"npm run dev --prefix server\"",
     "build": "npm run build --prefix client",
     "build:watch": "npm run build --prefix client -- --watch",
+    "test:smoke": "node scripts/lehrermaps-smoke.mjs",
     "install:all": "npm install && npm install --prefix client && npm install --prefix server"
   },
   "devDependencies": {

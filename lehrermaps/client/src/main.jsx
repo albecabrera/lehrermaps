@@ -1,14 +1,17 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, lazy, Suspense, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import App from './pages/App';
 import ErrorBoundary from './components/ErrorBoundary';
-import StudentApp from './pages/StudentApp';
 import LoginPanel from './pages/LoginPanel';
-import ExamBoard from './components/ExamBoard';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LangProvider } from './contexts/LangContext';
 import { NotebookProvider } from './contexts/NotebookContext';
+
+// Authenticated workspaces load only after login; their existing markup and
+// styles remain unchanged.
+const App = lazy(() => import('./pages/App'));
+const StudentApp = lazy(() => import('./pages/StudentApp'));
+const ExamBoard = lazy(() => import('./components/ExamBoard'));
 
 // NotebookProvider is intentionally NOT at root — it makes authenticated API
 // calls on mount that fail with 401 during login, causing re-renders that
@@ -84,12 +87,14 @@ function Root() {
   if (role === 'lehrer') {
     return (
       <NotebookProvider>
-        {!examsDismissed && <ExamBoard onDismiss={handleExamsDismiss} />}
-        <App onLogout={handleLogout} />
+        <Suspense fallback={null}>
+          {!examsDismissed && <ExamBoard onDismiss={handleExamsDismiss} />}
+          <App onLogout={handleLogout} />
+        </Suspense>
       </NotebookProvider>
     );
   }
-  if (role === 'student') return <StudentApp onLogout={handleLogout} />;
+  if (role === 'student') return <Suspense fallback={null}><StudentApp onLogout={handleLogout} /></Suspense>;
 
   // Pre-select student role if coming from QR (?student in URL)
   const initialRole = new URLSearchParams(window.location.search).has('student') ? 'student' : null;

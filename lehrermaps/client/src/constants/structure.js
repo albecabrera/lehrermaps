@@ -85,9 +85,11 @@ export const SUBJECTS = [
     id: 'informatik', name: 'Informatik', short: 'INF',
     color: '#2563EB', colorSoft: '#DCE7FB', colorDark: '#1D4ED8',
     groups: [
-      { id: 'inf-67', name: 'WP Klasse 6–7' },
-      { id: 'inf-810', name: 'WP Klasse 8–10' },
-      { id: 'inf-proj', name: 'Projekte & Tools' },
+      { id: 'inf-6', name: 'Klasse 6' },
+      { id: 'inf-wp7', name: 'WP 7' },
+      { id: 'inf-wp8', name: 'WP 8' },
+      { id: 'inf-wp9', name: 'WP 9' },
+      { id: 'inf-wp10', name: 'WP 10' },
     ],
   },
   {

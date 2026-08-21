@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import QRCode from 'qrcode';
 import { useLang } from '../contexts/LangContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
@@ -11,10 +10,15 @@ export default function QRModal({ url, title, onClose }) {
 
   useEffect(() => {
     if (!canvasRef.current || !url) return;
-    QRCode.toCanvas(canvasRef.current, url, {
-      width: 220, margin: 2,
-      color: { dark: '#111827', light: '#ffffff' },
+    let cancelled = false;
+    import('qrcode').then(({ default: QRCode }) => {
+      if (cancelled || !canvasRef.current) return;
+      return QRCode.toCanvas(canvasRef.current, url, {
+        width: 220, margin: 2,
+        color: { dark: '#111827', light: '#ffffff' },
+      });
     }).catch(() => {});
+    return () => { cancelled = true; };
   }, [url]);
 
   return createPortal(
