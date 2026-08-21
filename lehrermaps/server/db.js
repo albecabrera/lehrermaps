@@ -54,7 +54,8 @@ export async function initSchema() {
   // Fix group_name inconsistency: normalize group IDs to display names
   try {
     await pool.execute(`UPDATE folders SET group_name = 'Klasse 9' WHERE subject = 'spanisch' AND group_name = 'es-9'`);
-    await pool.execute(`UPDATE folders SET group_name = 'Klasse 12' WHERE subject = 'spanisch' AND group_name = 'es-12'`);
+    // Preserve the existing Q1 folder tree while aligning its group label with the UI.
+    await pool.execute(`UPDATE folders SET group_name = 'Q1' WHERE subject = 'spanisch' AND group_name IN ('Klasse 12', 'es-12')`);
     await pool.execute(`UPDATE folders SET group_name = 'WP Klasse 6–7' WHERE subject = 'informatik' AND group_name = 'inf-67'`);
     await pool.execute(`UPDATE folders SET group_name = 'WP Klasse 8–10' WHERE subject = 'informatik' AND group_name = 'inf-810'`);
   } catch {}

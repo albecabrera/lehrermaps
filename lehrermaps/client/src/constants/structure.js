@@ -77,7 +77,10 @@ export const SUBJECTS = [
     color: '#E8472A', colorSoft: '#FCE5DE', colorDark: '#B82E13',
     groups: [
       { id: 'es-9', name: 'Klasse 9' },
-      { id: 'es-12', name: 'Klasse 12' },
+      { id: 'es-10', name: 'Klasse 10' },
+      { id: 'es-ef', name: 'EF' },
+      { id: 'es-q1', name: 'Q1' },
+      { id: 'es-q2', name: 'Q2' },
       { id: 'es-gem', name: 'Gemeinsame Ressourcen' },
     ],
   },
