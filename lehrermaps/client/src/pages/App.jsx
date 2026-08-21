@@ -1064,7 +1064,11 @@ export default function App({ onLogout }) {
             <Schedule onNavigate={(subjectId) => { onSubjectChange(subjectId); }} />
           </div>
         ) : <>
-        {!focusMode && !isMobile && <div style={{ transform: `translate3d(${parallax.x * -4}px, ${parallax.y * -2}px, 0)`, transition: 'transform .25s cubic-bezier(.2,.8,.2,1)' }}>
+        {!focusMode && !isMobile && <div style={{
+          display: 'flex', flexShrink: 0, minHeight: 0, height: '100%',
+          transform: `translate3d(${parallax.x * -4}px, ${parallax.y * -2}px, 0)`,
+          transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
+        }}>
           <Sidebar
             {...sidebarProps}
             width={sidebarWidth}

@@ -120,6 +120,7 @@ export default function Sidebar({
   return (
     <div className="lm-sidebar" style={{
       width: collapsed ? 52 : width,
+      height: '100%', minHeight: 0,
       background: 'var(--c-surface)',
       borderRight: '1px solid var(--c-border)',
       flexShrink: 0, display: 'flex', flexDirection: 'column',
@@ -224,7 +225,11 @@ export default function Sidebar({
       </div>
 
       {/* Tree area */}
-      <div style={{ flex: 1, overflow: 'auto', padding: collapsed ? '8px 4px' : '8px 0' }}>
+      <div style={{
+        flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden',
+        overscrollBehavior: 'contain', scrollbarGutter: 'stable',
+        padding: collapsed ? '8px 4px' : '8px 0',
+      }}>
 
         {!collapsed && <NotebookSidebar />}
         {loading ? (
@@ -332,6 +337,7 @@ function TreeNode({
 }) {
   const [expanded, setExpanded] = useState(depth < 1);
   const [hovered, setHovered] = useState(false);
+  const rowRef = useRef(null);
 
   const hasChildren = node.children?.length > 0;
   const isActive = node.id === activeFolderId;
@@ -341,6 +347,10 @@ function TreeNode({
   const isDragging = node.id === draggingFolderId;
   const isFav = !!node.is_favorite;
   const nodeAccent = node.color || accent;
+
+  useEffect(() => {
+    if (isActive) rowRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  }, [isActive]);
 
   const handleToggle = (e) => {
     e.stopPropagation();
@@ -360,6 +370,7 @@ function TreeNode({
     <div>
       {/* Row */}
       <div
+        ref={rowRef}
         style={{ position: 'relative' }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
