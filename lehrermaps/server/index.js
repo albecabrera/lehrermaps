@@ -142,7 +142,8 @@ const SHELLS = [
   process.env.SHELL,
   '/bin/zsh',
   '/bin/bash',
-].filter(Boolean);
+  '/bin/sh',
+].filter(Boolean).filter((sh, index, shells) => shells.indexOf(sh) === index && fs.existsSync(sh));
 
 io.on('connection', (socket) => {
   let term = null;
