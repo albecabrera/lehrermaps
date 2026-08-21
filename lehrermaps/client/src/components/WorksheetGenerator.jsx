@@ -424,7 +424,7 @@ export default function WorksheetGenerator({ onClose, onOpenTerminal, onSaveMate
           {step === 'form' && (
             <>
               <button onClick={copyPrompt} disabled={!prompt.trim()} style={btnStyle('var(--c-text)', !prompt.trim())}>⌘ Prompt kopieren</button>
-              <button onClick={async () => { await copyPrompt(); onOpenTerminal?.(); }} disabled={!prompt.trim()} style={btnStyle(accentColor, !prompt.trim())}>▣ Terminal öffnen</button>
+              <button onClick={async () => { const structuredPrompt = buildPrompt(); await copyPrompt(); onOpenTerminal?.(structuredPrompt); }} disabled={!prompt.trim()} style={btnStyle(accentColor, !prompt.trim())}>▣ Terminal öffnen</button>
               <a href="https://chatgpt.com/" target="_blank" rel="noreferrer" style={{ ...btnStyle('transparent', false), color: 'var(--c-text-2)', border: '1px solid var(--c-border)', textDecoration: 'none' }}>↗ ChatGPT Plus</a>
             </>
           )}

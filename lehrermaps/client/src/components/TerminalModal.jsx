@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import 'xterm/css/xterm.css';
 
-export default function TerminalModal({ open, onClose }) {
+export default function TerminalModal({ open, onClose, initialPrompt = '' }) {
   const containerRef = useRef(null);
   const termRef = useRef(null);
   const socketRef = useRef(null);
@@ -65,6 +65,13 @@ export default function TerminalModal({ open, onClose }) {
       socket.on('terminal:ready', ({ shell }) => {
         setStatus('ready');
         term.writeln(`\x1b[32m✓ Connected — ${shell}\x1b[0m\r\n`);
+        if (initialPrompt.trim()) {
+          term.writeln('\x1b[36mArbeitsblatt-Kontext bereit. Der strukturierte Prompt wurde kopiert.\x1b[0m');
+          term.writeln('\x1b[90mIn ChatGPT Plus oder Codex einfügen und die fertige DOCX/PDF-Datei anschließend hier hochladen.\x1b[0m\r\n');
+          term.writeln('\x1b[36m--- Strukturvorgaben für das Arbeitsblatt ---\x1b[0m');
+          initialPrompt.split('\n').forEach((line) => term.writeln(line));
+          term.writeln('\x1b[36m--- Ende des Prompts ---\x1b[0m\r\n');
+        }
         try { fit.fit(); } catch {}
       });
       socket.on('terminal:data', (data) => term.write(data));
@@ -105,7 +112,7 @@ export default function TerminalModal({ open, onClose }) {
       socketRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [open]);
+  }, [open, initialPrompt]);
 
   if (!open) return null;
 

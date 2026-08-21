@@ -122,6 +122,7 @@ export default function App({ onLogout }) {
   const [heroQrLink, setHeroQrLink] = useState(null);
   const [worksheetGenOpen, setWorksheetGenOpen] = useState(false);
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const [terminalPrompt, setTerminalPrompt] = useState('');
   const [focusMode, setFocusMode] = useState(false);
   const [teachingMode, setTeachingMode] = useState(false);
 
@@ -984,7 +985,7 @@ export default function App({ onLogout }) {
 
           <button
             className="lm-spring"
-            onClick={() => setTerminalOpen(true)}
+            onClick={() => { setTerminalPrompt(''); setTerminalOpen(true); }}
             title="Terminal"
             style={{
               height: 30, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 7,
@@ -1827,8 +1828,8 @@ export default function App({ onLogout }) {
           }
         }}
       />
-      <TerminalModal open={terminalOpen} onClose={() => setTerminalOpen(false)} />
-      {worksheetGenOpen && <WorksheetGenerator onClose={() => setWorksheetGenOpen(false)} onOpenTerminal={() => { setWorksheetGenOpen(false); setTerminalOpen(true); }} onSaveMaterial={handleSaveGeneratedMaterial} initialSubject={subjectId} hasTargetFolder={!!activeFolder} />}
+      <TerminalModal open={terminalOpen} initialPrompt={terminalPrompt} onClose={() => { setTerminalOpen(false); setTerminalPrompt(''); }} />
+      {worksheetGenOpen && <WorksheetGenerator onClose={() => setWorksheetGenOpen(false)} onOpenTerminal={(prompt) => { setTerminalPrompt(prompt); setWorksheetGenOpen(false); setTerminalOpen(true); }} onSaveMaterial={handleSaveGeneratedMaterial} initialSubject={subjectId} hasTargetFolder={!!activeFolder} />}
       {examBoardOpen && <ExamBoard onDismiss={() => setExamBoardOpen(false)} />}
 
       {toast && (
