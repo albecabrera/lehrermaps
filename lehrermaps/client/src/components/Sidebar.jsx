@@ -344,6 +344,7 @@ function TreeNode({
 
   const handleToggle = (e) => {
     e.stopPropagation();
+    e.preventDefault();
     setExpanded((v) => !v);
   };
 
@@ -460,7 +461,9 @@ function TreeNode({
           {/* Expand toggle (only when not collapsed) */}
           {!collapsed && (
             <span
-              onMouseDown={hasChildren ? handleToggle : undefined}
+              onClick={hasChildren ? handleToggle : undefined}
+              aria-label={hasChildren ? (expanded ? 'Ordner einklappen' : 'Ordner aufklappen') : undefined}
+              aria-expanded={hasChildren ? expanded : undefined}
               style={{
                 width: 14, height: 14, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
