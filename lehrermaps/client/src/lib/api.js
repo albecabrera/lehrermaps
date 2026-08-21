@@ -100,9 +100,6 @@ export const setFolderDeadline = (id, due_at) =>
 export const setFolderColor = (id, color) =>
   api.put(`/folders/${id}/color`, { color }).then((r) => r.data);
 
-export const initUnterrichtsreihe = (id) =>
-  api.post(`/folders/${id}/init-unterrichtsreihe`).then((r) => r.data);
-
 export const getAnnualPlan = (rootFolderId, schoolYear) =>
   api.get('/plans', { params: { folder_id: rootFolderId, school_year: schoolYear } }).then((r) => r.data);
 export const createAnnualPlan = (data) => api.post('/plans', data).then((r) => r.data);
