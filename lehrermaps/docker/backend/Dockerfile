@@ -11,6 +11,7 @@ RUN apt-get update \
      g++ \
      pkg-config \
      fish \
+     libreoffice \
   && rm -rf /var/lib/apt/lists/*
 
 COPY server/package*.json ./

@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto';
 import { createReadStream, existsSync, symlinkSync, unlinkSync, mkdirSync } from 'fs';
 import { copyFile, unlink, mkdir, stat } from 'fs/promises';
 import os from 'os';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -31,8 +31,17 @@ async function convertToPdf(storedName, ext) {
   await copyFile(path.join(UPLOADS_DIR, storedName), tmpPath);
 
   await new Promise((resolve, reject) => {
-    exec(
-      `soffice --headless --convert-to pdf --outdir "${PREVIEWS_DIR}" "${tmpPath}"`,
+    execFile(
+      'soffice',
+      [
+        '--headless',
+        '--norestore',
+        '--nofirststartwizard',
+        `-env:UserInstallation=file:///tmp/lehrermaps-libreoffice-${storedName}`,
+        '--convert-to', 'pdf',
+        '--outdir', PREVIEWS_DIR,
+        tmpPath,
+      ],
       { timeout: 45000 },
       (err) => { unlink(tmpPath).catch(() => {}); err ? reject(err) : resolve(); }
     );
