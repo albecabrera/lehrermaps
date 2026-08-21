@@ -23,6 +23,22 @@ LehrerMaps intenta convertir esa estructura docente en una interfaz clara, rápi
 
 ---
 
+## Libros click & teach de Informatik
+
+La aplicación crea automáticamente un enlace externo en la carpeta raíz de cada grupo de Informatik:
+
+| Grupo | Libro |
+| --- | --- |
+| Klasse 6 | [click & teach – Klasse 6](https://www.click-and-teach.de/Player/id/1280/page/21) |
+| WP 7 | [click & teach – WP 7](https://www.click-and-teach.de/Player/id/1259/page/10) |
+| WP 8 | [click & teach – WP 8](https://www.click-and-teach.de/Player/id/1259/page/10) |
+| WP 9 | [click & teach – WP 9](https://www.click-and-teach.de/Player/id/1259/page/10) |
+| WP 10 | [click & teach – WP 10](https://www.click-and-teach.de/Player/id/1259/page/10) |
+
+Die Links öffnen den click-&-teach-Player in einem neuen Browser-Tab und bleiben dauerhaft in der jeweiligen Gruppe verfügbar. Die Zielseite ist öffentlich erreichbar, die vollständige Nutzung kann jedoch von einer Anmeldung oder Lizenz beim Anbieter abhängen. Eine direkte Einbettung in LehrerMaps ist wegen der `SAMEORIGIN`-Sicherheitsrichtlinie des Anbieters nicht möglich.
+
+---
+
 ## Funcionalidades principales
 
 - **Organización por materias y grupos**: carpetas jerárquicas, colores, favoritos y orden manual.
@@ -33,6 +49,7 @@ LehrerMaps intenta convertir esa estructura docente en una interfaz clara, rápi
 - **Previsualización integrada**: soporte para PDF, imágenes, vídeo, audio, Markdown, DOCX y otros formatos comunes.
 - **Vista para estudiantes**: acceso separado con rol `student`; solo muestra contenido compartido.
 - **Links por carpeta**: guarda recursos externos junto al material de clase.
+- **Libros click & teach preconfigurados**: los grupos de Informatik tienen acceso directo a los libros correspondientes para Klasse 6, WP 7, WP 8, WP 9 y WP 10.
 - **QR de acceso**: genera códigos QR para compartir enlaces con el alumnado.
 - **Notas y cuadernos**: editor enriquecido con Tiptap, notebooks, secciones y páginas.
 - **Horario semanal**: planificación de clases y vinculación con carpetas/materiales.

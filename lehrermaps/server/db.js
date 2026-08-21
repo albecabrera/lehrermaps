@@ -61,6 +61,33 @@ export async function initSchema() {
     // Keep any existing Sport Q1 tree intact while normalizing legacy labels.
     await pool.execute(`UPDATE folders SET group_name = 'Q1' WHERE subject = 'sport' AND group_name IN ('Klasse 12', 'sp-q1')`);
   } catch {}
+  // Curated click & teach book links for the Informatik groups. The unique URL
+  // check makes this safe when the schema initializer runs more than once.
+  try {
+    const bookLinks = [
+      { groups: ['Klasse 6'], title: 'click & teach – Buch Informatik Klasse 6', url: 'https://www.click-and-teach.de/Player/id/1280/page/21' },
+      { groups: ['WP 7'], title: 'click & teach – Buch Informatik WP 7', url: 'https://www.click-and-teach.de/Player/id/1259/page/10' },
+      { groups: ['WP 8'], title: 'click & teach – Buch Informatik WP 8', url: 'https://www.click-and-teach.de/Player/id/1259/page/10' },
+      { groups: ['WP 9'], title: 'click & teach – Buch Informatik WP 9', url: 'https://www.click-and-teach.de/Player/id/1259/page/10' },
+      { groups: ['WP 10'], title: 'click & teach – Buch Informatik WP 10', url: 'https://www.click-and-teach.de/Player/id/1259/page/10' },
+    ];
+    for (const { groups, title, url } of bookLinks) {
+      const placeholders = groups.map(() => '?').join(', ');
+      await pool.execute(
+        `INSERT INTO links (folder_id, title, url)
+         SELECT f.id, ?, ?
+         FROM folders f
+         WHERE f.subject = 'informatik'
+           AND f.group_name IN (${placeholders})
+           AND f.parent_id IS NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM links existing
+             WHERE existing.folder_id = f.id AND existing.url = ?
+           )`,
+        [title, url, ...groups, url]
+      );
+    }
+  } catch {}
   try { await pool.execute(`ALTER TABLE files ADD COLUMN is_shared TINYINT(1) DEFAULT 0`); } catch {}
   try { await pool.execute(`ALTER TABLE files ADD COLUMN due_at DATETIME NULL`); } catch {}
   try { await pool.execute(`ALTER TABLE files ADD COLUMN is_public TINYINT(1) DEFAULT 0`); } catch {}
