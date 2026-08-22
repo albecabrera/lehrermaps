@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKEND_COMPOSE_FILE="$ROOT_DIR/docker-compose.backend.yml"
+XAMPP_ROOT="${LEHRERMAPS_XAMPP_ROOT:-/Users/acabrera/repos/xampp-docker}"
+XAMPP_COMPOSE_FILE="$XAMPP_ROOT/docker-compose.yml"
 APP_URL="http://localhost:8090"
 
 require_cmd() {
@@ -25,7 +26,9 @@ if ! docker network inspect xampp_xampp-net >/dev/null 2>&1; then
 fi
 
 echo "→ Levantando backend de LehrerMaps en Docker..."
-docker compose -f "$BACKEND_COMPOSE_FILE" up -d --build
+# Keep the XAMPP stack as the single canonical backend owner.
+docker compose -f "$ROOT_DIR/docker-compose.backend.yml" down --remove-orphans >/dev/null 2>&1 || true
+docker compose -f "$XAMPP_COMPOSE_FILE" up -d lehrermaps-backend
 
 echo "→ Aplicando proxy de Apache en XAMPP..."
 sudo "$ROOT_DIR/scripts/install-xampp-proxy.sh"
@@ -35,7 +38,7 @@ sudo /Applications/XAMPP/xamppfiles/xampp restartapache
 
 echo "→ Esperando al backend..."
 for _ in $(seq 1 40); do
-  BACKEND_CONTAINER="$(docker compose -f "$BACKEND_COMPOSE_FILE" ps -q lehrermaps-backend 2>/dev/null || true)"
+  BACKEND_CONTAINER="$(docker compose -f "$XAMPP_COMPOSE_FILE" ps -q lehrermaps-backend 2>/dev/null || true)"
   status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$BACKEND_CONTAINER" 2>/dev/null || true)"
   if [ "$status" = "healthy" ]; then
     break
@@ -43,7 +46,7 @@ for _ in $(seq 1 40); do
   sleep 1
 done
 
-BACKEND_CONTAINER="$(docker compose -f "$BACKEND_COMPOSE_FILE" ps -q lehrermaps-backend 2>/dev/null || true)"
+BACKEND_CONTAINER="$(docker compose -f "$XAMPP_COMPOSE_FILE" ps -q lehrermaps-backend 2>/dev/null || true)"
 status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$BACKEND_CONTAINER" 2>/dev/null || true)"
 if [ "$status" != "healthy" ]; then
   echo "El backend no respondió. Revisá docker compose logs."

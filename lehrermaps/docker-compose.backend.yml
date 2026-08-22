@@ -1,5 +1,7 @@
 services:
   lehrermaps-backend:
+    # Standalone fallback only. The canonical backend is managed by xampp-docker.
+    profiles: [standalone]
     build:
       context: .
       dockerfile: docker/backend/Dockerfile
