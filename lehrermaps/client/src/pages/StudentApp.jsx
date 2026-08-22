@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { SUBJECTS } from '../constants/structure';
+import { SUBJECTS, compareFolderNames } from '../constants/structure';
 import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
 import FileTable from '../components/FileTable';
@@ -38,9 +38,8 @@ export default function StudentApp({ onLogout }) {
       byParent.get(k).push(f);
     });
     const sortFn = (a, b) =>
-      ((b.is_favorite || 0) - (a.is_favorite || 0)) ||
       ((a.sort_order || 0) - (b.sort_order || 0)) ||
-      a.name.localeCompare(b.name);
+      compareFolderNames(a, b);
     const out = [];
     const seen = new Set();
     const walk = (pid, depth) => {

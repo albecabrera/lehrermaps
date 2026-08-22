@@ -26,6 +26,14 @@ export function detectKind(name) {
   return EXT_TO_KIND[extOf(name)] || 'file';
 }
 
+// Human-friendly folder order: "Klasse 9" comes before "Klasse 10".
+export function compareFolderNames(a, b) {
+  return String(a?.name || '').localeCompare(String(b?.name || ''), 'de', {
+    numeric: true,
+    sensitivity: 'base',
+  });
+}
+
 export function fileKindLabel(kind, name) {
   if (kind === 'link') return 'URL';
   if (kind === 'qr') return 'QR';

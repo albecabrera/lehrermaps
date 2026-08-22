@@ -12,7 +12,7 @@ import DeadlineModal from '../components/DeadlineModal';
 import GlobalSearch from '../components/GlobalSearch';
 import SearchModal from '../components/SearchModal';
 import KeyboardHelp from '../components/KeyboardHelp';
-import { SUBJECTS, detectKind } from '../constants/structure';
+import { SUBJECTS, detectKind, compareFolderNames } from '../constants/structure';
 import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
@@ -109,9 +109,8 @@ export default function App({ onLogout }) {
     ? folders
         .filter((f) => (f.parent_id ?? null) === activeFolder.id)
         .sort((a, b) =>
-          ((b.is_favorite || 0) - (a.is_favorite || 0)) ||
           ((a.sort_order || 0) - (b.sort_order || 0)) ||
-          a.name.localeCompare(b.name))
+          compareFolderNames(a, b))
     : [];
   const [pendingFileId, setPendingFileId] = useState(null);
   const [pendingLinkId, setPendingLinkId] = useState(null);
@@ -679,6 +678,21 @@ export default function App({ onLogout }) {
     }
   };
 
+  const handleMoveFolder = async (folderId, targetFolderId, placement = 'inside') => {
+    if (!folderId || folderId === targetFolderId) return;
+    try {
+      await moveFolderToParent(folderId, targetFolderId, placement);
+      await reloadFolders();
+      const targetFolder = folders.find((folder) => folder.id === targetFolderId);
+      const message = placement === 'inside'
+        ? `Ordner nach „${targetFolder?.name || 'Zielordner'}“ verschachtelt`
+        : `Ordner ${placement === 'before' ? 'davor' : 'danach'} verschoben`;
+      setToast({ type: 'success', msg: message });
+    } catch {
+      setToast({ type: 'error', msg: 'Ordner konnte nicht verschoben werden' });
+    }
+  };
+
   const isCompactPreview = !!activeLink || detectKind(activeFile?.original_name) === 'video';
   const effectivePreviewWidth = isCompactPreview ? Math.min(previewWidth, 280) : previewWidth;
   const filteredCount = query
@@ -699,7 +713,7 @@ export default function App({ onLogout }) {
     activeFolderId: activeFolder?.id,
     onNewFolder: () => { setNewFolderGroup(null); setNewFolderOpen(true); },
     onNewFolderInGroup: (g) => { setNewFolderGroup(g); setNewFolderOpen(true); },
-    onMoveFolder: async (folderId, targetId) => { await moveFolderToParent(folderId, targetId); },
+    onMoveFolder: handleMoveFolder,
     onNewHauptordner: (folder) => { setNewFolderParentId(null); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); },
     onNewOrdner: (folder) => { setNewFolderParentId(folder.parent_id ?? null); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); },
     onNewSubfolder: (folder) => { setNewFolderParentId(folder.id); setNewFolderGroup(folder.group_name); setNewFolderOpen(true); },
@@ -1318,7 +1332,26 @@ export default function App({ onLogout }) {
                           <button
                             key={cf.id}
                             className="lm-spring"
+                            draggable
                             onClick={(e) => onFolderSelect(cf, e.currentTarget.getBoundingClientRect())}
+                            onDragStart={(e) => {
+                              e.stopPropagation();
+                              e.dataTransfer.effectAllowed = 'move';
+                              e.dataTransfer.setData('text/x-lm-folder-id', String(cf.id));
+                              e.dataTransfer.setData('text/plain', cf.name);
+                            }}
+                            onDragOver={(e) => {
+                              if (e.dataTransfer.types.includes('text/x-lm-folder-id')) e.preventDefault();
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const sourceId = Number(e.dataTransfer.getData('text/x-lm-folder-id'));
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const relativeX = (e.clientX - rect.left) / Math.max(rect.width, 1);
+                              const placement = relativeX < 0.28 ? 'before' : relativeX > 0.72 ? 'after' : 'inside';
+                              handleMoveFolder(sourceId, cf.id, placement);
+                            }}
                             title={cf.name}
                             style={{
                               display: 'flex', alignItems: 'center', gap: 7,
@@ -1434,6 +1467,7 @@ export default function App({ onLogout }) {
                 keyboardMarkedFolderId={kbdMarkedFolderId}
                 onRecentClick={handleRecentClick}
                 onNewFolder={() => setNewFolderOpen(true)}
+                onMoveFolder={handleMoveFolder}
                 t={t}
               />
             </div>
@@ -1920,7 +1954,7 @@ function TeachingMode({ folder, files, links, accent, t, onClose }) {
       </aside>
       <main style={{ minWidth: 0, overflow: 'hidden', background: '#0B0E14' }}>
         {current ? (
-          <iframe title={current.original_name} src={viewFile(current.id)} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} />
+          <FilePreview file={current} accent={accent} />
         ) : (
           <div style={{ height: '100%', display: 'grid', placeItems: 'center', color: 'rgba(255,255,255,0.65)', fontSize: 16 }}>{t('teach.empty')}</div>
         )}
@@ -1930,8 +1964,11 @@ function TeachingMode({ folder, files, links, accent, t, onClose }) {
   );
 }
 
-function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect, onFolderHover, keyboardMarkedFolderId, onRecentClick, onNewFolder, t }) {
+function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect, onFolderHover, keyboardMarkedFolderId, onRecentClick, onNewFolder, onMoveFolder, t }) {
   const accent = subject.color;
+  const orderedFolders = [...folders].sort((a, b) =>
+    ((a.sort_order || 0) - (b.sort_order || 0)) || compareFolderNames(a, b)
+  );
   return (
     <div style={{ padding: '32px 28px' }}>
       {/* Recientes section */}
@@ -2022,8 +2059,8 @@ function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect
           gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
           gap: 12,
         }}>
-          {folders.map((f) => (
-            <FolderCard key={f.id} folder={f} accent={accent} selected={keyboardMarkedFolderId === f.id} onClick={(rect) => onFolderSelect(f, rect)} onHover={() => onFolderHover?.(f)} t={t} />
+          {orderedFolders.map((f) => (
+            <FolderCard key={f.id} folder={f} accent={accent} selected={keyboardMarkedFolderId === f.id} onClick={(rect) => onFolderSelect(f, rect)} onHover={() => onFolderHover?.(f)} onMoveFolder={onMoveFolder} t={t} />
           ))}
           <button
             onClick={onNewFolder}
@@ -2106,13 +2143,39 @@ const SUBJECT_COVERS = {
   },
 };
 
-function FolderCard({ folder, accent, selected = false, onClick, onHover, t }) {
+function FolderCard({ folder, accent, selected = false, onClick, onHover, onMoveFolder, t }) {
   const cover = SUBJECT_COVERS[folder.subject] || SUBJECT_COVERS.klasse;
   const [hovered, setHovered] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   return (
     <button
       onClick={(e) => onClick?.(e.currentTarget.getBoundingClientRect())}
+      draggable
+      onDragStart={(e) => {
+        e.stopPropagation();
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/x-lm-folder-id', String(folder.id));
+        e.dataTransfer.setData('text/plain', folder.name);
+      }}
+      onDragEnd={() => setDragOver(false)}
+      onDragOver={(e) => {
+        if (Number(e.dataTransfer.getData('text/x-lm-folder-id')) === folder.id) return;
+        if (!e.dataTransfer.types.includes('text/x-lm-folder-id')) return;
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(false);
+        const sourceId = Number(e.dataTransfer.getData('text/x-lm-folder-id'));
+        const rect = e.currentTarget.getBoundingClientRect();
+        const relativeX = (e.clientX - rect.left) / Math.max(rect.width, 1);
+        const placement = relativeX < 0.28 ? 'before' : relativeX > 0.72 ? 'after' : 'inside';
+        onMoveFolder?.(sourceId, folder.id, placement);
+      }}
       className="lm-spring"
       onFocus={() => onHover?.()}
       onMouseMove={() => onHover?.()}
@@ -2129,8 +2192,8 @@ function FolderCard({ folder, accent, selected = false, onClick, onHover, t }) {
         padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         transition: 'background .08s, box-shadow .12s, border-color .12s',
         animation: 'lmStaggerIn .42s cubic-bezier(.22,.9,.2,1) both',
-        boxShadow: selected ? `0 0 0 2px ${accent}66, 0 10px 26px rgba(0,0,0,0.14)` : (hovered ? `0 0 0 1px ${accent}44` : 'none'),
-        borderColor: selected ? `${accent}99` : (hovered ? `${accent}55` : 'var(--c-border)'),
+        borderColor: dragOver ? `${accent}` : (selected ? `${accent}99` : (hovered ? `${accent}55` : 'var(--c-border)')),
+        boxShadow: dragOver ? `0 0 0 3px ${accent}44, 0 10px 26px rgba(0,0,0,0.14)` : (selected ? `0 0 0 2px ${accent}66, 0 10px 26px rgba(0,0,0,0.14)` : (hovered ? `0 0 0 1px ${accent}44` : 'none')),
       }}
       onMouseEnter={(e) => {
         onHover?.();

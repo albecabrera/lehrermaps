@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import FolderIcon from './FolderIcon';
 import FileBadge from './FileBadge';
 import NotebookSidebar from './Notebooks/NotebookSidebar';
-import { detectKind } from '../constants/structure';
+import { detectKind, compareFolderNames } from '../constants/structure';
 import { useLang } from '../contexts/LangContext';
 
 const INDENT = 20;   // px per depth level
@@ -14,11 +14,7 @@ function buildTree(folders, parentId = null) {
   const pid = parentId === null ? null : parentId;
   return folders
     .filter((f) => (f.parent_id ?? null) === pid)
-    .sort((a, b) => {
-      if ((b.is_favorite || 0) !== (a.is_favorite || 0))
-        return (b.is_favorite || 0) - (a.is_favorite || 0);
-      return (a.sort_order || 0) - (b.sort_order || 0) || a.name.localeCompare(b.name);
-    })
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || compareFolderNames(a, b))
     .map((f) => ({ ...f, children: buildTree(folders, f.id) }));
 }
 
@@ -90,23 +86,7 @@ export default function Sidebar({
       return;
     }
 
-    if (placement === 'inside') {
-      await onMoveFolder?.(source.id, target.id);
-    } else if (source.subject === target.subject && source.group_name === target.group_name) {
-      const sameParent = (source.parent_id ?? null) === (target.parent_id ?? null);
-      if (!sameParent) await onMoveFolder?.(source.id, target.parent_id ?? null);
-
-      const siblings = folders
-        .filter((folder) => folder.subject === target.subject
-          && folder.group_name === target.group_name
-          && (folder.parent_id ?? null) === (target.parent_id ?? null)
-          && folder.id !== source.id)
-        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.name.localeCompare(b.name));
-      const targetIndex = siblings.findIndex((folder) => folder.id === target.id);
-      const insertAt = placement === 'after' ? targetIndex + 1 : targetIndex;
-      siblings.splice(Math.max(insertAt, 0), 0, source);
-      await onReorderFolders?.(siblings.map((folder) => folder.id));
-    }
+    await onMoveFolder?.(source.id, target.id, placement);
     setFolderDropTarget(null);
     setDraggingFolderId(null);
   };
