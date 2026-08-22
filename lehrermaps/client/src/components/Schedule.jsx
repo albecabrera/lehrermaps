@@ -441,7 +441,7 @@ function BreakRow({ breakKey, label, value, onToggleDay }) {
       textTransform: 'uppercase', color: 'var(--c-text-3)',
       justifyContent: 'flex-end', paddingRight: 6,
       height: 30,
-    }}>{label.split('pause')[0]}</div>,
+    }}>{label}</div>,
     ...[0, 1, 2, 3, 4].map((d) => (
       <BreakDayCell key={`${breakKey}-${d}`} active={!!value[d]} onToggle={() => onToggleDay(d)} />
     )),
