@@ -105,6 +105,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLIENT_DIST = path.join(__dirname, '..', 'client', 'dist');
 
 if (fs.existsSync(path.join(CLIENT_DIST, 'index.html'))) {
+  app.use((req, res, next) => {
+    if (['/', '/index.html', '/manifest.json', '/service-worker.js'].includes(req.path)) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+    next();
+  });
   app.use(express.static(CLIENT_DIST));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/ws')) return next();

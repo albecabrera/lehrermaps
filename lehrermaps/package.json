@@ -8,6 +8,7 @@
     "build": "npm run build --prefix client",
     "build:watch": "npm run build --prefix client -- --watch",
     "test:smoke": "node scripts/lehrermaps-smoke.mjs",
+    "test:pwa": "node scripts/lehrermaps-pwa-audit.mjs",
     "install:all": "npm install && npm install --prefix client && npm install --prefix server"
   },
   "devDependencies": {

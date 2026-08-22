@@ -7,7 +7,7 @@ ist dann weder installierbar noch offline-fähig.
 ## 1. Code auf den Server
 ```bash
 git clone https://github.com/albecabrera/lehrermaps.git /var/www/lehrermaps
-cd /var/www/lehrermaps/lehrermaps
+cd /var/www/lehrermaps
 ```
 > `client/dist` ist bereits committet — kein Build auf dem Server nötig.
 > (Alternativ selbst bauen: `cd client && npm ci && npm run build`.)
@@ -47,6 +47,7 @@ nginx -t && systemctl reload nginx
 
 ## 5. Abnahme (PWA wirklich aktiv?)
 Auf `https://DEIN-DOMAIN.de`:
+- `LEHRERMAPS_URL=https://DEIN-DOMAIN.de npm run test:pwa` — statische PWA- und API-Audit-Prüfung.
 - Chrome DevTools → **Application → Manifest**: „Installable", Icons + maskable da.
 - **Application → Service Workers**: „activated and running".
 - **Lighthouse → PWA**: grün.

@@ -193,12 +193,36 @@ npm run dev          # frontend + backend con concurrently
 npm run build        # build del frontend
 npm run build:watch  # actualiza client/dist automáticamente al guardar cambios
 npm run dev:8090     # watcher del bundle + backend para la app servida por XAMPP en 8090
+npm run test:pwa     # auditoría de manifest, service worker, headers, API y dist
+npm run test:smoke   # smoke test funcional completo con datos temporales
 npm run install:all  # instala raíz, client y server
 ```
 
 Los launchers `scripts/start-xampp-docker.sh` y `scripts/start-xampp-local.sh` inician también el watcher del frontend. Así, la app que XAMPP sirve en `http://localhost:8090` recibe automáticamente cada cambio guardado en `client/src`, sin tener que regenerar el bundle manualmente.
 
 > Nota para agentes: no ejecutar build automáticamente después de cambios. Este proyecto lo prohíbe en sus instrucciones.
+
+---
+
+## Publicar como PWA
+
+LehrerMaps está preparada para desplegarse como PWA detrás de **Nginx + HTTPS**, con Node.js/PM2 y MySQL/MariaDB. La guía completa está en [`DEPLOY.md`](./DEPLOY.md).
+
+Requisitos importantes para producción:
+
+- HTTPS válido: los service workers no funcionan en dominios HTTP normales.
+- `JWT_SECRET`, `APP_PASSWORD` y `STUDENT_PASSWORD` deben ser valores propios y seguros.
+- `ALLOWED_ORIGIN` debe coincidir exactamente con la URL HTTPS pública.
+- Nginx debe reenviar `/api/` al backend y `/ws` al WebSocket de Socket.IO.
+- `server/uploads` debe existir y ser escribible por el proceso Node.
+
+Después de configurar el servidor, ejecutar la auditoría contra el dominio real:
+
+```bash
+LEHRERMAPS_URL=https://tu-dominio.example npm run test:pwa
+```
+
+La auditoría comprueba el manifest, los iconos, el service worker, los headers de actualización, la API y la integridad de `client/dist`. Después conviene confirmar en Chrome DevTools que el service worker aparece como `activated and running` y probar la carga offline de la app-shell.
 
 ---
 
