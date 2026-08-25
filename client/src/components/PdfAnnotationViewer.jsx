@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+import { TextLayer } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { PDFDocument, LineCapStyle, rgb } from 'pdf-lib';
 import { createDocumentAnnotation, deleteDocumentAnnotation, getDocumentAnnotations, updateDocumentAnnotation } from '../lib/api';
@@ -47,7 +48,8 @@ export default function PdfAnnotationViewer({ fileId, src, title, accent = '#E84
       const fit = clamp((rootRef.current.clientWidth - 16) / base.width, 0.35, 2.4);
       const viewport = pdfPage.getViewport({ scale: fit * zoom, rotation });
       const textContent = await pdfPage.getTextContent();
-      await pdfjsLib.renderTextLayer({ textContentSource: textContent, container, viewport }).promise;
+      const textLayer = new TextLayer({ textContentSource: textContent, container, viewport });
+      await textLayer.render();
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [page, rotation, zoom, loading]);

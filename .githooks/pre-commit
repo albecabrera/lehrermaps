@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+ROOT_DIR=$(git rev-parse --show-toplevel)
+cd "$ROOT_DIR/client"
+
+echo "LehrerMaps: aktualisiere den Produktions-Bundle …"
+npm run build
+
+cd "$ROOT_DIR"
+git add client/dist
+echo "LehrerMaps: client/dist wurde für den Commit aktualisiert."
