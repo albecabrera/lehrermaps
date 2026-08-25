@@ -69,6 +69,7 @@ export default function Schedule({ onNavigate }) {
   const { t, lang } = useLang();
   const [schedule, setSchedule] = useState(() => hydrateSchedule(loadCache()));
   const [picker, setPicker] = useState(null); // { day, period, rect }
+  const [breakPicker, setBreakPicker] = useState(null); // { breakKey, day, rect }
   const [dragOverKey, setDragOverKey] = useState(null);
 
   useEffect(() => {
@@ -123,9 +124,19 @@ export default function Schedule({ onNavigate }) {
     persist({ ...schedule, [breakKey]: { ...(schedule[breakKey] || {}), [day]: cell } });
   }, [persist, schedule]);
 
+  const assignBreakSubject = useCallback((subject) => {
+    if (!breakPicker) return;
+    assignBreakDay(breakPicker.breakKey, breakPicker.day, { type: 'subject', subjectId: subject.id });
+    setBreakPicker(null);
+  }, [assignBreakDay, breakPicker]);
+
   const openPicker = useCallback((day, period, el) => {
     const rect = el.getBoundingClientRect();
     setPicker({ day, period, rect });
+  }, []);
+
+  const openBreakPicker = useCallback((breakKey, day, el) => {
+    setBreakPicker({ breakKey, day, rect: el.getBoundingClientRect() });
   }, []);
 
   const onDropToCell = useCallback((day, period, payload) => {
@@ -276,7 +287,7 @@ export default function Schedule({ onNavigate }) {
         {Array.from({ length: PERIODS }, (_, p) => (
           [
             p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Frühstückspause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} />,
-            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Mittagspause" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} allowAssignments onDropDay={(d, payload) => assignBreakDay('break-mittag', d, payload)} />,
+            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Mittagspause / Unterricht" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-mittag', d, el)} onDropDay={(d, payload) => assignBreakDay('break-mittag', d, payload)} />,
             <div key={`label-${p}`} style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
@@ -324,6 +335,14 @@ export default function Schedule({ onNavigate }) {
           current={schedule[`${picker.day}-${picker.period}`]?.id}
           onSelect={assign}
           onClose={() => setPicker(null)}
+        />
+      )}
+      {breakPicker && (
+        <SubjectPicker
+          rect={breakPicker.rect}
+          current={schedule[breakPicker.breakKey]?.[breakPicker.day]?.id}
+          onSelect={assignBreakSubject}
+          onClose={() => setBreakPicker(null)}
         />
       )}
     </div>
@@ -450,7 +469,7 @@ function readDndPayload(dataTransfer) {
 
 const AUFSICHT_COLOR = '#64748B';
 
-function BreakRow({ breakKey, label, value, onToggleDay, allowAssignments = false, onDropDay }) {
+function BreakRow({ breakKey, label, value, onToggleDay, allowAssignments = false, onEditDay, onDropDay }) {
   return [
     <div key={`${breakKey}-label`} style={{
       display: 'flex', alignItems: 'center',
@@ -460,18 +479,20 @@ function BreakRow({ breakKey, label, value, onToggleDay, allowAssignments = fals
       height: 30,
     }}>{label}</div>,
     ...[0, 1, 2, 3, 4].map((d) => (
-      <BreakDayCell key={`${breakKey}-${d}`} cell={value[d]} allowAssignments={allowAssignments} onToggle={() => onToggleDay(d)} onDrop={(payload) => onDropDay?.(d, payload)} />
+      <BreakDayCell key={`${breakKey}-${d}`} cell={value[d]} allowAssignments={allowAssignments} onToggle={() => onToggleDay(d)} onEdit={(el) => onEditDay?.(d, el)} onDrop={(payload) => onDropDay?.(d, payload)} />
     )),
   ];
 }
 
-function BreakDayCell({ cell, allowAssignments = false, onToggle, onDrop }) {
+function BreakDayCell({ cell, allowAssignments = false, onToggle, onEdit, onDrop }) {
   const [hovered, setHovered] = useState(false);
+  const ref = useRef(null);
   const active = !!cell;
   const color = cell?.color || AUFSICHT_COLOR;
   return (
     <div
-      onClick={onToggle}
+      ref={ref}
+      onClick={() => allowAssignments ? onEdit?.(ref.current) : onToggle()}
       onDragOver={(event) => { if (!allowAssignments) return; event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; setHovered(true); }}
       onDrop={(event) => { if (!allowAssignments) return; event.preventDefault(); onDrop(readDndPayload(event.dataTransfer)); setHovered(false); }}
       onMouseEnter={() => setHovered(true)}
