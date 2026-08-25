@@ -56,6 +56,7 @@ function hydrateSchedule(raw) {
         id: preset.id,
         label: value.label || preset.label,
         color: value.color || preset.color,
+        ...(value.room ? { room: value.room } : {}),
         ...(preset.subjectId ? { subjectId: value.subjectId || preset.subjectId } : {}),
       };
       continue;
@@ -98,9 +99,9 @@ export default function Schedule({ onNavigate }) {
     setPicker(null);
   }, [picker, schedule, persist]);
 
-  const assignCustom = useCallback(({ label, room }) => {
+  const assignCustom = useCallback(({ label, room, color }) => {
     if (!picker || !label.trim()) return;
-    const cell = { id: `custom-${Date.now()}`, label: label.trim(), color: '#0EA5E9', room: room.trim() };
+    const cell = { id: `custom-${Date.now()}`, label: label.trim(), color: color || '#0EA5E9', room: room.trim() };
     persist({ ...schedule, [`${picker.day}-${picker.period}`]: cell });
     setPicker(null);
   }, [picker, persist, schedule]);
@@ -137,9 +138,9 @@ export default function Schedule({ onNavigate }) {
     setBreakPicker(null);
   }, [assignBreakDay, breakPicker]);
 
-  const assignBreakCustom = useCallback(({ label, room }) => {
+  const assignBreakCustom = useCallback(({ label, room, color }) => {
     if (!breakPicker || !label.trim()) return;
-    const cell = { id: `custom-${Date.now()}`, label: label.trim(), color: '#0EA5E9', room: room.trim() };
+    const cell = { id: `custom-${Date.now()}`, label: label.trim(), color: color || '#0EA5E9', room: room.trim() };
     persist({ ...schedule, [breakPicker.breakKey]: { ...(schedule[breakPicker.breakKey] || {}), [breakPicker.day]: cell } });
     setBreakPicker(null);
   }, [breakPicker, persist, schedule]);
@@ -421,7 +422,7 @@ function ScheduleCell({
       onClick={handleClick}
     >
       {cell ? (
-        <div style={{ padding: '8px 10px' }}>
+        <div style={{ padding: '8px 10px 8px 9px', borderLeft: `3px solid ${cell.color}`, minHeight: '100%', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: cell.color, flexShrink: 0 }} />
             <div style={{
@@ -496,6 +497,8 @@ function BreakRow({ breakKey, label, value, onToggleDay, allowAssignments = fals
       textTransform: 'uppercase', color: 'var(--c-text-3)',
       justifyContent: 'flex-end', paddingRight: 6,
       height: 30,
+      borderTop: `1px solid ${AUFSICHT_COLOR}30`,
+      background: `${AUFSICHT_COLOR}08`,
     }}>{label}</div>,
     ...[0, 1, 2, 3, 4].map((d) => (
       <BreakDayCell key={`${breakKey}-${d}`} cell={value[d]} allowAssignments={allowAssignments} onToggle={() => onToggleDay(d)} onEdit={(el) => onEditDay?.(d, el)} onDrop={(payload) => onDropDay?.(d, payload)} />
@@ -519,7 +522,9 @@ function BreakDayCell({ cell, allowAssignments = false, onToggle, onEdit, onDrop
       style={{
         height: 30, borderRadius: 6, cursor: 'pointer',
         border: `1px solid ${active ? color + '66' : hovered ? AUFSICHT_COLOR + '33' : 'var(--c-border)'}`,
-        background: active ? `${color}18` : hovered ? `${AUFSICHT_COLOR}0C` : 'var(--c-surface)',
+        borderTop: `1px solid ${active ? color + '66' : AUFSICHT_COLOR + '30'}`,
+        borderLeft: active ? `3px solid ${color}` : undefined,
+        background: active ? `${color}18` : hovered ? `${AUFSICHT_COLOR}0C` : `${AUFSICHT_COLOR}08`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'background .1s, border-color .1s', position: 'relative',
       }}
@@ -539,6 +544,7 @@ function SubjectPicker({ rect, current, currentCell, onSelect, onCustom, onClose
   useEscapeKey(true, onClose);
   const [label, setLabel] = useState(currentCell?.label || '');
   const [room, setRoom] = useState(currentCell?.room || '');
+  const [color, setColor] = useState(currentCell?.color || '#0EA5E9');
   const PICKER_W = 220;
   const PICKER_MAX_H = Math.min(360, window.innerHeight - 80);
   const vw = window.innerWidth;
@@ -619,7 +625,12 @@ function SubjectPicker({ rect, current, currentCell, onSelect, onCustom, onClose
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--c-text-2)', marginBottom: 5 }}>Manueller Eintrag</div>
           <input value={label} onChange={(event) => setLabel(event.target.value)} placeholder="Klasse / Kurs" aria-label="Klasse oder Kurs" style={pickerInputStyle} />
           <input value={room} onChange={(event) => setRoom(event.target.value)} placeholder="Raum, z. B. J004" aria-label="Raum" style={pickerInputStyle} />
-          <button type="button" disabled={!label.trim()} onClick={() => onCustom?.({ label, room })} style={{ width: '100%', marginTop: 4, padding: '7px 10px', border: 0, borderRadius: 8, background: '#0EA5E9', color: '#fff', fontWeight: 700, cursor: label.trim() ? 'pointer' : 'not-allowed', opacity: label.trim() ? 1 : .5 }}>Eintrag übernehmen</button>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '2px 0 5px', fontSize: 10, color: 'var(--c-text-2)' }}>
+            Farbe
+            <input type="color" value={color} onChange={(event) => setColor(event.target.value)} aria-label="Farbe für manuellen Eintrag" style={{ width: 28, height: 22, padding: 1, border: '1px solid var(--c-border)', borderRadius: 5, background: 'transparent', cursor: 'pointer' }} />
+            <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--c-text-3)' }}>{color.toUpperCase()}</span>
+          </label>
+          <button type="button" disabled={!label.trim()} onClick={() => onCustom?.({ label, room, color })} style={{ width: '100%', marginTop: 4, padding: '7px 10px', border: 0, borderRadius: 8, background: color, color: '#fff', fontWeight: 700, cursor: label.trim() ? 'pointer' : 'not-allowed', opacity: label.trim() ? 1 : .5 }}>Eintrag übernehmen</button>
         </div>
       </div>
     </>,
