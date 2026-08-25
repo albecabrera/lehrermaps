@@ -302,7 +302,7 @@ export default function StudentApp({ onLogout }) {
         {/* Preview (Desktop: feste Spalte) */}
         {activeFolder && !isMobile && (
           <div style={{ width: 360, flexShrink: 0, borderLeft: '1px solid var(--c-border)', overflow: 'hidden' }}>
-            <FilePreview file={activeFile} accent={accent} />
+            <FilePreview file={activeFile} accent={accent} isStudent />
           </div>
         )}
 
@@ -313,7 +313,7 @@ export default function StudentApp({ onLogout }) {
             background: 'var(--c-bg)', display: 'flex', flexDirection: 'column',
             animation: 'lmSlideUp .18s cubic-bezier(.4,.7,.3,1)',
           }}>
-            <FilePreview file={activeFile} accent={accent} onClose={() => setActiveFile(null)} />
+            <FilePreview file={activeFile} accent={accent} isStudent onClose={() => setActiveFile(null)} />
           </div>,
           document.body
         )}

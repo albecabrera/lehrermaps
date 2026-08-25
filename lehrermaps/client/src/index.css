@@ -394,3 +394,51 @@ button:active {
   body.lm-print-planning .lm-annual-cards { display: none !important; }
   body.lm-print-planning .lm-annual-table-wrap { display: block !important; }
 }
+/* Lehrerhilfe visual phase canvas */
+.lm-teaching-canvas{margin-top:22px;max-width:1000px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:12px;overflow:hidden}.lm-canvas-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--c-border)}.lm-canvas-toolbar strong{margin-right:auto}.lm-canvas-toolbar button{height:30px;padding:0 9px;border:1px solid var(--c-border);border-radius:7px;background:var(--c-surface-2);color:var(--c-text);cursor:pointer;font:inherit;font-size:11px}.lm-canvas-colors{display:flex;gap:4px;margin-left:6px}.lm-canvas-colors button{width:18px;height:18px;padding:0;border-radius:50%;border:1px solid #fff}.lm-canvas-surface{position:relative;min-height:360px;margin:14px;border:1px dashed var(--c-border);border-radius:9px;background:linear-gradient(90deg,transparent 24px,var(--c-border) 25px,transparent 26px),linear-gradient(transparent 24px,var(--c-border) 25px,transparent 26px);background-size:25px 25px}.lm-canvas-empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--c-text-3);font-size:13px}.lm-canvas-element{position:absolute;min-width:78px;min-height:32px;padding:8px 10px;border:2px solid;border-radius:8px;background:var(--c-surface);box-shadow:0 3px 10px #0001;cursor:pointer;font-size:13px}.lm-canvas-element.is-selected{box-shadow:0 0 0 3px #2563eb33}.lm-canvas-marker{border-radius:3px;background:#facc1544!important}.lm-canvas-circle{border-radius:50%;min-width:50px;min-height:50px;display:grid;place-items:center;background:transparent!important}.lm-canvas-arrow{border:0;background:transparent!important;font-size:30px;box-shadow:none}.lm-canvas-material{background:#eff6ff!important}.lm-canvas-solution{background:#fee2e2!important}.lm-canvas-element-actions{position:absolute;top:100%;left:0;z-index:2;display:flex;gap:4px;padding-top:4px}.lm-canvas-element-actions select,.lm-canvas-element-actions button,.lm-canvas-inspector input{height:28px;border:1px solid var(--c-border);border-radius:6px;background:var(--c-surface);color:var(--c-text);font:inherit;font-size:11px}.lm-canvas-element-actions button{width:28px}.lm-canvas-inspector{padding:10px 14px;border-top:1px solid var(--c-border);display:flex;gap:10px;align-items:center;font-size:12px}.lm-canvas-inspector input{flex:1;padding:0 8px}
+.lm-canvas-surface.is-drawing{cursor:crosshair}.lm-canvas-ink-layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.lm-canvas-surface{overflow:hidden;touch-action:none}.lm-canvas-world{position:absolute;inset:0;transform-origin:0 0;will-change:transform}.lm-canvas-surface.is-pannable{cursor:grab}.lm-canvas-surface.is-pannable:active{cursor:grabbing}.lm-canvas-zoom{display:flex;align-items:center;gap:4px;margin-left:auto}.lm-canvas-zoom button{min-width:28px;padding:0 7px}.lm-canvas-zoom span{min-width:42px;text-align:center;font-size:11px;color:var(--c-text-2)}
+.lm-canvas-toolbar kbd{font-size:9px;color:var(--c-text-3);margin-left:3px}.lm-canvas-element svg{display:block;width:100%;height:100%;overflow:visible}.lm-canvas-element input{width:100%;height:100%;min-width:80px;border:0;outline:0;background:transparent;color:inherit;font:inherit}.lm-canvas-element.is-draft{opacity:.55;pointer-events:none}.lm-canvas-shortcuts{display:block;margin-left:auto;color:var(--c-text-3);font-size:10px}
+
+/* Lehrerhilfe: auf kleinen Displays Panel und Arbeitsbereich untereinander,
+   statt die Desktop-Spaltenbreite in ein schmales Telefon zu quetschen. */
+@media (max-width: 760px) {
+  .lm-teaching-mode {
+    display: flex !important;
+    flex-direction: column;
+    overflow: hidden !important;
+  }
+  .lm-teaching-sidebar {
+    width: auto;
+    flex: 0 0 auto;
+    max-height: 42vh;
+    padding: 12px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .lm-teaching-sidebar.is-hidden { display: none; }
+  .lm-teaching-main {
+    width: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    padding: 18px !important;
+  }
+  .lm-teaching-main.is-focus { flex: 1 1 100%; }
+  .lm-teaching-phase-back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    margin: 0 0 12px;
+    padding: 0 12px;
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    background: var(--c-surface);
+    color: var(--c-text-2);
+    font: inherit;
+    cursor: pointer;
+  }
+}
+.lm-teaching-phase-back { display: none; }
+@media (max-width: 760px) {
+  .lm-teaching-phase-back { display: inline-flex; }
+}

@@ -20,6 +20,7 @@ export default function FileTable({
   query, onDelete, onRename, onDeleteLink, onUpload, onAddLink, onToggleShare,
   onTogglePublic,
   onSetDeadline,
+  onSetTimer,
   onShowLinkQr,
   onFileHover,
   keyboardMarkedFileId,
@@ -291,6 +292,11 @@ export default function FileTable({
           {(file.version_number || 1) > 1 && (
             <span style={{ fontSize: 9, fontWeight: 700, color: accent, background: `${accent}12`, border: `1px solid ${accent}30`, borderRadius: 4, padding: '1px 5px' }}>
               v{file.version_number}
+            </span>
+          )}
+          {Number(file.timer_minutes) > 0 && (
+            <span style={{ fontSize: 9, fontWeight: 700, color: accent, background: `${accent}12`, border: `1px solid ${accent}30`, borderRadius: 4, padding: '1px 5px' }}>
+              ⏱ {file.timer_minutes} Min.
             </span>
           )}
           {onSetRole && (
@@ -587,6 +593,7 @@ export default function FileTable({
           onToggleShare={() => { onToggleShare?.(menuFile); setMenuFile(null); }}
           onTogglePublic={() => { onTogglePublic?.(menuFile.id); setMenuFile(null); }}
           onSetDeadline={() => { onSetDeadline?.(menuFile); setMenuFile(null); }}
+          onSetTimer={() => { onSetTimer?.(menuFile); setMenuFile(null); }}
           t={t}
         />
       )}
@@ -681,7 +688,7 @@ function EmptyState({ query, accent, onUpload, onAddLink, t }) {
   );
 }
 
-function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onToggleShare, onTogglePublic, onSetDeadline, t }) {
+function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onToggleShare, onTogglePublic, onSetDeadline, onSetTimer, t }) {
   const kind = detectKind(file.original_name);
 
   return (
@@ -724,6 +731,7 @@ function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onTo
           />
         ) : null}
         <MenuItem icon="⏰" label={t('table.deadline')} onClick={onSetDeadline} />
+        {onSetTimer && <MenuItem icon="⏱" label={t('table.timer')} onClick={onSetTimer} />}
         <div style={{ height: 1, background: 'var(--c-border)', margin: '4px 2px' }} />
         <MenuItem icon="🗑" label={t('delete')} danger onClick={onDelete} />
       </div>

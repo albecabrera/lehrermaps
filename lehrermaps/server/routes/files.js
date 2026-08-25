@@ -11,7 +11,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const { ZipArchive } = require('archiver');
 import pool from '../db.js';
-import auth from '../middleware/auth.js';
+import auth, { teacherOnly } from '../middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
@@ -410,7 +410,7 @@ router.get('/:folder_id', async (req, res) => {
   }
 });
 
-router.put('/:id/share', async (req, res) => {
+router.put('/:id/share', teacherOnly, async (req, res) => {
   try {
     await pool.execute(
       'UPDATE files SET is_shared = IF(is_shared=1, 0, 1) WHERE id = ?',
@@ -423,8 +423,7 @@ router.put('/:id/share', async (req, res) => {
   }
 });
 
-router.put('/:id/public', async (req, res) => {
-  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+router.put('/:id/public', teacherOnly, async (req, res) => {
   try {
     const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Datei nicht gefunden' });
@@ -442,8 +441,7 @@ router.put('/:id/public', async (req, res) => {
   }
 });
 
-router.put('/:id/deadline', async (req, res) => {
-  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+router.put('/:id/deadline', teacherOnly, async (req, res) => {
   const { due_at } = req.body;
   try {
     await pool.execute('UPDATE files SET due_at = ? WHERE id = ?', [due_at || null, req.params.id]);
@@ -454,7 +452,23 @@ router.put('/:id/deadline', async (req, res) => {
   }
 });
 
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.put('/:id/timer', teacherOnly, async (req, res) => {
+  const raw = req.body?.timer_minutes;
+  const minutes = raw === null || raw === '' || Number(raw) === 0 ? null : Number(raw);
+  if (minutes !== null && (!Number.isInteger(minutes) || minutes < 1 || minutes > 600)) {
+    return res.status(400).json({ error: 'Timer muss zwischen 1 und 600 Minuten liegen' });
+  }
+  try {
+    const [result] = await pool.execute('UPDATE files SET timer_minutes = ? WHERE id = ?', [minutes, req.params.id]);
+    if (!result.affectedRows) return res.status(404).json({ error: 'Datei nicht gefunden' });
+    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
+    res.json(rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/upload', teacherOnly, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Keine Datei übermittelt' });
   const { folder_id } = req.body;
   if (!folder_id) return res.status(400).json({ error: 'folder_id fehlt' });
@@ -472,8 +486,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 
-router.put('/roles/bulk', async (req, res) => {
-  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+router.put('/roles/bulk', teacherOnly, async (req, res) => {
   const ids = Array.isArray(req.body.ids) ? req.body.ids.map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 200) : [];
   const role = req.body.material_role;
   if (!ids.length || !MATERIAL_ROLES.has(role)) return res.status(400).json({ error: 'Ungültige Rolle oder Auswahl' });
@@ -502,8 +515,7 @@ router.get('/:id/versions', async (req, res) => {
   }
 });
 
-router.post('/:id/edit-copy', async (req, res) => {
-  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+router.post('/:id/edit-copy', teacherOnly, async (req, res) => {
   try {
     const file = await getFileById(req.params.id);
     if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
@@ -544,8 +556,7 @@ router.get('/:id/edit-copy/download', async (req, res) => {
   }
 });
 
-router.post('/:id/versions/commit', editUpload.single('file'), async (req, res) => {
-  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
+router.post('/:id/versions/commit', teacherOnly, editUpload.single('file'), async (req, res) => {
   try {
     const file = await getFileById(req.params.id);
     if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
@@ -571,9 +582,9 @@ router.post('/:id/versions/commit', editUpload.single('file'), async (req, res) 
     );
     await pool.execute('UPDATE files SET is_current_version = 0 WHERE version_group_id = ?', [file.version_group_id]);
     const [result] = await pool.execute(
-      `INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, is_shared, due_at, is_public, public_token, material_role, version_group_id, version_number, is_current_version)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, 1)`,
-      [file.folder_id, file.original_name, storedName, file.mime_type, size, file.is_shared || 0, file.due_at || null, file.material_role || 'other', file.version_group_id, nextVersion]
+      `INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, is_shared, due_at, timer_minutes, is_public, public_token, material_role, version_group_id, version_number, is_current_version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, 1)`,
+      [file.folder_id, file.original_name, storedName, file.mime_type, size, file.is_shared || 0, file.due_at || null, file.timer_minutes || null, file.material_role || 'other', file.version_group_id, nextVersion]
     );
     if (copies.length) await pool.execute('DELETE FROM file_edit_copies WHERE id = ?', [copies[0].id]);
     const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [result.insertId]);
@@ -583,7 +594,7 @@ router.post('/:id/versions/commit', editUpload.single('file'), async (req, res) 
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', teacherOnly, async (req, res) => {
   const { original_name, folder_id, material_role } = req.body;
   const hasRole = typeof material_role === 'string' && MATERIAL_ROLES.has(material_role);
   const hasName = typeof original_name === 'string' && original_name.trim();
@@ -611,7 +622,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', teacherOnly, async (req, res) => {
   try {
     const [rows] = await pool.execute('SELECT stored_name FROM files WHERE id = ?', [req.params.id]);
     if (rows.length) {

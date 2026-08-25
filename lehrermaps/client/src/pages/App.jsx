@@ -9,6 +9,7 @@ import NewFolderModal from '../components/NewFolderModal';
 import Breadcrumb from '../components/Breadcrumb';
 import ConfirmModal from '../components/ConfirmModal';
 import DeadlineModal from '../components/DeadlineModal';
+import TimerModal from '../components/TimerModal';
 import GlobalSearch from '../components/GlobalSearch';
 import SearchModal from '../components/SearchModal';
 import KeyboardHelp from '../components/KeyboardHelp';
@@ -18,7 +19,7 @@ import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
 import { useRecents } from '../hooks/useRecents';
 import { useRecentFiles } from '../hooks/useRecentFiles';
-import { downloadFolderZip, downloadFilesZip, viewFile } from '../lib/api';
+import { downloadFolderZip, downloadFilesZip, getLessonSessions, viewFile } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
@@ -30,6 +31,8 @@ import { useLang } from '../contexts/LangContext';
 import { useNotebook } from '../contexts/NotebookContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/MobileNav';
+import TeachingMode from '../components/TeachingMode';
+import LessonDashboard from '../components/LessonDashboard';
 
 // Opened views are split into on-demand chunks without changing their layout.
 const QRModal = lazy(() => import('../components/QRModal'));
@@ -66,6 +69,7 @@ export default function App({ onLogout }) {
   const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
   const [deadlineModal, setDeadlineModal] = useState(null);
+  const [timerModal, setTimerModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [pendingDeleteIds, setPendingDeleteIds] = useState(new Set());
   const deleteTimersRef = useRef(new Map());
@@ -80,14 +84,30 @@ export default function App({ onLogout }) {
   const [hoveredFolder, setHoveredFolder] = useState(null);
   const [kbdMarkedFileId, setKbdMarkedFileId] = useState(null);
   const [kbdMarkedFolderId, setKbdMarkedFolderId] = useState(null);
+  const [folderLessonSessions, setFolderLessonSessions] = useState([]);
+  const [lessonSessions, setLessonSessions] = useState([]);
+  const [teachingMode, setTeachingMode] = useState(false);
+  const [startNewLessonPlanning, setStartNewLessonPlanning] = useState(false);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
-  const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, togglePublic, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
+  const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, setTimer: setFileTimer, togglePublic, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
   const { trackFile, trackLink } = useRecentFiles();
+
+  useEffect(() => {
+    if (!activeFolder?.id) { setFolderLessonSessions([]); return undefined; }
+    let cancelled = false;
+    getLessonSessions()
+      .then((sessions) => {
+        if (!cancelled) setFolderLessonSessions((sessions || []).filter((session) => Number(session.folder_id) === Number(activeFolder.id)));
+      })
+      .catch(() => { if (!cancelled) setFolderLessonSessions([]); });
+    return () => { cancelled = true; };
+  }, [activeFolder?.id]);
+  useEffect(() => { getLessonSessions().then((sessions) => setLessonSessions(sessions || [])).catch(() => setLessonSessions([])); }, [teachingMode]);
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const subjectRootFolders = subjectFolders.filter((f) => !f.parent_id);
   // Ahnenkette des aktiven Ordners (Wurzel → aktiv) für den Breadcrumb
@@ -122,7 +142,6 @@ export default function App({ onLogout }) {
   const [backSwipe, setBackSwipe] = useState({ active: false, x: 0 });
   const [heroQrLink, setHeroQrLink] = useState(null);
   const [focusMode, setFocusMode] = useState(false);
-  const [teachingMode, setTeachingMode] = useState(false);
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const dragState = useRef(null);
@@ -535,6 +554,10 @@ export default function App({ onLogout }) {
     setDeadlineModal({ type: 'file', id: file.id, initialDate: current });
   };
 
+  const handleSetFileTimer = (file) => {
+    setTimerModal({ id: file.id, initialMinutes: file.timer_minutes || '' });
+  };
+
   const handleBulkDeleteFiles = async (selectedFiles) => {
     const fileIds = selectedFiles.map((f) => f.id);
     for (const file of selectedFiles) {
@@ -699,7 +722,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen;
+  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || !!timerModal || keyboardHelpOpen || qrOpen;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
   const sidebarProps = {
@@ -779,6 +802,7 @@ export default function App({ onLogout }) {
           <span style={{ fontSize: 13 }}>⌂</span>
           <span style={{ fontSize: 13, fontWeight: viewMode === 'today' ? 600 : 500, color: viewMode === 'today' ? 'var(--c-text)' : 'var(--c-text-2)' }}>Heute</span>
         </button>
+        <button className="lm-spring" onClick={() => { setViewMode('lessons'); setActivePageId(null); closeFolderView(); }} style={{ appearance: 'none', border: 'none', font: 'inherit', padding: '10px 16px 12px', cursor: 'pointer', background: viewMode === 'lessons' ? 'var(--c-surface)' : 'transparent', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', gap: 8, color: viewMode === 'lessons' ? accent : 'var(--c-text-2)' }} aria-label="Lehrerhilfe">✦ <span style={{ fontSize: 13, fontWeight: viewMode === 'lessons' ? 600 : 500 }}>Lehrerhilfe</span></button>
         {/* Stundenplan toggle */}
         <button
           className="lm-spring"
@@ -1043,6 +1067,8 @@ export default function App({ onLogout }) {
           <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
             <Schedule onNavigate={(subjectId) => { onSubjectChange(subjectId); }} />
           </div>
+        ) : viewMode === 'lessons' ? (
+          <LessonDashboard sessions={lessonSessions} folders={folders} accent={accent} onOpen={(folder) => { setActiveFolder(folder); setSubjectId(folder.subject); setTeachingMode(true); }} />
         ) : <>
         {!focusMode && !isMobile && <div style={{
           display: 'flex', flexShrink: 0, minHeight: 0, height: '100%',
@@ -1262,7 +1288,7 @@ export default function App({ onLogout }) {
                       QR
                     </button>
                     <button
-                      onClick={() => setTeachingMode(true)}
+                      onClick={() => { setStartNewLessonPlanning(false); setTeachingMode(true); }}
                       title={t('teach.open')}
                       style={{
                         marginLeft: 8, height: 26, padding: '0 12px',
@@ -1273,8 +1299,45 @@ export default function App({ onLogout }) {
                     >
                       ▶ {t('teach.open')}
                     </button>
+                    <button
+                      onClick={() => { setStartNewLessonPlanning(true); setTeachingMode(true); }}
+                      title="Neue Stunde planen"
+                      aria-label="Neue Stunde planen"
+                      style={{
+                        marginLeft: 8, height: 26, padding: '0 12px',
+                        border: `1px solid ${accent}66`, borderRadius: 6, background: 'transparent', color: accent,
+                        fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'inherit',
+                      }}
+                    >
+                      ＋ Neue Stunde planen
+                    </button>
                   </div>
                 </div>
+
+                {folderLessonSessions.length > 0 && (
+                  <div style={{ marginTop: 14, display: 'grid', gap: 8 }}>
+                    {folderLessonSessions.map((lesson) => (
+                      <button
+                        key={lesson.id}
+                        onClick={() => setTeachingMode(true)}
+                        style={{
+                          width: '100%', textAlign: 'left', padding: '12px 14px',
+                          border: `1px solid ${accent}55`, borderRadius: 10,
+                          background: `${accent}0d`, color: 'var(--c-text)', cursor: 'pointer',
+                          fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                        }}
+                      >
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: .7, textTransform: 'uppercase', color: accent }}>Geplante Unterrichtsstunde</span>
+                          <strong style={{ display: 'block', marginTop: 3, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lesson.title}</strong>
+                          <span style={{ display: 'block', marginTop: 3, fontSize: 11, color: 'var(--c-text-2)' }}>{lesson.class_name || activeFolder.group_name} · {lesson.lesson_date ? new Date(`${lesson.lesson_date}T00:00:00`).toLocaleDateString('de-DE') : 'ohne Datum'}</span>
+                        </span>
+                        <span style={{ flexShrink: 0, padding: '6px 9px', borderRadius: 7, background: accent, color: '#fff', fontSize: 11, fontWeight: 700 }}>Lehrerhilfe öffnen →</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Tab switcher */}
                 <div style={{ display: 'flex', gap: 0, marginTop: 12, borderBottom: '1px solid var(--c-border)' }}>
@@ -1424,6 +1487,7 @@ export default function App({ onLogout }) {
                         onToggleShare={toggleShare}
                         onTogglePublic={togglePublic}
                         onSetDeadline={handleSetFileDeadline}
+                        onSetTimer={handleSetFileTimer}
                         onShowLinkQr={(link) => setHeroQrLink(link)}
                         onFileHover={setHoveredFile}
                         keyboardMarkedFileId={kbdMarkedFileId}
@@ -1581,7 +1645,8 @@ export default function App({ onLogout }) {
           links={links}
           accent={accent}
           t={t}
-          onClose={() => setTeachingMode(false)}
+          startWithPlanner={startNewLessonPlanning}
+          onClose={() => { setTeachingMode(false); setStartNewLessonPlanning(false); }}
         />
       )}
       </FocusMode>
@@ -1786,6 +1851,26 @@ export default function App({ onLogout }) {
           }
         }}
       />
+      <TimerModal
+        open={!!timerModal}
+        initialMinutes={timerModal?.initialMinutes}
+        accent={accent}
+        onClose={() => setTimerModal(null)}
+        onSave={async (value) => {
+          if (!timerModal) return;
+          const trimmed = String(value ?? '').trim();
+          const minutes = trimmed === '' ? null : Number(trimmed);
+          try {
+            const updated = await setFileTimer(timerModal.id, minutes);
+            if (activeFile?.id === timerModal.id) setActiveFile(updated);
+            setToast({ type: 'success', msg: t('toast.timer_saved') });
+          } catch (e) {
+            setToast({ type: 'error', msg: e.response?.data?.error || t('toast.timer_error') });
+          } finally {
+            setTimerModal(null);
+          }
+        }}
+      />
       {examBoardOpen && <ExamBoard onDismiss={() => setExamBoardOpen(false)} />}
 
       {toast && (
@@ -1904,7 +1989,7 @@ function normalizeExternalUrl(url) {
 }
 
 
-function TeachingMode({ folder, files, links, accent, t, onClose }) {
+function LegacyTeachingMode({ folder, files, links, accent, t, onClose }) {
   const [active, setActive] = useState(null);
   const [showSolutions, setShowSolutions] = useState(false);
   const visibleFiles = files.filter((file) => showSolutions || (file.material_role || 'other') !== 'solution');

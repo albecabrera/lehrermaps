@@ -11,3 +11,8 @@ export default function authMiddleware(req, res, next) {
     res.status(401).json({ error: 'Token ungültig oder abgelaufen' });
   }
 }
+
+export function teacherOnly(req, res, next) {
+  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nur für Lehrkräfte' });
+  return next();
+}

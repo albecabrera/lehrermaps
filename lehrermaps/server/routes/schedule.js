@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import pool from '../db.js';
-import auth from '../middleware/auth.js';
+import auth, { teacherOnly } from '../middleware/auth.js';
 
 const router = Router();
 router.use(auth);
@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.put('/', async (req, res) => {
+router.put('/', teacherOnly, async (req, res) => {
   try {
     const data = JSON.stringify(req.body);
     await pool.execute(`UPDATE schedule SET data = ?, updated_at = NOW() LIMIT 1`, [data]);

@@ -5,6 +5,7 @@ const require = createRequire(new URL('../client/package.json', import.meta.url)
 const { chromium } = require('playwright');
 
 const baseUrl = process.env.LEHRERMAPS_URL || 'http://localhost:8090';
+const apiBaseUrl = process.env.LEHRERMAPS_API_URL || (new URL(baseUrl).port === '8090' ? 'http://localhost:3001' : baseUrl);
 const prefix = `TEST_LEHRERMAPS_${Date.now()}_`;
 const results = [];
 const createdFiles = [];
@@ -31,11 +32,23 @@ async function request(path, options = {}, token = teacherToken) {
   const headers = new Headers(options.headers || {});
   if (token) headers.set('Authorization', `Bearer ${token}`);
   if (options.body && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
-  const response = await fetch(`${baseUrl}${path}`, { ...options, headers });
+    const response = await fetch(`${apiBaseUrl}${path}`, { ...options, headers });
   const contentType = response.headers.get('content-type') || '';
   const body = contentType.includes('json') ? await response.json() : await response.arrayBuffer();
   if (!response.ok) throw new Error(`${options.method || 'GET'} ${path} -> ${response.status}: ${JSON.stringify(body)}`);
   return body;
+}
+
+async function requestStatus(path, expectedStatus, options = {}, token = teacherToken) {
+  const headers = new Headers(options.headers || {});
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (options.body && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
+  const response = await fetch(`${baseUrl}${path}`, { ...options, headers });
+  if (response.status !== expectedStatus) {
+    const body = await response.text();
+    throw new Error(`${options.method || 'GET'} ${path} -> ${response.status}, expected ${expectedStatus}: ${body}`);
+  }
+  return response;
 }
 
 async function check(name, callback) {
@@ -69,6 +82,17 @@ try {
   child = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}CHILD`, parent_id: root.id }) });
   destination = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}DESTINATION` }) });
   pass('folder CRUD setup');
+  await check('student read access', async () => {
+    const folders = await request('/api/folders', {}, studentToken);
+    if (!folders.some((folder) => folder.id === root.id)) throw new Error('student cannot read folders');
+    const files = await request(`/api/files/${root.id}`, {}, studentToken);
+    if (!Array.isArray(files)) throw new Error('student file read failed');
+  });
+  await check('student write protection for folders', async () => {
+    await requestStatus('/api/folders', 403, { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}STUDENT` }) }, studentToken);
+    await requestStatus(`/api/folders/${root.id}/notes`, 403, { method: 'PUT', body: JSON.stringify({ content: 'student' }) }, studentToken);
+    await requestStatus(`/api/folders/${root.id}`, 403, { method: 'DELETE' }, studentToken);
+  });
   await check('folder actions', async () => {
     await request(`/api/folders/${root.id}`, { method: 'PUT', body: JSON.stringify({ name: `${prefix}RENAMED` }) });
     await request(`/api/folders/${root.id}/color`, { method: 'PUT', body: JSON.stringify({ color: '#E8472A' }) });
@@ -107,6 +131,11 @@ try {
     const studentFiles = await request(`/api/files/${root.id}`, {}, studentToken);
     if (!studentFiles.some((file) => file.id === primaryFile.id)) throw new Error('shared file is not visible to student');
   });
+  await check('student write protection for files', async () => {
+    await requestStatus(`/api/files/${primaryFile.id}`, 403, { method: 'PUT', body: JSON.stringify({ original_name: `${prefix}STUDENT.md` }) }, studentToken);
+    await requestStatus(`/api/files/${primaryFile.id}/share`, 403, { method: 'PUT' }, studentToken);
+    await requestStatus(`/api/files/${primaryFile.id}`, 403, { method: 'DELETE' }, studentToken);
+  });
   await check('public link, deadline and ZIP', async () => {
     const publicFile = await request(`/api/files/${primaryFile.id}/public`, { method: 'PUT' });
     await request(`/api/files/public/${publicFile.public_token}`, {}, null);
@@ -126,6 +155,12 @@ try {
   exam = await request('/api/exams', { method: 'POST', body: JSON.stringify({ title: `${prefix}EXAM`, class_name: 'TEST', subject: 'Informatik', exam_date: '2030-01-04' }) });
   await request(`/api/exams/${exam.id}`, { method: 'PUT', body: JSON.stringify({ title: `${prefix}EXAM_EDITED`, class_name: 'TEST', exam_date: '2030-01-05' }) });
   pass('exam create and edit');
+  await check('student write protection for schedule, exams and links', async () => {
+    await requestStatus('/api/schedule', 403, { method: 'PUT', body: JSON.stringify({ __smoke: prefix }) }, studentToken);
+    await requestStatus('/api/exams', 403, { method: 'POST', body: JSON.stringify({ title: `${prefix}STUDENT`, class_name: 'TEST', exam_date: '2030-01-06' }) }, studentToken);
+    await requestStatus(`/api/exams/${exam.id}`, 403, { method: 'DELETE' }, studentToken);
+    await requestStatus('/api/links', 403, { method: 'POST', body: JSON.stringify({ folder_id: root.id, title: prefix, url: 'https://example.com' }) }, studentToken);
+  });
 
   originalSchedule = await request('/api/schedule');
   await request('/api/schedule', { method: 'PUT', body: JSON.stringify({ ...originalSchedule, __smoke: prefix }) });

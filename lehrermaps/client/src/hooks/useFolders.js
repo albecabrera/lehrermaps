@@ -69,8 +69,8 @@ export function useFolders() {
     return updated;
   }, []);
 
-  const moveToParent = useCallback(async (id, newParentId) => {
-    await moveFolderToParent(id, newParentId);
+  const moveToParent = useCallback(async (id, newParentId, placement = 'inside') => {
+    await moveFolderToParent(id, newParentId, placement);
     setFolders((prev) => prev.map((f) => {
       if (f.id !== id) return f;
       if (newParentId) {

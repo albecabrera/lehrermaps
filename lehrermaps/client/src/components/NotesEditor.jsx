@@ -90,11 +90,18 @@ function tryMarkdownConvert(key, editor) {
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
-export default function NotesEditor({ folderId, folderName, initialContent, accent = '#E8472A' }) {
+export function RichTextEditor({ value = '', onChange, onSave, accent = '#E8472A', placeholder, documentTitle = 'Notizen', contentKey = 'default' }) {
   const { t } = useLang();
   const editorRef = useRef(null);
   const timerRef = useRef(null);
+  const contentRef = useRef('');
+  const lastSavedContentRef = useRef('');
+  const onSaveRef = useRef(onSave);
+  const saveChainRef = useRef(Promise.resolve());
+  const selectionRef = useRef(null);
+  onSaveRef.current = onSave;
   const [saveStatus, setSaveStatus] = useState('idle');
+  const [fontSizeDraft, setFontSizeDraft] = useState(14);
   const [activeFormats, setActiveFormats] = useState({});
   const [showHL, setShowHL] = useState(false);
   const [showTC, setShowTC] = useState(false);
@@ -104,18 +111,36 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
 
   useEffect(() => {
     if (!editorRef.current) return;
-    editorRef.current.innerHTML = initialContent || '';
+    editorRef.current.innerHTML = value || '';
+    contentRef.current = value || '';
+    lastSavedContentRef.current = value || '';
     setSaveStatus('idle');
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
-        if (editorRef.current) {
-          saveFolderNotes(folderId, editorRef.current.innerHTML).catch(() => {});
-        }
+        void flushSave();
       }
     };
-  }, [folderId]);
+  }, [contentKey]);
+
+  const flushSave = useCallback(async () => {
+    clearTimeout(timerRef.current);
+    timerRef.current = null;
+    const save = async () => {
+      const content = contentRef.current;
+      if (content === lastSavedContentRef.current || !onSaveRef.current) return;
+      try {
+        await onSaveRef.current(content);
+        lastSavedContentRef.current = content;
+        setSaveStatus('saved');
+        savedAtRef.current = Date.now();
+        setSavedAgo(0);
+      } catch { setSaveStatus('idle'); }
+    };
+    saveChainRef.current = saveChainRef.current.catch(() => {}).then(save);
+    await saveChainRef.current;
+  }, []);
 
   useEffect(() => {
     const update = () => {
@@ -153,23 +178,18 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
   }, []);
 
   const handleInput = useCallback(() => {
+    const content = editorRef.current?.innerHTML || '';
+    contentRef.current = content;
+    onChange?.(content);
     clearTimeout(timerRef.current);
     setSaveStatus('saving');
-    timerRef.current = setTimeout(async () => {
-      if (!editorRef.current) return;
-      try {
-        await saveFolderNotes(folderId, editorRef.current.innerHTML);
-        setSaveStatus('saved');
-        savedAtRef.current = Date.now();
-        setSavedAgo(0);
-      } catch { setSaveStatus('idle'); }
-    }, DEBOUNCE_MS);
-  }, [folderId]);
+    timerRef.current = setTimeout(() => { void flushSave(); }, DEBOUNCE_MS);
+  }, [flushSave, onChange]);
 
   const handlePrint = useCallback(() => {
     const content = editorRef.current?.innerHTML || '';
     const w = window.open('', '_blank', 'width=800,height=600');
-    w.document.write(`<!DOCTYPE html><html><head><title>${folderName || 'Notizen'}</title>
+    w.document.write(`<!DOCTYPE html><html><head><title>${documentTitle}</title>
       <style>
         body{font-family:'DM Sans',sans-serif;padding:32px 48px;max-width:800px;margin:0 auto;color:#111;line-height:1.7}
         h1{font-size:1.8em;font-weight:700;margin:.6em 0 .3em}h2{font-size:1.4em;font-weight:600;margin:.5em 0 .25em}
@@ -182,7 +202,7 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
         @page{margin:2cm}
       </style></head><body>${content}</body></html>`);
     w.document.close(); w.focus(); w.print(); w.close();
-  }, [folderName]);
+  }, [documentTitle]);
 
   const exec = useCallback((cmd, value = null) => {
     editorRef.current?.focus();
@@ -195,6 +215,39 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
     document.execCommand('formatBlock', false, tag);
     editorRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
   }, []);
+
+  const rememberSelection = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount || !editorRef.current?.contains(selection.anchorNode)) return;
+    selectionRef.current = selection.getRangeAt(0).cloneRange();
+  }, []);
+
+  const applyFontSize = useCallback(() => {
+    const size = Math.min(96, Math.max(8, Number(fontSizeDraft) || 14));
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    const selection = window.getSelection();
+    const range = selectionRef.current || (selection?.rangeCount ? selection.getRangeAt(0) : null);
+    if (!range || !editor.contains(range.commonAncestorContainer)) return;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    if (selection.isCollapsed) {
+      document.execCommand('styleWithCSS', false, true);
+      document.execCommand('fontSize', false, '7');
+      const font = editor.querySelector('font[size="7"]:last-of-type');
+      if (font) { font.removeAttribute('size'); font.style.fontSize = `${size}px`; }
+    } else {
+      const span = document.createElement('span');
+      span.style.fontSize = `${size}px`;
+      span.appendChild(range.extractContents());
+      range.insertNode(span);
+      range.selectNodeContents(span);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+  }, [fontSizeDraft]);
 
   const insertLink = useCallback(() => {
     const sel = window.getSelection();
@@ -285,6 +338,28 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
           <option value="blockquote">Zitat</option>
           <option value="pre">Code-Block</option>
         </select>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 4 }} onMouseDown={rememberSelection}>
+          <input
+            aria-label="Schriftgröße in Pixeln"
+            title="Schriftgröße in Pixeln"
+            type="number"
+            min="8"
+            max="96"
+            step="1"
+            value={fontSizeDraft}
+            onChange={(event) => setFontSizeDraft(event.target.value)}
+            onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); applyFontSize(); } }}
+            style={{ width: 46, height: 26, boxSizing: 'border-box', border: '1px solid var(--c-border)', borderRadius: 5, background: 'var(--c-input-bg)', color: 'var(--c-text)', fontSize: 11, padding: '0 4px' }}
+          />
+          <button
+            type="button"
+            title="Schriftgröße anwenden"
+            aria-label="Schriftgröße anwenden"
+            onMouseDown={(event) => { event.preventDefault(); applyFontSize(); }}
+            style={{ height: 26, border: '1px solid var(--c-border)', borderRadius: 5, background: 'var(--c-input-bg)', color: 'var(--c-text-2)', fontSize: 10, padding: '0 5px', cursor: 'pointer' }}
+          >px</button>
+        </div>
 
         <Divider />
 
@@ -478,9 +553,12 @@ export default function NotesEditor({ folderId, folderName, initialContent, acce
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}
+        onBlur={() => { void flushSave(); }}
         onKeyDown={handleKeyDown}
+        onMouseUp={rememberSelection}
+        onKeyUp={rememberSelection}
         className="lm-notes-editor"
-        data-placeholder={t('notes.placeholder')}
+          data-placeholder={placeholder || t('notes.placeholder')}
         style={{
           flex: 1, overflow: 'auto', padding: '20px 24px',
           outline: 'none', color: 'var(--c-text)',
@@ -555,4 +633,16 @@ function ToolBtn({ children, onClick, title, active, accent }) {
 
 function Divider() {
   return <div style={{ width: 1, height: 18, background: 'var(--c-border)', margin: '0 3px' }} />;
+}
+
+export default function NotesEditor({ folderId, folderName, initialContent, accent = '#E8472A' }) {
+  return (
+    <RichTextEditor
+      value={initialContent}
+      accent={accent}
+      contentKey={`folder-${folderId}`}
+      documentTitle={folderName || 'Notizen'}
+      onSave={(content) => saveFolderNotes(folderId, content)}
+    />
+  );
 }

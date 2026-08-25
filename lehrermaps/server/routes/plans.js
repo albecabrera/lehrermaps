@@ -1,16 +1,11 @@
 import { Router } from 'express';
 import pool from '../db.js';
-import auth from '../middleware/auth.js';
+import auth, { teacherOnly } from '../middleware/auth.js';
 
 const router = Router();
 router.use(auth);
 
 const ENTRY_TYPES = new Set(['lesson', 'holiday', 'exam', 'classwork', 'presentation', 'school_event', 'other']);
-
-function teacherOnly(req, res, next) {
-  if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nur für Lehrkräfte' });
-  return next();
-}
 
 function validDate(value, nullable = true) {
   if (nullable && (value === undefined || value === null || value === '')) return true;
@@ -80,9 +75,12 @@ router.get('/materials', teacherOnly, async (req, res) => {
   const query = String(req.query.q || '').trim();
   if (!rootId) return res.status(400).json({ error: 'root_folder_id erforderlich' });
   try {
-    const [roots] = await pool.execute('SELECT subject, group_name FROM folders WHERE id = ? AND parent_id IS NULL', [rootId]);
-    if (!roots.length) return res.status(404).json({ error: 'Stammordner nicht gefunden' });
-    const { subject, group_name: groupName } = roots[0];
+    // The client can open Jahresplanung from a nested folder. Material search
+    // is scoped by subject/group, so requiring parent_id IS NULL here caused
+    // a misleading 404 even though the active folder was valid.
+    const [foldersForScope] = await pool.execute('SELECT subject, group_name FROM folders WHERE id = ?', [rootId]);
+    if (!foldersForScope.length) return res.status(404).json({ error: 'Ordner nicht gefunden' });
+    const { subject, group_name: groupName } = foldersForScope[0];
     const pattern = `%${query}%`;
     const [folders] = await pool.execute(
       'SELECT id, name, parent_id FROM folders WHERE subject = ? AND group_name = ? AND name LIKE ? ORDER BY parent_id, sort_order, name LIMIT 100',

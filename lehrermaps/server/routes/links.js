@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import pool from '../db.js';
-import auth from '../middleware/auth.js';
+import auth, { teacherOnly } from '../middleware/auth.js';
 
 const router = Router();
 router.use(auth);
@@ -17,7 +17,7 @@ router.get('/:folder_id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', teacherOnly, async (req, res) => {
   const { folder_id, title, url } = req.body;
   if (!folder_id || !title || !url) return res.status(400).json({ error: 'folder_id, title und url erforderlich' });
   try {
@@ -32,7 +32,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', teacherOnly, async (req, res) => {
   try {
     await pool.execute('DELETE FROM links WHERE id = ?', [req.params.id]);
     res.json({ ok: true });

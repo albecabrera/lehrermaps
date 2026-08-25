@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: '/api', timeout: 15000 });
+const isApacheStaticApp = typeof window !== 'undefined'
+  && ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  && window.location.port === '8090';
+const apiBaseUrl = isApacheStaticApp
+  ? `${window.location.protocol}//${window.location.hostname}:3001/api`
+  : '/api';
+
+const api = axios.create({ baseURL: apiBaseUrl, timeout: 15000 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('lm_token');
@@ -41,8 +48,8 @@ export const deleteFolder = (id) =>
 export const renameFolder = (id, name) =>
   api.put(`/folders/${id}`, { name }).then((r) => r.data);
 
-export const moveFolderToParent = (id, parent_id) =>
-  api.put(`/folders/${id}/move`, { parent_id }).then((r) => r.data);
+export const moveFolderToParent = (id, parent_id, placement = 'inside') =>
+  api.put(`/folders/${id}/move`, { parent_id, placement }).then((r) => r.data);
 
 export const getFiles = (folderId) =>
   api.get(`/files/${folderId}`).then((r) => r.data);
@@ -125,6 +132,8 @@ export const toggleFilePublic = (id) =>
   api.put(`/files/${id}/public`).then((r) => r.data);
 export const setFileDeadline = (id, due_at) =>
   api.put(`/files/${id}/deadline`, { due_at }).then((r) => r.data);
+export const setFileTimer = (id, timer_minutes) =>
+  api.put(`/files/${id}/timer`, { timer_minutes }).then((r) => r.data);
 export const publicFileUrl = (token) =>
   `${window.location.origin}/api/files/public/${encodeURIComponent(token)}`;
 
@@ -139,6 +148,25 @@ export const getAiStatus = () =>
 
 export const testAiStatus = () =>
   api.post('/ai/status/test').then((r) => r.data);
+
+export const getLessonSessions = () => api.get('/lesson-sessions').then((r) => r.data);
+export const getLessonSession = (id) => api.get(`/lesson-sessions/${id}`).then((r) => r.data);
+export const createLessonSession = (data) => api.post('/lesson-sessions', data).then((r) => r.data);
+export const updateLessonSession = (id, data) => api.patch(`/lesson-sessions/${id}`, data).then((r) => r.data);
+export const deleteLessonSession = (id) => api.delete(`/lesson-sessions/${id}`);
+export const createLessonPhase = (id, data) => api.post(`/lesson-sessions/${id}/phases`, data).then((r) => r.data);
+export const updateLessonPhase = (id, data) => api.patch(`/lesson-phases/${id}`, data).then((r) => r.data);
+export const deleteLessonPhase = (id) => api.delete(`/lesson-phases/${id}`);
+export const setLessonPhaseVisibility = (id, data) => api.put(`/lesson-phases/${id}/visibility`, data).then((r) => r.data);
+export const createLessonDisplaySession = (id) => api.post(`/lesson-sessions/${id}/display-session`).then((r) => r.data);
+export const updateLessonDisplaySession = (token, active_phase_id) => api.patch(`/display/${encodeURIComponent(token)}`, { active_phase_id }).then((r) => r.data);
+export const getDisplaySession = (token) => axios.get(`/api/display/${encodeURIComponent(token)}`).then((r) => r.data);
+export const getLessonCanvas = (sessionId, phaseId) => api.get(`/lesson-sessions/${sessionId}/canvas`, { params: { phase_id: phaseId } }).then((r) => r.data);
+export const createLessonCanvasElement = (sessionId, phaseId, data) => api.post(`/lesson-sessions/${sessionId}/canvas`, { phase_id: phaseId, ...data }).then((r) => r.data);
+export const updateLessonCanvasElement = (id, data) => api.patch(`/lesson-canvas-elements/${id}`, data).then((r) => r.data);
+export const deleteLessonCanvasElement = (id) => api.delete(`/lesson-canvas-elements/${id}`);
+export const setLessonCanvasVisibility = (id, visibility) => api.put(`/lesson-canvas-elements/${id}/visibility`, { visibility }).then((r) => r.data);
+export const saveLessonLiveLayer = (phaseId, elements) => api.post(`/lesson-phases/${phaseId}/live-layer/save`, { elements }).then((r) => r.data);
 
 export const deleteFile = (id) =>
   api.delete(`/files/${id}`);

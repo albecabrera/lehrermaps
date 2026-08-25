@@ -20,6 +20,7 @@ import notebooksRouter from './routes/notebooks.js';
 import searchRouter from './routes/search.js';
 import examsRouter from './routes/exams.js';
 import plansRouter from './routes/plans.js';
+import lessonSessionsRouter, { displaySession, displayPage } from './routes/lessonSessions.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -41,6 +42,10 @@ const _configuredOrigins = (
 ).split(',').map((s) => s.trim()).filter(Boolean);
 const allowedOrigins = [
   ..._configuredOrigins,
+  'http://localhost:8090',
+  'http://127.0.0.1:8090',
+  'http://localhost:8080',
+  'http://127.0.0.1:8080',
   `http://localhost:${PORT}`,
   `http://127.0.0.1:${PORT}`,
 ];
@@ -67,6 +72,9 @@ app.use('/api', notebooksRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/exams', examsRouter);
 app.use('/api/plans', plansRouter);
+app.get('/api/display/:token', displaySession);
+app.use('/api', lessonSessionsRouter);
+app.get('/display/:token', displayPage);
 
 function requireLehrer(req, res, next) {
   try {
