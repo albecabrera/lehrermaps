@@ -226,77 +226,60 @@ export default function Schedule({ onNavigate }) {
   }, [schedule, fileDate]);
 
   return (
-    <div style={{ padding: '28px 32px', height: '100%', overflow: 'auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color: 'var(--c-text-3)' }}>
+    <div style={{ padding: '32px clamp(18px, 4vw, 42px)', height: '100%', overflow: 'auto' }}>
+      <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 26 }}>
+        <div style={{ width: 38, height: 38, display: 'grid', placeItems: 'center', borderRadius: 11, background: 'linear-gradient(145deg, var(--c-surface-2), var(--c-surface))', border: '1px solid var(--c-border)', boxShadow: 'var(--c-shadow-pop)', color: 'var(--c-text-2)' }}>
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none">
           <rect x="2" y="4" width="16" height="13" rx="2" stroke="currentColor" strokeWidth="1.5"/>
           <path d="M2 8h16M7 2v4M13 2v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--c-text)', letterSpacing: -0.4 }}>
-          {t('schedule.title')}
-        </h2>
+        </div>
+        <div>
+          <div style={{ marginBottom: 3, fontSize: 10, fontWeight: 800, letterSpacing: 1.2, textTransform: 'uppercase', color: 'var(--c-text-3)' }}>Wochenübersicht</div>
+          <h2 style={{ margin: 0, fontSize: 24, lineHeight: 1, fontWeight: 750, color: 'var(--c-text)', letterSpacing: -0.7 }}>
+            {t('schedule.title')}
+          </h2>
+        </div>
         <button
           onClick={exportIcs}
           style={{
             marginLeft: 'auto',
-            height: 30,
-            padding: '0 12px',
+            height: 34,
+            padding: '0 14px',
             border: '1px solid var(--c-border)',
-            borderRadius: 7,
-            background: 'transparent',
+            borderRadius: 9,
+            background: 'var(--c-surface)',
             color: 'var(--c-text-2)',
             fontSize: 12,
             fontWeight: 600,
             cursor: 'pointer',
             fontFamily: 'inherit',
+            boxShadow: 'var(--c-shadow-pop)',
           }}
         >
           {t('schedule.export_ics')}
         </button>
       </div>
 
-      {/* Subject legend */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
-        {STUNDENPLAN_SUBJECTS.map((s) => (
-          <div
-            key={s.id}
-            draggable
-            onDragStart={(e) => {
-              const payload = JSON.stringify({
-                type: 'subject',
-                subjectId: s.id,
-              });
-              e.dataTransfer.effectAllowed = 'copy';
-              e.dataTransfer.setData('application/x-lehrermaps-schedule', payload);
-              e.dataTransfer.setData('text/plain', payload);
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '3px 10px', borderRadius: 20,
-              background: s.color + '18',
-              border: `1px solid ${s.color}44`,
-              fontSize: 11, fontWeight: 600, color: s.color,
-              cursor: 'grab',
-            }}
-          >
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.color }} />
-            {s.label}
-          </div>
-        ))}
-      </div>
-
       <div style={{
         display: 'grid',
-        gridTemplateColumns: `44px repeat(5, 1fr)`,
-        gap: 4,
+        gridTemplateColumns: `52px repeat(5, 1fr)`,
+        gap: 6,
+        padding: 8,
+        border: '1px solid var(--c-border)',
+        borderRadius: 16,
+        background: 'var(--c-surface-2)',
+        boxShadow: 'var(--c-shadow-pop)',
       }}>
         {/* Header row */}
         <div />
         {DAYS.map((d) => (
           <div key={d} style={{
-            textAlign: 'center', fontSize: 11, fontWeight: 700,
+            textAlign: 'center', fontSize: 10, fontWeight: 800,
             letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--c-text-3)',
-            padding: '6px 0',
+            padding: '9px 0', border: '1px solid var(--c-border)', borderRadius: 8,
+            background: 'var(--c-surface)',
           }}>{d}</div>
         ))}
 
@@ -366,6 +349,7 @@ export default function Schedule({ onNavigate }) {
           onClose={() => setBreakPicker(null)}
         />
       )}
+      </div>
     </div>
   );
 }
