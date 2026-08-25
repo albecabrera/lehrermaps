@@ -22,6 +22,7 @@ const STUNDENPLAN_SUBJECTS = [
   { id: 'esq1',          label: 'Spanisch Q1',   color: '#B83220', subjectId: 'spanisch' },
   { id: 'esq2',          label: 'Spanisch Q2',   color: '#991B1B', subjectId: 'spanisch' },
   { id: 'sportq1',       label: 'Sport Q1',      color: '#16A34A', subjectId: 'sport' },
+  { id: 'sportq2',       label: 'Sport Q2',      color: '#15803D', subjectId: 'sport' },
   { id: 'sport5d',       label: 'Sport 5d',      color: '#15803D', subjectId: 'sport' },
   { id: 'sport6d',       label: 'Sport 6d',      color: '#166534', subjectId: 'sport' },
   { id: 'math6d',        label: 'Mathematik 6d', color: '#9333EA', subjectId: 'mathematik' },
