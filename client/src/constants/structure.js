@@ -123,7 +123,7 @@ export const SUBJECTS = [
   },
   {
     id: 'klasse', name: 'Klassenleitung', short: 'KL',
-    color: '#9333EA', colorSoft: '#EADCFB', colorDark: '#6B21A8',
+    color: '#EC4899', colorSoft: '#FCE7F3', colorDark: '#BE185D',
     groups: [
       { id: 'kl-form', name: 'Formulare' },
       { id: 'kl-elt', name: 'Elternkommunikation' },

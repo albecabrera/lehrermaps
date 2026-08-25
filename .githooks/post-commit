@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+BRANCH=$(git branch --show-current)
+REMOTE=${LEHRERMAPS_PUSH_REMOTE:-origin}
+
+if [ -z "$BRANCH" ]; then
+  echo "LehrerMaps: kein Branch erkannt, Push übersprungen."
+  exit 0
+fi
+
+echo "LehrerMaps: pushe Commit nach ${REMOTE}/${BRANCH} …"
+git push "$REMOTE" "$BRANCH"

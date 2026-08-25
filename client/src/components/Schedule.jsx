@@ -3,28 +3,30 @@ import { createPortal } from 'react-dom';
 import { useLang } from '../contexts/LangContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import api from '../lib/api';
+import { SUBJECTS } from '../constants/structure';
 
 const STORAGE_KEY = 'lm_schedule';
 const DAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
 const DAYS_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi'];
 const PERIODS = 6;
+const subjectColor = (subjectId, fallback) => SUBJECTS.find((subject) => subject.id === subjectId)?.color || fallback;
 
 const STUNDENPLAN_SUBJECTS = [
-  { id: 'klassenstunde', label: 'Klassenstunde', color: '#9333EA', subjectId: 'klasse' },
-  { id: 'elsa',          label: 'ELSA',          color: '#0891B2', subjectId: 'klasse' },
-  { id: 'inf6',          label: 'Informatik 6',  color: '#2563EB', subjectId: 'informatik' },
-  { id: 'inf7',          label: 'Informatik 7',  color: '#1E40AF', subjectId: 'informatik' },
-  { id: 'inf8',          label: 'Informatik 8',  color: '#1D4ED8', subjectId: 'informatik' },
-  { id: 'inf6d',         label: 'Informatik 6d', color: '#3B82F6', subjectId: 'informatik' },
-  { id: 'inf6f',         label: 'Informatik 6f', color: '#60A5FA', subjectId: 'informatik' },
-  { id: 'es9',           label: 'Spanisch 9',    color: '#E8472A', subjectId: 'spanisch' },
-  { id: 'es10',          label: 'Spanisch 10',   color: '#C2410C', subjectId: 'spanisch' },
-  { id: 'esq1',          label: 'Spanisch Q1',   color: '#B83220', subjectId: 'spanisch' },
-  { id: 'esq2',          label: 'Spanisch Q2',   color: '#991B1B', subjectId: 'spanisch' },
-  { id: 'sportq1',       label: 'Sport Q1',      color: '#16A34A', subjectId: 'sport' },
-  { id: 'sportq2',       label: 'Sport Q2',      color: '#15803D', subjectId: 'sport' },
-  { id: 'sport5d',       label: 'Sport 5d',      color: '#15803D', subjectId: 'sport' },
-  { id: 'sport6d',       label: 'Sport 6d',      color: '#166534', subjectId: 'sport' },
+  { id: 'klassenstunde', label: 'Klassenstunde', color: subjectColor('klasse', '#EC4899'), subjectId: 'klasse' },
+  { id: 'elsa',          label: 'ELSA',          color: subjectColor('klasse', '#EC4899'), subjectId: 'klasse' },
+  { id: 'inf6',          label: 'Informatik 6',  color: subjectColor('informatik', '#2563EB'), subjectId: 'informatik' },
+  { id: 'inf7',          label: 'Informatik 7',  color: subjectColor('informatik', '#2563EB'), subjectId: 'informatik' },
+  { id: 'inf8',          label: 'Informatik 8',  color: subjectColor('informatik', '#2563EB'), subjectId: 'informatik' },
+  { id: 'inf6d',         label: 'Informatik 6d', color: subjectColor('informatik', '#2563EB'), subjectId: 'informatik' },
+  { id: 'inf6f',         label: 'Informatik 6f', color: subjectColor('informatik', '#2563EB'), subjectId: 'informatik' },
+  { id: 'es9',           label: 'Spanisch 9',    color: subjectColor('spanisch', '#E8472A'), subjectId: 'spanisch' },
+  { id: 'es10',          label: 'Spanisch 10',   color: subjectColor('spanisch', '#E8472A'), subjectId: 'spanisch' },
+  { id: 'esq1',          label: 'Spanisch Q1',   color: subjectColor('spanisch', '#E8472A'), subjectId: 'spanisch' },
+  { id: 'esq2',          label: 'Spanisch Q2',   color: subjectColor('spanisch', '#E8472A'), subjectId: 'spanisch' },
+  { id: 'sportq1',       label: 'Sport Q1',      color: subjectColor('sport', '#16A34A'), subjectId: 'sport' },
+  { id: 'sportq2',       label: 'Sport Q2',       color: subjectColor('sport', '#16A34A'), subjectId: 'sport' },
+  { id: 'sport5d',       label: 'Sport 5d',      color: subjectColor('sport', '#16A34A'), subjectId: 'sport' },
+  { id: 'sport6d',       label: 'Sport 6d',      color: subjectColor('sport', '#16A34A'), subjectId: 'sport' },
   { id: 'math6d',        label: 'Mathematik 6d', color: '#9333EA', subjectId: 'mathematik' },
   { id: 'vertretung',    label: 'Vertretung',    color: '#F59E0B' },
   { id: 'pausenaufsicht',label: 'Pausenaufsicht',color: '#64748B' },
@@ -55,7 +57,7 @@ function hydrateSchedule(raw) {
       next[key] = {
         id: preset.id,
         label: value.label || preset.label,
-        color: value.color || preset.color,
+        color: preset.color,
         ...(value.room ? { room: value.room } : {}),
         ...(preset.subjectId ? { subjectId: value.subjectId || preset.subjectId } : {}),
       };
