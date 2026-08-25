@@ -16,7 +16,7 @@ const STUNDENPLAN_SUBJECTS = [
   { id: 'inf7',          label: 'Informatik 7',  color: '#1E40AF', subjectId: 'informatik' },
   { id: 'inf8',          label: 'Informatik 8',  color: '#1D4ED8', subjectId: 'informatik' },
   { id: 'inf6d',         label: 'Informatik 6d', color: '#3B82F6', subjectId: 'informatik' },
-  { id: 'inf6e',         label: 'Informatik 6e', color: '#60A5FA', subjectId: 'informatik' },
+  { id: 'inf6f',         label: 'Informatik 6f', color: '#60A5FA', subjectId: 'informatik' },
   { id: 'es9',           label: 'Spanisch 9',    color: '#E8472A', subjectId: 'spanisch' },
   { id: 'es10',          label: 'Spanisch 10',   color: '#C2410C', subjectId: 'spanisch' },
   { id: 'esq1',          label: 'Spanisch Q1',   color: '#B83220', subjectId: 'spanisch' },
