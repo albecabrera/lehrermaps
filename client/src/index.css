@@ -342,6 +342,24 @@ button:active {
   box-shadow: var(--c-glass-shadow);
 }
 
+/* Stundenplan: keep all five weekdays visible on narrow iPhone viewports. */
+.lm-schedule-grid > * { min-width: 0; }
+
+@media (max-width: 600px) {
+  .lm-schedule-page { padding: 20px 10px !important; }
+  .lm-schedule-header { gap: 9px !important; margin-bottom: 18px !important; }
+  .lm-schedule-header h2 { font-size: 20px !important; }
+  .lm-schedule-header button { height: 32px !important; padding: 0 9px !important; font-size: 10px !important; }
+  .lm-schedule-grid {
+    grid-template-columns: 34px repeat(5, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+    padding: 4px !important;
+    border-radius: 13px !important;
+  }
+  .lm-schedule-day { min-width: 0; padding: 7px 0 !important; font-size: 9px !important; letter-spacing: 0 !important; }
+  .lm-schedule-period { min-width: 0; padding-right: 3px !important; padding-top: 9px !important; font-size: 8px !important; }
+}
+
 .lm-tabbar::-webkit-scrollbar { display: none; }
 .lm-tabbar { scrollbar-width: none; }
 

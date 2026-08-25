@@ -228,9 +228,9 @@ export default function Schedule({ onNavigate }) {
   }, [schedule, fileDate]);
 
   return (
-    <div style={{ padding: '32px clamp(18px, 4vw, 42px)', height: '100%', overflow: 'auto' }}>
+    <div className="lm-schedule-page" style={{ padding: '32px clamp(18px, 4vw, 42px)', height: '100%', overflow: 'auto' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 26 }}>
+      <div className="lm-schedule-header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 26 }}>
         <div className="lm-glass" style={{ width: 38, height: 38, display: 'grid', placeItems: 'center', borderRadius: 11, color: 'var(--c-text-2)' }}>
         <svg width="19" height="19" viewBox="0 0 20 20" fill="none">
           <rect x="2" y="4" width="16" height="13" rx="2" stroke="currentColor" strokeWidth="1.5"/>
@@ -264,7 +264,7 @@ export default function Schedule({ onNavigate }) {
         </button>
       </div>
 
-      <div className="lm-glass" style={{
+      <div className="lm-glass lm-schedule-grid" style={{
         display: 'grid',
         gridTemplateColumns: `52px repeat(5, 1fr)`,
         gap: 6,
@@ -276,7 +276,7 @@ export default function Schedule({ onNavigate }) {
         {/* Header row */}
         <div />
         {DAYS.map((d) => (
-          <div key={d} className="lm-glass" style={{
+          <div key={d} className="lm-glass lm-schedule-day" style={{
             textAlign: 'center', fontSize: 10, fontWeight: 800,
             letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--c-text-3)',
             padding: '9px 0', border: '1px solid var(--c-border)', borderRadius: 8,
@@ -288,7 +288,7 @@ export default function Schedule({ onNavigate }) {
           [
             p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Pause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-fruehstueck', d, el)} onDropDay={(d, payload) => assignBreakDay('break-fruehstueck', d, payload)} />,
             p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="MiPa-Aufsicht" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-mittag', d, el)} onDropDay={(d, payload) => assignBreakDay('break-mittag', d, payload)} />,
-            <div key={`label-${p}`} style={{
+            <div key={`label-${p}`} className="lm-schedule-period" style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
             }}>
@@ -392,7 +392,7 @@ function ScheduleCell({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       style={{
-        minHeight: 56, borderRadius: 8,
+        minHeight: 56, minWidth: 0, borderRadius: 8,
         border: dragOver
           ? `1.5px dashed ${cell ? cell.color : '#0EA5E9'}`
           : `1px solid ${cell ? cell.color + '44' : 'var(--c-border)'}`,
@@ -412,7 +412,7 @@ function ScheduleCell({
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: cell.color, flexShrink: 0 }} />
             <div style={{
-              fontSize: 11, fontWeight: 600, color: 'var(--c-text)',
+              minWidth: 0, fontSize: 11, fontWeight: 600, color: 'var(--c-text)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>{cell.label}</div>
           </div>
