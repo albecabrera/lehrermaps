@@ -114,6 +114,15 @@ export default function Schedule({ onNavigate }) {
     persist(next);
   }, [schedule, persist]);
 
+  const assignBreakDay = useCallback((breakKey, day, payload) => {
+    if (breakKey !== 'break-mittag' || payload?.type !== 'subject') return;
+    const subject = STUNDENPLAN_SUBJECTS.find((item) => item.id === payload.subjectId);
+    if (!subject) return;
+    const cell = { id: subject.id, label: subject.label, color: subject.color };
+    if (subject.subjectId) cell.subjectId = subject.subjectId;
+    persist({ ...schedule, [breakKey]: { ...(schedule[breakKey] || {}), [day]: cell } });
+  }, [persist, schedule]);
+
   const openPicker = useCallback((day, period, el) => {
     const rect = el.getBoundingClientRect();
     setPicker({ day, period, rect });
@@ -267,7 +276,7 @@ export default function Schedule({ onNavigate }) {
         {Array.from({ length: PERIODS }, (_, p) => (
           [
             p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Frühstückspause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} />,
-            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Mittagspause" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} />,
+            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Mittagspause" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} allowAssignments onDropDay={(d, payload) => assignBreakDay('break-mittag', d, payload)} />,
             <div key={`label-${p}`} style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
@@ -441,7 +450,7 @@ function readDndPayload(dataTransfer) {
 
 const AUFSICHT_COLOR = '#64748B';
 
-function BreakRow({ breakKey, label, value, onToggleDay }) {
+function BreakRow({ breakKey, label, value, onToggleDay, allowAssignments = false, onDropDay }) {
   return [
     <div key={`${breakKey}-label`} style={{
       display: 'flex', alignItems: 'center',
@@ -451,28 +460,32 @@ function BreakRow({ breakKey, label, value, onToggleDay }) {
       height: 30,
     }}>{label}</div>,
     ...[0, 1, 2, 3, 4].map((d) => (
-      <BreakDayCell key={`${breakKey}-${d}`} active={!!value[d]} onToggle={() => onToggleDay(d)} />
+      <BreakDayCell key={`${breakKey}-${d}`} cell={value[d]} allowAssignments={allowAssignments} onToggle={() => onToggleDay(d)} onDrop={(payload) => onDropDay?.(d, payload)} />
     )),
   ];
 }
 
-function BreakDayCell({ active, onToggle }) {
+function BreakDayCell({ cell, allowAssignments = false, onToggle, onDrop }) {
   const [hovered, setHovered] = useState(false);
+  const active = !!cell;
+  const color = cell?.color || AUFSICHT_COLOR;
   return (
     <div
       onClick={onToggle}
+      onDragOver={(event) => { if (!allowAssignments) return; event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; setHovered(true); }}
+      onDrop={(event) => { if (!allowAssignments) return; event.preventDefault(); onDrop(readDndPayload(event.dataTransfer)); setHovered(false); }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         height: 30, borderRadius: 6, cursor: 'pointer',
-        border: `1px solid ${active ? AUFSICHT_COLOR + '66' : hovered ? AUFSICHT_COLOR + '33' : 'var(--c-border)'}`,
-        background: active ? `${AUFSICHT_COLOR}18` : hovered ? `${AUFSICHT_COLOR}0C` : 'var(--c-surface)',
+        border: `1px solid ${active ? color + '66' : hovered ? AUFSICHT_COLOR + '33' : 'var(--c-border)'}`,
+        background: active ? `${color}18` : hovered ? `${AUFSICHT_COLOR}0C` : 'var(--c-surface)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'background .1s, border-color .1s',
       }}
     >
       {active ? (
-        <span style={{ fontSize: 9, fontWeight: 700, color: AUFSICHT_COLOR, letterSpacing: 0.3 }}>Aufsicht</span>
+        <span style={{ fontSize: 9, fontWeight: 700, color, letterSpacing: 0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', padding: '0 3px' }}>{cell === true ? 'Aufsicht' : cell.label}</span>
       ) : hovered ? (
         <span style={{ fontSize: 14, color: AUFSICHT_COLOR, opacity: 0.5 }}>+</span>
       ) : null}
