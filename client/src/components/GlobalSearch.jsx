@@ -1,0 +1,406 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { searchGlobal } from '../lib/api';
+import { SUBJECTS, detectKind } from '../constants/structure';
+import FileBadge from './FileBadge';
+import FolderIcon from './FolderIcon';
+import { useLang } from '../contexts/LangContext';
+
+const DEBOUNCE_MS = 280;
+
+export default function GlobalSearch({ open, onClose, onNavigate }) {
+  const { t } = useLang();
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 });
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(null); // 'files' | 'folders' | null
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const timerRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (open) {
+      setQ('');
+      setResults({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 });
+      setLoading(false);
+      setLoadingMore(null);
+      setSelectedIndex(-1);
+      setTimeout(() => inputRef.current?.focus(), 40);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  const doSearch = useCallback((value) => {
+    clearTimeout(timerRef.current);
+    if (!value.trim()) { setResults({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 }); setLoading(false); return; }
+    setLoading(true);
+    timerRef.current = setTimeout(async () => {
+      try {
+        const data = await searchGlobal(value);
+        setResults(data);
+      } catch { setResults({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 }); }
+      finally { setLoading(false); }
+    }, DEBOUNCE_MS);
+  }, []);
+
+  const loadMore = useCallback(async (section) => {
+    setLoadingMore(section);
+    try {
+      const fileOffset = section === 'files' ? results.files.length : 0;
+      const folderOffset = section === 'folders' ? results.folders.length : 0;
+      const linkOffset = section === 'links' ? results.links.length : 0;
+      const data = await searchGlobal(q, fileOffset, folderOffset, linkOffset);
+      setResults((prev) => ({
+        files: section === 'files' ? [...prev.files, ...data.files] : prev.files,
+        folders: section === 'folders' ? [...prev.folders, ...data.folders] : prev.folders,
+        links: section === 'links' ? [...prev.links, ...data.links] : prev.links,
+        hasMoreFiles: section === 'files' ? data.hasMoreFiles : prev.hasMoreFiles,
+        hasMoreFolders: section === 'folders' ? data.hasMoreFolders : prev.hasMoreFolders,
+        hasMoreLinks: section === 'links' ? data.hasMoreLinks : prev.hasMoreLinks,
+        totalFiles: data.totalFiles ?? prev.totalFiles,
+        totalFolders: data.totalFolders ?? prev.totalFolders,
+        totalLinks: data.totalLinks ?? prev.totalLinks,
+      }));
+    } catch { /* silent */ }
+    finally { setLoadingMore(null); }
+  }, [q, results.files.length, results.folders.length, results.links.length]);
+
+  const handleChange = (e) => {
+    setQ(e.target.value);
+    doSearch(e.target.value);
+  };
+
+  const getColor = (subjectId) => SUBJECTS.find((s) => s.id === subjectId)?.color ?? '#6B7280';
+  const hasQuery = q.trim().length > 0;
+  const isEmpty = results.files.length === 0 && results.folders.length === 0 && results.links.length === 0;
+  const suggestions = buildSuggestions(q, results).slice(0, 8);
+  const options = [
+    ...results.folders.map((f) => ({ type: 'folder', value: f })),
+    ...results.files.map((f) => ({ type: 'file', value: f })),
+    ...results.links.map((l) => ({ type: 'link', value: l })),
+  ];
+
+  const activateOption = useCallback((opt) => {
+    if (!opt) return;
+    if (opt.type === 'folder') {
+      onNavigate(opt.value.subject, opt.value.id);
+      onClose();
+      return;
+    }
+    if (opt.type === 'file') {
+      onNavigate(opt.value.subject, opt.value.folder_id);
+      onClose();
+      return;
+    }
+    if (opt.type === 'link') {
+      onNavigate(opt.value.subject, opt.value.folder_id, { type: 'link', id: opt.value.id });
+      onClose();
+    }
+  }, [doSearch, onClose, onNavigate]);
+
+  const handleInputKeyDown = (e) => {
+    if (!options.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % options.length);
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev <= 0 ? options.length - 1 : prev - 1));
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const idx = selectedIndex >= 0 ? selectedIndex : 0;
+      activateOption(options[idx]);
+    }
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    if (selectedIndex < 0) return;
+    const el = document.querySelector(`[data-gs-option="${selectedIndex}"]`);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selectedIndex, open]);
+
+  useEffect(() => {
+    setSelectedIndex((prev) => {
+      if (!options.length) return -1;
+      if (prev < 0 || prev >= options.length) return 0;
+      return prev;
+    });
+  }, [options.length]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1300,
+        background: 'var(--c-overlay)', backdropFilter: 'blur(12px)',
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        padding: '72px 24px 24px',
+        animation: 'lmFadeIn .12s ease-out',
+        fontFamily: '"DM Sans", -apple-system, sans-serif',
+      }}
+    >
+      <div
+        className="lm-modal-surface"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 620,
+          background: 'var(--c-surface)', borderRadius: 16,
+          boxShadow: 'var(--c-shadow-modal)',
+          border: '1px solid var(--c-border-soft)',
+          overflow: 'hidden',
+          animation: 'lmSlideUp .18s cubic-bezier(.4,.7,.3,1)',
+          maxHeight: '70vh', display: 'flex', flexDirection: 'column',
+        }}
+      >
+        {/* Input row */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
+          borderBottom: '1px solid var(--c-border)',
+        }}>
+          {loading ? (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: 'var(--c-text-3)' }}>
+              <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="2" strokeDasharray="15" strokeLinecap="round">
+                <animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur=".7s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: 'var(--c-text-3)' }}>
+              <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.6"/>
+              <path d="M10.5 10.5l4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+            </svg>
+          )}
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={handleChange}
+            onKeyDown={handleInputKeyDown}
+            placeholder={t('search.placeholder')}
+            style={{
+              flex: 1, border: 'none', background: 'transparent', outline: 'none',
+              fontSize: 16, color: 'var(--c-text)', fontFamily: 'inherit',
+            }}
+          />
+          {q && (
+            <button
+              onClick={() => { setQ(''); setResults({ files: [], folders: [], links: [], hasMoreFiles: false, hasMoreFolders: false, hasMoreLinks: false, totalFiles: 0, totalFolders: 0, totalLinks: 0 }); inputRef.current?.focus(); }}
+              style={{
+                width: 20, height: 20, border: 'none', borderRadius: 4, background: 'var(--c-hover)',
+                color: 'var(--c-text-3)', cursor: 'pointer', fontSize: 13, lineHeight: 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}
+            >×</button>
+          )}
+          <kbd style={{
+            fontSize: 11, color: 'var(--c-text-3)', background: 'var(--c-surface-2)',
+            border: '1px solid var(--c-border)', borderRadius: 5, padding: '2px 6px',
+            fontFamily: '"DM Mono", monospace', flexShrink: 0,
+          }}>Esc</kbd>
+        </div>
+
+        {/* Results */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {hasQuery && suggestions.length > 0 && (
+            <div style={{ padding: '10px 18px 2px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  data-gs-option={-1}
+                  onClick={() => { setQ(s); doSearch(s); inputRef.current?.focus(); }}
+                  style={{
+                    border: '1px solid var(--c-border)', background: 'var(--c-surface-2)', color: 'var(--c-text-2)',
+                    borderRadius: 999, padding: '4px 9px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+          {!hasQuery && (
+            <div style={{ padding: '28px 18px', textAlign: 'center', color: 'var(--c-text-3)', fontSize: 13 }}>
+              {t('search.hint')}
+            </div>
+          )}
+          {hasQuery && !loading && isEmpty && (
+            <div style={{ padding: '28px 18px', textAlign: 'center', color: 'var(--c-text-3)', fontSize: 13 }}>
+              {t('search.no_results')}
+            </div>
+          )}
+          {results.folders.length > 0 && (
+            <ResultSection label={t('search.folders_section')} total={results.totalFolders}>
+              {results.folders.map((f) => (
+                <ResultRow
+                  key={`folder-${f.id}`}
+                  optionIndex={options.findIndex((o) => o.type === 'folder' && o.value.id === f.id)}
+                  active={selectedIndex === options.findIndex((o) => o.type === 'folder' && o.value.id === f.id)}
+                  onClick={() => { onNavigate(f.subject, f.id); onClose(); }}
+                  icon={<FolderIcon color={getColor(f.subject)} size={15} />}
+                  name={f.name}
+                  meta={`${f.subject} › ${f.group_name}${f.notes_match ? ` · ${t('search.notes_match')}` : ''}`}
+                  dotColor={getColor(f.subject)}
+                />
+              ))}
+              {results.hasMoreFolders && (
+                <ShowMoreButton loading={loadingMore === 'folders'} onClick={() => loadMore('folders')} t={t} />
+              )}
+            </ResultSection>
+          )}
+          {results.files.length > 0 && (
+            <ResultSection label={t('search.files_section')} total={results.totalFiles}>
+              {results.files.map((f) => (
+                <ResultRow
+                  key={`file-${f.id}`}
+                  optionIndex={options.findIndex((o) => o.type === 'file' && o.value.id === f.id)}
+                  active={selectedIndex === options.findIndex((o) => o.type === 'file' && o.value.id === f.id)}
+                  onClick={() => { onNavigate(f.subject, f.folder_id); onClose(); }}
+                  icon={<FileBadge kind={detectKind(f.name)} name={f.name} size={20} />}
+                  name={f.name}
+                  meta={`${f.subject} › ${f.folder_name}`}
+                  dotColor={getColor(f.subject)}
+                />
+              ))}
+              {results.hasMoreFiles && (
+                <ShowMoreButton loading={loadingMore === 'files'} onClick={() => loadMore('files')} t={t} />
+              )}
+            </ResultSection>
+          )}
+          {results.links.length > 0 && (
+            <ResultSection label={t('search.links_section')} total={results.totalLinks}>
+              {results.links.map((l) => (
+                <ResultRow
+                  key={`link-${l.id}`}
+                  optionIndex={options.findIndex((o) => o.type === 'link' && o.value.id === l.id)}
+                  active={selectedIndex === options.findIndex((o) => o.type === 'link' && o.value.id === l.id)}
+                  onClick={() => { onNavigate(l.subject, l.folder_id, { type: 'link', id: l.id }); onClose(); }}
+                  icon={<FileBadge kind="qr" name="QR" size={20} />}
+                  name={l.title || l.url}
+                  meta={`${l.subject} › ${l.folder_name} · ${t('search.links_qr_match')}`}
+                  dotColor={getColor(l.subject)}
+                />
+              ))}
+              {results.hasMoreLinks && (
+                <ShowMoreButton loading={loadingMore === 'links'} onClick={() => loadMore('links')} t={t} />
+              )}
+            </ResultSection>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function ResultSection({ label, total, children }) {
+  return (
+    <div style={{ padding: '6px 0' }}>
+      <div style={{
+        fontSize: 10, fontWeight: 600, letterSpacing: 0.7, textTransform: 'uppercase',
+        color: 'var(--c-text-3)', padding: '6px 18px 3px',
+        display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+        {label}
+        {total > 0 && (
+          <span style={{
+            fontSize: 9, fontWeight: 500, letterSpacing: 0,
+            background: 'var(--c-hover)', color: 'var(--c-text-3)',
+            borderRadius: 4, padding: '1px 5px', textTransform: 'none',
+          }}>{total}</span>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function normalizeText(v) {
+  return String(v || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildSuggestions(query, results) {
+  const qn = normalizeText(query);
+  if (!qn) return [];
+  const items = [
+    ...results.files.map((f) => f.name),
+    ...results.folders.map((f) => f.name),
+    ...results.links.map((l) => l.title || l.url),
+  ];
+  const out = new Set();
+  for (const text of items) {
+    const words = normalizeText(text).split(' ').filter((w) => w.length >= 3);
+    for (const w of words) {
+      if (w.includes(qn) || qn.includes(w) || w.startsWith(qn[0])) out.add(w);
+      if (out.size >= 16) return [...out];
+    }
+  }
+  return [...out];
+}
+
+function ShowMoreButton({ loading, onClick, t }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      style={{
+        width: '100%', textAlign: 'center', padding: '7px 18px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        background: 'transparent', border: 'none', cursor: loading ? 'wait' : 'pointer',
+        fontFamily: 'inherit', fontSize: 11, color: 'var(--c-text-3)',
+        opacity: loading ? 0.6 : 1,
+      }}
+      onMouseEnter={(e) => { if (!loading) e.currentTarget.style.color = 'var(--c-text-2)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--c-text-3)'; }}
+    >
+      {loading ? '…' : t('search.show_more')}
+    </button>
+  );
+}
+
+function ResultRow({ onClick, icon, name, meta, dotColor, active = false, optionIndex }) {
+  return (
+    <button
+      data-gs-option={optionIndex}
+      onClick={onClick}
+      style={{
+        width: '100%', textAlign: 'left', padding: '8px 18px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        background: active ? 'var(--c-hover)' : 'transparent', border: 'none', cursor: 'pointer',
+        fontFamily: 'inherit', color: 'var(--c-text)', transition: 'background .1s',
+      }}
+      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
+      onMouseLeave={(e) => e.currentTarget.style.background = active ? 'var(--c-hover)' : 'transparent'}
+    >
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>{icon}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 13, fontWeight: 500, color: 'var(--c-text)',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>{name}</div>
+        <div style={{ fontSize: 11, color: 'var(--c-text-3)', marginTop: 1 }}>{meta}</div>
+      </div>
+      <div style={{
+        width: 7, height: 7, borderRadius: '50%',
+        background: dotColor, flexShrink: 0, opacity: 0.7,
+      }} />
+    </button>
+  );
+}
