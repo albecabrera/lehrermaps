@@ -521,7 +521,7 @@ function BreakDayCell({ cell, allowAssignments = false, onToggle, onEdit, onDrop
         border: `1px solid ${active ? color + '66' : hovered ? AUFSICHT_COLOR + '33' : 'var(--c-border)'}`,
         background: active ? `${color}18` : hovered ? `${AUFSICHT_COLOR}0C` : 'var(--c-surface)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'background .1s, border-color .1s',
+        transition: 'background .1s, border-color .1s', position: 'relative',
       }}
     >
       {active ? (
@@ -530,6 +530,7 @@ function BreakDayCell({ cell, allowAssignments = false, onToggle, onEdit, onDrop
         <span style={{ fontSize: 14, color: AUFSICHT_COLOR, opacity: 0.5 }}>+</span>
       ) : null}
       {active && cell !== true && cell.room && <span style={{ fontSize: 8, color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', padding: '0 3px' }}>{cell.room}</span>}
+      {allowAssignments && hovered && <button type="button" title="Aufsicht/Pause bearbeiten" aria-label="Aufsicht oder Pause bearbeiten" onClick={(event) => { event.stopPropagation(); onEdit?.(ref.current); }} style={{ position: 'absolute', top: 2, right: 2, width: 16, height: 16, border: 0, borderRadius: 4, background: 'rgba(0,0,0,.25)', color: '#fff', cursor: 'pointer', fontSize: 10, lineHeight: 1 }}>✎</button>}
     </div>
   );
 }
