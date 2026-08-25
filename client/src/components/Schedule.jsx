@@ -123,7 +123,7 @@ export default function Schedule({ onNavigate }) {
   }, [schedule, persist]);
 
   const assignBreakDay = useCallback((breakKey, day, payload) => {
-    if (breakKey !== 'break-mittag' || payload?.type !== 'subject') return;
+    if (!['break-mittag', 'break-fruehstueck'].includes(breakKey) || payload?.type !== 'subject') return;
     const subject = STUNDENPLAN_SUBJECTS.find((item) => item.id === payload.subjectId);
     if (!subject) return;
     const cell = { id: subject.id, label: subject.label, color: subject.color };
@@ -300,7 +300,7 @@ export default function Schedule({ onNavigate }) {
         {/* Period rows */}
         {Array.from({ length: PERIODS }, (_, p) => (
           [
-            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Frühstückspause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} />,
+            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Frühstückspause / Unterricht" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-fruehstueck', d, el)} onDropDay={(d, payload) => assignBreakDay('break-fruehstueck', d, payload)} />,
             p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="MiPa-Aufsicht" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-mittag', d, el)} onDropDay={(d, payload) => assignBreakDay('break-mittag', d, payload)} />,
             <div key={`label-${p}`} style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
