@@ -42,28 +42,30 @@ function writeCache(s) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
 }
 
+function normalizeCell(value) {
+  if (!value || value === true || typeof value !== 'object') return value;
+  const preset = STUNDENPLAN_SUBJECTS.find((s) => s.id === value.id || s.id === value.subject || s.id === value.subjectId || s.label === value.label);
+  if (!preset) return value.label && value.color ? value : null;
+  return {
+    id: preset.id,
+    label: value.label || preset.label,
+    color: preset.color,
+    ...(value.room ? { room: value.room } : {}),
+    ...(preset.subjectId ? { subjectId: preset.subjectId } : {}),
+  };
+}
+
 function hydrateSchedule(raw) {
   if (!raw || typeof raw !== 'object') return {};
   const next = {};
   for (const [key, value] of Object.entries(raw)) {
     if (!value || typeof value !== 'object') continue;
     if (key.startsWith('break-')) {
-      next[key] = value;
+      next[key] = Object.fromEntries(Object.entries(value).map(([day, cell]) => [day, normalizeCell(cell)]));
       continue;
     }
-    const legacyId = value.id || value.subject || value.subjectId;
-    const preset = STUNDENPLAN_SUBJECTS.find((s) => s.id === legacyId);
-    if (preset) {
-      next[key] = {
-        id: preset.id,
-        label: value.label || preset.label,
-        color: preset.color,
-        ...(value.room ? { room: value.room } : {}),
-        ...(preset.subjectId ? { subjectId: value.subjectId || preset.subjectId } : {}),
-      };
-      continue;
-    }
-    if (value.label && value.color) next[key] = value;
+    const cell = normalizeCell(value);
+    if (cell) next[key] = cell;
   }
   return next;
 }
@@ -229,7 +231,7 @@ export default function Schedule({ onNavigate }) {
     <div style={{ padding: '32px clamp(18px, 4vw, 42px)', height: '100%', overflow: 'auto' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 26 }}>
-        <div style={{ width: 38, height: 38, display: 'grid', placeItems: 'center', borderRadius: 11, background: 'linear-gradient(145deg, var(--c-surface-2), var(--c-surface))', border: '1px solid var(--c-border)', boxShadow: 'var(--c-shadow-pop)', color: 'var(--c-text-2)' }}>
+        <div className="lm-glass" style={{ width: 38, height: 38, display: 'grid', placeItems: 'center', borderRadius: 11, color: 'var(--c-text-2)' }}>
         <svg width="19" height="19" viewBox="0 0 20 20" fill="none">
           <rect x="2" y="4" width="16" height="13" rx="2" stroke="currentColor" strokeWidth="1.5"/>
           <path d="M2 8h16M7 2v4M13 2v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -243,13 +245,13 @@ export default function Schedule({ onNavigate }) {
         </div>
         <button
           onClick={exportIcs}
+          className="lm-glass"
           style={{
             marginLeft: 'auto',
             height: 34,
             padding: '0 14px',
             border: '1px solid var(--c-border)',
             borderRadius: 9,
-            background: 'var(--c-surface)',
             color: 'var(--c-text-2)',
             fontSize: 12,
             fontWeight: 600,
@@ -262,24 +264,22 @@ export default function Schedule({ onNavigate }) {
         </button>
       </div>
 
-      <div style={{
+      <div className="lm-glass" style={{
         display: 'grid',
         gridTemplateColumns: `52px repeat(5, 1fr)`,
         gap: 6,
         padding: 8,
         border: '1px solid var(--c-border)',
         borderRadius: 16,
-        background: 'var(--c-surface-2)',
-        boxShadow: 'var(--c-shadow-pop)',
+        boxShadow: 'var(--c-glass-shadow)',
       }}>
         {/* Header row */}
         <div />
         {DAYS.map((d) => (
-          <div key={d} style={{
+          <div key={d} className="lm-glass" style={{
             textAlign: 'center', fontSize: 10, fontWeight: 800,
             letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--c-text-3)',
             padding: '9px 0', border: '1px solid var(--c-border)', borderRadius: 8,
-            background: 'var(--c-surface)',
           }}>{d}</div>
         ))}
 
