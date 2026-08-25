@@ -439,6 +439,50 @@ button:active {
   }
 }
 .lm-teaching-phase-back { display: none; }
+.lm-pdf-annotation-viewer { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; background: var(--c-bg); color: var(--c-text); }
+.lm-pdf-toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--c-border); background: var(--c-surface); flex-shrink: 0; }
+.lm-pdf-toolrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--c-border); background: var(--c-surface-2); }
+.lm-pdf-toolrow label { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; white-space: nowrap; }
+.lm-pdf-toolrow input[type="range"] { width: 70px; accent-color: var(--c-accent, #E8472A); }
+.lm-pdf-search { min-width: 130px; min-height: 34px; padding: 0 8px; border: 1px solid var(--c-border); border-radius: 7px; background: var(--c-surface-2); color: var(--c-text); }
+.lm-pdf-page-input { width: 50px; min-height: 34px; padding: 0 5px; border: 1px solid var(--c-border); border-radius: 7px; background: var(--c-surface-2); color: var(--c-text); text-align: center; }
+.lm-pdf-save-state { margin-left: auto; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--c-muted); }
+.lm-pdf-body { display: flex; flex: 1; min-height: 0; }
+.lm-pdf-thumbnails { width: 150px; flex: 0 0 150px; overflow: auto; padding: 8px; background: var(--c-surface); border-right: 1px solid var(--c-border); }
+.lm-pdf-thumbnails button { display: block; width: 100%; min-height: 44px; margin-bottom: 6px; border: 1px solid var(--c-border); border-radius: 7px; background: var(--c-surface-2); color: var(--c-text); cursor: pointer; }
+.lm-pdf-thumbnails button.is-active { border-color: var(--c-accent, #E8472A); font-weight: 700; }
+.lm-pdf-annotation-viewer:fullscreen { width: 100vw; height: 100vh; }
+.lm-pdf-page { position: relative; }
+.lm-pdf-text-layer { position: absolute; inset: 0; z-index: 2; overflow: hidden; line-height: 1; user-select: text; }
+.lm-pdf-text-layer span { color: transparent; position: absolute; white-space: pre; transform-origin: 0 0; cursor: text; }
+.lm-pdf-ink-layer { position: absolute; inset: 0; z-index: 3; }
+.lm-pdf-text-highlight { position: absolute; z-index: 2; background: #FACC1555; border-bottom: 2px solid #F59E0B; pointer-events: none; }
+.lm-pdf-toolbar strong { flex: 1 1 180px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.lm-pdf-toolbar button { min-height: 34px; padding: 0 10px; border: 1px solid var(--c-border); border-radius: 7px; background: var(--c-surface-2); color: var(--c-text); font: inherit; font-size: 11px; cursor: pointer; }
+.lm-pdf-toolbar button:disabled { opacity: .45; cursor: default; }
+.lm-pdf-toolbar button.is-active { background: var(--c-hover); font-weight: 700; }
+.lm-pdf-colors { display: inline-flex; gap: 5px; }
+.lm-pdf-colors button { width: 26px; min-width: 26px; height: 26px; min-height: 26px; padding: 0; border-radius: 50%; border: 2px solid var(--c-surface); }
+.lm-pdf-page-scroll { flex: 1; min-height: 0; overflow: auto; padding: 8px; text-align: center; background: #64748b; }
+.lm-pdf-page { position: relative; display: inline-block; max-width: 100%; box-shadow: 0 4px 20px #0005; background: #fff; }
+.lm-pdf-page canvas { display: block; max-width: 100%; height: auto; }
+.lm-pdf-ink-layer { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.lm-pdf-ink-layer .is-selected { filter: drop-shadow(0 0 2px #fff); stroke-dasharray: 0.02 0.01; }
+.lm-pdf-error { align-items: center; justify-content: center; padding: 24px; text-align: center; }
 @media (max-width: 760px) {
   .lm-teaching-phase-back { display: inline-flex; }
+  .lm-canvas-toolbar { align-items: stretch; overflow-x: auto; padding: 10px; }
+  .lm-canvas-toolbar button { min-width: 44px; min-height: 44px; padding: 0 12px; font-size: 12px; }
+  .lm-canvas-toolbar strong { flex: 0 0 100%; }
+  .lm-canvas-colors { gap: 8px; margin-left: 0; }
+  .lm-canvas-colors button { width: 44px; height: 44px; flex: 0 0 44px; }
+  .lm-canvas-zoom { margin-left: 0; gap: 8px; }
+  .lm-canvas-zoom button { min-width: 44px; min-height: 44px; }
+  .lm-canvas-surface { min-height: min(62vh, 560px); }
+  .lm-pdf-toolbar, .lm-pdf-toolrow { overflow-x: auto; flex-wrap: nowrap; }
+  .lm-pdf-toolbar strong { flex: 0 0 150px; }
+  .lm-pdf-toolbar button { min-width: 44px; min-height: 44px; }
+  .lm-pdf-colors button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .lm-pdf-toolrow button { min-width: 44px; min-height: 44px; }
+  .lm-pdf-save-state { flex: 0 0 180px; }
 }

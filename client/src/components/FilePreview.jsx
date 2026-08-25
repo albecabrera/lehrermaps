@@ -3,6 +3,7 @@ import FileBadge from './FileBadge';
 import { detectKind } from '../constants/structure';
 import { downloadFile, viewFile, previewFile, downloadEditCopy, openEditCopy, getFileVersions } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
+import PdfAnnotationViewer from './PdfAnnotationViewer';
 
 export default function FilePreview({ file, accent = '#E8472A', onClose, onCommitVersion, isStudent = false }) {
   const { t } = useLang();
@@ -312,13 +313,7 @@ function PreviewSurface({ file, kind, accent, t }) {
   const src = viewFile(file.id);
 
   if (kind === 'pdf') {
-    return (
-      <iframe
-        src={src}
-        title={t('preview.iframe_title', { name: file.original_name })}
-        style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-      />
-    );
+    return <PdfAnnotationViewer fileId={file.id} src={src} title={file.original_name} accent={accent} />;
   }
 
   if (kind === 'img') {

@@ -21,6 +21,7 @@ import searchRouter from './routes/search.js';
 import examsRouter from './routes/exams.js';
 import plansRouter from './routes/plans.js';
 import lessonSessionsRouter, { displaySession, displayPage } from './routes/lessonSessions.js';
+import documentAnnotationsRouter from './routes/documentAnnotations.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -74,6 +75,7 @@ app.use('/api/exams', examsRouter);
 app.use('/api/plans', plansRouter);
 app.get('/api/display/:token', displaySession);
 app.use('/api', lessonSessionsRouter);
+app.use('/api', documentAnnotationsRouter);
 app.get('/display/:token', displayPage);
 
 function requireLehrer(req, res, next) {

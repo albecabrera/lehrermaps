@@ -64,3 +64,18 @@ CREATE TABLE IF NOT EXISTS lesson_phase_elements (
   is_live_annotation TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME DEFAULT NOW(), updated_at DATETIME DEFAULT NOW() ON UPDATE NOW(),
   FOREIGN KEY (canvas_id) REFERENCES lesson_phase_canvases(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS document_annotations (
+  id INT AUTO_INCREMENT PRIMARY KEY, file_id INT NOT NULL, user_id INT NOT NULL,
+  page_number INT NOT NULL DEFAULT 1, type VARCHAR(24) NOT NULL DEFAULT 'ink',
+  data_json LONGTEXT NULL, style_json LONGTEXT NULL,
+  created_at DATETIME DEFAULT NOW(), updated_at DATETIME DEFAULT NOW() ON UPDATE NOW(),
+  FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
+  INDEX document_annotation_lookup (file_id, user_id, page_number)
+);
+CREATE TABLE IF NOT EXISTS document_annotation_history (
+  id INT AUTO_INCREMENT PRIMARY KEY, annotation_id INT NOT NULL, file_id INT NOT NULL, user_id INT NOT NULL,
+  page_number INT NOT NULL, type VARCHAR(24) NOT NULL, data_json LONGTEXT NULL, style_json LONGTEXT NULL,
+  action VARCHAR(16) NOT NULL DEFAULT 'update', created_at DATETIME DEFAULT NOW(),
+  INDEX annotation_history_lookup (annotation_id, user_id, created_at)
+);
