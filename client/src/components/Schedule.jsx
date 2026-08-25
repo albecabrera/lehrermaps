@@ -28,7 +28,7 @@ const STUNDENPLAN_SUBJECTS = [
   { id: 'math6d',        label: 'Mathematik 6d', color: '#9333EA', subjectId: 'mathematik' },
   { id: 'vertretung',    label: 'Vertretung',    color: '#F59E0B' },
   { id: 'pausenaufsicht',label: 'Pausenaufsicht',color: '#64748B' },
-  { id: 'mittagspause',  label: 'Mittagspause',  color: '#D97706' },
+  { id: 'mittagspause',  label: 'MiPa-Aufsicht', color: '#D97706' },
   { id: 'zertifikatskurs', label: 'Zertifikatskurs', color: '#7C3AED' },
   { id: 'frei',            label: 'Frei',             color: '#94A3B8' },
 ];
@@ -98,6 +98,13 @@ export default function Schedule({ onNavigate }) {
     setPicker(null);
   }, [picker, schedule, persist]);
 
+  const assignCustom = useCallback(({ label, room }) => {
+    if (!picker || !label.trim()) return;
+    const cell = { id: `custom-${Date.now()}`, label: label.trim(), color: '#0EA5E9', room: room.trim() };
+    persist({ ...schedule, [`${picker.day}-${picker.period}`]: cell });
+    setPicker(null);
+  }, [picker, persist, schedule]);
+
   const unlink = useCallback((day, period) => {
     const key = `${day}-${period}`;
     const next = { ...schedule };
@@ -129,6 +136,13 @@ export default function Schedule({ onNavigate }) {
     assignBreakDay(breakPicker.breakKey, breakPicker.day, { type: 'subject', subjectId: subject.id });
     setBreakPicker(null);
   }, [assignBreakDay, breakPicker]);
+
+  const assignBreakCustom = useCallback(({ label, room }) => {
+    if (!breakPicker || !label.trim()) return;
+    const cell = { id: `custom-${Date.now()}`, label: label.trim(), color: '#0EA5E9', room: room.trim() };
+    persist({ ...schedule, [breakPicker.breakKey]: { ...(schedule[breakPicker.breakKey] || {}), [breakPicker.day]: cell } });
+    setBreakPicker(null);
+  }, [breakPicker, persist, schedule]);
 
   const openPicker = useCallback((day, period, el) => {
     const rect = el.getBoundingClientRect();
@@ -287,7 +301,7 @@ export default function Schedule({ onNavigate }) {
         {Array.from({ length: PERIODS }, (_, p) => (
           [
             p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Frühstückspause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} />,
-            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Mittagspause / Unterricht" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-mittag', d, el)} onDropDay={(d, payload) => assignBreakDay('break-mittag', d, payload)} />,
+            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="MiPa-Aufsicht" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-mittag', d, el)} onDropDay={(d, payload) => assignBreakDay('break-mittag', d, payload)} />,
             <div key={`label-${p}`} style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
@@ -333,7 +347,9 @@ export default function Schedule({ onNavigate }) {
         <SubjectPicker
           rect={picker.rect}
           current={schedule[`${picker.day}-${picker.period}`]?.id}
+          currentCell={schedule[`${picker.day}-${picker.period}`]}
           onSelect={assign}
+          onCustom={assignCustom}
           onClose={() => setPicker(null)}
         />
       )}
@@ -341,7 +357,9 @@ export default function Schedule({ onNavigate }) {
         <SubjectPicker
           rect={breakPicker.rect}
           current={schedule[breakPicker.breakKey]?.[breakPicker.day]?.id}
+          currentCell={schedule[breakPicker.breakKey]?.[breakPicker.day]}
           onSelect={assignBreakSubject}
+          onCustom={assignBreakCustom}
           onClose={() => setBreakPicker(null)}
         />
       )}
@@ -414,6 +432,7 @@ function ScheduleCell({
           {canNav && hovered && (
             <div style={{ fontSize: 9, color: cell.color, marginTop: 2, opacity: 0.8 }}>→ {t('schedule.navigate')}</div>
           )}
+          {cell.room && <div style={{ fontSize: 9, color: 'var(--c-text-3)', marginTop: 2 }}>{cell.room}</div>}
         </div>
       ) : (
         <div style={{
@@ -510,12 +529,15 @@ function BreakDayCell({ cell, allowAssignments = false, onToggle, onEdit, onDrop
       ) : hovered ? (
         <span style={{ fontSize: 14, color: AUFSICHT_COLOR, opacity: 0.5 }}>+</span>
       ) : null}
+      {active && cell !== true && cell.room && <span style={{ fontSize: 8, color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', padding: '0 3px' }}>{cell.room}</span>}
     </div>
   );
 }
 
-function SubjectPicker({ rect, current, onSelect, onClose }) {
+function SubjectPicker({ rect, current, currentCell, onSelect, onCustom, onClose }) {
   useEscapeKey(true, onClose);
+  const [label, setLabel] = useState(currentCell?.label || '');
+  const [room, setRoom] = useState(currentCell?.room || '');
   const PICKER_W = 220;
   const PICKER_MAX_H = Math.min(360, window.innerHeight - 80);
   const vw = window.innerWidth;
@@ -592,8 +614,16 @@ function SubjectPicker({ rect, current, onSelect, onClose }) {
             </button>
           );
         })}
+        <div style={{ borderTop: '1px solid var(--c-border)', marginTop: 6, paddingTop: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--c-text-2)', marginBottom: 5 }}>Manueller Eintrag</div>
+          <input value={label} onChange={(event) => setLabel(event.target.value)} placeholder="Klasse / Kurs" aria-label="Klasse oder Kurs" style={pickerInputStyle} />
+          <input value={room} onChange={(event) => setRoom(event.target.value)} placeholder="Raum, z. B. J004" aria-label="Raum" style={pickerInputStyle} />
+          <button type="button" disabled={!label.trim()} onClick={() => onCustom?.({ label, room })} style={{ width: '100%', marginTop: 4, padding: '7px 10px', border: 0, borderRadius: 8, background: '#0EA5E9', color: '#fff', fontWeight: 700, cursor: label.trim() ? 'pointer' : 'not-allowed', opacity: label.trim() ? 1 : .5 }}>Eintrag übernehmen</button>
+        </div>
       </div>
     </>,
     document.body
   );
 }
+
+const pickerInputStyle = { width: '100%', boxSizing: 'border-box', marginBottom: 5, padding: '7px 8px', border: '1px solid var(--c-border)', borderRadius: 7, background: 'var(--c-input-bg)', color: 'var(--c-text)', font: 'inherit', fontSize: 11 };
