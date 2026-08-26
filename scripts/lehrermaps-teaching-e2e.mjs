@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(new URL('../client/package.json', import.meta.url));
 const { chromium } = require('playwright');
+const { PDFDocument } = require('pdf-lib');
 const serverRequire = createRequire(new URL('../server/package.json', import.meta.url));
 const { Document, Packer, Paragraph } = serverRequire('docx');
 
@@ -12,6 +13,7 @@ const prefix = `TEST_LEHRERMAPS_E2E_${Date.now()}_`;
 const password = process.env.LEHRERMAPS_TEACHER_PASSWORD || 'lehrer';
 let token;
 let folder;
+let lessonSession;
 const files = [];
 let browser;
 let page;
@@ -50,10 +52,23 @@ async function dismissInitialExamBoard() {
 try {
   token = (await request('/api/login', { method: 'POST', body: JSON.stringify({ password }) })).token;
   folder = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'spanisch', group_name: 'TEST', name: `${prefix}UNTERRICHT` }) });
-  const pdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF');
+  const pdfDocument = await PDFDocument.create();
+  pdfDocument.addPage([300, 200]);
+  const pdf = await pdfDocument.save();
   const docx = await Packer.toBuffer(new Document({ sections: [{ children: [new Paragraph('LehrerMaps E2E')] }] }));
   const pdfFile = await upload(`${prefix}MATERIAL.pdf`, pdf, 'application/pdf');
   const docxFile = await upload(`${prefix}MATERIAL.docx`, docx, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  lessonSession = await request('/api/lesson-sessions', {
+    method: 'POST',
+    body: JSON.stringify({
+      folder_id: folder.id,
+      title: `${prefix}UNTERRICHT`,
+      subject: folder.subject,
+      class_name: folder.group_name,
+      learning_goal: 'LehrerMaps E2E',
+      phases: [{ title: 'Einstieg', duration_seconds: 300, student_instruction: 'Start' }],
+    }),
+  });
 
   browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -69,9 +84,10 @@ try {
   await page.getByText(pdfFile.original_name, { exact: true }).last().waitFor();
   await page.getByText(docxFile.original_name, { exact: true }).last().waitFor();
   await page.getByText(pdfFile.original_name, { exact: true }).last().click();
-  if (await page.locator('iframe').count() < 1) throw new Error('PDF preview iframe missing');
+  await page.locator('.lm-pdf-annotation-viewer').waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('.lm-pdf-page canvas').waitFor({ state: 'visible', timeout: 10000 });
   await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
-  if (await page.getByText('Lehrerhilfe').last().count()) throw new Error('Escape did not close teaching mode');
+  if (await page.locator('.lm-teaching-mode').count()) throw new Error('Escape did not close teaching mode');
   console.log(JSON.stringify({ status: 'PASS', checks: ['tab order', 'Stunde zeigen', 'PDF preview', 'DOCX preview', 'close button via Escape'] }, null, 2));
 } catch (error) {
   const bodyText = typeof page !== 'undefined' && page ? await page.locator('body').innerText().catch(() => '') : '';
@@ -80,5 +96,6 @@ try {
 } finally {
   if (browser) await browser.close().catch(() => {});
   for (const id of files) await request(`/api/files/${id}`, { method: 'DELETE' }).catch(() => {});
+  if (lessonSession) await request(`/api/lesson-sessions/${lessonSession.id}`, { method: 'DELETE' }).catch(() => {});
   if (folder) await request(`/api/folders/${folder.id}`, { method: 'DELETE' }).catch(() => {});
 }
