@@ -360,6 +360,48 @@ button:active {
   .lm-schedule-period { min-width: 0; padding-right: 3px !important; padding-top: 9px !important; font-size: 8px !important; }
 }
 
+/* Heute: stack the dashboard instead of forcing desktop columns into an iPhone. */
+@media (max-width: 760px) {
+  .lm-today-dashboard {
+    padding: 18px 12px calc(92px + env(safe-area-inset-bottom)) !important;
+  }
+  .lm-today-shell { width: 100%; }
+  .lm-today-header {
+    align-items: flex-start !important;
+    gap: 14px !important;
+    margin-bottom: 18px !important;
+  }
+  .lm-today-header h1 {
+    font-size: 24px !important;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+  .lm-today-actions {
+    width: 100%;
+  }
+  .lm-today-actions button {
+    flex: 1 1 145px;
+    min-height: 40px;
+    padding-inline: 10px !important;
+  }
+  .lm-today-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  .lm-today-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+  .lm-today-grid section { padding: 14px !important; }
+  .lm-today-grid section:first-child { order: 1; }
+  .lm-today-grid section:nth-child(2) { order: 2; }
+  .lm-today-grid section:nth-child(3) { order: 3; }
+  .lm-today-grid section:nth-child(4) { order: 4; }
+  .lm-today-quick-actions { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .lm-today-quick-actions button { min-height: 42px; padding-inline: 6px !important; font-size: 11px !important; }
+}
+
 .lm-tabbar::-webkit-scrollbar { display: none; }
 .lm-tabbar { scrollbar-width: none; }
 
