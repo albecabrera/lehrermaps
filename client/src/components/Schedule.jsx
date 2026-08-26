@@ -4,6 +4,7 @@ import { useLang } from '../contexts/LangContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import api from '../lib/api';
 import { SUBJECTS } from '../constants/structure';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 const STORAGE_KEY = 'lm_schedule';
 const DAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
@@ -72,9 +73,11 @@ function hydrateSchedule(raw) {
 
 export default function Schedule({ onNavigate }) {
   const { t, lang } = useLang();
+  const isMobile = useIsMobile(860);
   const [schedule, setSchedule] = useState(() => hydrateSchedule(loadCache()));
   const [picker, setPicker] = useState(null); // { day, period, rect }
   const [breakPicker, setBreakPicker] = useState(null); // { breakKey, day, rect }
+  const [selectedCell, setSelectedCell] = useState(null);
   const [dragOverKey, setDragOverKey] = useState(null);
 
   useEffect(() => {
@@ -114,6 +117,13 @@ export default function Schedule({ onNavigate }) {
     const key = `${day}-${period}`;
     const next = { ...schedule };
     delete next[key];
+    persist(next);
+  }, [schedule, persist]);
+
+  const unlinkBreakDay = useCallback((breakKey, day) => {
+    const next = { ...schedule, [breakKey]: { ...(schedule[breakKey] || {}) } };
+    delete next[breakKey][day];
+    if (Object.keys(next[breakKey]).length === 0) delete next[breakKey];
     persist(next);
   }, [schedule, persist]);
 
@@ -157,6 +167,10 @@ export default function Schedule({ onNavigate }) {
   const openBreakPicker = useCallback((breakKey, day, el) => {
     setBreakPicker({ breakKey, day, rect: el.getBoundingClientRect() });
   }, []);
+
+  const openCellDetail = useCallback((detail) => {
+    if (isMobile && detail?.cell) setSelectedCell(detail);
+  }, [isMobile]);
 
   const onDropToCell = useCallback((day, period, payload) => {
     if (!payload) return;
@@ -228,6 +242,7 @@ export default function Schedule({ onNavigate }) {
   }, [schedule, fileDate]);
 
   return (
+    <>
     <div className="lm-schedule-page" style={{ padding: '32px clamp(18px, 4vw, 42px)', height: '100%', overflow: 'auto' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto' }}>
       <div className="lm-schedule-header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 26 }}>
@@ -286,8 +301,8 @@ export default function Schedule({ onNavigate }) {
         {/* Period rows */}
         {Array.from({ length: PERIODS }, (_, p) => (
           [
-            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Pause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-fruehstueck', d, el)} onDropDay={(d, payload) => assignBreakDay('break-fruehstueck', d, payload)} />,
-            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="MiPa-Aufsicht" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-mittag', d, el)} onDropDay={(d, payload) => assignBreakDay('break-mittag', d, payload)} />,
+            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Pause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-fruehstueck', d, el)} onOpenDetail={(d, cell, el) => openCellDetail({ breakKey: 'break-fruehstueck', day: d, dayLabel: DAYS[d], periodLabel: 'Pause', cell, anchor: el })} onDropDay={(d, payload) => assignBreakDay('break-fruehstueck', d, payload)} isMobile={isMobile} />,
+            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="MiPa-Aufsicht" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} allowAssignments onEditDay={(d, el) => openBreakPicker('break-mittag', d, el)} onOpenDetail={(d, cell, el) => openCellDetail({ breakKey: 'break-mittag', day: d, dayLabel: DAYS[d], periodLabel: 'MiPa-Aufsicht', cell, anchor: el })} onDropDay={(d, payload) => assignBreakDay('break-mittag', d, payload)} isMobile={isMobile} />,
             <div key={`label-${p}`} className="lm-schedule-period" style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
@@ -306,6 +321,9 @@ export default function Schedule({ onNavigate }) {
                   onEdit={(el) => openPicker(d, p, el)}
                   onUnlink={() => unlink(d, p)}
                   onNavigate={onNavigate}
+                  isMobile={isMobile}
+                  onOpenDetail={(detail) => openCellDetail(detail)}
+                  dayLabel={DAYS[d]}
                   dragOver={dragOverKey === key}
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -351,12 +369,30 @@ export default function Schedule({ onNavigate }) {
       )}
       </div>
     </div>
+    {selectedCell && (
+      <ScheduleDetailOverlay
+        {...selectedCell}
+        onClose={() => setSelectedCell(null)}
+        onNavigate={selectedCell.cell.subjectId ? () => { setSelectedCell(null); onNavigate?.(selectedCell.cell.subjectId); } : null}
+        onEdit={() => {
+          setSelectedCell(null);
+          if (selectedCell.breakKey) openBreakPicker(selectedCell.breakKey, selectedCell.day, selectedCell.anchor);
+          else openPicker(selectedCell.day, selectedCell.period, selectedCell.anchor);
+        }}
+        onRemove={() => {
+          setSelectedCell(null);
+          if (selectedCell.breakKey) unlinkBreakDay(selectedCell.breakKey, selectedCell.day);
+          else unlink(selectedCell.day, selectedCell.period);
+        }}
+      />
+    )}
+    </>
   );
 }
 
 function ScheduleCell({
   day, period, cell, onEdit, onUnlink, onNavigate,
-  dragOver, onDragOver, onDragLeave, onDrop,
+  dragOver, onDragOver, onDragLeave, onDrop, isMobile, onOpenDetail, dayLabel,
 }) {
   const { t } = useLang();
   const [hovered, setHovered] = useState(false);
@@ -364,6 +400,10 @@ function ScheduleCell({
   const canNav = cell?.subjectId && onNavigate;
 
   const handleClick = () => {
+    if (isMobile && cell) {
+      onOpenDetail?.({ day, dayLabel, period, periodLabel: `${t('schedule.period')} ${period + 1}`, cell, anchor: ref.current });
+      return;
+    }
     if (canNav) {
       onNavigate(cell.subjectId);
     } else {
@@ -460,6 +500,41 @@ function ScheduleCell({
   );
 }
 
+function ScheduleDetailOverlay({ cell, dayLabel, periodLabel, onClose, onNavigate, onEdit, onRemove }) {
+  useEscapeKey(true, onClose);
+  const detailCell = cell === true ? { label: 'Aufsicht', color: AUFSICHT_COLOR } : cell;
+  const area = detailCell.subjectId ? (SUBJECTS.find((subject) => subject.id === detailCell.subjectId)?.name || 'Fachbereich') : 'Manueller Eintrag';
+
+  return createPortal(
+    <div className="lm-schedule-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="lm-schedule-detail" role="dialog" aria-modal="true" aria-labelledby="lm-schedule-detail-title">
+        <header className="lm-schedule-detail-header">
+          <div>
+            <div className="lm-schedule-detail-kicker">Stundenplan</div>
+            <h2 id="lm-schedule-detail-title">{detailCell.label}</h2>
+          </div>
+          <button type="button" className="lm-schedule-detail-close" onClick={onClose} aria-label="Detailansicht schließen">×</button>
+        </header>
+        <div className="lm-schedule-detail-color" style={{ '--schedule-detail-color': detailCell.color }}>
+          <span aria-hidden="true" />
+          <strong>{area}</strong>
+        </div>
+        <dl className="lm-schedule-detail-meta">
+          <div><dt>Wochentag</dt><dd>{dayLabel}</dd></div>
+          <div><dt>Unterrichtsstunde</dt><dd>{periodLabel}</dd></div>
+          {detailCell.room && <div><dt>Raum</dt><dd>{detailCell.room}</dd></div>}
+        </dl>
+        <div className="lm-schedule-detail-actions">
+          {onNavigate && <button type="button" className="lm-schedule-detail-primary" onClick={onNavigate}>→ Ordner öffnen</button>}
+          <button type="button" onClick={onEdit}>✎ Bearbeiten</button>
+          <button type="button" className="lm-schedule-detail-danger" onClick={onRemove}>× Entfernen</button>
+        </div>
+      </section>
+    </div>,
+    document.body
+  );
+}
+
 function readDndPayload(dataTransfer) {
   try {
     const raw = dataTransfer.getData('application/x-lehrermaps-schedule')
@@ -475,7 +550,7 @@ function readDndPayload(dataTransfer) {
 
 const AUFSICHT_COLOR = '#64748B';
 
-function BreakRow({ breakKey, label, value, onToggleDay, allowAssignments = false, onEditDay, onDropDay }) {
+function BreakRow({ breakKey, label, value, onToggleDay, allowAssignments = false, onEditDay, onOpenDetail, onDropDay, isMobile }) {
   return [
     <div key={`${breakKey}-label`} style={{
       display: 'flex', alignItems: 'center',
@@ -487,12 +562,12 @@ function BreakRow({ breakKey, label, value, onToggleDay, allowAssignments = fals
       background: `${AUFSICHT_COLOR}08`,
     }}>{label}</div>,
     ...[0, 1, 2, 3, 4].map((d) => (
-      <BreakDayCell key={`${breakKey}-${d}`} cell={value[d]} allowAssignments={allowAssignments} onToggle={() => onToggleDay(d)} onEdit={(el) => onEditDay?.(d, el)} onDrop={(payload) => onDropDay?.(d, payload)} />
+      <BreakDayCell key={`${breakKey}-${d}`} cell={value[d]} allowAssignments={allowAssignments} isMobile={isMobile} onToggle={() => onToggleDay(d)} onEdit={(el) => onEditDay?.(d, el)} onOpenDetail={(cell, el) => onOpenDetail?.(d, cell, el)} onDrop={(payload) => onDropDay?.(d, payload)} />
     )),
   ];
 }
 
-function BreakDayCell({ cell, allowAssignments = false, onToggle, onEdit, onDrop }) {
+function BreakDayCell({ cell, allowAssignments = false, isMobile, onToggle, onEdit, onOpenDetail, onDrop }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
   const active = !!cell;
@@ -500,7 +575,11 @@ function BreakDayCell({ cell, allowAssignments = false, onToggle, onEdit, onDrop
   return (
     <div
       ref={ref}
-      onClick={() => allowAssignments ? onEdit?.(ref.current) : onToggle()}
+      onClick={() => {
+        if (isMobile && cell) onOpenDetail?.(cell, ref.current);
+        else if (allowAssignments) onEdit?.(ref.current);
+        else onToggle();
+      }}
       onDragOver={(event) => { if (!allowAssignments) return; event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; setHovered(true); }}
       onDrop={(event) => { if (!allowAssignments) return; event.preventDefault(); onDrop(readDndPayload(event.dataTransfer)); setHovered(false); }}
       onMouseEnter={() => setHovered(true)}
