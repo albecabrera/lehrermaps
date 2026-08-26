@@ -20,8 +20,6 @@ export default function TeachingCanvas({ sessionId, phase, files = [], accent })
   const [panning, setPanning] = useState(null);
   const [spacePressed, setSpacePressed] = useState(false);
   const panRef = useRef(null);
-  const activePenRef = useRef(false);
-  const [penTelemetry, setPenTelemetry] = useState({ pressure: 0, tiltX: 0, tiltY: 0 });
 
   useEffect(() => { let cancelled = false; setLoading(true); getLessonCanvas(sessionId, phase?.id).then((value) => { if (!cancelled) setCanvas(value); }).catch(() => { if (!cancelled) setCanvas(null); }).finally(() => { if (!cancelled) setLoading(false); }); return () => { cancelled = true; }; }, [sessionId, phase?.id]);
   useEffect(() => { try { localStorage.setItem(`lm-teaching-viewport:${sessionId}:${phase?.id}`, JSON.stringify(viewport)); } catch {} }, [sessionId, phase?.id, viewport]);
@@ -38,11 +36,6 @@ export default function TeachingCanvas({ sessionId, phase, files = [], accent })
   const remove = async (id) => { setCanvas((current) => ({ ...current, elements: current.elements.filter((item) => item.id !== id) })); setSelected(null); setEditingId(null); if (!String(id).startsWith('local-')) await deleteLessonCanvasElement(id).catch(() => {}); };
   const pointFromEvent = (event) => { const rect = surfaceRef.current.getBoundingClientRect(); return { x: Math.max(-200, Math.min(300, (((event.clientX - rect.left) - viewport.x) / viewport.scale / rect.width) * 100)), y: Math.max(-200, Math.min(300, (((event.clientY - rect.top) - viewport.y) / viewport.scale / rect.height) * 100)) }; };
   const onSurfacePointerDown = (event) => {
-    // Apple Pencil arrives as pointerType=pen. Ignore finger contacts while a
-    // Pencil stroke is active to avoid palm marks and accidental selections.
-    if (event.pointerType === 'touch' && activePenRef.current) return;
-    if (event.pointerType === 'pen') activePenRef.current = true;
-    if (event.pointerType === 'touch' && tool === 'pen') return;
     if (tool === 'hand' || spacePressed || event.button === 1) { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); panRef.current = { startX: event.clientX, startY: event.clientY, originX: viewport.x, originY: viewport.y }; setPanning({ pointerId: event.pointerId }); return; }
     if (tool === 'select') { setSelected(null); return; }
     if (tool === 'eraser') { return; }
@@ -51,18 +44,15 @@ export default function TeachingCanvas({ sessionId, phase, files = [], accent })
     if (['rectangle', 'circle', 'arrow', 'marker'].includes(tool)) { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setDraftShape({ type: tool, start: point, current: point }); return; }
     if (tool !== 'pen') return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    setPenTelemetry({ pressure: Number(event.pressure) || 0, tiltX: Number(event.tiltX) || 0, tiltY: Number(event.tiltY) || 0 });
     setDraftStroke([pointFromEvent(event)]);
   };
-  const onSurfacePointerMove = (event) => { if (event.pointerType === 'touch' && activePenRef.current) return; if (panning && panRef.current) { setViewport((value) => ({ ...value, x: panRef.current.originX + event.clientX - panRef.current.startX, y: panRef.current.originY + event.clientY - panRef.current.startY })); return; } if (draftShape) { setDraftShape((value) => ({ ...value, current: pointFromEvent(event) })); return; } if (tool === 'pen' && draftStroke.length) { setPenTelemetry({ pressure: Number(event.pressure) || 0, tiltX: Number(event.tiltX) || 0, tiltY: Number(event.tiltY) || 0 }); setDraftStroke((points) => [...points, pointFromEvent(event)]); } };
-  const onSurfacePointerUp = async (event) => {
-    if (event?.pointerType === 'touch' && activePenRef.current) return;
-    if (panning) { setPanning(null); panRef.current = null; if (event?.pointerType === 'pen') activePenRef.current = false; return; }
+  const onSurfacePointerMove = (event) => { if (panning && panRef.current) { setViewport((value) => ({ ...value, x: panRef.current.originX + event.clientX - panRef.current.startX, y: panRef.current.originY + event.clientY - panRef.current.startY })); return; } if (draftShape) { setDraftShape((value) => ({ ...value, current: pointFromEvent(event) })); return; } if (tool === 'pen' && draftStroke.length) setDraftStroke((points) => [...points, pointFromEvent(event)]); };
+  const onSurfacePointerUp = async () => {
+    if (panning) { setPanning(null); panRef.current = null; return; }
     if (draftShape) { const { type, start, current } = draftShape; const position = { x: Math.min(start.x, current.x), y: Math.min(start.y, current.y), w: Math.max(4, Math.abs(current.x - start.x)), h: Math.max(4, Math.abs(current.y - start.y)) }; setDraftShape(null); if (type === 'arrow') position.h = Math.max(4, Math.abs(current.y - start.y)); await addAt(type, position, { text: type === 'arrow' ? '' : type === 'marker' ? 'Markierung' : '' }); return; }
-    if (tool !== 'pen' || draftStroke.length < 2) { setDraftStroke([]); if (event?.pointerType === 'pen') activePenRef.current = false; return; }
-    const pressure = Number(event?.pressure || penTelemetry.pressure) || 0;
-    const element = await createLessonCanvasElement(sessionId, phase.id, { type: 'ink', content: { points: draftStroke, input: 'apple-pencil', pressure, tiltX: penTelemetry.tiltX, tiltY: penTelemetry.tiltY }, position: { x: 0, y: 0 }, style: { color, strokeWidth: 2 + pressure * 4 }, visibility: 'private', is_live_annotation: true });
-    setCanvas((current) => ({ ...current, elements: [...(current?.elements || []), element] })); setDraftStroke([]); setSelected(element.id); if (event?.pointerType === 'pen') activePenRef.current = false;
+    if (tool !== 'pen' || draftStroke.length < 2) { setDraftStroke([]); return; }
+    const element = await createLessonCanvasElement(sessionId, phase.id, { type: 'ink', content: { points: draftStroke }, position: { x: 0, y: 0 }, style: { color, strokeWidth: 3 }, visibility: 'private', is_live_annotation: true });
+    setCanvas((current) => ({ ...current, elements: [...(current?.elements || []), element] })); setDraftStroke([]); setSelected(element.id);
   };
   const zoomAt = (event, nextScale) => { const rect = surfaceRef.current.getBoundingClientRect(); const scale = Math.max(.35, Math.min(2.5, nextScale)); const cursorX = event ? event.clientX - rect.left : rect.width / 2; const cursorY = event ? event.clientY - rect.top : rect.height / 2; const worldX = (cursorX - viewport.x) / viewport.scale; const worldY = (cursorY - viewport.y) / viewport.scale; setViewport({ scale, x: cursorX - worldX * scale, y: cursorY - worldY * scale }); };
   const onWheel = (event) => { event.preventDefault(); zoomAt(event, viewport.scale * (event.deltaY < 0 ? 1.08 : .92)); };
@@ -93,7 +83,7 @@ export default function TeachingCanvas({ sessionId, phase, files = [], accent })
   return <section className="lm-teaching-canvas" aria-label="Visuelle Phasen-Leinwand">
     <div className="lm-canvas-toolbar">
       <strong>Phasen-Leinwand</strong>
-      <button onClick={() => setTool('select')} style={{ borderColor: tool === 'select' ? accent : undefined }}>Auswahl <kbd>V</kbd></button><button onClick={() => setTool('hand')} style={{ borderColor: tool === 'hand' ? accent : undefined }}>Hand <kbd>H</kbd></button><button onClick={() => setTool('pen')} style={{ borderColor: tool === 'pen' ? accent : undefined }}>Pencil/Freihand <kbd>P</kbd></button><button onClick={() => setTool('eraser')} style={{ borderColor: tool === 'eraser' ? accent : undefined }}>Radierer <kbd>E</kbd></button>
+      <button onClick={() => setTool('select')} style={{ borderColor: tool === 'select' ? accent : undefined }}>Auswahl <kbd>V</kbd></button><button onClick={() => setTool('hand')} style={{ borderColor: tool === 'hand' ? accent : undefined }}>Hand <kbd>H</kbd></button><button onClick={() => setTool('pen')} style={{ borderColor: tool === 'pen' ? accent : undefined }}>Freihand <kbd>P</kbd></button><button onClick={() => setTool('eraser')} style={{ borderColor: tool === 'eraser' ? accent : undefined }}>Radierer <kbd>E</kbd></button>
       {['text', 'marker', 'circle', 'rectangle', 'arrow', 'material', 'solution'].map((item) => <button key={item} onClick={() => { if (item === 'material') add(item, { title: files[0]?.original_name || 'Materialkarte' }); else setTool(item); }} style={{ borderColor: tool === item ? accent : undefined }}>{item === 'text' ? 'Text' : item === 'marker' ? 'Marker' : item === 'circle' ? 'Kreis' : item === 'rectangle' ? 'Rechteck' : item === 'arrow' ? 'Pfeil' : item === 'material' ? 'Material' : 'Lösung'} {item === 'arrow' && <kbd>A</kbd>}{item === 'circle' && <kbd>C</kbd>}{item === 'rectangle' && <kbd>R</kbd>}{item === 'text' && <kbd>T</kbd>}</button>)}
       <span className="lm-canvas-colors">{colors.map((value) => <button key={value} aria-label={`Farbe ${value}`} onClick={() => setColor(value)} style={{ background: value, outline: color === value ? `2px solid ${accent}` : 'none' }} />)}</span>
       <span className="lm-canvas-zoom"><button onClick={() => zoomAt(null, viewport.scale - .1)} aria-label="Herauszoomen">−</button><span>{Math.round(viewport.scale * 100)}%</span><button onClick={() => zoomAt(null, viewport.scale + .1)} aria-label="Hineinzoomen">+</button><button onClick={() => setViewport({ x: 0, y: 0, scale: 1 })}>Zentrieren</button></span>
@@ -109,6 +99,6 @@ export default function TeachingCanvas({ sessionId, phase, files = [], accent })
       {draftShape && <div className={`lm-canvas-element lm-canvas-${draftShape.type} is-draft`} style={{ left: `${Math.min(draftShape.start.x, draftShape.current.x)}%`, top: `${Math.min(draftShape.start.y, draftShape.current.y)}%`, width: `${Math.max(4, Math.abs(draftShape.current.x - draftShape.start.x))}%`, height: `${Math.max(4, Math.abs(draftShape.current.y - draftShape.start.y))}%`, color, borderColor: color }}>{draftShape.type === 'arrow' ? '➜' : draftShape.type}</div>}
       </div>
     </div>
-    {selected && <div className="lm-canvas-inspector">{(() => { const element = canvas.elements.find((item) => item.id === selected); return element ? <><strong>Element bearbeiten</strong><input value={element.content?.text || element.content?.title || ''} onChange={(event) => update(element, { ...element.content, text: event.target.value })} aria-label="Elementtext" /><span className="lm-canvas-shortcuts">A Pfeil · C Kreis · R Rechteck · T Text · V Auswahl · H Hand · P Pencil · E Radierer · Entf Löschen</span></> : null; })()}</div>}
+    {selected && <div className="lm-canvas-inspector">{(() => { const element = canvas.elements.find((item) => item.id === selected); return element ? <><strong>Element bearbeiten</strong><input value={element.content?.text || element.content?.title || ''} onChange={(event) => update(element, { ...element.content, text: event.target.value })} aria-label="Elementtext" /><span className="lm-canvas-shortcuts">A Pfeil · C Kreis · R Rechteck · T Text · V Auswahl · H Hand · P Stift · E Radierer · Entf Löschen</span></> : null; })()}</div>}
   </section>;
 }

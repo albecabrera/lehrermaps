@@ -26,15 +26,14 @@ import documentAnnotationsRouter from './routes/documentAnnotations.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 const server = http.createServer(app);
+const production = process.env.NODE_ENV === 'production';
+const terminalEnabled = !production && process.env.ENABLE_TERMINAL === 'true';
 
-if (!process.env.JWT_SECRET) {
-  console.warn('\x1b[33m⚠  WARNING: JWT_SECRET not set — using insecure default. Set it in server/.env\x1b[0m');
-}
-if (!process.env.APP_PASSWORD) {
-  console.warn('\x1b[33m⚠  WARNING: APP_PASSWORD not set — using default password "lehrer123"\x1b[0m');
-}
-if (!process.env.STUDENT_PASSWORD) {
-  console.warn('\x1b[33m⚠  WARNING: STUDENT_PASSWORD not set — using default "schueler123"\x1b[0m');
+if (production) {
+  const missing = ['JWT_SECRET', 'APP_PASSWORD', 'STUDENT_PASSWORD'].filter((key) => !process.env[key] || process.env[key].length < (key === 'JWT_SECRET' ? 32 : 1));
+  if (missing.length) throw new Error(`Missing required production configuration: ${missing.join(', ')}`);
+} else if (!process.env.JWT_SECRET || !process.env.APP_PASSWORD || !process.env.STUDENT_PASSWORD) {
+  console.warn('Using development authentication defaults. Set JWT_SECRET, APP_PASSWORD and STUDENT_PASSWORD before deployment.');
 }
 
 const _configuredOrigins = (
@@ -60,12 +59,12 @@ const corsMiddleware = cors({
 });
 app.use(express.json({ limit: '1mb' }));
 
-app.get('/api/health', (_, res) => res.json({ ok: true }));
+app.get('/api/health', async (_, res) => {
+  try { await (await import('./db.js')).default.query('SELECT 1'); res.json({ ok: true, database: 'ok' }); }
+  catch { res.status(503).json({ ok: false, database: 'unavailable' }); }
+});
 
 app.use('/api', corsMiddleware);
-// Tokenized Lehrerhilfe projections are public by design; mount this route
-// before the authenticated routers mounted at /api.
-app.get('/api/display/:token', displaySession);
 app.use('/api', authRouter);
 app.use('/api/folders', foldersRouter);
 app.use('/api/files', filesRouter);
@@ -76,8 +75,9 @@ app.use('/api', notebooksRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/exams', examsRouter);
 app.use('/api/plans', plansRouter);
-app.use('/api', lessonSessionsRouter);
 app.use('/api', documentAnnotationsRouter);
+app.get('/api/display/:token', displaySession);
+app.use('/api', lessonSessionsRouter);
 app.get('/display/:token', displayPage);
 
 function requireLehrer(req, res, next) {
@@ -96,7 +96,7 @@ function requireLehrer(req, res, next) {
 
 const PROJECT_DIR = process.env.PROJECT_DIR || process.cwd();
 
-app.post('/api/shell/open', requireLehrer, (req, res) => {
+if (terminalEnabled) app.post('/api/shell/open', requireLehrer, (req, res) => {
   // Try iTerm2, fall back to Terminal.app
   execFile('open', ['-a', 'iTerm', PROJECT_DIR], (err) => {
     if (err) {
@@ -117,6 +117,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLIENT_DIST = path.join(__dirname, '..', 'client', 'dist');
 
 if (fs.existsSync(path.join(CLIENT_DIST, 'index.html'))) {
+  // Vite copies public icons to /icons; preserve the public PWA URL used by
+  // the Apache deployment when this same build is served directly by Node.
+  app.use('/assets/icons', express.static(path.join(CLIENT_DIST, 'icons')));
   app.use((req, res, next) => {
     if (['/', '/index.html', '/manifest.json', '/service-worker.js'].includes(req.path)) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -131,7 +134,7 @@ if (fs.existsSync(path.join(CLIENT_DIST, 'index.html'))) {
 }
 
 // ── WebSocket terminal ──────────────────────────────────────────────────────
-const io = new SocketIOServer(server, {
+const io = terminalEnabled ? new SocketIOServer(server, {
   path: '/ws',
   cors: {
     origin: (origin, cb) => {
@@ -140,9 +143,9 @@ const io = new SocketIOServer(server, {
     },
     credentials: true,
   },
-});
+}) : null;
 
-io.use((socket, next) => {
+if (io) io.use((socket, next) => {
   try {
     const token = socket.handshake.auth?.token || socket.handshake.query?.token;
     if (!token) return next(new Error('Missing token'));
@@ -165,7 +168,7 @@ const SHELLS = [
   '/bin/sh',
 ].filter(Boolean).filter((sh, index, shells) => shells.indexOf(sh) === index && fs.existsSync(sh));
 
-io.on('connection', (socket) => {
+if (io) io.on('connection', (socket) => {
   let term = null;
   for (const sh of SHELLS) {
     try {
@@ -200,8 +203,5 @@ initSchema()
   })
   .catch((e) => {
     console.error('DB init failed:', e.message);
-    console.error('Start server without DB (login will fail).');
-    server.listen(PORT, () => {
-      console.log(`LehrerMaps server running on http://localhost:${PORT} (no DB)`);
-    });
+    process.exitCode = 1;
   });

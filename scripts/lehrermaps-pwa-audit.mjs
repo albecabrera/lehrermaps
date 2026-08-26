@@ -79,10 +79,14 @@ await check('API health', async () => {
 
 await check('production dist integrity', async () => {
   const manifest = JSON.parse(await fs.readFile(path.join(dist, 'manifest.json'), 'utf8'));
-  for (const icon of manifest.icons) await fs.access(path.join(dist, icon.src.replace(/^\//, '')));
+  for (const icon of manifest.icons) {
+    const emittedPath = icon.src.replace(/^\/assets\/icons\//, 'icons/').replace(/^\//, '');
+    await fs.access(path.join(dist, emittedPath));
+  }
   const index = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   for (const asset of index.matchAll(/(?:src|href)=["'](\/assets\/[^"']+)["']/g)) {
-    await fs.access(path.join(dist, asset[1].replace(/^\//, '')));
+    const emittedPath = asset[1].replace(/^\/assets\/icons\//, 'icons/').replace(/^\//, '');
+    await fs.access(path.join(dist, emittedPath));
   }
   pass('production dist integrity');
 });

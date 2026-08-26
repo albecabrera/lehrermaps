@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import pool from '../db.js';
 import auth from '../middleware/auth.js';
+import { teacherOnly } from '../middleware/auth.js';
 
 const router = Router();
 router.use(auth);
+router.use(teacherOnly);
 
 function getUserId(req) {
   if (Number.isInteger(req.user?.user_id)) return req.user.user_id;
@@ -25,16 +27,16 @@ router.get('/', async (req, res) => {
          p.id AS page_id, p.title AS page_title,
          b.id AS block_id,
          CASE
-           WHEN JSON_UNQUOTE(JSON_EXTRACT(b.content, '$.text')) IS NOT NULL
-             THEN JSON_UNQUOTE(JSON_EXTRACT(b.content, '$.text'))
-           ELSE CAST(b.content AS CHAR)
+           WHEN json_extract(b.content, '$.text') IS NOT NULL
+             THEN json_extract(b.content, '$.text')
+           ELSE b.content
          END AS snippet
        FROM notebooks n
        INNER JOIN sections s ON s.notebook_id = n.id
        INNER JOIN pages p ON p.section_id = s.id
        LEFT JOIN blocks b ON b.page_id = p.id
        WHERE n.user_id = ? AND (
-         n.title LIKE ? OR s.title LIKE ? OR p.title LIKE ? OR CAST(b.content AS CHAR) LIKE ?
+         n.title LIKE ? OR s.title LIKE ? OR p.title LIKE ? OR b.content LIKE ?
        )
        ORDER BY n.position ASC, s.position ASC, p.position ASC, b.z_index ASC
        LIMIT 200`,

@@ -33,7 +33,6 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/MobileNav';
 import TeachingMode from '../components/TeachingMode';
 import LessonDashboard from '../components/LessonDashboard';
-import SchoolCalendarPdf from '../components/SchoolCalendarPdf';
 
 // Opened views are split into on-demand chunks without changing their layout.
 const QRModal = lazy(() => import('../components/QRModal'));
@@ -76,7 +75,6 @@ export default function App({ onLogout }) {
   const deleteTimersRef = useRef(new Map());
   const [viewMode, setViewMode] = useState('subjects');
   const [examBoardOpen, setExamBoardOpen] = useState(false);
-  const [schoolCalendarOpen, setSchoolCalendarOpen] = useState(false);
   const [dropOver, setDropOver] = useState(false);
   const [dropFiles, setDropFiles] = useState(null);
   const [dropUploading, setDropUploading] = useState(null);
@@ -95,7 +93,7 @@ export default function App({ onLogout }) {
   const accent = subject.color;
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, setTimer: setFileTimer, togglePublic, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
-  const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
+  const { links, add: addLink, remove: removeLink, toggleShare: toggleLinkShare } = useLinks(activeFolder?.id);
   const { recents, add: addRecent } = useRecents();
   const { trackFile, trackLink } = useRecentFiles();
 
@@ -652,8 +650,8 @@ export default function App({ onLogout }) {
     }
   };
 
-  const handleAddLink = async (title, url) => {
-    await addLink(title, url);
+  const handleAddLink = async (title, url, is_shared) => {
+    await addLink(title, url, is_shared);
   };
 
   const handleDeleteFolder = (folder) => {
@@ -857,17 +855,6 @@ export default function App({ onLogout }) {
           <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--c-text-2)', letterSpacing: -0.1 }}>
             Termine
           </span>
-        </button>
-
-        {/* Fester Zugriff auf den schulischen PDF-Terminplan */}
-        <button
-          className="lm-spring"
-          onClick={() => setSchoolCalendarOpen(true)}
-          style={{ appearance: 'none', border: 'none', font: 'inherit', padding: '10px 16px 12px', cursor: 'pointer', background: 'transparent', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--c-text-2)' }}
-          aria-label="Terminplan Schuljahr 2026/27"
-        >
-          <span style={{ fontSize: 13 }}>▣</span>
-          <span style={{ fontSize: 13, fontWeight: 500 }}>Terminplan</span>
         </button>
 
         {/* Notion */}
@@ -1495,6 +1482,7 @@ export default function App({ onLogout }) {
                         onDelete={handleDeleteFile}
                         onRename={setRenamingFile}
                         onDeleteLink={handleDeleteLink}
+                        onToggleLinkShare={toggleLinkShare}
                         onUpload={() => setUploadOpen(true)}
                         onAddLink={() => setAddLinkOpen(true)}
                         onToggleShare={toggleShare}
@@ -1687,7 +1675,6 @@ export default function App({ onLogout }) {
         isDark={isDark}
         toggleTheme={toggleTheme}
         onExams={() => setExamBoardOpen(true)}
-        onSchoolCalendar={() => setSchoolCalendarOpen(true)}
         onWorksheet={() => setWorksheetGenOpen(true)}
         onUpload={() => setUploadOpen(true)}
         uploadDisabled={!activeFolder}
@@ -1886,7 +1873,6 @@ export default function App({ onLogout }) {
         }}
       />
       {examBoardOpen && <ExamBoard onDismiss={() => setExamBoardOpen(false)} />}
-      {schoolCalendarOpen && <SchoolCalendarPdf onClose={() => setSchoolCalendarOpen(false)} />}
 
       {toast && (
         <div style={{

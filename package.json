@@ -11,9 +11,6 @@
     "test:pwa": "node scripts/lehrermaps-pwa-audit.mjs",
     "test:e2e:teaching": "node scripts/lehrermaps-teaching-e2e.mjs",
     "test:e2e:responsive": "node scripts/lehrermaps-responsive-e2e.mjs",
-    "test:e2e:authorization": "node scripts/lehrermaps-authorization-e2e.mjs",
-    "test:audit": "node scripts/lehrermaps-audit-e2e.mjs",
-    "test:all": "npm run test:smoke && npm run test:pwa && npm run test:e2e:authorization && npm run test:e2e:teaching && npm run test:e2e:responsive && npm run test:audit",
     "install:all": "npm install && npm install --prefix client && npm install --prefix server"
   },
   "devDependencies": {

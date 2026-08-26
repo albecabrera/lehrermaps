@@ -4,6 +4,7 @@ import auth, { teacherOnly } from '../middleware/auth.js';
 
 const router = Router();
 router.use(auth);
+router.use(teacherOnly);
 
 const ENTRY_TYPES = new Set(['lesson', 'holiday', 'exam', 'classwork', 'presentation', 'school_event', 'other']);
 

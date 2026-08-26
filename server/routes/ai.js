@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { spawn } from 'child_process';
-import auth from '../middleware/auth.js';
+import auth, { teacherOnly } from '../middleware/auth.js';
 import { Document, Packer, Paragraph, HeadingLevel, TextRun } from 'docx';
 import PDFDocument from 'pdfkit';
 import PptxGenJS from 'pptxgenjs';
@@ -51,6 +51,7 @@ function generateWithClaudeCLI({ system, user, fallback }) {
 
 const router = Router();
 router.use(auth);
+router.use(teacherOnly);
 
 const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS || 15000);
 const WORKSHEET_TIMEOUT_MS = Number(process.env.WORKSHEET_TIMEOUT_MS || 45000);

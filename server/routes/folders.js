@@ -16,24 +16,25 @@ const FOLDER_WITH_COUNT = `
 router.get('/', async (req, res) => {
   try {
     if (req.user?.role === 'student') {
-      const [rows] = await pool.execute(`
-        WITH RECURSIVE visible_folder_ids AS (
-          SELECT DISTINCT f.id, f.parent_id
-          FROM folders f
-          JOIN files fi ON fi.folder_id = f.id
-            AND fi.is_shared = 1
-            AND fi.is_current_version = 1
-          UNION DISTINCT
-          SELECT parent.id, parent.parent_id
-          FROM folders parent
-          JOIN visible_folder_ids child ON child.parent_id = parent.id
-        )
-        SELECT DISTINCT f.id, f.subject, f.group_name, f.name, f.parent_id, f.sort_order, f.due_at
-        FROM folders f
-        JOIN visible_folder_ids visible ON visible.id = f.id
-        ORDER BY f.subject, f.group_name, f.parent_id, f.sort_order, f.name
+      // Return only folders that lead to shared material.  The projection is
+      // deliberately small so private notes, deadlines and usage metadata
+      // never cross the API boundary.
+      const [allFolders] = await pool.execute('SELECT id, subject, group_name, name, parent_id, sort_order FROM folders');
+      const [visibleRows] = await pool.execute(`
+        SELECT DISTINCT f.id FROM folders f
+        WHERE EXISTS (SELECT 1 FROM files fi WHERE fi.folder_id = f.id AND fi.is_shared = 1 AND fi.is_current_version = 1)
+           OR EXISTS (SELECT 1 FROM links li WHERE li.folder_id = f.id AND li.is_shared = 1)
       `);
-      return res.json(rows);
+      const byId = new Map(allFolders.map((folder) => [Number(folder.id), folder]));
+      const visible = new Set(visibleRows.map((row) => Number(row.id)));
+      for (const id of [...visible]) {
+        let parent = byId.get(id)?.parent_id;
+        while (parent != null && byId.has(Number(parent))) {
+          visible.add(Number(parent));
+          parent = byId.get(Number(parent)).parent_id;
+        }
+      }
+      return res.json(allFolders.filter((folder) => visible.has(Number(folder.id))));
     }
     const [rows] = await pool.execute(`
       SELECT f.*, COUNT(fi.id) AS file_count, COALESCE(SUM(fi.size_bytes), 0) AS total_size_bytes,

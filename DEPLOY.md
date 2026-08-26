@@ -21,24 +21,35 @@ cp env.txt .env      # dann .env editieren — echte Werte:
 `.env` — MUSS gesetzt/geändert sein:
 - `JWT_SECRET` (≥32 zufällige Zeichen)
 - `APP_PASSWORD` (Lehrer), `STUDENT_PASSWORD` (Schüler)
-- `DB_*` (MySQL/MariaDB), `PORT=3001`
+- `SQLITE_PATH=./data/lehrermaps.sqlite` (opcional), `PORT=3001`
 - `ALLOWED_ORIGIN=https://DEIN-DOMAIN.de`
 
-MySQL/MariaDB muss laufen, DB `lehrermaps` existieren (Schema legt der Server
-via `initSchema()` automatisch an). Upload-Ordner beschreibbar:
-`mkdir -p server/uploads && chmod 775 server/uploads`.
+SQLite se crea automáticamente al iniciar, sin servidor, credenciales ni permisos
+adicionales. Los directorios de datos y uploads deben ser escribibles:
+`mkdir -p server/data server/uploads && chmod 775 server/data server/uploads`.
 
-## 3. Prozess dauerhaft (PM2)
+Para un despliegue con Docker, SQLite se persiste automáticamente en un volumen:
+
 ```bash
-npm i -g pm2
-pm2 start index.js --name lehrermaps
-pm2 save && pm2 startup   # Auto-Start nach Reboot
+docker compose --profile standalone -f docker-compose.backend.yml up -d --build
 ```
+
+## 3. Proceso persistente (systemd)
+```bash
+install -d -o www-data -g www-data -m 775 server/data server/uploads server/previews server/edit-copies
+cp deploy/lehrermaps.service /etc/systemd/system/lehrermaps.service
+systemctl daemon-reload
+systemctl enable --now lehrermaps
+systemctl status lehrermaps
+```
+El servicio solo escucha en `127.0.0.1:3001` mediante el proxy. En producción,
+`NODE_ENV=production` y `ENABLE_TERMINAL=false` son obligatorios: el backend se
+niega a arrancar sin secretos y no publica `/ws`, terminal ni apertura local de apps.
 
 ## 4. Nginx + HTTPS  ← der PWA-Gate
 ```bash
 cp /var/www/lehrermaps/lehrermaps/deploy/nginx.conf /etc/nginx/sites-available/lehrermaps
-# DEIN-DOMAIN.de + root-Pfad darin anpassen
+# Ajustar dominio y ruta. Para este hosting: lehrermaps.albertocabrera.de.
 ln -s /etc/nginx/sites-available/lehrermaps /etc/nginx/sites-enabled/
 apt install certbot python3-certbot-nginx
 certbot --nginx -d DEIN-DOMAIN.de -d www.DEIN-DOMAIN.de   # holt + verdrahtet TLS
@@ -58,8 +69,8 @@ Auf `https://DEIN-DOMAIN.de`:
 ## Updates ausrollen
 ```bash
 git pull
-# falls selbst gebaut: cd client && npm run build
-pm2 restart lehrermaps        # nur bei Backend-Änderungen nötig
+cd client && npm ci && npm run build
+systemctl restart lehrermaps  # solo si cambió el backend
 ```
 Nginx cacht `service-worker.js`/`manifest.json`/`index.html` mit `no-cache`
 (siehe deploy/nginx.conf) → neuer Build wird beim nächsten Laden aktiv, der

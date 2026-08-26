@@ -17,7 +17,7 @@ export const MATERIAL_ROLES = [
 export default function FileTable({
   files, links = [], activeFileId, activeLinkId, activeFile2Id,
   onFileSelect, onFileSecondarySelect, onLinkSelect, accent = '#E8472A',
-  query, onDelete, onRename, onDeleteLink, onUpload, onAddLink, onToggleShare,
+  query, onDelete, onRename, onDeleteLink, onToggleLinkShare, onUpload, onAddLink, onToggleShare,
   onTogglePublic,
   onSetDeadline,
   onSetTimer,
@@ -604,6 +604,7 @@ export default function FileTable({
           accent={accent}
           onClose={() => setMenuLink(null)}
           onDelete={() => { onDeleteLink?.(menuLink.id); setMenuLink(null); }}
+          onToggleShare={onToggleLinkShare ? () => { onToggleLinkShare(menuLink.id); setMenuLink(null); } : null}
           t={t}
         />
       )}
@@ -759,7 +760,7 @@ function MenuItem({ icon, label, danger, onClick }) {
   );
 }
 
-function LinkContextMenu({ link, x, y, accent, onClose, onDelete, t }) {
+function LinkContextMenu({ link, x, y, accent, onClose, onDelete, onToggleShare, t }) {
   return (
     <>
       <div style={{ position: 'fixed', inset: 0, zIndex: 1050 }} onClick={onClose} />
@@ -777,6 +778,7 @@ function LinkContextMenu({ link, x, y, accent, onClose, onDelete, t }) {
         </div>
         <MenuItem icon="↗" label={t('table.ctx_open_browser')} onClick={() => { window.open(normalizeExternalUrl(link.url), '_blank', 'noopener,noreferrer'); onClose(); }} />
         <MenuItem icon="⎘" label={t('table.ctx_copy_url')} onClick={() => { navigator.clipboard.writeText(link.url); onClose(); }} />
+        {onToggleShare && <MenuItem icon={link.is_shared ? '🔒' : '🔗'} label={link.is_shared ? 'Freigabe für Schüler aufheben' : 'Für Schüler freigeben'} onClick={onToggleShare} />}
         <div style={{ height: 1, background: 'var(--c-border)', margin: '4px 2px' }} />
         <MenuItem icon="🗑" label={t('delete')} danger onClick={onDelete} />
       </div>

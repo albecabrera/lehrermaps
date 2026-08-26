@@ -9,3 +9,6 @@ server/.env
 .env
 .logs/
 server/edit-copies/*
+server/data/*.sqlite
+server/data/*.sqlite-shm
+server/data/*.sqlite-wal

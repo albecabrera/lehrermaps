@@ -68,7 +68,7 @@ Die Links öffnen den click-&-teach-Player in einem neuen Browser-Tab und bleibe
 | Editor | Tiptap / ProseMirror |
 | Drag & Drop | dnd-kit |
 | Backend | Node.js + Express |
-| Base de datos | MySQL / MariaDB |
+| Base de datos | SQLite integrada |
 | Auth | JWT con roles `lehrer` y `student` |
 | Uploads | Multer + filesystem local |
 | Versionado | Copias locales + nuevas versiones en DB |
@@ -93,7 +93,7 @@ lehrermaps/
 │       └── pages/          # App docente, login y vista estudiante
 ├── server/
 │   ├── routes/             # Endpoints de auth, folders, files, links, schedule, etc.
-│   ├── db.js               # Pool MySQL + initSchema()
+│   ├── db.js               # SQLite local + initSchema()
 │   ├── index.js            # Express + Socket.io + servidor estático
 │   ├── uploads/            # Archivos subidos localmente
 │   └── edit-copies/        # Copias de trabajo para editar y versionar
@@ -109,9 +109,8 @@ lehrermaps/
 
 ## Requisitos
 
-- Node.js 18+
 - npm 9+
-- MySQL 8 o MariaDB 10.6+
+- Node.js 22.5+ (incluye SQLite integrado)
 - macOS o Linux
 
 ---
@@ -120,13 +119,6 @@ lehrermaps/
 
 ```bash
 npm run install:all
-```
-
-Crear la base de datos:
-
-```bash
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS lehrermaps CHARACTER SET utf8mb4;"
-mysql -u root -p lehrermaps < schema.sql
 ```
 
 Crear la configuración del servidor:
@@ -138,11 +130,7 @@ cp server/env.txt server/.env
 Ejemplo de `server/.env`:
 
 ```env
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=root
-DB_PASS=
-DB_NAME=lehrermaps
+SQLITE_PATH=./data/lehrermaps.sqlite
 JWT_SECRET=cambia_esto_por_un_secreto_largo
 APP_PASSWORD=lehrer
 STUDENT_PASSWORD=contraseña_estudiante
@@ -206,7 +194,7 @@ Los launchers `scripts/start-xampp-docker.sh` y `scripts/start-xampp-local.sh` i
 
 ## Publicar como PWA
 
-LehrerMaps está preparada para desplegarse como PWA detrás de **Nginx + HTTPS**, con Node.js/PM2 y MySQL/MariaDB. La guía completa está en [`DEPLOY.md`](./DEPLOY.md).
+LehrerMaps está preparada para desplegarse como PWA detrás de **Nginx + HTTPS**, con Node.js y SQLite integrada. La guía completa está en [`DEPLOY.md`](./DEPLOY.md).
 
 Requisitos importantes para producción:
 
@@ -308,7 +296,7 @@ También existen rutas para `links`, `schedule`, `notebooks`, `search`, `exams` 
 El backend puede servir el frontend compilado desde `client/dist` si existe. Para despliegue real:
 
 1. Configurar `.env` seguro.
-2. Levantar MySQL/MariaDB.
+2. Ejecutar el backend o `docker compose --profile standalone -f docker-compose.backend.yml up -d`; SQLite se inicializa sola.
 3. Ejecutar el backend con PM2, systemd o Docker.
 4. Poner Nginx delante con HTTPS.
 5. Configurar proxy para `/api` y `/ws`.

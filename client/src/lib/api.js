@@ -9,39 +9,6 @@ const apiBaseUrl = isApacheStaticApp
 
 const api = axios.create({ baseURL: apiBaseUrl, timeout: 15000 });
 
-const OFFLINE_QUEUE_KEY = 'lm_offline_mutations_v1';
-const readOfflineQueue = () => { try { return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'); } catch { return []; } };
-const writeOfflineQueue = (items) => localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(items));
-
-export const getOfflineQueueSize = () => readOfflineQueue().length;
-export const queueMutation = (method, url, data) => {
-  const id = `offline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const queue = readOfflineQueue();
-  queue.push({ id, method, url, data, created_at: new Date().toISOString() });
-  writeOfflineQueue(queue);
-  window.dispatchEvent(new CustomEvent('lm-offline-queue-change'));
-  return { id, queued: true, ...data };
-};
-
-export const syncOfflineMutations = async () => {
-  if (!navigator.onLine) return { synced: 0, pending: readOfflineQueue().length };
-  const pending = readOfflineQueue();
-  let synced = 0;
-  for (const item of pending) {
-    try { await api.request({ method: item.method, url: item.url, data: item.data }); synced += 1; }
-    catch { break; }
-  }
-  const remaining = pending.slice(synced);
-  writeOfflineQueue(remaining);
-  window.dispatchEvent(new CustomEvent('lm-offline-queue-change'));
-  return { synced, pending: remaining.length };
-};
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', syncOfflineMutations);
-  window.addEventListener('lm-offline-sync', syncOfflineMutations);
-}
-
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('lm_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -126,6 +93,7 @@ export const setFilesRole = (ids, material_role) => api.put('/files/roles/bulk',
 export const getLinks = (folderId) => api.get(`/links/${folderId}`).then((r) => r.data);
 export const createLink = (data) => api.post('/links', data).then((r) => r.data);
 export const deleteLink = (id) => api.delete(`/links/${id}`);
+export const toggleLinkShare = (id) => api.put(`/links/${id}/share`).then((r) => r.data);
 
 export const reorderFolders = (items) =>
   api.put('/folders/reorder', { items });
@@ -170,6 +138,11 @@ export const setFileTimer = (id, timer_minutes) =>
 export const publicFileUrl = (token) =>
   `${window.location.origin}/api/files/public/${encodeURIComponent(token)}`;
 
+export const getDocumentAnnotations = (fileId) => api.get(`/files/${fileId}/annotations`).then((r) => r.data);
+export const createDocumentAnnotation = (fileId, data) => api.post(`/files/${fileId}/annotations`, data).then((r) => r.data);
+export const updateDocumentAnnotation = (id, data) => api.patch(`/document-annotations/${id}`, data).then((r) => r.data);
+export const deleteDocumentAnnotation = (id) => api.delete(`/document-annotations/${id}`).then((r) => r.data);
+
 export const generateLessonDraft = (payload) =>
   api.post('/ai/lesson-draft', payload).then((r) => r.data);
 
@@ -184,26 +157,21 @@ export const testAiStatus = () =>
 
 export const getLessonSessions = () => api.get('/lesson-sessions').then((r) => r.data);
 export const getLessonSession = (id) => api.get(`/lesson-sessions/${id}`).then((r) => r.data);
-export const createLessonSession = async (data) => { try { return (await api.post('/lesson-sessions', data)).data; } catch (error) { if (!error.response) return queueMutation('post', '/lesson-sessions', data); throw error; } };
-export const updateLessonSession = async (id, data) => { try { return (await api.patch(`/lesson-sessions/${id}`, data)).data; } catch (error) { if (!error.response) return queueMutation('patch', `/lesson-sessions/${id}`, data); throw error; } };
+export const createLessonSession = (data) => api.post('/lesson-sessions', data).then((r) => r.data);
+export const updateLessonSession = (id, data) => api.patch(`/lesson-sessions/${id}`, data).then((r) => r.data);
 export const deleteLessonSession = (id) => api.delete(`/lesson-sessions/${id}`);
 export const createLessonPhase = (id, data) => api.post(`/lesson-sessions/${id}/phases`, data).then((r) => r.data);
-export const updateLessonPhase = async (id, data) => { try { return (await api.patch(`/lesson-phases/${id}`, data)).data; } catch (error) { if (!error.response) return queueMutation('patch', `/lesson-phases/${id}`, data); throw error; } };
+export const updateLessonPhase = (id, data) => api.patch(`/lesson-phases/${id}`, data).then((r) => r.data);
 export const deleteLessonPhase = (id) => api.delete(`/lesson-phases/${id}`);
 export const setLessonPhaseVisibility = (id, data) => api.put(`/lesson-phases/${id}/visibility`, data).then((r) => r.data);
 export const createLessonDisplaySession = (id) => api.post(`/lesson-sessions/${id}/display-session`).then((r) => r.data);
 export const updateLessonDisplaySession = (token, active_phase_id) => api.patch(`/display/${encodeURIComponent(token)}`, { active_phase_id }).then((r) => r.data);
 export const getDisplaySession = (token) => axios.get(`/api/display/${encodeURIComponent(token)}`).then((r) => r.data);
 export const getLessonCanvas = (sessionId, phaseId) => api.get(`/lesson-sessions/${sessionId}/canvas`, { params: { phase_id: phaseId } }).then((r) => r.data);
-export const createLessonCanvasElement = async (sessionId, phaseId, data) => { try { return (await api.post(`/lesson-sessions/${sessionId}/canvas`, { phase_id: phaseId, ...data })).data; } catch (error) { if (!error.response) return queueMutation('post', `/lesson-sessions/${sessionId}/canvas`, { phase_id: phaseId, ...data }); throw error; } };
-export const updateLessonCanvasElement = async (id, data) => { try { return (await api.patch(`/lesson-canvas-elements/${id}`, data)).data; } catch (error) { if (!error.response) return queueMutation('patch', `/lesson-canvas-elements/${id}`, data); throw error; } };
-export const deleteLessonCanvasElement = async (id) => { try { return await api.delete(`/lesson-canvas-elements/${id}`); } catch (error) { if (!error.response) return queueMutation('delete', `/lesson-canvas-elements/${id}`, null); throw error; } };
+export const createLessonCanvasElement = (sessionId, phaseId, data) => api.post(`/lesson-sessions/${sessionId}/canvas`, { phase_id: phaseId, ...data }).then((r) => r.data);
+export const updateLessonCanvasElement = (id, data) => api.patch(`/lesson-canvas-elements/${id}`, data).then((r) => r.data);
+export const deleteLessonCanvasElement = (id) => api.delete(`/lesson-canvas-elements/${id}`);
 export const setLessonCanvasVisibility = (id, visibility) => api.put(`/lesson-canvas-elements/${id}/visibility`, { visibility }).then((r) => r.data);
-export const getDocumentAnnotations = (fileId) => api.get(`/files/${fileId}/annotations`).then((r) => r.data);
-export const getDocumentAnnotationHistory = (fileId) => api.get(`/files/${fileId}/annotation-history`).then((r) => r.data);
-export const createDocumentAnnotation = async (fileId, data) => { try { return (await api.post(`/files/${fileId}/annotations`, data)).data; } catch (error) { if (!error.response) return queueMutation('post', `/files/${fileId}/annotations`, data); throw error; } };
-export const updateDocumentAnnotation = async (id, data) => { try { return (await api.patch(`/document-annotations/${id}`, data)).data; } catch (error) { if (!error.response) return queueMutation('patch', `/document-annotations/${id}`, data); throw error; } };
-export const deleteDocumentAnnotation = async (id) => { try { return await api.delete(`/document-annotations/${id}`); } catch (error) { if (!error.response) return queueMutation('delete', `/document-annotations/${id}`, null); throw error; } };
 export const saveLessonLiveLayer = (phaseId, elements) => api.post(`/lesson-phases/${phaseId}/live-layer/save`, { elements }).then((r) => r.data);
 
 export const deleteFile = (id) =>

@@ -6,13 +6,14 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
   const { t } = useLang();
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
+  const [isShared, setIsShared] = useState(false);
   const [qrSrc, setQrSrc] = useState(null);
   const [saving, setSaving] = useState(false);
   const titleRef = useRef(null);
   useEscapeKey(open, onClose);
 
   useEffect(() => {
-    if (open) { setTitle(''); setUrl(''); setQrSrc(null); setSaving(false); setTimeout(() => titleRef.current?.focus(), 60); }
+    if (open) { setTitle(''); setUrl(''); setIsShared(false); setQrSrc(null); setSaving(false); setTimeout(() => titleRef.current?.focus(), 60); }
   }, [open]);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
   const handleSave = async () => {
     if (!title.trim() || !url.trim()) return;
     setSaving(true);
-    try { await onSave(title.trim(), url.trim()); onClose(); }
+    try { await onSave(title.trim(), url.trim(), isShared); onClose(); }
     catch { setSaving(false); }
   };
 
@@ -87,6 +88,10 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               />
             </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--c-text-2)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)} />
+              Für Schülerinnen und Schüler teilen
+            </label>
           </div>
 
           <div style={{

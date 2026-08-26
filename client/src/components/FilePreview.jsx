@@ -3,7 +3,6 @@ import FileBadge from './FileBadge';
 import { detectKind } from '../constants/structure';
 import { downloadFile, viewFile, previewFile, downloadEditCopy, openEditCopy, getFileVersions } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
-import PdfAnnotationViewer from './PdfAnnotationViewer';
 
 export default function FilePreview({ file, accent = '#E8472A', onClose, onCommitVersion, isStudent = false }) {
   const { t } = useLang();
@@ -55,6 +54,7 @@ export default function FilePreview({ file, accent = '#E8472A', onClose, onCommi
     || convertible.has(ext);
   const canOpenInApp = nativeAppExts.has(ext);
   const canOpenVideoInApp = videoExts.has(ext);
+  const localAppOpeningEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_LOCAL_APP_OPEN === 'true';
 
   return (
     <div
@@ -121,13 +121,13 @@ export default function FilePreview({ file, accent = '#E8472A', onClose, onCommi
             style={btnStyle('var(--c-text)', 'var(--c-hover)')}
           >{t('open_browser')}</a>
         )}
-        {canOpenInApp && (
+        {localAppOpeningEnabled && canOpenInApp && (
           <OpenInAppButton fileId={file.id} ext={ext} accent={accent} t={t} />
         )}
         {canOpenInApp && onCommitVersion && (
           <EditCopyActions file={file} accent={accent} t={t} onCommitVersion={onCommitVersion} />
         )}
-        {canOpenVideoInApp && (
+        {localAppOpeningEnabled && canOpenVideoInApp && (
           <OpenVideoButtons fileId={file.id} accent={accent} t={t} />
         )}
         {canOpenInline && (
@@ -313,7 +313,13 @@ function PreviewSurface({ file, kind, accent, t }) {
   const src = viewFile(file.id);
 
   if (kind === 'pdf') {
-    return <PdfAnnotationViewer fileId={file.id} src={src} title={file.original_name} accent={accent} />;
+    return (
+      <iframe
+        src={src}
+        title={t('preview.iframe_title', { name: file.original_name })}
+        style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+      />
+    );
   }
 
   if (kind === 'img') {

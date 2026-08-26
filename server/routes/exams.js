@@ -7,6 +7,7 @@ router.use(auth);
 
 router.get('/', async (req, res) => {
   try {
+    if (req.user?.role === 'student') return res.json([]);
     const [rows] = await pool.execute(
       `SELECT * FROM exams ORDER BY exam_date ASC, exam_time ASC`
     );

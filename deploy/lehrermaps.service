@@ -1,0 +1,20 @@
+[Unit]
+Description=LehrerMaps backend
+After=network.target
+
+[Service]
+Type=simple
+User=lehrermaps.albertoca_3otieb5t8ze
+Group=psacln
+WorkingDirectory=/var/www/vhosts/lehrermaps.albertocabrera.de/httpdocs/server
+EnvironmentFile=/var/www/vhosts/lehrermaps.albertocabrera.de/httpdocs/server/.env
+ExecStart=/usr/bin/node /var/www/vhosts/lehrermaps.albertocabrera.de/httpdocs/server/index.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/www/vhosts/lehrermaps.albertocabrera.de/httpdocs/server/data /var/www/vhosts/lehrermaps.albertocabrera.de/httpdocs/server/uploads /var/www/vhosts/lehrermaps.albertocabrera.de/httpdocs/server/previews /var/www/vhosts/lehrermaps.albertocabrera.de/httpdocs/server/edit-copies
+
+[Install]
+WantedBy=multi-user.target

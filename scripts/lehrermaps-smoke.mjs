@@ -82,12 +82,6 @@ try {
   child = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}CHILD`, parent_id: root.id }) });
   destination = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}DESTINATION` }) });
   pass('folder CRUD setup');
-  const sharedSeed = new FormData();
-  sharedSeed.append('folder_id', String(root.id));
-  sharedSeed.append('file', new Blob([`${prefix}shared`], { type: 'text/plain' }), `${prefix}SHARED.txt`);
-  const sharedSeedFile = await request('/api/files/upload', { method: 'POST', body: sharedSeed });
-  createdFiles.push(sharedSeedFile.id);
-  await request(`/api/files/${sharedSeedFile.id}/share`, { method: 'PUT' });
   await check('student read access', async () => {
     const folders = await request('/api/folders', {}, studentToken);
     if (!folders.some((folder) => folder.id === root.id)) throw new Error('student cannot read folders');

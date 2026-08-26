@@ -1,8 +1,0 @@
-export default function LessonDashboard({ sessions = [], folders = [], accent, onOpen }) {
-  const folderById = new Map(folders.map((folder) => [Number(folder.id), folder]));
-  return <div style={{ flex: 1, overflow: 'auto', padding: 'clamp(24px, 5vw, 64px)', background: 'var(--c-surface-2)' }}>
-    <div style={{ maxWidth: 980, margin: '0 auto' }}><div style={{ color: accent, fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>Lehrerhilfe</div><h1 style={{ margin: '6px 0 8px' }}>Geplante Unterrichtsstunden</h1><p style={{ color: 'var(--c-text-2)', marginTop: 0 }}>Alle Stunden nach Fach, Klasse, Datum und Status – direkt in die visuelle Planung öffnen.</p>
-      {!sessions.length ? <div style={{ padding: 24, border: '1px dashed var(--c-border)', borderRadius: 12, color: 'var(--c-text-2)' }}>Noch keine Stunden geplant. Öffne einen Fachordner und wähle „Lehrerhilfe“.</div> : <div style={{ display: 'grid', gap: 10 }}>{sessions.map((lesson) => { const folder = folderById.get(Number(lesson.folder_id)); return <button key={lesson.id} onClick={() => folder && onOpen(folder)} style={{ textAlign: 'left', padding: 16, border: '1px solid var(--c-border)', borderRadius: 12, background: 'var(--c-surface)', color: 'var(--c-text)', cursor: folder ? 'pointer' : 'default', fontFamily: 'inherit' }}><strong>{lesson.title}</strong><span style={{ display: 'block', marginTop: 6, fontSize: 12, color: 'var(--c-text-2)' }}>{lesson.subject || folder?.subject || 'Ohne Fach'} · {lesson.class_name || folder?.group_name || 'Ohne Klasse'} · {lesson.lesson_date || 'Ohne Datum'} · {lesson.status || 'draft'}</span></button>; })}</div>}
-    </div>
-  </div>;
-}

@@ -96,7 +96,7 @@ export const SUBJECTS = [
     id: 'informatik', name: 'Informatik', short: 'INF',
     color: '#2563EB', colorSoft: '#DCE7FB', colorDark: '#1D4ED8',
     groups: [
-      { id: 'inf-6', name: 'Klasse 6f' },
+      { id: 'inf-6', name: 'Klasse 6' },
       { id: 'inf-wp7', name: 'WP 7' },
       { id: 'inf-wp8', name: 'WP 8' },
       { id: 'inf-wp9', name: 'WP 9' },
@@ -123,7 +123,7 @@ export const SUBJECTS = [
   },
   {
     id: 'klasse', name: 'Klassenleitung', short: 'KL',
-    color: '#EC4899', colorSoft: '#FCE7F3', colorDark: '#BE185D',
+    color: '#9333EA', colorSoft: '#EADCFB', colorDark: '#6B21A8',
     groups: [
       { id: 'kl-form', name: 'Formulare' },
       { id: 'kl-elt', name: 'Elternkommunikation' },

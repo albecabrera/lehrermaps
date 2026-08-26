@@ -1,6 +1,5 @@
 services:
   lehrermaps-backend:
-    # Standalone fallback only. The canonical backend is managed by xampp-docker.
     profiles: [standalone]
     build:
       context: .
@@ -11,16 +10,14 @@ services:
       - server/env.txt
     environment:
       PORT: 3001
-      DB_HOST: xampp-mariadb
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASS: ""
-      DB_NAME: lehrermaps
+      SQLITE_PATH: /app/server/data/lehrermaps.sqlite
       PROJECT_DIR: /app
       TERMINAL_SHELL: /usr/bin/fish
       ALLOWED_ORIGIN: http://localhost,http://127.0.0.1,http://localhost:8090,http://127.0.0.1:8090,http://localhost:3001,http://127.0.0.1:3001
     expose:
       - "3001"
+    ports:
+      - "127.0.0.1:3001:3001"
     healthcheck:
       test:
         - CMD-SHELL
@@ -32,14 +29,14 @@ services:
     volumes:
       - ./:/app
       - lehrermaps-backend-node-modules:/app/server/node_modules
+      - lehrermaps-sqlite-data:/app/server/data
     networks:
-      - lehrermaps-xampp
+      - lehrermaps
     restart: unless-stopped
 
 volumes:
   lehrermaps-backend-node-modules:
+  lehrermaps-sqlite-data:
 
 networks:
-  lehrermaps-xampp:
-    external: true
-    name: xampp_xampp-net
+  lehrermaps:

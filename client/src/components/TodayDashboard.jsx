@@ -49,9 +49,9 @@ export default function TodayDashboard({
   };
 
   return (
-    <div className="lm-today-dashboard" style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: '28px clamp(18px, 4vw, 48px) 40px' }}>
-      <div className="lm-today-shell" style={{ maxWidth: 1120, margin: '0 auto' }}>
-        <div className="lm-today-header" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 22, flexWrap: 'wrap' }}>
+    <div style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: '28px clamp(18px, 4vw, 48px) 40px' }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 22, flexWrap: 'wrap' }}>
           <div>
             <div style={{ color: 'var(--c-text-3)', fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' }}>Heute</div>
             <h1 style={{ margin: '5px 0 4px', fontSize: 28, letterSpacing: -0.8 }}>Dein Unterrichtsstart</h1>
@@ -59,13 +59,13 @@ export default function TodayDashboard({
               {new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })} · {subject.name}
             </div>
           </div>
-          <div className="lm-today-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button onClick={onOpenSubjects} style={actionStyle}>📚 Fächer anzeigen</button>
             <button onClick={onOpenSchedule} style={actionStyle}>📅 Stundenplan</button>
           </div>
         </div>
 
-        <div className="lm-today-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
           {[
             ['Fächerordner', folders.length, subject.color],
             ['Favoriten', favorites.length, '#E8472A'],
@@ -79,7 +79,7 @@ export default function TodayDashboard({
           ))}
         </div>
 
-        <div className="lm-today-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(280px, .8fr)', gap: 14, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(280px, .8fr)', gap: 14, alignItems: 'start' }}>
           <section style={cardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <h2 style={{ margin: 0, fontSize: 15 }}>Meine Aufgaben</h2>
@@ -114,7 +114,7 @@ export default function TodayDashboard({
 
           <section style={cardStyle}>
             <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Schnellzugriff</h2>
-            <div className="lm-today-quick-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
               <button onClick={onOpenSearch} style={actionStyle}>⌕ Material suchen</button>
               <button onClick={onUpload} style={actionStyle}>↑ Hochladen</button>
               <button onClick={onOpenNotes} style={actionStyle}>✎ Notizen</button>

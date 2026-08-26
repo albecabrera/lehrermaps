@@ -1,9 +1,13 @@
 import { Router } from 'express';
 import pool from '../db.js';
 import auth from '../middleware/auth.js';
+import { teacherOnly } from '../middleware/auth.js';
 
 const router = Router();
 router.use(auth);
+// Notebooks are teacher-private. Do not create an empty student namespace:
+// denying the whole router makes accidental future endpoints private by default.
+router.use(teacherOnly);
 
 function getUserId(req) {
   if (Number.isInteger(req.user?.user_id)) return req.user.user_id;
@@ -126,9 +130,7 @@ router.patch('/sections/:id', async (req, res) => {
 router.delete('/sections/:id', async (req, res) => {
   try {
     await pool.execute(
-      `DELETE s FROM sections s
-       INNER JOIN notebooks n ON n.id = s.notebook_id
-       WHERE s.id = ? AND n.user_id = ?`,
+      `DELETE FROM sections WHERE id = ? AND EXISTS (SELECT 1 FROM notebooks n WHERE n.id = sections.notebook_id AND n.user_id = ?)`,
       [req.params.id, getUserId(req)]
     );
     res.json({ ok: true });
@@ -203,10 +205,7 @@ router.patch('/pages/:id', async (req, res) => {
 router.delete('/pages/:id', async (req, res) => {
   try {
     await pool.execute(
-      `DELETE p FROM pages p
-       INNER JOIN sections s ON s.id = p.section_id
-       INNER JOIN notebooks n ON n.id = s.notebook_id
-       WHERE p.id = ? AND n.user_id = ?`,
+      `DELETE FROM pages WHERE id = ? AND EXISTS (SELECT 1 FROM sections s JOIN notebooks n ON n.id = s.notebook_id WHERE s.id = pages.section_id AND n.user_id = ?)`,
       [req.params.id, getUserId(req)]
     );
     res.json({ ok: true });

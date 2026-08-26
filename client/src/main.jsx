@@ -1,4 +1,4 @@
-import { StrictMode, lazy, Suspense, useEffect, useState } from 'react';
+import { StrictMode, lazy, Suspense, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -6,7 +6,6 @@ import LoginPanel from './pages/LoginPanel';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LangProvider } from './contexts/LangContext';
 import { NotebookProvider } from './contexts/NotebookContext';
-import { getOfflineQueueSize, syncOfflineMutations } from './lib/api';
 
 // Authenticated workspaces load only after login; their existing markup and
 // styles remain unchanged.
@@ -60,18 +59,6 @@ function parseRole(token) {
 
 const SESSION_EXAMS_KEY = 'lm_exams_board_seen';
 
-function OfflineStatus() {
-  const [pending, setPending] = useState(() => getOfflineQueueSize());
-  const [online, setOnline] = useState(() => navigator.onLine);
-  useEffect(() => {
-    const refresh = () => { setPending(getOfflineQueueSize()); setOnline(navigator.onLine); };
-    window.addEventListener('online', refresh); window.addEventListener('offline', refresh); window.addEventListener('lm-offline-queue-change', refresh);
-    return () => { window.removeEventListener('online', refresh); window.removeEventListener('offline', refresh); window.removeEventListener('lm-offline-queue-change', refresh); };
-  }, []);
-  if (online && !pending) return null;
-  return <button type="button" onClick={() => syncOfflineMutations()} title="Offline-Synchronisierung" style={{ position: 'fixed', right: 14, bottom: 14, zIndex: 5000, border: '1px solid var(--c-border)', borderRadius: 999, padding: '8px 12px', background: online ? 'var(--c-surface)' : '#92400e', color: online ? 'var(--c-text)' : '#fff', fontSize: 12, fontWeight: 700 }}>{online ? `Synchronisierung ausstehend (${pending})` : 'Offline · Änderungen werden lokal gespeichert'}</button>;
-}
-
 function Root() {
   const [tick, setTick] = useState(0);
   const [examsDismissed, setExamsDismissed] = useState(
@@ -103,7 +90,6 @@ function Root() {
         <Suspense fallback={null}>
           {!examsDismissed && <ExamBoard onDismiss={handleExamsDismiss} />}
           <App onLogout={handleLogout} />
-          <OfflineStatus />
         </Suspense>
       </NotebookProvider>
     );

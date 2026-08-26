@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { SUBJECTS, compareFolderNames } from '../constants/structure';
 import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
+import { useLinks } from '../hooks/useLinks';
 import FileTable from '../components/FileTable';
 import FilePreview from '../components/FilePreview';
 import FolderIcon from '../components/FolderIcon';
@@ -25,6 +26,7 @@ export default function StudentApp({ onLogout }) {
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const { folders, loading } = useFolders();
   const { files } = useFiles(activeFolder?.id);
+  const { links } = useLinks(activeFolder?.id);
 
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const accent = subject.color;
@@ -277,7 +279,7 @@ export default function StudentApp({ onLogout }) {
             <FileTable
               isMobile={isMobile}
               files={files}
-              links={[]}
+              links={links}
               activeFileId={activeFile?.id}
               onFileSelect={(f) => setActiveFile(f)}
               accent={accent}

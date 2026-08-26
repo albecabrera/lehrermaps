@@ -1,12 +1,12 @@
-const CACHE_VERSION = 'lehrermaps-v6';
+const CACHE_VERSION = 'lehrermaps-v8';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-maskable.svg',
-  '/icons/apple-touch-icon.png',
+  '/assets/icons/icon-192.png',
+  '/assets/icons/icon-512.png',
+  '/assets/icons/icon-maskable.svg',
+  '/assets/icons/apple-touch-icon.png',
 ];
 
 async function cacheAppShell() {

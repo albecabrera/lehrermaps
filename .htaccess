@@ -1,0 +1,28 @@
+DirectoryIndex index.html
+
+<IfModule mod_headers.c>
+  <FilesMatch "^(index\.html|manifest\.json|service-worker\.js)$">
+    Header always set Cache-Control "no-cache, no-store, must-revalidate"
+    Header always set Pragma "no-cache"
+    Header always set Expires "0"
+  </FilesMatch>
+
+  <FilesMatch "^(?!(?:index\.html|manifest\.json|service-worker\.js)$).+\.(?:js|css|png|jpg|jpeg|svg|pdf)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # The Vite build publishes PWA icons at /icons. Keep the former public path
+  # as the physical source until the static deployment is refreshed.
+  RewriteRule ^icons/(.*)$ assets/icons/$1 [L]
+  # Plesk/Apache reverse proxy for the private Node backend.  The backend only
+  # listens on loopback; public traffic reaches it exclusively through HTTPS.
+  RewriteRule ^api/?(.*)$ http://127.0.0.1:3001/api/$1 [P,L]
+  RewriteCond %{REQUEST_URI} !^/api/
+  RewriteCond %{REQUEST_URI} !^/ws(?:/|$)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.html [L]
+</IfModule>
