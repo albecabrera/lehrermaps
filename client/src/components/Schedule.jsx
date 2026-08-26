@@ -432,7 +432,7 @@ function ScheduleCell({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       style={{
-        minHeight: 56, minWidth: 0, borderRadius: 8,
+        minHeight: cell ? 68 : 56, minWidth: 0, borderRadius: 8,
         border: dragOver
           ? `1.5px dashed ${cell ? cell.color : '#0EA5E9'}`
           : `1px solid ${cell ? cell.color + '44' : 'var(--c-border)'}`,
@@ -446,20 +446,21 @@ function ScheduleCell({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={handleClick}
+      title={cell ? `${cell.label}${cell.room ? ` · ${cell.room}` : ''}` : undefined}
     >
       {cell ? (
-        <div style={{ padding: '8px 10px 8px 9px', borderLeft: `3px solid ${cell.color}`, minHeight: '100%', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ padding: '8px 8px 8px 9px', borderLeft: `3px solid ${cell.color}`, minHeight: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: cell.color, flexShrink: 0 }} />
             <div style={{
               minWidth: 0, fontSize: 11, fontWeight: 600, color: 'var(--c-text)',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              overflowWrap: 'anywhere', lineHeight: 1.2,
             }}>{cell.label}</div>
           </div>
           {canNav && hovered && (
             <div style={{ fontSize: 9, color: cell.color, marginTop: 2, opacity: 0.8 }}>→ {t('schedule.navigate')}</div>
           )}
-          {cell.room && <div style={{ fontSize: 9, color: 'var(--c-text-3)', marginTop: 2 }}>{cell.room}</div>}
+          {cell.room && <div style={{ fontSize: 9, color: 'var(--c-text-3)', marginTop: 4, overflowWrap: 'anywhere', lineHeight: 1.15 }}>📍 {cell.room}</div>}
         </div>
       ) : (
         <div style={{
@@ -522,7 +523,7 @@ function ScheduleDetailOverlay({ cell, dayLabel, periodLabel, onClose, onNavigat
         <dl className="lm-schedule-detail-meta">
           <div><dt>Wochentag</dt><dd>{dayLabel}</dd></div>
           <div><dt>Unterrichtsstunde</dt><dd>{periodLabel}</dd></div>
-          {detailCell.room && <div><dt>Raum</dt><dd>{detailCell.room}</dd></div>}
+          {detailCell.room && <div><dt>Ort / Raum</dt><dd>{detailCell.room}</dd></div>}
         </dl>
         <div className="lm-schedule-detail-actions">
           {onNavigate && <button type="button" className="lm-schedule-detail-primary" onClick={onNavigate}>→ Ordner öffnen</button>}
@@ -595,11 +596,11 @@ function BreakDayCell({ cell, allowAssignments = false, isMobile, onToggle, onEd
       }}
     >
       {active ? (
-        <span style={{ fontSize: 9, fontWeight: 700, color, letterSpacing: 0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', padding: '0 3px' }}>{cell === true ? 'Aufsicht' : cell.label}</span>
+        <span style={{ fontSize: 9, fontWeight: 700, color, letterSpacing: 0.3, textAlign: 'center', overflowWrap: 'anywhere', maxWidth: '100%', padding: '0 3px' }}>{cell === true ? 'Aufsicht' : cell.label}</span>
       ) : hovered ? (
         <span style={{ fontSize: 14, color: AUFSICHT_COLOR, opacity: 0.5 }}>+</span>
       ) : null}
-      {active && cell !== true && cell.room && <span style={{ fontSize: 8, color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', padding: '0 3px' }}>{cell.room}</span>}
+      {active && cell !== true && cell.room && <span style={{ fontSize: 8, color, textAlign: 'center', overflowWrap: 'anywhere', maxWidth: '100%', padding: '0 3px' }}>📍 {cell.room}</span>}
       {allowAssignments && hovered && <button type="button" title="Aufsicht/Pause bearbeiten" aria-label="Aufsicht oder Pause bearbeiten" onClick={(event) => { event.stopPropagation(); onEdit?.(ref.current); }} style={{ position: 'absolute', top: 2, right: 2, width: 16, height: 16, border: 0, borderRadius: 4, background: 'rgba(0,0,0,.25)', color: '#fff', cursor: 'pointer', fontSize: 10, lineHeight: 1 }}>✎</button>}
     </div>
   );
