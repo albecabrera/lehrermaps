@@ -47,6 +47,8 @@ export const translations = {
     'login.button': 'Anmelden',
     'login.loading': 'Anmelden…',
     'login.error': 'Falsches Passwort. Bitte erneut versuchen.',
+    'login.rate_limited': 'Zu viele Anmeldeversuche. Bitte warte 15 Minuten und versuche es dann erneut.',
+    'login.unavailable': 'Die Anmeldung ist gerade nicht erreichbar. Bitte prüfe deine Internetverbindung und versuche es erneut.',
     'login.footer': 'LehrerMaps · Bonn · NRW',
     'login.choose_role': 'Wie möchtest du einloggen?',
     'login.teacher_role': 'Lehrer',

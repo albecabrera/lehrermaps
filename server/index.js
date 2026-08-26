@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
@@ -22,6 +22,12 @@ import examsRouter from './routes/exams.js';
 import plansRouter from './routes/plans.js';
 import lessonSessionsRouter, { displaySession, displayPage } from './routes/lessonSessions.js';
 import documentAnnotationsRouter from './routes/documentAnnotations.js';
+
+// Load the production configuration next to this module.  The service may be
+// started from the project root by a process manager, so relying on cwd would
+// silently omit server/.env and reject requests from the public origin.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -113,7 +119,6 @@ if (terminalEnabled) app.post('/api/shell/open', requireLehrer, (req, res) => {
 // ── Cliente estático (build de producción) ─────────────────────────────────
 // Sirve client/dist si existe, con fallback SPA — permite usar la app
 // completa desde http://localhost:3001 sin levantar Vite.
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLIENT_DIST = path.join(__dirname, '..', 'client', 'dist');
 
 if (fs.existsSync(path.join(CLIENT_DIST, 'index.html'))) {

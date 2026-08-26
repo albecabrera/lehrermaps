@@ -47,8 +47,14 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
         : await loginStudent(password);
       localStorage.setItem('lm_token', token);
       onLogin();
-    } catch {
-      setError(step === 'teacher' ? t('login.error') : t('student.error'));
+    } catch (err) {
+      if (err.response?.status === 429) {
+        setError(t('login.rate_limited'));
+      } else if (!err.response) {
+        setError(t('login.unavailable'));
+      } else {
+        setError(step === 'teacher' ? t('login.error') : t('student.error'));
+      }
     } finally {
       setLoading(false);
     }

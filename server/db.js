@@ -2,10 +2,17 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import 'dotenv/config';
+import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const databasePath = process.env.SQLITE_PATH || path.join(__dirname, 'data', 'lehrermaps.sqlite');
+// Resolve configuration relative to the server directory, rather than the
+// process working directory. This keeps one persistent database regardless of
+// how the service is launched (systemd, Plesk, or a manual command).
+dotenv.config({ path: path.join(__dirname, '.env') });
+const configuredPath = process.env.SQLITE_PATH;
+const databasePath = configuredPath
+  ? path.resolve(__dirname, configuredPath)
+  : path.join(__dirname, 'data', 'lehrermaps.sqlite');
 fs.mkdirSync(path.dirname(databasePath), { recursive: true });
 
 // SQLite is embedded in Node: no database server, credentials, or network are needed.
