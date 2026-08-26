@@ -89,6 +89,14 @@ async function getFileById(id) {
   return rows[0] || null;
 }
 
+async function getReadableFileById(req, id) {
+  const studentFilter = req.user?.role === 'student'
+    ? ' AND is_shared = 1 AND is_current_version = 1'
+    : '';
+  const [rows] = await pool.execute(`SELECT * FROM files WHERE id = ?${studentFilter}`, [id]);
+  return rows[0] || null;
+}
+
 router.get('/public/:token', async (req, res) => {
   try {
     const [rows] = await pool.execute(
@@ -111,11 +119,10 @@ router.use(auth);
 
 // ── View / Preview / Download must come BEFORE /:folder_id ──
 
-router.get('/open/:id', async (req, res) => {
+router.get('/open/:id', teacherOnly, async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Nicht gefunden' });
-    const file = rows[0];
+    const file = await getReadableFileById(req, req.params.id);
+    if (!file) return res.status(404).json({ error: 'Nicht gefunden' });
     const filePath = path.join(UPLOADS_DIR, file.stored_name);
     if (!existsSync(filePath)) return res.status(404).json({ error: 'Datei nicht auf Disk' });
 
@@ -149,9 +156,8 @@ router.get('/open/:id', async (req, res) => {
 
 router.get('/preview/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Nicht gefunden' });
-    const file = rows[0];
+    const file = await getReadableFileById(req, req.params.id);
+    if (!file) return res.status(404).json({ error: 'Nicht gefunden' });
 
     const ext = file.original_name.split('.').pop().toLowerCase();
     if (!CONVERTIBLE_EXTS.has(ext)) return res.status(415).json({ error: 'Nicht konvertierbar' });
@@ -182,9 +188,8 @@ router.get('/preview/:id', async (req, res) => {
 
 router.get('/view/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Datei nicht gefunden' });
-    const file = rows[0];
+    const file = await getReadableFileById(req, req.params.id);
+    if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
     const filePath = path.join(UPLOADS_DIR, file.stored_name);
     if (!existsSync(filePath)) return res.status(404).json({ error: 'Datei nicht auf Disk' });
     res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(file.original_name)}`);
@@ -197,10 +202,8 @@ router.get('/view/:id', async (req, res) => {
 
 router.get('/download/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Datei nicht gefunden' });
-
-    const file = rows[0];
+    const file = await getReadableFileById(req, req.params.id);
+    if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
     const filePath = path.join(UPLOADS_DIR, file.stored_name);
     if (!existsSync(filePath)) return res.status(404).json({ error: 'Datei nicht auf Disk' });
 
@@ -214,10 +217,17 @@ router.get('/download/:id', async (req, res) => {
 
 router.get('/zip/:folder_id', async (req, res) => {
   try {
-    const [folders] = await pool.execute('SELECT * FROM folders WHERE id = ?', [req.params.folder_id]);
+    const isStudent = req.user?.role === 'student';
+    const [folders] = await pool.execute(
+      `SELECT * FROM folders f WHERE f.id = ?${isStudent ? ' AND EXISTS (SELECT 1 FROM files visible WHERE visible.folder_id = f.id AND visible.is_shared = 1 AND visible.is_current_version = 1)' : ''}`,
+      [req.params.folder_id]
+    );
     if (!folders.length) return res.status(404).json({ error: 'Ordner nicht gefunden' });
     const folder = folders[0];
-    const [files] = await pool.execute('SELECT * FROM files WHERE folder_id = ?', [req.params.folder_id]);
+    const [files] = await pool.execute(
+      `SELECT * FROM files WHERE folder_id = ?${isStudent ? ' AND is_shared = 1 AND is_current_version = 1' : ''}`,
+      [req.params.folder_id]
+    );
 
     const safeName = folder.name.replace(/[^\w\s-]/g, '').trim() || 'ordner';
     res.setHeader('Content-Type', 'application/zip');
@@ -246,8 +256,9 @@ router.get('/zip-selected', async (req, res) => {
     if (!ids.length) return res.status(400).json({ error: 'Keine Dateien ausgewählt' });
 
     const placeholders = ids.map(() => '?').join(',');
+    const studentFilter = req.user?.role === 'student' ? ' AND is_shared = 1 AND is_current_version = 1' : '';
     const [files] = await pool.execute(
-      `SELECT * FROM files WHERE id IN (${placeholders}) ORDER BY uploaded_at DESC`,
+      `SELECT * FROM files WHERE id IN (${placeholders})${studentFilter} ORDER BY uploaded_at DESC`,
       ids
     );
     if (!files.length) return res.status(404).json({ error: 'Keine Dateien gefunden' });
@@ -280,6 +291,7 @@ router.get('/search', async (req, res) => {
   const FILE_LIMIT = 25;
   const FOLDER_LIMIT = 15;
   const LINK_LIMIT = 25;
+  const isStudent = req.user?.role === 'student';
   const norm = q
     .toLowerCase()
     .normalize('NFD')
@@ -312,17 +324,21 @@ router.get('/search', async (req, res) => {
     `(${fields.map((f) => `${normalizedSql3(f)} LIKE ?`).join(' OR ')})`
   ).join(' AND ');
   const fileFields = ['fi.original_name', 'fo.name', 'fo.group_name', 'fo.subject'];
-  const folderFields = ['name', 'group_name', 'subject', 'notes'];
+  const folderFields = isStudent ? ['name', 'group_name', 'subject'] : ['name', 'group_name', 'subject', 'notes'];
   const linkFields = ['li.title', 'li.url', 'fo.name', 'fo.group_name', 'fo.subject'];
   const fileWhere = tokens.length ? buildTokenWhere(fileFields) : `${normalizedSql3('fi.original_name')} LIKE ?`;
-  const folderWhere = tokens.length ? buildTokenWhere(folderFields) : `(${normalizedSql3('name')} LIKE ? OR ${normalizedSql3('notes')} LIKE ?)`;
+  const folderWhere = tokens.length
+    ? buildTokenWhere(folderFields)
+    : isStudent
+      ? `${normalizedSql3('name')} LIKE ?`
+      : `(${normalizedSql3('name')} LIKE ? OR ${normalizedSql3('notes')} LIKE ?)`;
   const linkWhere = tokens.length ? buildTokenWhere(linkFields) : `(${normalizedSql3('li.title')} LIKE ? OR ${normalizedSql3('li.url')} LIKE ?)`;
   const fileParams = tokens.length
     ? tokens.flatMap((t) => fileFields.map(() => `%${t}%`))
     : [`%${norm}%`];
   const folderParams = tokens.length
     ? tokens.flatMap((t) => folderFields.map(() => `%${t}%`))
-    : [`%${norm}%`, `%${norm}%`];
+    : isStudent ? [`%${norm}%`] : [`%${norm}%`, `%${norm}%`];
   const linkParams = tokens.length
     ? tokens.flatMap((t) => linkFields.map(() => `%${t}%`))
     : [`%${norm}%`, `%${norm}%`];
@@ -333,31 +349,31 @@ router.get('/search', async (req, res) => {
                fo.id AS folder_id, fo.name AS folder_name, fo.subject, fo.group_name
         FROM files fi
         JOIN folders fo ON fo.id = fi.folder_id
-        WHERE ${fileWhere}
+        WHERE ${fileWhere}${isStudent ? ' AND fi.is_shared = 1 AND fi.is_current_version = 1' : ''}
         ORDER BY fi.uploaded_at DESC
         LIMIT ? OFFSET ?
       `, [...fileParams, FILE_LIMIT + 1, fileOffset]),
       pool.execute(`
         SELECT
-          id, name, subject, group_name, is_favorite,
-          CASE WHEN ${normalizedSql3('notes')} LIKE ? THEN 1 ELSE 0 END AS notes_match
+          id, name, subject, group_name, ${isStudent ? '' : 'is_favorite,'}
+          ${isStudent ? '0' : `CASE WHEN ${normalizedSql3('notes')} LIKE ? THEN 1 ELSE 0 END`} AS notes_match
         FROM folders
-        WHERE ${folderWhere}
+        WHERE ${folderWhere}${isStudent ? ' AND EXISTS (SELECT 1 FROM files visible WHERE visible.folder_id = folders.id AND visible.is_shared = 1 AND visible.is_current_version = 1)' : ''}
         ORDER BY notes_match DESC, name
         LIMIT ? OFFSET ?
-      `, [`%${norm}%`, ...folderParams, FOLDER_LIMIT + 1, folderOffset]),
+      `, [...(isStudent ? [] : [`%${norm}%`]), ...folderParams, FOLDER_LIMIT + 1, folderOffset]),
       pool.execute(`
         SELECT li.id, li.title, li.url, li.created_at,
                fo.id AS folder_id, fo.name AS folder_name, fo.subject, fo.group_name
         FROM links li
         JOIN folders fo ON fo.id = li.folder_id
-        WHERE ${linkWhere}
+        WHERE ${linkWhere}${isStudent ? ' AND 1 = 0' : ''}
         ORDER BY li.created_at DESC
         LIMIT ? OFFSET ?
       `, [...linkParams, LINK_LIMIT + 1, linkOffset]),
-      pool.execute(`SELECT COUNT(*) AS totalFiles FROM files fi JOIN folders fo ON fo.id = fi.folder_id WHERE ${fileWhere}`, fileParams),
-      pool.execute(`SELECT COUNT(*) AS totalFolders FROM folders WHERE ${folderWhere}`, folderParams),
-      pool.execute(`SELECT COUNT(*) AS totalLinks FROM links li JOIN folders fo ON fo.id = li.folder_id WHERE ${linkWhere}`, linkParams),
+      pool.execute(`SELECT COUNT(*) AS totalFiles FROM files fi JOIN folders fo ON fo.id = fi.folder_id WHERE ${fileWhere}${isStudent ? ' AND fi.is_shared = 1 AND fi.is_current_version = 1' : ''}`, fileParams),
+      pool.execute(`SELECT COUNT(*) AS totalFolders FROM folders WHERE ${folderWhere}${isStudent ? ' AND EXISTS (SELECT 1 FROM files visible WHERE visible.folder_id = folders.id AND visible.is_shared = 1 AND visible.is_current_version = 1)' : ''}`, folderParams),
+      pool.execute(`SELECT COUNT(*) AS totalLinks FROM links li JOIN folders fo ON fo.id = li.folder_id WHERE ${linkWhere}${isStudent ? ' AND 1 = 0' : ''}`, linkParams),
     ]);
     const hasMoreFiles = files.length > FILE_LIMIT;
     const hasMoreFolders = folders.length > FOLDER_LIMIT;

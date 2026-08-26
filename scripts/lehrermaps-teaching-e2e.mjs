@@ -36,6 +36,17 @@ async function upload(name, bytes, mime) {
   return file;
 }
 
+async function dismissInitialExamBoard() {
+  const board = page.locator('.eb-board');
+  if (!(await board.count())) return;
+
+  const dismiss = page.getByRole('button', { name: /Weiter zu LehrerMaps/i });
+  if (await dismiss.count()) await dismiss.first().click();
+  else await page.keyboard.press('Escape');
+
+  await board.waitFor({ state: 'hidden', timeout: 3000 });
+}
+
 try {
   token = (await request('/api/login', { method: 'POST', body: JSON.stringify({ password }) })).token;
   folder = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'spanisch', group_name: 'TEST', name: `${prefix}UNTERRICHT` }) });
@@ -49,6 +60,7 @@ try {
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
   await page.evaluate((value) => localStorage.setItem('lm_token', value), token);
   await page.reload({ waitUntil: 'networkidle' });
+  await dismissInitialExamBoard();
   await page.locator('button').filter({ hasText: folder.name }).last().evaluate((button) => button.click());
   const tabs = await page.locator('button').evaluateAll((buttons) => buttons.map((button) => button.textContent.trim()).filter((text) => ['Jahresplanung', 'Dateien', 'Notizen'].includes(text)));
   if (tabs.slice(0, 3).join('|') !== 'Jahresplanung|Dateien|Notizen') throw new Error(`tab order: ${tabs.join('|')}`);

@@ -7,6 +7,7 @@ router.use(auth);
 
 router.get('/:folder_id', async (req, res) => {
   try {
+    if (req.user?.role === 'student') return res.json([]);
     const [rows] = await pool.execute(
       'SELECT * FROM links WHERE folder_id = ? ORDER BY created_at DESC',
       [req.params.folder_id]

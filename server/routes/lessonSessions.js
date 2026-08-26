@@ -38,7 +38,7 @@ async function canvasForPhase(phaseId, create = true) {
 function parseJson(value) { try { return value ? JSON.parse(value) : {}; } catch { return {}; } }
 function json(value) { return JSON.stringify(value ?? {}); }
 
-router.get('/lesson-sessions/:id/canvas', async (req, res) => {
+router.get('/lesson-sessions/:id/canvas', teacherOnly, async (req, res) => {
   try {
     const session = await getSession(req.params.id, req.user?.id || 1);
     if (!session) return res.status(404).json({ error: 'Stunde nicht gefunden' });
@@ -117,7 +117,7 @@ router.delete('/lesson-phases/:id/live-layer', teacherOnly, async (req, res) => 
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-router.get('/lesson-sessions', async (req, res) => {
+router.get('/lesson-sessions', teacherOnly, async (req, res) => {
   try {
     const [rows] = await pool.execute('SELECT * FROM lesson_sessions WHERE user_id = ? ORDER BY lesson_date DESC, updated_at DESC', [req.user?.id || 1]);
     res.json(rows);
@@ -143,7 +143,7 @@ router.post('/lesson-sessions', teacherOnly, async (req, res) => {
   } catch (error) { await connection.rollback(); res.status(500).json({ error: error.message }); } finally { connection.release(); }
 });
 
-router.get('/lesson-sessions/:id', async (req, res) => {
+router.get('/lesson-sessions/:id', teacherOnly, async (req, res) => {
   try {
     const session = await withPhases(await getSession(req.params.id, req.user?.id || 1));
     if (!session) return res.status(404).json({ error: 'Stunde nicht gefunden' });

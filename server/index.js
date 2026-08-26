@@ -63,6 +63,9 @@ app.use(express.json({ limit: '1mb' }));
 app.get('/api/health', (_, res) => res.json({ ok: true }));
 
 app.use('/api', corsMiddleware);
+// Tokenized Lehrerhilfe projections are public by design; mount this route
+// before the authenticated routers mounted at /api.
+app.get('/api/display/:token', displaySession);
 app.use('/api', authRouter);
 app.use('/api/folders', foldersRouter);
 app.use('/api/files', filesRouter);
@@ -73,7 +76,6 @@ app.use('/api', notebooksRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/exams', examsRouter);
 app.use('/api/plans', plansRouter);
-app.get('/api/display/:token', displaySession);
 app.use('/api', lessonSessionsRouter);
 app.use('/api', documentAnnotationsRouter);
 app.get('/display/:token', displayPage);

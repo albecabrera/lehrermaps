@@ -15,6 +15,26 @@ const FOLDER_WITH_COUNT = `
 
 router.get('/', async (req, res) => {
   try {
+    if (req.user?.role === 'student') {
+      const [rows] = await pool.execute(`
+        WITH RECURSIVE visible_folder_ids AS (
+          SELECT DISTINCT f.id, f.parent_id
+          FROM folders f
+          JOIN files fi ON fi.folder_id = f.id
+            AND fi.is_shared = 1
+            AND fi.is_current_version = 1
+          UNION DISTINCT
+          SELECT parent.id, parent.parent_id
+          FROM folders parent
+          JOIN visible_folder_ids child ON child.parent_id = parent.id
+        )
+        SELECT DISTINCT f.id, f.subject, f.group_name, f.name, f.parent_id, f.sort_order, f.due_at
+        FROM folders f
+        JOIN visible_folder_ids visible ON visible.id = f.id
+        ORDER BY f.subject, f.group_name, f.parent_id, f.sort_order, f.name
+      `);
+      return res.json(rows);
+    }
     const [rows] = await pool.execute(`
       SELECT f.*, COUNT(fi.id) AS file_count, COALESCE(SUM(fi.size_bytes), 0) AS total_size_bytes,
         (SELECT fi2.id FROM files fi2 WHERE fi2.folder_id = f.id AND fi2.mime_type LIKE 'image/%' ORDER BY fi2.uploaded_at DESC LIMIT 1) AS thumbnail_file_id
