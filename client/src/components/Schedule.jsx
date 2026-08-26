@@ -553,7 +553,7 @@ const AUFSICHT_COLOR = '#64748B';
 
 function BreakRow({ breakKey, label, value, onToggleDay, allowAssignments = false, onEditDay, onOpenDetail, onDropDay, isMobile }) {
   return [
-    <div key={`${breakKey}-label`} style={{
+    <div key={`${breakKey}-label`} className="lm-schedule-break-label" style={{
       display: 'flex', alignItems: 'center',
       fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
       textTransform: 'uppercase', color: 'var(--c-text-3)',
@@ -585,13 +585,14 @@ function BreakDayCell({ cell, allowAssignments = false, isMobile, onToggle, onEd
       onDrop={(event) => { if (!allowAssignments) return; event.preventDefault(); onDrop(readDndPayload(event.dataTransfer)); setHovered(false); }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className="lm-schedule-break-cell"
       style={{
-        height: 30, borderRadius: 6, cursor: 'pointer',
+        minHeight: 30, height: '100%', boxSizing: 'border-box', borderRadius: 7, cursor: 'pointer',
         border: `1px solid ${active ? color + '66' : hovered ? AUFSICHT_COLOR + '33' : 'var(--c-border)'}`,
         borderTop: `1px solid ${active ? color + '66' : AUFSICHT_COLOR + '30'}`,
         borderLeft: active ? `3px solid ${color}` : undefined,
         background: active ? `${color}18` : hovered ? `${AUFSICHT_COLOR}0C` : `${AUFSICHT_COLOR}08`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
         transition: 'background .1s, border-color .1s', position: 'relative',
       }}
     >

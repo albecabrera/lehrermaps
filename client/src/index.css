@@ -344,6 +344,8 @@ button:active {
 
 /* Stundenplan: keep all five weekdays visible on narrow iPhone viewports. */
 .lm-schedule-grid > * { min-width: 0; }
+.lm-schedule-break-label { justify-content: center !important; padding: 4px !important; text-align: center; line-height: 1.1; overflow-wrap: anywhere; border-radius: 7px; }
+.lm-schedule-break-cell { box-shadow: inset 0 1px 0 rgba(255,255,255,.12); }
 
 .lm-school-calendar-backdrop { position: fixed; inset: 0; z-index: 1600; display: flex; align-items: center; justify-content: center; padding: 18px; background: var(--c-overlay, rgba(15, 23, 42, .56)); }
 .lm-school-calendar-viewer { display: flex; flex-direction: column; width: min(1120px, 100%); height: min(900px, 92dvh); overflow: hidden; border: 1px solid var(--c-border); border-radius: 18px; background: var(--c-surface); box-shadow: 0 22px 70px rgba(15, 23, 42, .3); }
@@ -414,13 +416,15 @@ button:active {
   .lm-schedule-header h2 { font-size: 20px !important; }
   .lm-schedule-header button { height: 32px !important; padding: 0 9px !important; font-size: 10px !important; }
   .lm-schedule-grid {
-    grid-template-columns: 34px repeat(5, minmax(0, 1fr)) !important;
+    grid-template-columns: 48px repeat(5, minmax(0, 1fr)) !important;
     gap: 3px !important;
     padding: 4px !important;
     border-radius: 13px !important;
   }
   .lm-schedule-day { min-width: 0; padding: 7px 0 !important; font-size: 9px !important; letter-spacing: 0 !important; }
   .lm-schedule-period { min-width: 0; padding-right: 3px !important; padding-top: 9px !important; font-size: 8px !important; }
+  .lm-schedule-break-label { min-height: 36px !important; height: auto !important; font-size: 8px !important; letter-spacing: .2px !important; }
+  .lm-schedule-break-cell { min-height: 36px !important; height: 100% !important; }
 }
 
 /* Heute: stack the dashboard instead of forcing desktop columns into an iPhone. */
