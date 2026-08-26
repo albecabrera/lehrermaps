@@ -345,6 +345,23 @@ button:active {
 /* Stundenplan: keep all five weekdays visible on narrow iPhone viewports. */
 .lm-schedule-grid > * { min-width: 0; }
 
+.lm-school-calendar-backdrop { position: fixed; inset: 0; z-index: 1600; display: flex; align-items: center; justify-content: center; padding: 18px; background: var(--c-overlay, rgba(15, 23, 42, .56)); }
+.lm-school-calendar-viewer { display: flex; flex-direction: column; width: min(1120px, 100%); height: min(900px, 92dvh); overflow: hidden; border: 1px solid var(--c-border); border-radius: 18px; background: var(--c-surface); box-shadow: 0 22px 70px rgba(15, 23, 42, .3); }
+.lm-school-calendar-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--c-border); color: var(--c-text); }
+.lm-school-calendar-kicker { margin-bottom: 4px; color: var(--c-text-3); font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.lm-school-calendar-header h2 { margin: 0; font-size: 18px; line-height: 1.2; }
+.lm-school-calendar-actions { display: flex; align-items: center; gap: 8px; }
+.lm-school-calendar-open, .lm-school-calendar-actions button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--c-border); border-radius: 9px; background: var(--c-surface-2); color: var(--c-text-2); cursor: pointer; font: inherit; font-size: 12px; text-decoration: none; }
+.lm-school-calendar-actions button { width: 42px; padding: 0; font-size: 24px; }
+.lm-school-calendar-frame { flex: 1; width: 100%; min-height: 0; border: 0; background: #64748b; }
+@media (max-width: 860px) {
+  .lm-school-calendar-backdrop { align-items: stretch; padding: 0; }
+  .lm-school-calendar-viewer { width: 100%; height: 100dvh; border: 0; border-radius: 0; }
+  .lm-school-calendar-header { padding: calc(12px + env(safe-area-inset-top)) 12px 12px; }
+  .lm-school-calendar-header h2 { font-size: 15px; }
+  .lm-school-calendar-open { min-height: 44px; }
+}
+
 .lm-schedule-detail-backdrop {
   position: fixed;
   z-index: 1200;

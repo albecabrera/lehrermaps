@@ -75,7 +75,7 @@ export function MobileBottomNav({ accent, items, active }) {
 export function MobileMoreSheet({
   open, onClose, t, accent,
   isDark, toggleTheme,
-  onExams, onWorksheet, onUpload, uploadDisabled, onLogout,
+  onExams, onSchoolCalendar, onWorksheet, onUpload, uploadDisabled, onLogout,
   showTeacherLinks = false,
 }) {
   useEscapeKey(open, onClose);
@@ -101,7 +101,7 @@ export function MobileMoreSheet({
   );
 
   const divider = <div style={{ height: 1, background: 'var(--c-border)', margin: '8px 6px' }} />;
-  const hasActions = onExams || onUpload || onWorksheet;
+  const hasActions = onExams || onSchoolCalendar || onUpload || onWorksheet;
 
   return createPortal(
     <div
@@ -138,6 +138,7 @@ export function MobileMoreSheet({
             </svg>
           ),
         })}
+        {onSchoolCalendar && row('Terminplan 2026/27', onSchoolCalendar, { icon: '▣' })}
         {onUpload && row(t('app.upload'), onUpload, {
           disabled: uploadDisabled,
           icon: (
