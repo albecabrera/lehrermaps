@@ -79,42 +79,42 @@ html, body, #root {
 
 /* Tablet reading mode: explicit component sizing is used instead of browser
    zoom so the visual upgrade also works in tablet browsers without zoom support. */
-@media (min-width: 768px) and (max-width: 1199px) {
+@media (min-width: 600px) and (max-width: 1199px) and (min-height: 600px) {
   html, body, #root {
     font-size: 20px;
   }
 
   /* Today: increase hierarchy, card density, controls, and reading text. */
   .lm-today-view { padding: 36px clamp(28px, 5vw, 64px) 56px !important; }
-  .lm-today-view h1 { font-size: 38px !important; line-height: 1.12 !important; }
-  .lm-today-view > div > div:first-child > div:first-child { font-size: 13px !important; }
-  .lm-today-view > div > div:first-child > div:first-child + h1 + div { font-size: 16px !important; }
+  .lm-today-view h1 { font-size: 42px !important; line-height: 1.12 !important; }
+  .lm-today-view > div > div:first-child > div:first-child { font-size: 14px !important; }
+  .lm-today-view > div > div:first-child > div:first-child + h1 + div { font-size: 17px !important; }
   .lm-today-stats { gap: 14px !important; margin-bottom: 24px !important; }
   .lm-today-stats > div { padding: 18px 20px !important; border-radius: 16px !important; }
-  .lm-today-stats > div > div:first-child { font-size: 34px !important; }
-  .lm-today-stats > div > div:last-child { font-size: 12px !important; margin-top: 5px !important; }
+  .lm-today-stats > div > div:first-child { font-size: 38px !important; }
+  .lm-today-stats > div > div:last-child { font-size: 13px !important; margin-top: 5px !important; }
   .lm-today-content { gap: 18px !important; }
   .lm-today-content > section { padding: 22px !important; border-radius: 16px !important; }
-  .lm-today-content h2 { font-size: 20px !important; }
-  .lm-today-view button { min-height: 40px !important; font-size: 14px !important; }
-  .lm-today-view input, .lm-today-view textarea { font-size: 15px !important; }
-  .lm-today-view input:not([type="checkbox"]) { min-height: 42px !important; }
+  .lm-today-content h2 { font-size: 22px !important; }
+  .lm-today-view button { min-height: 44px !important; font-size: 16px !important; }
+  .lm-today-view input, .lm-today-view textarea { font-size: 16px !important; }
+  .lm-today-view input:not([type="checkbox"]) { min-height: 46px !important; }
   .lm-today-view textarea { padding: 14px !important; }
-  .lm-today-view p, .lm-today-view span, .lm-today-view strong { font-size: 14px !important; }
+  .lm-today-view p, .lm-today-view span, .lm-today-view strong { font-size: 16px !important; }
 
   /* Subjects and folders: desktop sidebar and tablet drawer both get generous targets. */
   .lm-sidebar { width: 300px !important; }
-  .lm-sidebar button { min-height: 38px !important; font-size: 14px !important; }
+  .lm-sidebar button { min-height: 42px !important; font-size: 16px !important; }
   .lm-sidebar button span { font-size: inherit !important; }
-  .lm-sidebar button[title] { min-height: 42px !important; }
+  .lm-sidebar button[title] { min-height: 46px !important; }
   .lm-drawer { width: min(88vw, 360px) !important; }
   .lm-drawer .lm-sidebar { width: 100% !important; }
-  .lm-drawer .lm-sidebar button { min-height: 42px !important; font-size: 15px !important; }
+  .lm-drawer .lm-sidebar button { min-height: 46px !important; font-size: 16px !important; }
 
   /* Tablet navigation keeps the same visual rhythm as the enlarged content. */
-  .lm-mobile-nav-label { font-size: 12px !important; }
+  .lm-mobile-nav-label { font-size: 13px !important; }
   .lm-mobile-nav-label + * { font-size: inherit; }
-  nav button[aria-label] { min-height: 62px !important; }
+  nav button[aria-label] { min-height: 66px !important; }
 }
 
 .lm-no-transition,
