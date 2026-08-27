@@ -120,14 +120,23 @@ export default function App({ onLogout }) {
     return chain;
   })();
   const planningFolder = activeFolderPath[0] || activeFolder;
-  // Direkte Unterordner des aktiven Ordners (gleiche Sortierung wie im Sidebar-Baum)
-  const childFolders = activeFolder
-    ? folders
-        .filter((f) => (f.parent_id ?? null) === activeFolder.id)
+  // Complete subtree of the active folder, preserving the hierarchy order.
+  const childFolders = activeFolder ? (() => {
+    const descendants = [];
+    const collect = (parentId, depth = 0) => {
+      folders
+        .filter((folder) => (folder.parent_id ?? null) === parentId)
         .sort((a, b) =>
           ((a.sort_order || 0) - (b.sort_order || 0)) ||
           compareFolderNames(a, b))
-    : [];
+        .forEach((folder) => {
+          descendants.push({ ...folder, nestingDepth: depth });
+          collect(folder.id, depth + 1);
+        });
+    };
+    collect(activeFolder.id);
+    return descendants;
+  })() : [];
   const folderHasSubfolders = childFolders.length > 0;
   const [pendingFileId, setPendingFileId] = useState(null);
   const [pendingLinkId, setPendingLinkId] = useState(null);
@@ -1379,7 +1388,7 @@ export default function App({ onLogout }) {
                             title={cf.name}
                             style={{
                               display: 'flex', alignItems: 'center', gap: 7,
-                              height: 32, padding: '0 12px 0 10px',
+                              height: 32, padding: `0 12px 0 ${10 + cf.nestingDepth * 18}px`,
                               border: '1px solid var(--c-border)', borderRadius: 8,
                               background: 'var(--c-surface)', cursor: 'pointer',
                               fontFamily: 'inherit', fontSize: 12.5, fontWeight: 500,
@@ -1395,7 +1404,7 @@ export default function App({ onLogout }) {
                               e.currentTarget.style.background = 'var(--c-surface)';
                             }}
                           >
-                            <FolderIcon color={cf.color || accent} size={14} />
+                            <FolderIcon color={cf.color || accent} size={cf.nestingDepth ? 13 : 14} />
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {cf.name}
                             </span>
