@@ -79,7 +79,7 @@ html, body, #root {
 
 /* Tablet reading mode: explicit component sizing is used instead of browser
    zoom so the visual upgrade also works in tablet browsers without zoom support. */
-@media (min-width: 600px) and (max-width: 1199px) and (min-height: 600px) {
+@media (min-width: 600px) and (pointer: coarse) {
   html, body, #root {
     font-size: 20px;
   }
