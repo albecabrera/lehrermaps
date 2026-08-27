@@ -39,12 +39,16 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
   if (!open) return null;
 
   return (
-    <div style={{
+    <div className="lm-add-link-backdrop" style={{
       position: 'fixed', inset: 0, zIndex: 2000,
       background: 'var(--c-overlay)', display: 'flex',
       alignItems: 'center', justifyContent: 'center', padding: 24,
     }} onClick={onClose}>
       <div
+        className="lm-modal-surface lm-add-link-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lm-add-link-title"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--c-surface)', borderRadius: 14, width: '100%', maxWidth: 440,
@@ -61,16 +65,17 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
             </svg>
           </div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--c-text)' }}>{t('modal.add_link.title')}</div>
+            <div id="lm-add-link-title" style={{ fontSize: 14, fontWeight: 700, color: 'var(--c-text)' }}>{t('modal.add_link.title')}</div>
             <div style={{ fontSize: 11, color: 'var(--c-text-3)' }}>{t('modal.add_link.subtitle')}</div>
           </div>
         </div>
 
-        <div style={{ padding: 20, display: 'flex', gap: 16 }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="lm-add-link-content" style={{ padding: 20, display: 'flex', gap: 16 }}>
+          <div className="lm-add-link-form" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text-2)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>{t('modal.add_link.name_label')}</label>
+              <label htmlFor="lm-add-link-title-input" style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text-2)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>{t('modal.add_link.name_label')}</label>
               <input
+                id="lm-add-link-title-input"
                 ref={titleRef}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -79,8 +84,9 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
               />
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text-2)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>{t('modal.add_link.url_label')}</label>
+              <label htmlFor="lm-add-link-url-input" style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text-2)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>{t('modal.add_link.url_label')}</label>
               <input
+                id="lm-add-link-url-input"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder={t('modal.add_link.url_placeholder')}
@@ -94,7 +100,7 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
             </label>
           </div>
 
-          <div style={{
+          <div className="lm-add-link-qr" style={{
             width: 100, height: 100, borderRadius: 8, border: '1px solid var(--c-border)',
             background: 'var(--c-hover)', flexShrink: 0, display: 'flex',
             alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
@@ -115,7 +121,7 @@ export default function AddLinkModal({ open, onClose, onSave, accent = '#E8472A'
           </div>
         </div>
 
-        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--c-border)', display: 'flex', justifyContent: 'flex-end', gap: 8, background: 'var(--c-surface-2)' }}>
+        <div className="lm-add-link-footer" style={{ padding: '12px 20px', borderTop: '1px solid var(--c-border)', display: 'flex', justifyContent: 'flex-end', gap: 8, background: 'var(--c-surface-2)' }}>
           <button onClick={onClose} style={cancelBtn}>{t('cancel')}</button>
           <button
             onClick={handleSave}

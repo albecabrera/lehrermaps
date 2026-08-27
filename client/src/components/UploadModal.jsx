@@ -68,6 +68,7 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
 
   return createPortal(
     <div
+      className="lm-upload-modal-backdrop"
       onClick={!uploading ? handleClose : undefined}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -78,7 +79,10 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
       }}
     >
       <div
-        className="lm-modal-surface"
+        className="lm-modal-surface lm-upload-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lm-upload-modal-title"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 600, maxHeight: '90vh',
@@ -90,13 +94,13 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
           border: '1px solid var(--c-border-soft)',
         }}
       >
-        <div style={{
+        <div className="lm-upload-modal-header" style={{
           padding: '18px 22px 14px',
           display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
           borderBottom: '1px solid var(--c-border)',
         }}>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>
+            <div id="lm-upload-modal-title" style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>
               {t('modal.upload.title')}
             </div>
             <div style={{ fontSize: 12, color: 'var(--c-text-2)', marginTop: 3 }}>
@@ -106,6 +110,8 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
           <button
             onClick={handleClose}
             disabled={uploading}
+            aria-label="Schließen"
+            title="Schließen"
             style={{
               width: 28, height: 28, border: 'none', borderRadius: 7,
               background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer',
@@ -117,7 +123,7 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
           >×</button>
         </div>
 
-        <div style={{ padding: 22, overflowY: 'auto', flex: 1 }}>
+        <div className="lm-upload-modal-content" style={{ padding: 22, overflowY: 'auto', flex: 1 }}>
           {/* Drop zone — always visible unless uploading */}
           {!showList && (
             <div
@@ -256,7 +262,7 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
                 fontSize: 10, fontWeight: 600, letterSpacing: 0.7,
                 textTransform: 'uppercase', color: 'var(--c-text-3)', marginBottom: 10,
               }}>{t('modal.upload.formats')}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+              <div className="lm-upload-format-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                 {SUPPORTED_TYPES.map((grp) => (
                   <div key={grp.group} style={{
                     border: '1px solid var(--c-border)', borderRadius: 8,
@@ -284,7 +290,7 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
           )}
         </div>
 
-        <div style={{
+        <div className="lm-upload-modal-footer" style={{
           padding: '12px 22px', borderTop: '1px solid var(--c-border)',
           display: 'flex', alignItems: 'center', gap: 10, background: 'var(--c-surface-2)',
         }}>

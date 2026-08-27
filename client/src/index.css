@@ -423,6 +423,48 @@ button:active {
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
+
+/* Upload/link dialogs retain their desktop layout while fitting safely on phones. */
+.lm-upload-modal-backdrop,
+.lm-add-link-backdrop {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.lm-upload-modal,
+.lm-add-link-modal {
+  min-width: 0;
+}
+
+@media (max-width: 620px) {
+  .lm-upload-modal-backdrop,
+  .lm-add-link-backdrop {
+    align-items: flex-start !important;
+    padding: 12px !important;
+  }
+  .lm-upload-modal,
+  .lm-add-link-modal {
+    max-height: calc(100dvh - 24px) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+  }
+  .lm-upload-modal-header { padding: 16px 16px 12px !important; }
+  .lm-upload-modal-content { padding: 16px !important; }
+  .lm-upload-modal-footer { padding: 10px 16px !important; align-items: flex-start !important; flex-wrap: wrap; }
+  .lm-upload-modal-footer > div { flex-basis: 100%; }
+  .lm-upload-format-grid { grid-template-columns: 1fr !important; }
+
+  .lm-add-link-content { padding: 16px !important; flex-direction: column; }
+  .lm-add-link-modal { display: flex; flex-direction: column; }
+  .lm-add-link-content { flex: 1; min-height: 0; overflow-y: auto; }
+  .lm-add-link-qr { width: 100% !important; height: auto !important; min-height: 96px; }
+  .lm-add-link-qr img { width: 92px !important; height: 92px !important; }
+  .lm-add-link-footer { padding: 10px 16px !important; }
+}
+
+[role="separator"]:focus-visible {
+  outline: 2px solid var(--c-focus, #2563eb);
+  outline-offset: 2px;
+}
 /* Jahresplanung: compact cards on narrow screens, table on desktop. */
 .lm-annual-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .lm-annual-table th { text-align: left; padding: 9px 8px; color: var(--c-text-3); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--c-border); }

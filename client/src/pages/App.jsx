@@ -150,6 +150,7 @@ export default function App({ onLogout }) {
   const [focusMode, setFocusMode] = useState(false);
 
   const [previewWidth, setPreviewWidth] = useState(320);
+  const [previewCollapsed, setPreviewCollapsed] = useState(false);
   const dragState = useRef(null);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const sidebarDragState = useRef(null);
@@ -168,6 +169,10 @@ export default function App({ onLogout }) {
   useEffect(() => {
     if (activeFile2 && previewWidth < 520) setPreviewWidth(640);
   }, [activeFile2]);
+
+  useEffect(() => {
+    if (activeFile || activeLink) setPreviewCollapsed(false);
+  }, [activeFile?.id, activeLink?.id]);
 
   useEffect(() => () => {
     for (const timer of deleteTimersRef.current.values()) clearTimeout(timer);
@@ -1317,6 +1322,19 @@ export default function App({ onLogout }) {
                   })}
                   {folderTab === 'files' && (
                     <div style={{ marginLeft: 'auto', alignSelf: 'center', paddingRight: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {!isMobile && (
+                        <button
+                          className="lm-spring"
+                          type="button"
+                          onClick={() => setPreviewCollapsed((collapsed) => !collapsed)}
+                          aria-expanded={!previewCollapsed}
+                          aria-controls="lm-file-preview-pane"
+                          title={previewCollapsed ? 'Vorschau anzeigen' : 'Vorschau ausblenden'}
+                          style={{ height: 24, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 6, background: previewCollapsed ? `${accent}12` : 'transparent', color: previewCollapsed ? accent : 'var(--c-text-2)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
+                        >
+                          {previewCollapsed ? 'Vorschau anzeigen' : 'Vorschau ausblenden'}
+                        </button>
+                      )}
                       {!folderHasSubfolders && (
                         <button
                           className="lm-spring"
@@ -1495,8 +1513,10 @@ export default function App({ onLogout }) {
         {/* Preview panel — resizable, optional split (Desktop) */}
         {activeFolder && !focusMode && !isMobile && (
           <div
+            id="lm-file-preview-pane"
+            aria-hidden={previewCollapsed}
             style={{
-              width: effectivePreviewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden',
+              width: previewCollapsed ? 0 : effectivePreviewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden',
               // Klammer: Vorschau darf den Inhalt nie unter ~300px quetschen
               // (schmale Desktop-Fenster + 640px-Split-Vorschau)
               maxWidth: `calc(100vw - ${sidebarWidth + 300}px)`,
@@ -1504,8 +1524,18 @@ export default function App({ onLogout }) {
               transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
             }}
           >
+            {!previewCollapsed && <>
             <div
               onMouseDown={onResizeMouseDown}
+              onKeyDown={(e) => {
+                if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+                e.preventDefault();
+                setPreviewWidth((width) => Math.min(700, Math.max(180, width + (e.key === 'ArrowLeft' ? 20 : -20))));
+              }}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Vorschaubreite anpassen"
+              tabIndex={0}
               style={{
                 width: 4, flexShrink: 0, cursor: 'col-resize',
                 background: 'transparent', position: 'relative',
@@ -1544,6 +1574,7 @@ export default function App({ onLogout }) {
                 </div>
               )}
             </div>
+            </>}
           </div>
         )}
 
