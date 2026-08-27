@@ -12,7 +12,7 @@ function readTasks() {
 }
 
 export default function TodayDashboard({
-  subject, folders = [], recents = [], onRecentClick,
+  subject, folders = [], onRecentClick,
   onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
 }) {
   const [tasks, setTasks] = useState(readTasks);
@@ -49,7 +49,7 @@ export default function TodayDashboard({
   };
 
   return (
-    <div style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: '28px clamp(18px, 4vw, 48px) 40px' }}>
+    <div className="lm-today-view" style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: '28px clamp(18px, 4vw, 48px) 40px' }}>
       <div style={{ maxWidth: 1120, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 22, flexWrap: 'wrap' }}>
           <div>
@@ -65,7 +65,7 @@ export default function TodayDashboard({
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
+        <div className="lm-today-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
           {[
             ['Fächerordner', folders.length, subject.color],
             ['Favoriten', favorites.length, '#E8472A'],
@@ -79,7 +79,7 @@ export default function TodayDashboard({
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(280px, .8fr)', gap: 14, alignItems: 'start' }}>
+        <div className="lm-today-content" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(280px, .8fr)', gap: 14, alignItems: 'start' }}>
           <section style={cardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <h2 style={{ margin: 0, fontSize: 15 }}>Meine Aufgaben</h2>
@@ -114,7 +114,7 @@ export default function TodayDashboard({
 
           <section style={cardStyle}>
             <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Schnellzugriff</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
+            <div className="lm-today-quick-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
               <button onClick={onOpenSearch} style={actionStyle}>⌕ Material suchen</button>
               <button onClick={onUpload} style={actionStyle}>↑ Hochladen</button>
               <button onClick={onOpenNotes} style={actionStyle}>✎ Notizen</button>
@@ -122,7 +122,6 @@ export default function TodayDashboard({
           </section>
         </div>
 
-        {recents.length > 0 && <section style={{ ...cardStyle, marginTop: 14 }}><h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Zuletzt geöffnet</h2><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{recents.map((recent) => <button key={recent.id} onClick={() => onRecentClick?.(recent)} style={{ ...actionStyle, borderRadius: 999, height: 30 }}>{recent.name}</button>)}</div></section>}
       </div>
     </div>
   );

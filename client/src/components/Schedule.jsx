@@ -83,6 +83,13 @@ export default function Schedule({ onNavigate }) {
   const assign = useCallback((subject) => {
     if (!picker) return;
     const key = `${picker.day}-${picker.period}`;
+    if (!subject) {
+      const next = { ...schedule };
+      delete next[key];
+      persist(next);
+      setPicker(null);
+      return;
+    }
     const cell = { id: subject.id, label: subject.label, color: subject.color };
     if (subject.subjectId) cell.subjectId = subject.subjectId;
     persist({ ...schedule, [key]: cell });
@@ -95,6 +102,15 @@ export default function Schedule({ onNavigate }) {
     delete next[key];
     persist(next);
   }, [schedule, persist]);
+
+  const updateLocation = useCallback((location) => {
+    if (!picker) return;
+    const key = `${picker.day}-${picker.period}`;
+    const current = schedule[key];
+    if (!current) return;
+    persist({ ...schedule, [key]: { ...current, location: location.trim() } });
+    setPicker(null);
+  }, [picker, schedule, persist]);
 
   const toggleBreakDay = useCallback((breakKey, day) => {
     const current = schedule[breakKey] || {};
@@ -165,6 +181,7 @@ export default function Schedule({ onNavigate }) {
         `DTSTART:${fmt(start)}`,
         `DTEND:${fmt(end)}`,
         `SUMMARY:${cell.label.replace(/,/g, '\\,')}`,
+        ...(cell.location ? [`LOCATION:${cell.location.replace(/[,;\\]/g, '\\$&')}`] : []),
         'END:VEVENT'
       );
     });
@@ -241,7 +258,7 @@ export default function Schedule({ onNavigate }) {
               const key = `${d}-${p}`;
               const cell = schedule[key];
               return (
-                <ScheduleCell
+          <ScheduleCell
                   key={key}
                   day={d}
                   period={p}
@@ -276,8 +293,9 @@ export default function Schedule({ onNavigate }) {
       {picker && (
         <SubjectPicker
           rect={picker.rect}
-          current={schedule[`${picker.day}-${picker.period}`]?.id}
+          cell={schedule[`${picker.day}-${picker.period}`]}
           onSelect={assign}
+          onSaveLocation={updateLocation}
           onClose={() => setPicker(null)}
         />
       )}
@@ -304,6 +322,7 @@ function ScheduleCell({
 
   return (
     <div
+      className="lm-schedule-cell"
       ref={ref}
       draggable={!!cell}
       onDragStart={(e) => {
@@ -353,6 +372,7 @@ function ScheduleCell({
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>{cell.label}</div>
           </div>
+          {cell.location && <div className="lm-schedule-cell-location">📍 {cell.location}</div>}
           {canNav && hovered && (
             <div style={{ fontSize: 9, color: cell.color, marginTop: 2, opacity: 0.8 }}>→ {t('schedule.navigate')}</div>
           )}
@@ -450,8 +470,9 @@ function BreakDayCell({ active, onToggle }) {
   );
 }
 
-function SubjectPicker({ rect, current, onSelect, onClose }) {
+function SubjectPicker({ rect, cell, onSelect, onSaveLocation, onClose }) {
   useEscapeKey(true, onClose);
+  const [location, setLocation] = useState(cell?.location || '');
   const PICKER_W = 220;
   const PICKER_MAX_H = Math.min(360, window.innerHeight - 80);
   const vw = window.innerWidth;
@@ -493,41 +514,35 @@ function SubjectPicker({ rect, current, onSelect, onClose }) {
           fontFamily: '"DM Sans", -apple-system, sans-serif',
         }}
       >
-        {STUNDENPLAN_SUBJECTS.map((s) => {
-          const active = s.id === current;
-          return (
-            <button
-              key={s.id}
-              onClick={() => onSelect(s)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 9,
-                width: '100%', padding: '7px 10px',
-                border: active ? `1.5px solid ${s.color}` : '1.5px solid transparent',
-                borderRadius: 8,
-                background: active ? `${s.color}18` : 'transparent',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                transition: 'background .1s, border-color .1s',
-              }}
-              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--c-hover)'; }}
-              onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
-            >
-              <div style={{
-                width: 10, height: 10, borderRadius: '50%',
-                background: s.color, flexShrink: 0,
-              }} />
-              <span style={{
-                fontSize: 12, fontWeight: active ? 700 : 500,
-                color: active ? s.color : 'var(--c-text)',
-              }}>{s.label}</span>
-              {active && (
-                <svg style={{ marginLeft: 'auto', color: s.color }} width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              )}
+        {cell && (
+          <form onSubmit={(event) => { event.preventDefault(); onSaveLocation(location); }} style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-text-2)' }}>
+              Lugar de la clase
+              <input
+                autoFocus
+                value={location}
+                onChange={(event) => setLocation(event.target.value)}
+                placeholder="p. ej. S10, S9-2, J004"
+                style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, height: 34, padding: '0 9px', border: '1px solid var(--c-border)', borderRadius: 7, background: 'var(--c-input-bg)', color: 'var(--c-text)', font: 'inherit', fontSize: 12 }}
+              />
+            </label>
+            <button type="submit" style={{ width: '100%', padding: '8px 10px', border: 0, borderRadius: 8, background: 'var(--c-text)', color: 'var(--c-surface)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700 }}>
+              Guardar lugar
             </button>
-          );
-        })}
+          </form>
+        )}
+        {cell && (
+          <button
+            onClick={() => onSelect(null)}
+            style={{
+              width: '100%', padding: '8px 10px', border: '1px solid var(--c-border)',
+              borderRadius: 8, background: 'transparent', color: 'var(--c-text-2)',
+              cursor: 'pointer', fontFamily: 'inherit', fontSize: 12,
+            }}
+          >
+            Celda vacía
+          </button>
+        )}
       </div>
     </>,
     document.body

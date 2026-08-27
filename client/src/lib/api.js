@@ -33,11 +33,8 @@ api.interceptors.response.use(
 export const login = (password) =>
   api.post('/login', { password }).then((r) => r.data.token);
 
-export const loginStudent = (password) =>
-  api.post('/login-student', { password }).then((r) => r.data.token);
-
-export const getFolders = () =>
-  api.get('/folders').then((r) => r.data);
+export const getFolders = (signal) =>
+  api.get('/folders', { signal }).then((r) => r.data);
 
 export const createFolder = (data) =>
   api.post('/folders', data).then((r) => r.data);
@@ -51,8 +48,8 @@ export const renameFolder = (id, name) =>
 export const moveFolderToParent = (id, parent_id, placement = 'inside') =>
   api.put(`/folders/${id}/move`, { parent_id, placement }).then((r) => r.data);
 
-export const getFiles = (folderId) =>
-  api.get(`/files/${folderId}`).then((r) => r.data);
+export const getFiles = (folderId, signal) =>
+  api.get(`/files/${folderId}`, { signal }).then((r) => r.data);
 
 export const uploadFile = (folderId, file, onProgress, signal) => {
   const form = new FormData();

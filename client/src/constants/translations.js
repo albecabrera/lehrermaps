@@ -53,8 +53,6 @@ export const translations = {
     'login.choose_role': 'Wie möchtest du einloggen?',
     'login.teacher_role': 'Lehrer',
     'login.teacher_desc': 'Materialien verwalten',
-    'login.student_role': 'Schüler',
-    'login.student_desc': 'Freigegebene Inhalte ansehen',
     'login.change_photo': 'Foto ändern',
     'login.back': 'Zurück',
 
@@ -214,7 +212,6 @@ export const translations = {
 
     // Sidebar extras
     'sidebar.favorites': 'Favoriten',
-    'sidebar.recents': 'Zuletzt geöffnet',
     'sidebar.recent_files': 'Zuletzt geöffnete Dateien',
     'sidebar.pin': 'Als Favorit markieren',
     'sidebar.unpin': 'Aus Favoriten entfernen',

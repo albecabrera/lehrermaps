@@ -1,15 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { login, loginStudent } from '../lib/api';
+import { login } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 const DEFAULT_AVATAR = '/teacher-avatar.jpg';
 
-export default function LoginPanel({ onLogin, initialRole = null }) {
+export default function LoginPanel({ onLogin }) {
   const { t } = useLang();
   const { isDark, toggle: toggleTheme } = useTheme();
 
-  const [step, setStep] = useState(initialRole || 'select');
+  const [step, setStep] = useState('select');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,9 +42,7 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
     setLoading(true);
     setError('');
     try {
-      const token = step === 'teacher'
-        ? await login(password)
-        : await loginStudent(password);
+      const token = await login(password);
       localStorage.setItem('lm_token', token);
       onLogin();
     } catch (err) {
@@ -53,7 +51,7 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
       } else if (!err.response) {
         setError(t('login.unavailable'));
       } else {
-        setError(step === 'teacher' ? t('login.error') : t('student.error'));
+        setError(t('login.error'));
       }
     } finally {
       setLoading(false);
@@ -62,8 +60,8 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
 
   const back = () => { setStep('select'); setPassword(''); setError(''); };
 
-  const isTeacher = step === 'teacher';
-  const accent = isTeacher ? '#E8472A' : '#0EA5E9';
+  const isTeacher = true;
+  const accent = '#E8472A';
 
   return (
     <div className="lm-login-stable" style={{
@@ -112,13 +110,6 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
                 />
               }
             />
-            <RoleCard
-              label={t('login.student_role')}
-              desc={t('login.student_desc')}
-              accent="#0EA5E9"
-              onClick={() => setStep('student')}
-              avatar={<StudentAvatar />}
-            />
           </div>
 
           <div style={{ fontSize: 10, color: 'var(--c-text-3)', marginTop: 36 }}>
@@ -154,25 +145,21 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
 
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-              {isTeacher ? (
-                <TeacherAvatar
-                  avatar={avatar}
-                  onChange={handleAvatarChange}
-                  fileRef={fileRef}
-                  hovered={hoverAvatar}
-                  setHovered={setHoverAvatar}
-                  size={84}
-                  changeLabel={t('login.change_photo')}
-                />
-              ) : (
-                <StudentAvatar size={84} />
-              )}
+              <TeacherAvatar
+                avatar={avatar}
+                onChange={handleAvatarChange}
+                fileRef={fileRef}
+                hovered={hoverAvatar}
+                setHovered={setHoverAvatar}
+                size={84}
+                changeLabel={t('login.change_photo')}
+              />
             </div>
             <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--c-text)', letterSpacing: -0.3 }}>
-              {isTeacher ? t('login.teacher_role') : t('login.student_role')}
+              {t('login.teacher_role')}
             </div>
             <div style={{ fontSize: 12, color: 'var(--c-text-3)', marginTop: 2 }}>
-              {isTeacher ? t('login.teacher_desc') : t('login.student_desc')}
+              {t('login.teacher_desc')}
             </div>
           </div>
 
@@ -182,14 +169,14 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
                 fontSize: 10, fontWeight: 600, letterSpacing: 0.6,
                 textTransform: 'uppercase', color: 'var(--c-text-3)',
               }}>
-                {isTeacher ? t('login.password') : t('student.password')}
+                {t('login.password')}
               </span>
               <input
                 ref={inputRef}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={isTeacher ? t('login.placeholder') : t('student.placeholder')}
+                placeholder={t('login.placeholder')}
                 style={{
                   appearance: 'none',
                   border: `1px solid ${error ? '#DC2626' : 'var(--c-border)'}`,
@@ -231,9 +218,7 @@ export default function LoginPanel({ onLogin, initialRole = null }) {
               onMouseDown={(e) => { if (!loading && password) e.currentTarget.style.transform = 'scale(0.98)'; }}
               onMouseUp={(e) => { e.currentTarget.style.transform = ''; }}
             >
-              {loading
-                ? (isTeacher ? t('login.loading') : t('student.loading'))
-                : (isTeacher ? t('login.button') : t('student.button'))}
+              {loading ? t('login.loading') : t('login.button')}
             </button>
           </form>
         </div>
@@ -471,26 +456,6 @@ function TeacherAvatar({ avatar, onChange, fileRef, hovered, setHovered, size = 
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-/* ── Student avatar ──────────────────────────────────────── */
-function StudentAvatar({ size = 72 }) {
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: 'linear-gradient(135deg, #0EA5E9, #6366F1)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      border: '3px solid var(--c-border)',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
-      flexShrink: 0,
-    }}>
-      <svg width={size * 0.42} height={size * 0.42} viewBox="0 0 26 26" fill="none">
-        <circle cx="13" cy="9" r="4.5" fill="rgba(255,255,255,0.9)"/>
-        <path d="M4 23c0-4.97 4.03-9 9-9s9 4.03 9 9"
-          stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round"/>
-      </svg>
     </div>
   );
 }

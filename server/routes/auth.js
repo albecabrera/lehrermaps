@@ -33,19 +33,4 @@ router.post('/login', loginLimit, (req, res) => {
   res.json({ token });
 });
 
-router.post('/login-student', loginLimit, (req, res) => {
-  const { password } = req.body;
-  const expected = process.env.STUDENT_PASSWORD || 'schueler';
-  const secret   = process.env.JWT_SECRET || 'dev_secret';
-
-  if (!password || password !== expected) {
-    failedLogin(req);
-    return res.status(401).json({ error: 'Falsches Passwort' });
-  }
-
-  const token = jwt.sign({ role: 'student' }, secret, { expiresIn: '12h' });
-  successfulLogin(req);
-  res.json({ token });
-});
-
 export default router;

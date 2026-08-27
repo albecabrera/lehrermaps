@@ -6,19 +6,26 @@ export function useFolders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal) => {
     try {
       setLoading(true);
-      const data = await getFolders();
+      setError(null);
+      const data = await getFolders(signal);
+      if (signal?.aborted) return;
       setFolders(data);
     } catch (e) {
+      if (signal?.aborted) return;
       setError(e.message);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
 
   const add = useCallback(async (subject, group_name, name, parent_id = null) => {
     const folder = await createFolder({ subject, group_name, name, ...(parent_id ? { parent_id } : {}) });

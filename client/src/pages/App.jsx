@@ -17,7 +17,6 @@ import { SUBJECTS, detectKind, compareFolderNames } from '../constants/structure
 import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
-import { useRecents } from '../hooks/useRecents';
 import { useRecentFiles } from '../hooks/useRecentFiles';
 import { downloadFolderZip, downloadFilesZip, getLessonSessions, viewFile } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
@@ -35,7 +34,6 @@ import TeachingMode from '../components/TeachingMode';
 import LessonDashboard from '../components/LessonDashboard';
 
 // Opened views are split into on-demand chunks without changing their layout.
-const QRModal = lazy(() => import('../components/QRModal'));
 const Schedule = lazy(() => import('../components/Schedule'));
 const ExamBoard = lazy(() => import('../components/ExamBoard'));
 const NotesEditor = lazy(() => import('../components/NotesEditor'));
@@ -78,7 +76,6 @@ export default function App({ onLogout }) {
   const [dropOver, setDropOver] = useState(false);
   const [dropFiles, setDropFiles] = useState(null);
   const [dropUploading, setDropUploading] = useState(null);
-  const [qrOpen, setQrOpen] = useState(false);
   const [activeFile2, setActiveFile2] = useState(null);
   const [hoveredFile, setHoveredFile] = useState(null);
   const [hoveredFolder, setHoveredFolder] = useState(null);
@@ -94,7 +91,6 @@ export default function App({ onLogout }) {
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, setTimer: setFileTimer, togglePublic, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink, toggleShare: toggleLinkShare } = useLinks(activeFolder?.id);
-  const { recents, add: addRecent } = useRecents();
   const { trackFile, trackLink } = useRecentFiles();
 
   useEffect(() => {
@@ -220,7 +216,7 @@ export default function App({ onLogout }) {
         document.exitFullscreen();
         return;
       }
-      if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || !!deadlineModal || keyboardHelpOpen || qrOpen) return;
+      if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || !!deadlineModal || keyboardHelpOpen) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setGlobalSearchOpen(true);
@@ -294,7 +290,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeFolder, files, folderTab, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, deadlineModal, keyboardHelpOpen, qrOpen]);
+  }, [activeFile, activeFolder, files, folderTab, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, deadlineModal, keyboardHelpOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -359,7 +355,6 @@ export default function App({ onLogout }) {
     setQuery('');
     setFolderTab('files');
     const color = SUBJECTS.find((s) => s.id === folder.subject)?.color;
-    addRecent(folder, color);
     setFolderOpenTick((v) => v + 1);
     if (sourceRect && contentPaneRef.current) {
       const to = contentPaneRef.current.getBoundingClientRect();
@@ -382,24 +377,9 @@ export default function App({ onLogout }) {
       if (target?.type === 'link' && target.id) setPendingLinkId(target.id);
       setQuery('');
       setFolderTab('files');
-      const color = SUBJECTS.find((s) => s.id === targetSubject)?.color;
-      addRecent(folder, color);
       setFolderOpenTick((v) => v + 1);
     }
     setGlobalSearchOpen(false);
-  };
-
-  const handleRecentClick = (recent) => {
-    setSubjectId(recent.subject);
-    const folder = folders.find((f) => f.id === recent.id);
-    if (folder) {
-      setActiveFolder(folder);
-      setActiveFile(null);
-      setActiveLink(null);
-      setQuery('');
-      setFolderTab('files');
-      setFolderOpenTick((v) => v + 1);
-    }
   };
 
 
@@ -722,7 +702,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || !!timerModal || keyboardHelpOpen || qrOpen;
+  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || !!timerModal || keyboardHelpOpen;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
   const sidebarProps = {
@@ -1054,8 +1034,6 @@ export default function App({ onLogout }) {
             <TodayDashboard
               subject={subject}
               folders={subjectFolders}
-              recents={recents}
-              onRecentClick={handleRecentClick}
               onOpenSubjects={() => { setViewMode('subjects'); if (isMobile) setSidebarDrawerOpen(true); }}
               onOpenSchedule={() => setViewMode('schedule')}
               onOpenSearch={() => setGlobalSearchOpen(true)}
@@ -1264,28 +1242,6 @@ export default function App({ onLogout }) {
                       }}
                     >
                       ⏰ {activeFolder?.due_at ? new Date(activeFolder.due_at).toLocaleDateString('de-DE') : t('table.deadline')}
-                    </button>
-                    <button
-                      onClick={() => setQrOpen(true)}
-                      title={t('qr.student_access')}
-                      style={{
-                        marginLeft: 8, height: 26, padding: '0 10px',
-                        border: '1px solid var(--c-border)', borderRadius: 6,
-                        background: 'transparent', color: 'var(--c-text-3)',
-                        fontSize: 11, fontWeight: 500, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: 5,
-                        fontFamily: 'inherit', transition: 'background .1s, color .1s',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; e.currentTarget.style.color = 'var(--c-text)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--c-text-3)'; }}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <rect x="1" y="1" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
-                        <rect x="7" y="1" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
-                        <rect x="1" y="7" width="4" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
-                        <path d="M7 8h1v1H7zM9 8h2M9 10h2M7 10h1" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
-                      </svg>
-                      QR
                     </button>
                     <button
                       onClick={() => { setStartNewLessonPlanning(false); setTeachingMode(true); }}
@@ -1526,11 +1482,9 @@ export default function App({ onLogout }) {
                 subject={subject}
                 folders={subjectRootFolders}
                 foldersLoading={foldersLoading}
-                recents={recents}
                 onFolderSelect={onFolderSelect}
                 onFolderHover={setHoveredFolder}
                 keyboardMarkedFolderId={kbdMarkedFolderId}
-                onRecentClick={handleRecentClick}
                 onNewFolder={() => setNewFolderOpen(true)}
                 onMoveFolder={handleMoveFolder}
                 t={t}
@@ -1819,13 +1773,6 @@ export default function App({ onLogout }) {
         onClose={() => setOneNoteSearchOpen(false)}
       />
       {keyboardHelpOpen && <KeyboardHelp onClose={() => setKeyboardHelpOpen(false)} />}
-      {qrOpen && (
-        <QRModal
-          url={window.location.origin + '/?student'}
-          title={t('qr.student_access')}
-          onClose={() => setQrOpen(false)}
-        />
-      )}
       <DeadlineModal
         open={!!deadlineModal}
         title={deadlineModal?.type === 'folder' ? t('modal.deadline.folder_title') : t('modal.deadline.file_title')}
@@ -2050,43 +1997,13 @@ function LegacyTeachingMode({ folder, files, links, accent, t, onClose }) {
   );
 }
 
-function WelcomeView({ subject, folders, foldersLoading, recents, onFolderSelect, onFolderHover, keyboardMarkedFolderId, onRecentClick, onNewFolder, onMoveFolder, t }) {
+function WelcomeView({ subject, folders, foldersLoading, onFolderSelect, onFolderHover, keyboardMarkedFolderId, onNewFolder, onMoveFolder, t }) {
   const accent = subject.color;
   const orderedFolders = [...folders].sort((a, b) =>
     ((a.sort_order || 0) - (b.sort_order || 0)) || compareFolderNames(a, b)
   );
   return (
     <div style={{ padding: '32px 28px' }}>
-      {/* Recientes section */}
-      {recents.length > 0 && (
-        <div style={{ marginBottom: 28 }}>
-          <div style={{
-            fontSize: 10, fontWeight: 600, letterSpacing: 0.7,
-            textTransform: 'uppercase', color: 'var(--c-text-3)', marginBottom: 10,
-          }}>{t('sidebar.recents')}</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {recents.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => onRecentClick(r)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  height: 30, padding: '0 12px', border: '1px solid var(--c-border)',
-                  borderRadius: 20, background: 'var(--c-surface)', cursor: 'pointer',
-                  fontFamily: 'inherit', fontSize: 12, color: 'var(--c-text-2)',
-                  transition: 'background .1s, color .1s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; e.currentTarget.style.color = 'var(--c-text)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--c-surface)'; e.currentTarget.style.color = 'var(--c-text-2)'; }}
-              >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: r.color, flexShrink: 0 }} />
-                {r.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <div style={{

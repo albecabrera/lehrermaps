@@ -74,7 +74,19 @@ const schema = [
 
 export async function initSchema() {
   for (const statement of schema) database.exec(statement);
-  database.exec('CREATE INDEX IF NOT EXISTS document_annotation_owner ON document_annotations(file_id, user_id, page_number); CREATE INDEX IF NOT EXISTS document_annotation_history_owner ON document_annotation_history(file_id, user_id, created_at);');
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS folders_subject_group_parent_order ON folders(subject, group_name, parent_id, sort_order);
+    CREATE INDEX IF NOT EXISTS files_folder_current_uploaded ON files(folder_id, is_current_version, uploaded_at);
+    CREATE INDEX IF NOT EXISTS files_public_token ON files(public_token, is_public);
+    CREATE INDEX IF NOT EXISTS files_version_group_number ON files(version_group_id, version_number);
+    CREATE INDEX IF NOT EXISTS links_folder_created ON links(folder_id, created_at);
+    CREATE INDEX IF NOT EXISTS document_annotation_owner ON document_annotations(file_id, user_id, page_number);
+    CREATE INDEX IF NOT EXISTS document_annotation_history_owner ON document_annotation_history(file_id, user_id, created_at);
+    CREATE INDEX IF NOT EXISTS annual_plan_entries_plan_date ON annual_plan_entries(plan_id, entry_date, sort_order);
+    CREATE INDEX IF NOT EXISTS lesson_sessions_user_date ON lesson_sessions(user_id, lesson_date, updated_at);
+    CREATE INDEX IF NOT EXISTS lesson_phases_session_position ON lesson_phases(lesson_session_id, position);
+    CREATE INDEX IF NOT EXISTS lesson_elements_canvas_layer ON lesson_phase_elements(canvas_id, layer, id);
+  `);
   for (const table of ['schedule', 'notebooks', 'sections', 'pages', 'blocks', 'document_annotations', 'annual_plans', 'annual_plan_entries', 'lesson_sessions', 'lesson_phases', 'lesson_phase_canvases', 'lesson_phase_elements']) database.exec(`CREATE TRIGGER IF NOT EXISTS ${table}_touch_updated_at AFTER UPDATE ON ${table} FOR EACH ROW BEGIN UPDATE ${table} SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;`);
   await pool.execute("UPDATE folders SET group_name = 'Klasse 9' WHERE subject = 'spanisch' AND group_name = 'es-9'");
   await pool.execute("UPDATE folders SET group_name = 'Q1' WHERE subject = 'spanisch' AND group_name IN ('Klasse 12', 'es-12')");

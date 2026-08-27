@@ -10,7 +10,6 @@ import { NotebookProvider } from './contexts/NotebookContext';
 // Authenticated workspaces load only after login; their existing markup and
 // styles remain unchanged.
 const App = lazy(() => import('./pages/App'));
-const StudentApp = lazy(() => import('./pages/StudentApp'));
 const ExamBoard = lazy(() => import('./components/ExamBoard'));
 
 // NotebookProvider is intentionally NOT at root — it makes authenticated API
@@ -51,9 +50,9 @@ const ExamBoard = lazy(() => import('./components/ExamBoard'));
   window.history.replaceState(null, '', params.toString() ? `?${params}` : window.location.pathname);
 }());
 
-function parseRole(token) {
+function isTeacherToken(token) {
   try {
-    return JSON.parse(atob(token.split('.')[1])).role;
+    return JSON.parse(atob(token.split('.')[1])).role === 'lehrer';
   } catch { return null; }
 }
 
@@ -66,7 +65,7 @@ function Root() {
   );
 
   const token = localStorage.getItem('lm_token');
-  const role = token ? parseRole(token) : null;
+  const isTeacher = token ? isTeacherToken(token) : false;
 
   const handleLogin = () => {
     sessionStorage.removeItem(SESSION_EXAMS_KEY);
@@ -84,7 +83,7 @@ function Root() {
     setExamsDismissed(true);
   };
 
-  if (role === 'lehrer') {
+  if (isTeacher) {
     return (
       <NotebookProvider>
         <Suspense fallback={null}>
@@ -94,11 +93,7 @@ function Root() {
       </NotebookProvider>
     );
   }
-  if (role === 'student') return <Suspense fallback={null}><StudentApp onLogout={handleLogout} /></Suspense>;
-
-  // Pre-select student role if coming from QR (?student in URL)
-  const initialRole = new URLSearchParams(window.location.search).has('student') ? 'student' : null;
-  return <LoginPanel onLogin={handleLogin} initialRole={initialRole} />;
+  return <LoginPanel onLogin={handleLogin} />;
 }
 
 createRoot(document.getElementById('root')).render(

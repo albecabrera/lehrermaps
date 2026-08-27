@@ -6,20 +6,27 @@ export function useFiles(folderId) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal) => {
     if (!folderId) { setFiles([]); return; }
     try {
       setLoading(true);
-      const data = await getFiles(folderId);
+      setError(null);
+      const data = await getFiles(folderId, signal);
+      if (signal?.aborted) return;
       setFiles(data);
     } catch (e) {
+      if (signal?.aborted) return;
       setError(e.message);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [folderId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
 
   const upload = useCallback(async (file, onProgress, signal) => {
     const newFile = await uploadFile(folderId, file, onProgress, signal);

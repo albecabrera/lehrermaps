@@ -30,16 +30,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 const server = http.createServer(app);
 const production = process.env.NODE_ENV === 'production';
 const terminalEnabled = !production && process.env.ENABLE_TERMINAL === 'true';
 
 if (production) {
-  const missing = ['JWT_SECRET', 'APP_PASSWORD', 'STUDENT_PASSWORD'].filter((key) => !process.env[key] || process.env[key].length < (key === 'JWT_SECRET' ? 32 : 1));
+  const missing = ['JWT_SECRET', 'APP_PASSWORD'].filter((key) => !process.env[key] || process.env[key].length < (key === 'JWT_SECRET' ? 32 : 1));
   if (missing.length) throw new Error(`Missing required production configuration: ${missing.join(', ')}`);
-} else if (!process.env.JWT_SECRET || !process.env.APP_PASSWORD || !process.env.STUDENT_PASSWORD) {
-  console.warn('Using development authentication defaults. Set JWT_SECRET, APP_PASSWORD and STUDENT_PASSWORD before deployment.');
+} else if (!process.env.JWT_SECRET || !process.env.APP_PASSWORD) {
+  console.warn('Using development authentication defaults. Set JWT_SECRET and APP_PASSWORD before deployment.');
 }
 
 const _configuredOrigins = (
@@ -65,6 +67,16 @@ const corsMiddleware = cors({
 });
 app.use(express.json({ limit: '1mb' }));
 
+// Baseline security headers without adding a runtime dependency. CSP is left
+// to the reverse proxy because deployments may provide different font/AI URLs.
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
 app.get('/api/health', async (_, res) => {
   try { await (await import('./db.js')).default.query('SELECT 1'); res.json({ ok: true, database: 'ok' }); }
   catch { res.status(503).json({ ok: false, database: 'unavailable' }); }
@@ -85,6 +97,10 @@ app.use('/api', documentAnnotationsRouter);
 app.get('/api/display/:token', displaySession);
 app.use('/api', lessonSessionsRouter);
 app.get('/display/:token', displayPage);
+
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'API route not found' });
+});
 
 function requireLehrer(req, res, next) {
   try {
@@ -199,6 +215,14 @@ if (io) io.on('connection', (socket) => {
   socket.on('disconnect', () => { try { term.kill(); } catch {} });
 });
 // ────────────────────────────────────────────────────────────────────────────
+
+app.use((err, req, res, _next) => {
+  console.error(`[${req.method} ${req.originalUrl}]`, err);
+  if (res.headersSent) return;
+  res.status(err.statusCode || 500).json({
+    error: production ? 'Internal server error' : (err.message || 'Internal server error'),
+  });
+});
 
 initSchema()
   .then(() => {

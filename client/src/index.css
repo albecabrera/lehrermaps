@@ -402,12 +402,64 @@ button:active {
 
 /* Stundenplan: preserve readable day columns on narrow phone screens. */
 .lm-schedule-grid-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.lm-schedule-view { font-size: 15px; }
+.lm-schedule-header h2 { font-size: clamp(24px, 2.4vw, 32px) !important; }
+.lm-schedule-header button { min-height: 40px; font-size: 14px !important; }
+.lm-schedule-grid { gap: 7px !important; }
+.lm-schedule-cell { min-height: 88px !important; }
+.lm-schedule-cell > div { min-height: 88px !important; padding: 12px 10px !important; }
+.lm-schedule-cell-label { font-size: clamp(14px, 1.4vw, 18px) !important; font-weight: 700 !important; }
+.lm-schedule-cell-label + div { font-size: 12px !important; }
+.lm-schedule-cell-location { margin-top: 5px; color: var(--c-text-2); font-size: clamp(13px, 1.2vw, 16px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+@media (max-width: 760px) {
+  .lm-today-view { padding: 20px 14px calc(28px + env(safe-area-inset-bottom)) !important; }
+  .lm-today-view > div { max-width: none !important; }
+  .lm-today-view h1 { font-size: 24px !important; line-height: 1.15; }
+  .lm-today-view > div > div:first-child { align-items: flex-start !important; margin-bottom: 18px !important; }
+  .lm-today-view > div > div:first-child > div:last-child { width: 100%; }
+  .lm-today-view > div > div:first-child > div:last-child button { flex: 1 1 140px; min-height: 38px; }
+  .lm-today-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; margin-bottom: 12px !important; }
+  .lm-today-stats > div { padding: 11px 12px !important; }
+  .lm-today-stats > div > div:first-child { font-size: 22px !important; }
+  .lm-today-stats > div > div:last-child { font-size: 10px !important; line-height: 1.2; }
+  .lm-today-content { grid-template-columns: minmax(0, 1fr) !important; gap: 10px !important; }
+  .lm-today-content > section { padding: 14px !important; }
+  .lm-today-content section > div:first-child { flex-wrap: wrap; }
+  .lm-today-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
 @media (max-width: 760px) {
   .lm-schedule-view { padding: 18px 14px calc(24px + env(safe-area-inset-bottom)) !important; }
   .lm-schedule-header { margin-bottom: 16px !important; }
   .lm-schedule-header button { min-height: 36px; padding: 0 10px !important; font-size: 11px !important; }
-  .lm-schedule-grid { min-width: 560px; }
-  .lm-schedule-cell-label { font-size: 13px !important; }
+  .lm-schedule-grid {
+    min-width: 0 !important;
+    width: 100%;
+    grid-template-columns: 29px repeat(5, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+  }
+  .lm-schedule-cell { min-height: 92px !important; }
+  .lm-schedule-cell > div { min-height: 92px !important; }
+  .lm-schedule-cell-label {
+    font-size: 11px !important;
+    line-height: 1.15;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere;
+  }
+  .lm-schedule-cell-location {
+    font-size: 10px;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .lm-schedule-grid > div[style*="text-align: right"] {
+    font-size: 8px !important;
+    padding-right: 2px !important;
+  }
+  .lm-schedule-grid > div:not(.lm-schedule-cell):not([style*="text-align: right"]) {
+    font-size: 10px !important;
+  }
   .lm-mobile-nav-label { font-size: 11px !important; }
   .lm-schedule-grid button { min-width: 30px; min-height: 30px; }
 }
