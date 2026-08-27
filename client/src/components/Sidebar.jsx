@@ -44,6 +44,7 @@ export default function Sidebar({
   const [draggingFileName, setDraggingFileName] = useState('');
   const [folderDropTarget, setFolderDropTarget] = useState(null);
   const [draggingFolderId, setDraggingFolderId] = useState(null);
+  const [expandedSubtreeId, setExpandedSubtreeId] = useState(null);
   const accent = subject.color;
   const subjectList = (subjects.length ? subjects : [subject]).filter(Boolean);
 
@@ -244,6 +245,8 @@ export default function Sidebar({
                     draggingFolderId={draggingFolderId}
                     onFolderDragStart={(id) => setDraggingFolderId(id)}
                     onFolderDragEnd={() => { setDraggingFolderId(null); setFolderDropTargetId(null); }}
+                    onExpandSubtree={setExpandedSubtreeId}
+                    expandDescendants={node.id === expandedSubtreeId}
                     onDragOver={handleDragOver}
                     onFileDrop={handleFileDrop}
                     onFolderDrop={handleFolderDrop}
@@ -312,6 +315,7 @@ function TreeNode({
   fileDropTargetId, draggingFileName,
   folderDropTarget, draggingFolderId,
   onFolderDragStart, onFolderDragEnd,
+  onExpandSubtree, expandDescendants = false,
   onDragOver, onFileDrop, onFolderDrop, onDragLeave,
   t,
 }) {
@@ -335,12 +339,16 @@ function TreeNode({
   const handleToggle = (e) => {
     e.stopPropagation();
     e.preventDefault();
+    onExpandSubtree?.(null);
     setExpanded((v) => !v);
   };
 
   const handleClick = (e) => {
     onSelect(node, e.currentTarget.getBoundingClientRect());
-    if (hasChildren && !expanded) setExpanded(true);
+    if (hasChildren) {
+      setExpanded(true);
+      onExpandSubtree?.(node.id);
+    }
   };
 
   // Tree line X for this depth (center of expand toggle)
@@ -523,7 +531,7 @@ function TreeNode({
       </div>
 
       {/* Children subtree */}
-      {!collapsed && hasChildren && expanded && (
+      {!collapsed && hasChildren && (expanded || expandDescendants) && (
         <div style={{ position: 'relative' }}>
           {/* Vertical guide line */}
           <div
@@ -554,6 +562,8 @@ function TreeNode({
               draggingFolderId={draggingFolderId}
               onFolderDragStart={onFolderDragStart}
               onFolderDragEnd={onFolderDragEnd}
+              onExpandSubtree={onExpandSubtree}
+              expandDescendants={expandDescendants}
               onDragOver={onDragOver}
               onFileDrop={onFileDrop}
               onFolderDrop={onFolderDrop}

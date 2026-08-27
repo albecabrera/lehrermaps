@@ -77,6 +77,24 @@ html, body, #root {
   transition: background-color .16s ease, color .16s ease;
 }
 
+/* Tablet reading mode: scale every UI surface, including components whose
+   typography is defined inline, while keeping the app inside the viewport. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  #root {
+    zoom: 1.08;
+    width: calc(100% / 1.08);
+    height: calc(100% / 1.08);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1199px) and (orientation: landscape) {
+  #root {
+    zoom: 1.12;
+    width: calc(100% / 1.12);
+    height: calc(100% / 1.12);
+  }
+}
+
 .lm-no-transition,
 .lm-no-transition *,
 .lm-no-transition *::before,
