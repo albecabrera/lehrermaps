@@ -777,6 +777,20 @@ export default function App({ onLogout }) {
         >
           <span aria-hidden="true">🗓</span><span style={{ fontSize: 12 }}>Terminplan</span>
         </button>
+        <button
+          className="lm-global-logout"
+          type="button"
+          onClick={onLogout}
+          aria-label="Logout"
+          style={{
+            flexShrink: 0, height: 34, margin: '0 0 10px 2px', padding: '0 12px',
+            border: '1px solid #dc262655', borderRadius: 8, background: '#dc262612',
+            color: '#dc2626', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+          }}
+        >
+          <span aria-hidden="true">↪</span> Logout
+        </button>
         {/* Mobil wandern Stundenplan/Termine/Notion/Miro in Bottom-Nav + Mehr-Sheet */}
         {!isMobile && <>
         {/* Heute / Startseite */}
@@ -1005,25 +1019,6 @@ export default function App({ onLogout }) {
             {t('app.upload')}
           </button>
 
-          {/* Logout */}
-          <button
-            className="lm-spring"
-            onClick={onLogout}
-            title={t('app.logout')}
-            aria-label={t('app.logout')}
-            style={{
-              width: 30, height: 30, border: 'none', borderRadius: 7,
-              background: 'transparent', cursor: 'pointer', color: 'var(--c-text-2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M5 7h7M9 4l3 3-3 3M5 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3"
-                stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
         </div>}
       </div>
 
