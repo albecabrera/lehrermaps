@@ -5,20 +5,35 @@ const LEGACY_TASKS_KEY = 'lm_today_tasks';
 const LEGACY_NOTE_PREFIX = 'lm_today_note_';
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
 function readLegacy(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch { return fallback; }
 }
 
+function readText(key) {
+  try { return localStorage.getItem(key) || ''; } catch { return ''; }
+}
+
+function writeLegacy(key, value) {
+  try {
+    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function TodayDashboard({
   subject, folders = [], onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
 }) {
   const date = todayKey();
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState(() => readLegacy(LEGACY_TASKS_KEY, []));
   const [taskText, setTaskText] = useState('');
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(() => readText(LEGACY_NOTE_PREFIX + date));
   const [saveError, setSaveError] = useState(false);
   const saveQueue = useRef(Promise.resolve());
   const noteTimer = useRef(null);
@@ -35,22 +50,24 @@ export default function TodayDashboard({
   const persistTasks = (next) => {
     userChanged.current = true;
     setTasks(next);
+    const savedLocally = writeLegacy(LEGACY_TASKS_KEY, next);
     queueSave(() => saveTodayDashboardTasks(next))
       .then(() => setSaveError(false))
-      .catch(() => setSaveError(true));
+      .catch(() => setSaveError(!savedLocally));
   };
 
   const persistNote = (value) => {
     noteDirty.current = false;
+    const savedLocally = writeLegacy(LEGACY_NOTE_PREFIX + date, value);
     queueSave(() => saveTodayDashboardNote(date, value))
       .then(() => setSaveError(false))
-      .catch(() => setSaveError(true));
+      .catch(() => setSaveError(!savedLocally));
   };
 
   useEffect(() => {
     let cancelled = false;
     const legacyTasks = readLegacy(LEGACY_TASKS_KEY, []);
-    const legacyNote = localStorage.getItem(LEGACY_NOTE_PREFIX + date) || '';
+    const legacyNote = readText(LEGACY_NOTE_PREFIX + date);
 
     getTodayDashboard(date).then((dashboard) => {
       if (cancelled || userChanged.current) return;
@@ -74,9 +91,7 @@ export default function TodayDashboard({
           .then(() => { localStorage.removeItem(LEGACY_NOTE_PREFIX + date); setSaveError(false); })
           .catch(() => setSaveError(true));
       }
-    }).catch(() => {
-      if (!cancelled) setSaveError(true);
-    });
+    }).catch(() => {});
 
     return () => {
       cancelled = true;
