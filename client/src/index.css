@@ -111,6 +111,22 @@ html, body, #root {
   .lm-drawer .lm-sidebar { width: 100% !important; }
   .lm-drawer .lm-sidebar button { min-height: 46px !important; font-size: 16px !important; }
 
+  /* Folder overview: make the primary classroom entry points prominent. */
+  .lm-folder-overview { padding: 44px 40px !important; }
+  .lm-folder-overview-heading h1 { font-size: 32px !important; }
+  .lm-folder-overview-heading p { font-size: 16px !important; }
+  .lm-folder-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 20px !important;
+  }
+  .lm-folder-card { border-radius: 18px !important; }
+  .lm-folder-card-cover { height: 160px !important; }
+  .lm-folder-card-group,
+  .lm-folder-card-count { font-size: 12px !important; padding: 4px 9px !important; }
+  .lm-folder-card-info { padding: 16px 18px 18px !important; }
+  .lm-folder-card-name { font-size: 19px !important; }
+  .lm-folder-card-deadline { font-size: 13px !important; margin-top: 4px !important; }
+
   /* Tablet navigation keeps the same visual rhythm as the enlarged content. */
   .lm-mobile-nav-label { font-size: 13px !important; }
   .lm-mobile-nav-label + * { font-size: inherit; }

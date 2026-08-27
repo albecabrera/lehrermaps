@@ -2003,8 +2003,8 @@ function WelcomeView({ subject, folders, foldersLoading, onFolderSelect, onFolde
     ((a.sort_order || 0) - (b.sort_order || 0)) || compareFolderNames(a, b)
   );
   return (
-    <div style={{ padding: '32px 28px' }}>
-      <div style={{ marginBottom: 28 }}>
+    <div className="lm-folder-overview" style={{ padding: '32px 28px' }}>
+      <div className="lm-folder-overview-heading" style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <div style={{
             width: 32, height: 32, borderRadius: 8, background: accent,
@@ -2038,7 +2038,7 @@ function WelcomeView({ subject, folders, foldersLoading, onFolderSelect, onFolde
           ))}
         </div>
       ) : folders.length === 0 ? (
-        <div style={{
+        <div className="lm-folder-grid" style={{
           padding: '48px 24px', textAlign: 'center',
           background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: 12,
         }}>
@@ -2057,7 +2057,7 @@ function WelcomeView({ subject, folders, foldersLoading, onFolderSelect, onFolde
           >{t('folders.create')}</button>
         </div>
       ) : (
-        <div style={{
+        <div className="lm-folder-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
           gap: 12,
@@ -2179,7 +2179,7 @@ function FolderCard({ folder, accent, selected = false, onClick, onHover, onMove
         const placement = relativeX < 0.28 ? 'before' : relativeX > 0.72 ? 'after' : 'inside';
         onMoveFolder?.(sourceId, folder.id, placement);
       }}
-      className="lm-spring"
+      className="lm-spring lm-folder-card"
       onFocus={() => onHover?.()}
       onMouseMove={() => onHover?.()}
       onKeyDown={(e) => {
@@ -2208,7 +2208,7 @@ function FolderCard({ folder, accent, selected = false, onClick, onHover, onMove
     >
       {/* Cover area */}
       {folder.thumbnail_file_id ? (
-        <div style={{ width: '100%', height: 112, overflow: 'hidden', background: 'var(--c-surface-2)', flexShrink: 0 }}>
+        <div className="lm-folder-card-cover" style={{ width: '100%', height: 112, overflow: 'hidden', background: 'var(--c-surface-2)', flexShrink: 0 }}>
           <img
             src={viewFile(folder.thumbnail_file_id)}
             alt=""
@@ -2217,7 +2217,7 @@ function FolderCard({ folder, accent, selected = false, onClick, onHover, onMove
           />
         </div>
       ) : (
-        <div style={{
+        <div className="lm-folder-card-cover" style={{
           width: '100%', height: 112, flexShrink: 0,
           background: cover.gradient,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -2248,7 +2248,7 @@ function FolderCard({ folder, accent, selected = false, onClick, onHover, onMove
             {cover.icon}
           </div>
           {/* Group label badge */}
-          <div style={{
+          <div className="lm-folder-card-group" style={{
             position: 'absolute', bottom: 8, left: 10,
             background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(4px)',
             border: '1px solid rgba(255,255,255,0.14)',
@@ -2260,7 +2260,7 @@ function FolderCard({ folder, accent, selected = false, onClick, onHover, onMove
           </div>
           {/* File count badge */}
           {folder.file_count > 0 && (
-            <div style={{
+            <div className="lm-folder-card-count" style={{
               position: 'absolute', bottom: 8, right: 10,
               background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(4px)',
               border: '1px solid rgba(255,255,255,0.14)',
@@ -2275,17 +2275,17 @@ function FolderCard({ folder, accent, selected = false, onClick, onHover, onMove
       )}
 
       {/* Info */}
-      <div style={{ padding: '10px 13px 11px' }}>
+      <div className="lm-folder-card-info" style={{ padding: '10px 13px 11px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
           <div style={{ width: 6, height: 6, borderRadius: 2, background: accent, flexShrink: 0 }} />
-          <div style={{
+          <div className="lm-folder-card-name" style={{
             fontSize: 13, fontWeight: 600, color: 'var(--c-text)',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, minWidth: 0,
           }}>{folder.name}</div>
           {folder.is_favorite ? <span style={{ fontSize: 11, color: '#F59E0B', flexShrink: 0 }}>★</span> : null}
         </div>
         {folder.due_at && (
-          <div style={{
+          <div className="lm-folder-card-deadline" style={{
             fontSize: 9.5, color: new Date(folder.due_at) < new Date() ? '#EF4444' : 'var(--c-text-3)',
             fontFamily: '"DM Mono", monospace', marginTop: 1,
           }}>
