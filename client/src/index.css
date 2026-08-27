@@ -454,3 +454,40 @@ button:active {
 @media (max-width: 760px) {
   .lm-teaching-phase-back { display: inline-flex; }
 }
+
+/* Temporärer, lokaler Laserpointer für den Unterrichtsmodus. */
+.lm-laser-toggle {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  cursor: pointer;
+  font: inherit;
+}
+.lm-laser-toggle:hover,
+.lm-laser-toggle:focus-visible { border-color: #ef4444; }
+.lm-laser-toggle.is-active {
+  border-color: #ef4444;
+  background: #ef444418;
+  color: #dc2626;
+  box-shadow: inset 0 0 0 1px #ef444455;
+}
+.lm-laser-toggle kbd { margin-left: 4px; color: var(--c-text-3); font-size: 10px; }
+.lm-teaching-laser {
+  position: fixed;
+  z-index: 2200;
+  width: clamp(26px, 3.2vw, 46px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: clamp(3px, .35vw, 5px) solid #fff;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 14%, #ff3b30 15% 42%, #dc2626 43% 62%, #dc262655 63% 100%);
+  box-shadow: 0 0 0 3px #dc2626, 0 0 18px 7px #ff3b30cc, 0 0 0 7px #fff8;
+  pointer-events: none;
+}
+@media (max-width: 760px) {
+  .lm-laser-toggle { width: 100%; margin-top: 8px; }
+  .lm-teaching-laser { width: 34px; }
+}
