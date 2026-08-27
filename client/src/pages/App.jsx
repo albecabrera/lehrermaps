@@ -128,6 +128,7 @@ export default function App({ onLogout }) {
           ((a.sort_order || 0) - (b.sort_order || 0)) ||
           compareFolderNames(a, b))
     : [];
+  const folderHasSubfolders = childFolders.length > 0;
   const [pendingFileId, setPendingFileId] = useState(null);
   const [pendingLinkId, setPendingLinkId] = useState(null);
   const [folderOpenTick, setFolderOpenTick] = useState(0);
@@ -1321,19 +1322,23 @@ export default function App({ onLogout }) {
                   })}
                   {folderTab === 'files' && (
                     <div style={{ marginLeft: 'auto', alignSelf: 'center', paddingRight: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <button
-                        className="lm-spring"
-                        onClick={() => setFilesView((v) => (v === 'list' ? 'gallery' : 'list'))}
-                        style={{ height: 24, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 6, background: 'transparent', color: 'var(--c-text-2)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
-                      >
-                        {filesView === 'list' ? t('table.gallery') : t('table.list')}
-                      </button>
+                      {!folderHasSubfolders && (
+                        <button
+                          className="lm-spring"
+                          onClick={() => setFilesView((v) => (v === 'list' ? 'gallery' : 'list'))}
+                          style={{ height: 24, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 6, background: 'transparent', color: 'var(--c-text-2)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
+                        >
+                          {filesView === 'list' ? t('table.gallery') : t('table.list')}
+                        </button>
+                      )}
                       <div style={{ fontSize: 12, color: 'var(--c-text-2)' }}>
-                        {filteredCount !== null
-                          ? t('files.filter', { filtered: filteredCount, total: files.length, q: query })
-                          : (files.length === 1
-                              ? t('files.count_one', { n: 1 })
-                              : t('files.count_many', { n: files.length }))}
+                        {folderHasSubfolders
+                          ? `${childFolders.length} Unterordner`
+                          : (filteredCount !== null
+                              ? t('files.filter', { filtered: filteredCount, total: files.length, q: query })
+                              : (files.length === 1
+                                  ? t('files.count_one', { n: 1 })
+                                  : t('files.count_many', { n: files.length })))}
                       </div>
                     </div>
                   )}
@@ -1403,7 +1408,7 @@ export default function App({ onLogout }) {
                         ))}
                       </div>
                     )}
-                    {filesLoading ? (
+                    {!folderHasSubfolders && (filesLoading ? (
                       <FilesSkeleton />
                     ) : filesView === 'gallery' ? (
                       <FolderGallery
@@ -1462,7 +1467,7 @@ export default function App({ onLogout }) {
                         onSetRole={handleSetFileRole}
                         onBulkRole={handleBulkSetFileRole}
                       />
-                    )}
+                    ))}
                   </div>
                 ) : folderTab === 'notes' ? (
                   <NotesEditor
