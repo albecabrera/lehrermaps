@@ -5,11 +5,28 @@ import auth, { teacherOnly } from '../middleware/auth.js';
 const router = Router();
 router.use(auth);
 
+function parseSchedule(data) {
+  if (!data) return {};
+
+  try {
+    return JSON.parse(data);
+  } catch {
+    // An older import persisted the JSON with every quote escaped (e.g.
+    // {\"0-0\": …}) instead of storing JSON text directly.  Keep accepting
+    // those rows so the recovered timetable is available without data loss.
+    try {
+      return JSON.parse(data.replaceAll('\\"', '"'));
+    } catch {
+      return {};
+    }
+  }
+}
+
 router.get('/', async (req, res) => {
   try {
     if (req.user?.role === 'student') return res.json({});
     const [rows] = await pool.execute(`SELECT data FROM schedule LIMIT 1`);
-    const data = rows[0] ? JSON.parse(rows[0].data) : {};
+    const data = rows[0] ? parseSchedule(rows[0].data) : {};
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: e.message });

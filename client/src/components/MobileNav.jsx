@@ -57,7 +57,7 @@ export function MobileBottomNav({ accent, items, active }) {
             }}
           >
             {item.icon}
-            <span style={{ fontSize: 10, fontWeight: on ? 700 : 500, letterSpacing: 0.2 }}>
+            <span className="lm-mobile-nav-label" style={{ fontSize: 10, fontWeight: on ? 700 : 500, letterSpacing: 0.2 }}>
               {item.label}
             </span>
           </button>

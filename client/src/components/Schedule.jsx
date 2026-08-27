@@ -181,8 +181,8 @@ export default function Schedule({ onNavigate }) {
   }, [schedule, fileDate]);
 
   return (
-    <div style={{ padding: '28px 32px', height: '100%', overflow: 'auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+    <div className="lm-schedule-view" style={{ padding: '28px 32px', height: '100%', overflow: 'auto' }}>
+      <div className="lm-schedule-header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color: 'var(--c-text-3)' }}>
           <rect x="2" y="4" width="16" height="13" rx="2" stroke="currentColor" strokeWidth="1.5"/>
           <path d="M2 8h16M7 2v4M13 2v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -210,37 +210,8 @@ export default function Schedule({ onNavigate }) {
         </button>
       </div>
 
-      {/* Subject legend */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
-        {STUNDENPLAN_SUBJECTS.map((s) => (
-          <div
-            key={s.id}
-            draggable
-            onDragStart={(e) => {
-              const payload = JSON.stringify({
-                type: 'subject',
-                subjectId: s.id,
-              });
-              e.dataTransfer.effectAllowed = 'copy';
-              e.dataTransfer.setData('application/x-lehrermaps-schedule', payload);
-              e.dataTransfer.setData('text/plain', payload);
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '3px 10px', borderRadius: 20,
-              background: s.color + '18',
-              border: `1px solid ${s.color}44`,
-              fontSize: 11, fontWeight: 600, color: s.color,
-              cursor: 'grab',
-            }}
-          >
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.color }} />
-            {s.label}
-          </div>
-        ))}
-      </div>
-
-      <div style={{
+      <div className="lm-schedule-grid-wrap">
+      <div className="lm-schedule-grid" style={{
         display: 'grid',
         gridTemplateColumns: `44px repeat(5, 1fr)`,
         gap: 4,
@@ -299,6 +270,7 @@ export default function Schedule({ onNavigate }) {
             }),
           ]
         ))}
+      </div>
       </div>
 
       {picker && (
@@ -367,10 +339,16 @@ function ScheduleCell({
       onClick={handleClick}
     >
       {cell ? (
-        <div style={{ padding: '8px 10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{
+          minHeight: 56,
+          padding: '8px 10px',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          textAlign: 'center',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, maxWidth: '100%' }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: cell.color, flexShrink: 0 }} />
-            <div style={{
+            <div className="lm-schedule-cell-label" style={{
               fontSize: 11, fontWeight: 600, color: 'var(--c-text)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>{cell.label}</div>

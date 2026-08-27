@@ -86,6 +86,23 @@ export async function initSchema() {
   for (const [groups, title, url] of bookLinks) for (const group of groups) await pool.execute('INSERT OR IGNORE INTO links (folder_id, title, url) SELECT f.id, ?, ? FROM folders f WHERE f.subject = \'informatik\' AND f.group_name = ? AND f.parent_id IS NULL AND NOT EXISTS (SELECT 1 FROM links l WHERE l.folder_id = f.id AND l.url = ?)', [title, url, group, url]);
   const [rows] = await pool.execute('SELECT COUNT(*) AS c FROM schedule');
   if (Number(rows[0].c) === 0) await pool.execute("INSERT INTO schedule (data) VALUES ('{}')");
+
+  // Repair timetable JSON from the legacy recovery import, which escaped each
+  // quote before saving it and therefore made the record invalid JSON.
+  const [scheduleRows] = await pool.execute('SELECT id, data FROM schedule ORDER BY id LIMIT 1');
+  const schedule = scheduleRows[0];
+  if (schedule) {
+    try {
+      JSON.parse(schedule.data);
+    } catch {
+      try {
+        const recovered = JSON.parse(schedule.data.replaceAll('\\"', '"'));
+        await pool.execute('UPDATE schedule SET data = ? WHERE id = ?', [JSON.stringify(recovered), schedule.id]);
+      } catch {
+        // Leave genuinely invalid input untouched; the route safely returns an empty timetable.
+      }
+    }
+  }
 }
 
 export default pool;

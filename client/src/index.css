@@ -400,6 +400,18 @@ button:active {
 .lm-canvas-surface{overflow:hidden;touch-action:none}.lm-canvas-world{position:absolute;inset:0;transform-origin:0 0;will-change:transform}.lm-canvas-surface.is-pannable{cursor:grab}.lm-canvas-surface.is-pannable:active{cursor:grabbing}.lm-canvas-zoom{display:flex;align-items:center;gap:4px;margin-left:auto}.lm-canvas-zoom button{min-width:28px;padding:0 7px}.lm-canvas-zoom span{min-width:42px;text-align:center;font-size:11px;color:var(--c-text-2)}
 .lm-canvas-toolbar kbd{font-size:9px;color:var(--c-text-3);margin-left:3px}.lm-canvas-element svg{display:block;width:100%;height:100%;overflow:visible}.lm-canvas-element input{width:100%;height:100%;min-width:80px;border:0;outline:0;background:transparent;color:inherit;font:inherit}.lm-canvas-element.is-draft{opacity:.55;pointer-events:none}.lm-canvas-shortcuts{display:block;margin-left:auto;color:var(--c-text-3);font-size:10px}
 
+/* Stundenplan: preserve readable day columns on narrow phone screens. */
+.lm-schedule-grid-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+@media (max-width: 760px) {
+  .lm-schedule-view { padding: 18px 14px calc(24px + env(safe-area-inset-bottom)) !important; }
+  .lm-schedule-header { margin-bottom: 16px !important; }
+  .lm-schedule-header button { min-height: 36px; padding: 0 10px !important; font-size: 11px !important; }
+  .lm-schedule-grid { min-width: 560px; }
+  .lm-schedule-cell-label { font-size: 13px !important; }
+  .lm-mobile-nav-label { font-size: 11px !important; }
+  .lm-schedule-grid button { min-width: 30px; min-height: 30px; }
+}
+
 /* Lehrerhilfe: auf kleinen Displays Panel und Arbeitsbereich untereinander,
    statt die Desktop-Spaltenbreite in ein schmales Telefon zu quetschen. */
 @media (max-width: 760px) {
