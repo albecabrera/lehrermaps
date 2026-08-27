@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getFiles, uploadFile, deleteFile, renameFile, moveFile, toggleFileShare, setFileDeadline, setFileTimer, toggleFilePublic, setFileRole, setFilesRole, commitEditCopy } from '../lib/api';
+import { getFiles, uploadFile, deleteFile, renameFile, moveFile, toggleFileShare, setFileTimer, toggleFilePublic, setFileRole, setFilesRole, commitEditCopy } from '../lib/api';
 
 export function useFiles(folderId) {
   const [files, setFiles] = useState([]);
@@ -57,12 +57,6 @@ export function useFiles(folderId) {
     return updated;
   }, []);
 
-  const setDeadline = useCallback(async (id, due_at) => {
-    const updated = await setFileDeadline(id, due_at);
-    setFiles((prev) => prev.map((f) => (f.id === id ? updated : f)));
-    return updated;
-  }, []);
-
   const setTimer = useCallback(async (id, timer_minutes) => {
     const updated = await setFileTimer(id, timer_minutes);
     setFiles((prev) => prev.map((f) => (f.id === id ? updated : f)));
@@ -95,5 +89,5 @@ export function useFiles(folderId) {
     return updated;
   }, []);
 
-  return { files, loading, error, reload: load, upload, remove, rename, move, toggleShare, setDeadline, setTimer, togglePublic, setRole, setBulkRole, commitVersion };
+  return { files, loading, error, reload: load, upload, remove, rename, move, toggleShare, setTimer, togglePublic, setRole, setBulkRole, commitVersion };
 }

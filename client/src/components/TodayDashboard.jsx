@@ -1,30 +1,89 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { getTodayDashboard, saveTodayDashboardNote, saveTodayDashboardTasks } from '../lib/api';
 
-const TASKS_KEY = 'lm_today_tasks';
-const NOTE_PREFIX = 'lm_today_note_';
+const LEGACY_TASKS_KEY = 'lm_today_tasks';
+const LEGACY_NOTE_PREFIX = 'lm_today_note_';
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function readTasks() {
-  try { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'); } catch { return []; }
+function readLegacy(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch { return fallback; }
 }
 
 export default function TodayDashboard({
-  subject, folders = [], onRecentClick,
-  onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
+  subject, folders = [], onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
 }) {
-  const [tasks, setTasks] = useState(readTasks);
+  const date = todayKey();
+  const [tasks, setTasks] = useState([]);
   const [taskText, setTaskText] = useState('');
-  const [note, setNote] = useState(() => localStorage.getItem(NOTE_PREFIX + todayKey()) || '');
-  const deadlines = useMemo(() => folders.filter((folder) => folder.due_at).sort((a, b) => String(a.due_at).localeCompare(String(b.due_at))).slice(0, 4), [folders]);
+  const [note, setNote] = useState('');
+  const [saveError, setSaveError] = useState(false);
+  const saveQueue = useRef(Promise.resolve());
+  const noteTimer = useRef(null);
+  const noteRef = useRef('');
+  const noteDirty = useRef(false);
+  const userChanged = useRef(false);
   const favorites = folders.filter((folder) => folder.is_favorite).slice(0, 4);
 
-  const persistTasks = (next) => {
-    setTasks(next);
-    localStorage.setItem(TASKS_KEY, JSON.stringify(next));
+  const queueSave = (save) => {
+    saveQueue.current = saveQueue.current.catch(() => {}).then(save);
+    return saveQueue.current;
   };
+
+  const persistTasks = (next) => {
+    userChanged.current = true;
+    setTasks(next);
+    queueSave(() => saveTodayDashboardTasks(next))
+      .then(() => setSaveError(false))
+      .catch(() => setSaveError(true));
+  };
+
+  const persistNote = (value) => {
+    noteDirty.current = false;
+    queueSave(() => saveTodayDashboardNote(date, value))
+      .then(() => setSaveError(false))
+      .catch(() => setSaveError(true));
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const legacyTasks = readLegacy(LEGACY_TASKS_KEY, []);
+    const legacyNote = localStorage.getItem(LEGACY_NOTE_PREFIX + date) || '';
+
+    getTodayDashboard(date).then((dashboard) => {
+      if (cancelled || userChanged.current) return;
+      const serverTasks = Array.isArray(dashboard.tasks) ? dashboard.tasks : [];
+      const serverNote = typeof dashboard.note === 'string' ? dashboard.note : '';
+      setTasks(serverTasks);
+      setNote(serverNote);
+      noteRef.current = serverNote;
+
+      // Keep existing device-only entries when the authenticated account is first upgraded.
+      if (serverTasks.length === 0 && legacyTasks.length > 0) {
+        setTasks(legacyTasks);
+        queueSave(() => saveTodayDashboardTasks(legacyTasks))
+          .then(() => { localStorage.removeItem(LEGACY_TASKS_KEY); setSaveError(false); })
+          .catch(() => setSaveError(true));
+      }
+      if (!serverNote && legacyNote) {
+        setNote(legacyNote);
+        noteRef.current = legacyNote;
+        queueSave(() => saveTodayDashboardNote(date, legacyNote))
+          .then(() => { localStorage.removeItem(LEGACY_NOTE_PREFIX + date); setSaveError(false); })
+          .catch(() => setSaveError(true));
+      }
+    }).catch(() => {
+      if (!cancelled) setSaveError(true);
+    });
+
+    return () => {
+      cancelled = true;
+      clearTimeout(noteTimer.current);
+      if (noteDirty.current) persistNote(noteRef.current);
+    };
+  }, [date]);
 
   const addTask = () => {
     const text = taskText.trim();
@@ -34,8 +93,12 @@ export default function TodayDashboard({
   };
 
   const saveNote = (value) => {
+    userChanged.current = true;
     setNote(value);
-    localStorage.setItem(NOTE_PREFIX + todayKey(), value);
+    noteRef.current = value;
+    noteDirty.current = true;
+    clearTimeout(noteTimer.current);
+    noteTimer.current = setTimeout(() => persistNote(value), 400);
   };
 
   const cardStyle = {
@@ -65,11 +128,10 @@ export default function TodayDashboard({
           </div>
         </div>
 
-        <div className="lm-today-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
+        <div className="lm-today-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
           {[
             ['Fächerordner', folders.length, subject.color],
             ['Favoriten', favorites.length, '#E8472A'],
-            ['Deadlines', deadlines.length, '#D97706'],
             ['Aufgaben offen', tasks.filter((task) => !task.done).length, '#2563EB'],
           ].map(([label, value, color]) => (
             <div key={label} style={{ ...cardStyle, padding: '14px 16px' }}>
@@ -104,12 +166,9 @@ export default function TodayDashboard({
           <section style={cardStyle}>
             <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Tagesnotiz</h2>
             <textarea value={note} onChange={(e) => saveNote(e.target.value)} placeholder="Was ist heute wichtig?" rows={6} style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', border: '1px solid var(--c-border)', borderRadius: 8, padding: 10, background: 'var(--c-bg)', color: 'var(--c-text)', fontFamily: 'inherit', fontSize: 12, lineHeight: 1.5 }} />
-            <div style={{ marginTop: 7, color: 'var(--c-text-3)', fontSize: 10 }}>Wird lokal auf diesem Gerät gespeichert.</div>
-          </section>
-
-          <section style={cardStyle}>
-            <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Deadlines</h2>
-            {deadlines.length === 0 ? <div style={{ color: 'var(--c-text-3)', fontSize: 12 }}>Keine anstehenden Deadlines.</div> : deadlines.map((folder) => <button key={folder.id} onClick={() => onRecentClick?.(folder)} style={{ display: 'block', width: '100%', border: 0, borderBottom: '1px solid var(--c-border)', background: 'transparent', padding: '8px 0', textAlign: 'left', cursor: 'pointer', color: 'var(--c-text)' }}><strong style={{ fontSize: 12 }}>{folder.name}</strong><span style={{ display: 'block', color: '#DC2626', fontSize: 11 }}>{new Date(folder.due_at).toLocaleDateString('de-DE')}</span></button>)}
+            <div style={{ marginTop: 7, color: saveError ? 'var(--c-danger-text)' : 'var(--c-text-3)', fontSize: 10 }}>
+              {saveError ? 'Änderungen konnten nicht gespeichert werden.' : 'Wird in deinem Konto gespeichert.'}
+            </div>
           </section>
 
           <section style={cardStyle}>
@@ -121,7 +180,6 @@ export default function TodayDashboard({
             </div>
           </section>
         </div>
-
       </div>
     </div>
   );

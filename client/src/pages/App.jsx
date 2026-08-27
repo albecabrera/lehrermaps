@@ -8,7 +8,6 @@ import UploadModal from '../components/UploadModal';
 import NewFolderModal from '../components/NewFolderModal';
 import Breadcrumb from '../components/Breadcrumb';
 import ConfirmModal from '../components/ConfirmModal';
-import DeadlineModal from '../components/DeadlineModal';
 import TimerModal from '../components/TimerModal';
 import GlobalSearch from '../components/GlobalSearch';
 import SearchModal from '../components/SearchModal';
@@ -32,6 +31,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/MobileNav';
 import TeachingMode from '../components/TeachingMode';
 import LessonDashboard from '../components/LessonDashboard';
+import SchoolCalendarPdf from '../components/SchoolCalendarPdf';
 
 // Opened views are split into on-demand chunks without changing their layout.
 const Schedule = lazy(() => import('../components/Schedule'));
@@ -48,6 +48,7 @@ export default function App({ onLogout }) {
   const isMobile = useIsMobile();
   const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  const [schoolCalendarOpen, setSchoolCalendarOpen] = useState(false);
 
   const [subjectId, setSubjectId] = useState('spanisch');
   const [activeFolder, setActiveFolder] = useState(null);
@@ -66,7 +67,6 @@ export default function App({ onLogout }) {
   const [oneNoteSearchOpen, setOneNoteSearchOpen] = useState(false);
   const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
-  const [deadlineModal, setDeadlineModal] = useState(null);
   const [timerModal, setTimerModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [pendingDeleteIds, setPendingDeleteIds] = useState(new Set());
@@ -88,8 +88,8 @@ export default function App({ onLogout }) {
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
-  const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setDeadline: setFolderDeadline, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
-  const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setDeadline: setFileDeadline, setTimer: setFileTimer, togglePublic, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
+  const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
+  const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setTimer: setFileTimer, togglePublic, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink, toggleShare: toggleLinkShare } = useLinks(activeFolder?.id);
   const { trackFile, trackLink } = useRecentFiles();
 
@@ -226,7 +226,7 @@ export default function App({ onLogout }) {
         document.exitFullscreen();
         return;
       }
-      if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || !!deadlineModal || keyboardHelpOpen) return;
+      if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setGlobalSearchOpen(true);
@@ -300,7 +300,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeFolder, files, folderTab, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, deadlineModal, keyboardHelpOpen]);
+  }, [activeFile, activeFolder, files, folderTab, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -533,17 +533,6 @@ export default function App({ onLogout }) {
     if (activeFile?.id === id) setActiveFile(updated);
   };
 
-  const openFolderDeadlineModal = () => {
-    if (!activeFolder) return;
-    const current = activeFolder.due_at ? new Date(activeFolder.due_at).toISOString().slice(0, 10) : '';
-    setDeadlineModal({ type: 'folder', id: activeFolder.id, initialDate: current });
-  };
-
-  const handleSetFileDeadline = async (file) => {
-    const current = file?.due_at ? new Date(file.due_at).toISOString().slice(0, 10) : '';
-    setDeadlineModal({ type: 'file', id: file.id, initialDate: current });
-  };
-
   const handleSetFileTimer = (file) => {
     setTimerModal({ id: file.id, initialMinutes: file.timer_minutes || '' });
   };
@@ -712,7 +701,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!deadlineModal || !!timerModal || keyboardHelpOpen;
+  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!timerModal || keyboardHelpOpen || schoolCalendarOpen;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
   const sidebarProps = {
@@ -773,6 +762,21 @@ export default function App({ onLogout }) {
             </svg>
           </button>
         )}
+        <button
+          className="lm-spring"
+          onClick={() => setSchoolCalendarOpen(true)}
+          title="Terminplan Schuljahr 2026/27"
+          aria-label="Terminplan Schuljahr 2026/27"
+          style={{
+            appearance: 'none', border: 'none', font: 'inherit',
+            padding: '10px 12px 12px', cursor: 'pointer',
+            background: 'transparent', borderRadius: '10px 10px 0 0',
+            display: 'flex', alignItems: 'center', gap: 6,
+            color: 'var(--c-text-2)', flexShrink: 0,
+          }}
+        >
+          <span aria-hidden="true">🗓</span><span style={{ fontSize: 12 }}>Terminplan</span>
+        </button>
         {/* Mobil wandern Stundenplan/Termine/Notion/Miro in Bottom-Nav + Mehr-Sheet */}
         {!isMobile && <>
         {/* Heute / Startseite */}
@@ -1241,19 +1245,6 @@ export default function App({ onLogout }) {
                       ZIP
                     </a>
                     <button
-                      onClick={openFolderDeadlineModal}
-                      style={{
-                        marginLeft: 8, height: 26, padding: '0 10px',
-                        borderRadius: 6, background: 'transparent', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: 5,
-                        fontFamily: 'inherit', fontSize: 11, fontWeight: 500,
-                        color: activeFolder?.due_at && new Date(activeFolder.due_at) < new Date() ? '#EF4444' : 'var(--c-text-3)',
-                        border: activeFolder?.due_at && new Date(activeFolder.due_at) < new Date() ? '1px solid #EF444455' : '1px solid var(--c-border)',
-                      }}
-                    >
-                      ⏰ {activeFolder?.due_at ? new Date(activeFolder.due_at).toLocaleDateString('de-DE') : t('table.deadline')}
-                    </button>
-                    <button
                       onClick={() => { setStartNewLessonPlanning(false); setTeachingMode(true); }}
                       title={t('teach.open')}
                       style={{
@@ -1457,7 +1448,6 @@ export default function App({ onLogout }) {
                         onAddLink={() => setAddLinkOpen(true)}
                         onToggleShare={toggleShare}
                         onTogglePublic={togglePublic}
-                        onSetDeadline={handleSetFileDeadline}
                         onSetTimer={handleSetFileTimer}
                         onShowLinkQr={(link) => setHeroQrLink(link)}
                         onFileHover={setHoveredFile}
@@ -1668,6 +1658,7 @@ export default function App({ onLogout }) {
         accent={accent}
       />
       {hasModalOpen && <div className="lm-depth-overlay" />}
+      {schoolCalendarOpen && <SchoolCalendarPdf onClose={() => setSchoolCalendarOpen(false)} />}
       {folderZoom && (
         <div
           style={{
@@ -1787,32 +1778,6 @@ export default function App({ onLogout }) {
         onClose={() => setOneNoteSearchOpen(false)}
       />
       {keyboardHelpOpen && <KeyboardHelp onClose={() => setKeyboardHelpOpen(false)} />}
-      <DeadlineModal
-        open={!!deadlineModal}
-        title={deadlineModal?.type === 'folder' ? t('modal.deadline.folder_title') : t('modal.deadline.file_title')}
-        initialDate={deadlineModal?.initialDate}
-        accent={accent}
-        onClose={() => setDeadlineModal(null)}
-      onSave={async (value) => {
-          if (!deadlineModal) return;
-          const due_at = value?.trim() ? `${value.trim()} 23:59:59` : null;
-          try {
-            if (deadlineModal.type === 'folder') {
-              const updated = await setFolderDeadline(deadlineModal.id, due_at);
-              setActiveFolder(updated);
-              setToast({ type: 'success', msg: t('toast.deadline_saved') });
-            } else {
-              const updated = await setFileDeadline(deadlineModal.id, due_at);
-              if (activeFile?.id === deadlineModal.id) setActiveFile(updated);
-              setToast({ type: 'success', msg: t('toast.deadline_saved') });
-            }
-          } catch {
-            setToast({ type: 'error', msg: t('toast.deadline_error') });
-          } finally {
-            setDeadlineModal(null);
-          }
-        }}
-      />
       <TimerModal
         open={!!timerModal}
         initialMinutes={timerModal?.initialMinutes}
@@ -2298,14 +2263,6 @@ function FolderCard({ folder, accent, selected = false, onClick, onHover, onMove
           }}>{folder.name}</div>
           {folder.is_favorite ? <span style={{ fontSize: 11, color: '#F59E0B', flexShrink: 0 }}>★</span> : null}
         </div>
-        {folder.due_at && (
-          <div className="lm-folder-card-deadline" style={{
-            fontSize: 9.5, color: new Date(folder.due_at) < new Date() ? '#EF4444' : 'var(--c-text-3)',
-            fontFamily: '"DM Mono", monospace', marginTop: 1,
-          }}>
-            ⏰ {new Date(folder.due_at).toLocaleDateString('de-DE')}
-          </div>
-        )}
       </div>
     </button>
   );

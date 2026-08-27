@@ -100,8 +100,6 @@ export const saveFolderNotes = (id, content) =>
 
 export const toggleFolderFavorite = (id) =>
   api.put(`/folders/${id}/favorite`).then((r) => r.data);
-export const setFolderDeadline = (id, due_at) =>
-  api.put(`/folders/${id}/deadline`, { due_at }).then((r) => r.data);
 export const setFolderColor = (id, color) =>
   api.put(`/folders/${id}/color`, { color }).then((r) => r.data);
 
@@ -128,8 +126,6 @@ export const toggleFileShare = (id) =>
   api.put(`/files/${id}/share`).then((r) => r.data);
 export const toggleFilePublic = (id) =>
   api.put(`/files/${id}/public`).then((r) => r.data);
-export const setFileDeadline = (id, due_at) =>
-  api.put(`/files/${id}/deadline`, { due_at }).then((r) => r.data);
 export const setFileTimer = (id, timer_minutes) =>
   api.put(`/files/${id}/timer`, { timer_minutes }).then((r) => r.data);
 export const publicFileUrl = (token) =>
@@ -200,6 +196,13 @@ export const getQuickNotes = () => api.get('/quicknotes').then((r) => r.data);
 export const createQuickNote = (content) => api.post('/quicknotes', { content }).then((r) => r.data);
 export const deleteQuickNote = (id) => api.delete(`/quicknotes/${id}`);
 export const searchOneNote = (q) => api.get('/search', { params: { q } }).then((r) => r.data);
+
+export const getTodayDashboard = (date) =>
+  api.get('/today-dashboard', { params: { date } }).then((r) => r.data);
+export const saveTodayDashboardTasks = (tasks) =>
+  api.put('/today-dashboard/tasks', { tasks }).then((r) => r.data);
+export const saveTodayDashboardNote = (date, content) =>
+  api.put('/today-dashboard/note', { date, content }).then((r) => r.data);
 
 export const getExams = () => api.get('/exams').then((r) => r.data);
 export const createExam = (data) => api.post('/exams', data).then((r) => r.data);

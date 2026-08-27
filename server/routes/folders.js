@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
   try {
     if (req.user?.role === 'student') {
       // Return only folders that lead to shared material.  The projection is
-      // deliberately small so private notes, deadlines and usage metadata
+      // deliberately small so private notes and usage metadata
       // never cross the API boundary.
       const [allFolders] = await pool.execute('SELECT id, subject, group_name, name, parent_id, sort_order FROM folders');
       const [visibleRows] = await pool.execute(`
@@ -229,17 +229,6 @@ router.put('/:id/color', teacherOnly, async (req, res) => {
   const { color } = req.body;
   try {
     await pool.execute('UPDATE folders SET color = ? WHERE id = ?', [color || null, req.params.id]);
-    const [rows] = await pool.execute(FOLDER_WITH_COUNT, [req.params.id]);
-    res.json(rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-router.put('/:id/deadline', teacherOnly, async (req, res) => {
-  const { due_at } = req.body;
-  try {
-    await pool.execute('UPDATE folders SET due_at = ? WHERE id = ?', [due_at || null, req.params.id]);
     const [rows] = await pool.execute(FOLDER_WITH_COUNT, [req.params.id]);
     res.json(rows[0]);
   } catch (e) {

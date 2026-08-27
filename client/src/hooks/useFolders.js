@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getFolders, createFolder, deleteFolder, renameFolder, reorderFolders, toggleFolderFavorite, setFolderDeadline, setFolderColor, moveFolderToParent } from '../lib/api';
+import { getFolders, createFolder, deleteFolder, renameFolder, reorderFolders, toggleFolderFavorite, setFolderColor, moveFolderToParent } from '../lib/api';
 
 export function useFolders() {
   const [folders, setFolders] = useState([]);
@@ -64,12 +64,6 @@ export function useFolders() {
     return updated;
   }, []);
 
-  const setDeadline = useCallback(async (id, due_at) => {
-    const updated = await setFolderDeadline(id, due_at);
-    setFolders((prev) => prev.map((f) => (f.id === id ? updated : f)));
-    return updated;
-  }, []);
-
   const setColor = useCallback(async (id, color) => {
     const updated = await setFolderColor(id, color);
     setFolders((prev) => prev.map((f) => (f.id === id ? updated : f)));
@@ -94,5 +88,5 @@ export function useFolders() {
     [folders]
   );
 
-  return { folders, loading, error, reload: load, add, remove, rename, reorder, toggleFavorite, setDeadline, setColor, moveToParent, bySubjectGroup };
+  return { folders, loading, error, reload: load, add, remove, rename, reorder, toggleFavorite, setColor, moveToParent, bySubjectGroup };
 }

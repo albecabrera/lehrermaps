@@ -93,7 +93,6 @@ export const translations = {
     'table.clear_selection': 'Auswahl löschen',
     'table.public_link_on': 'Public-Link aktivieren',
     'table.public_link_off': 'Public-Link deaktivieren',
-    'table.deadline': 'Deadline',
     'table.timer': 'Temporizador',
     'table.gallery': 'Galerie',
     'table.list': 'Liste',
@@ -184,10 +183,6 @@ export const translations = {
     'modal.upload.formats': 'Unterstützte Formate',
     'modal.upload.max': 'Max. 300 MB pro Datei · alle Daten bleiben lokal',
     'modal.upload.cancel_upload': 'Upload abbrechen',
-    'modal.deadline.folder_title': 'Ordner-Deadline',
-    'modal.deadline.file_title': 'Datei-Deadline',
-    'modal.deadline.hint': 'Leer lassen, um die Deadline zu entfernen.',
-    'modal.deadline.clear': 'Deadline entfernen',
     'modal.timer.title': 'Temporizador für Arbeitsblatt',
     'modal.timer.hint': 'Leer lassen oder auf 0 setzen, um den Timer zu deaktivieren.',
     'modal.timer.placeholder': 'Minuten (1–600)',
@@ -297,8 +292,6 @@ export const translations = {
     'toast.bulk_delete_pending': '{{n}} Datei(en) werden gelöscht…',
     'toast.undo': 'Rückgängig',
     'toast.undo_done': 'Löschen rückgängig gemacht.',
-    'toast.deadline_saved': 'Deadline gespeichert.',
-    'toast.deadline_error': 'Deadline konnte nicht gespeichert werden.',
     'toast.timer_saved': 'Temporizador gespeichert.',
     'toast.timer_error': 'Temporizador konnte nicht gespeichert werden.',
 
@@ -329,8 +322,6 @@ export const translations = {
     'toast.role_saved': 'Materialrolle gespeichert.',
     'toast.role_error': 'Materialrolle konnte nicht gespeichert werden.',
     'toast.version_saved': 'Neue Version gespeichert.',
-    'prompt.folder_deadline': 'Ordner-Deadline (YYYY-MM-DD). Leer zum Entfernen:',
-    'prompt.file_deadline': 'Datei-Deadline (YYYY-MM-DD). Leer zum Entfernen:',
   },
 
 };

@@ -19,7 +19,6 @@ export default function FileTable({
   onFileSelect, onFileSecondarySelect, onLinkSelect, accent = '#E8472A',
   query, onDelete, onRename, onDeleteLink, onToggleLinkShare, onUpload, onAddLink, onToggleShare,
   onTogglePublic,
-  onSetDeadline,
   onSetTimer,
   onShowLinkQr,
   onFileHover,
@@ -198,9 +197,6 @@ export default function FileTable({
     const dateFmt = file.uploaded_at
       ? new Date(file.uploaded_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
       : '—';
-    const dueFmt = file.due_at
-      ? new Date(file.due_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
-      : null;
 
     return (
       <button
@@ -310,13 +306,7 @@ export default function FileTable({
             </select>
           )}
           <span style={{ fontSize: 10.5, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', letterSpacing: 0.2 }}>{sizeFmt}</span>
-          <span style={{
-            fontSize: 10.5, fontFamily: '"DM Mono", monospace', letterSpacing: 0.2,
-            color: dueFmt && new Date(file.due_at) < new Date() ? '#EF4444' : 'var(--c-text-3)',
-            fontWeight: dueFmt && new Date(file.due_at) < new Date() ? 700 : 400,
-          }}>
-            {dueFmt ? `⏰ ${dueFmt}` : dateFmt}
-          </span>
+          <span style={{ fontSize: 10.5, color: 'var(--c-text-3)', fontFamily: '"DM Mono", monospace', letterSpacing: 0.2 }}>{dateFmt}</span>
         </div>
       </button>
     );
@@ -592,7 +582,6 @@ export default function FileTable({
           onDelete={() => { onDelete(menuFile); setMenuFile(null); }}
           onToggleShare={() => { onToggleShare?.(menuFile); setMenuFile(null); }}
           onTogglePublic={() => { onTogglePublic?.(menuFile.id); setMenuFile(null); }}
-          onSetDeadline={() => { onSetDeadline?.(menuFile); setMenuFile(null); }}
           onSetTimer={() => { onSetTimer?.(menuFile); setMenuFile(null); }}
           t={t}
         />
@@ -689,7 +678,7 @@ function EmptyState({ query, accent, onUpload, onAddLink, t }) {
   );
 }
 
-function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onToggleShare, onTogglePublic, onSetDeadline, onSetTimer, t }) {
+function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onToggleShare, onTogglePublic, onSetTimer, t }) {
   const kind = detectKind(file.original_name);
 
   return (
@@ -731,7 +720,6 @@ function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onTo
             onClick={() => { navigator.clipboard.writeText(publicFileUrl(file.public_token)); onClose(); }}
           />
         ) : null}
-        <MenuItem icon="⏰" label={t('table.deadline')} onClick={onSetDeadline} />
         {onSetTimer && <MenuItem icon="⏱" label={t('table.timer')} onClick={onSetTimer} />}
         <div style={{ height: 1, background: 'var(--c-border)', margin: '4px 2px' }} />
         <MenuItem icon="🗑" label={t('delete')} danger onClick={onDelete} />

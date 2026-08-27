@@ -125,7 +125,6 @@ html, body, #root {
   .lm-folder-card-count { font-size: 12px !important; padding: 4px 9px !important; }
   .lm-folder-card-info { padding: 16px 18px 18px !important; }
   .lm-folder-card-name { font-size: 19px !important; }
-  .lm-folder-card-deadline { font-size: 13px !important; margin-top: 4px !important; }
 
   /* Tablet navigation keeps the same visual rhythm as the enlarged content. */
   .lm-mobile-nav-label { font-size: 13px !important; }
@@ -559,6 +558,43 @@ button:active {
   }
 }
 .lm-teaching-phase-back { display: none; }
+
+.lm-school-calendar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, .58);
+}
+.lm-school-calendar-viewer {
+  display: flex;
+  flex-direction: column;
+  width: min(1120px, 100%);
+  height: min(900px, 94vh);
+  overflow: hidden;
+  border: 1px solid var(--c-border);
+  border-radius: 14px;
+  background: var(--c-surface);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, .3);
+}
+.lm-school-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--c-border);
+}
+.lm-school-calendar-kicker { color: var(--c-text-3); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.lm-school-calendar-header h2 { margin: 3px 0 0; font-size: 16px; }
+.lm-school-calendar-actions { display: flex; align-items: center; gap: 8px; }
+.lm-school-calendar-open,
+.lm-school-calendar-actions button { min-height: 32px; padding: 0 10px; border: 1px solid var(--c-border); border-radius: 7px; background: transparent; color: var(--c-text-2); font: inherit; font-size: 12px; text-decoration: none; cursor: pointer; }
+.lm-school-calendar-actions button { font-size: 20px; line-height: 1; }
+.lm-school-calendar-frame { flex: 1; width: 100%; border: 0; background: #f8fafc; }
 @media (max-width: 760px) {
   .lm-teaching-phase-back { display: inline-flex; }
 }

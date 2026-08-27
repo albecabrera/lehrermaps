@@ -14,9 +14,12 @@ import pool from '../db.js';
 import auth, { teacherOnly } from '../middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
-const PREVIEWS_DIR = path.join(__dirname, '..', 'previews');
-const EDITS_DIR = path.join(__dirname, '..', 'edit-copies');
+// Tests can provide an isolated storage root without changing production's
+// established server/{uploads,previews,edit-copies} layout.
+const STORAGE_DIR = process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_DIR) : null;
+const UPLOADS_DIR = STORAGE_DIR ? path.join(STORAGE_DIR, 'uploads') : path.join(__dirname, '..', 'uploads');
+const PREVIEWS_DIR = STORAGE_DIR ? path.join(STORAGE_DIR, 'previews') : path.join(__dirname, '..', 'previews');
+const EDITS_DIR = STORAGE_DIR ? path.join(STORAGE_DIR, 'edit-copies') : path.join(__dirname, '..', 'edit-copies');
 
 const CONVERTIBLE_EXTS = new Set(['doc', 'docx', 'odt', 'rtf', 'ppt', 'pptx', 'odp', 'xls', 'xlsx', 'ods']);
 const converting = new Set();
@@ -463,17 +466,6 @@ router.put('/:id/public', teacherOnly, async (req, res) => {
   }
 });
 
-router.put('/:id/deadline', teacherOnly, async (req, res) => {
-  const { due_at } = req.body;
-  try {
-    await pool.execute('UPDATE files SET due_at = ? WHERE id = ?', [due_at || null, req.params.id]);
-    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
-    res.json(rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 router.put('/:id/timer', teacherOnly, async (req, res) => {
   const raw = req.body?.timer_minutes;
   const minutes = raw === null || raw === '' || Number(raw) === 0 ? null : Number(raw);
@@ -604,9 +596,9 @@ router.post('/:id/versions/commit', teacherOnly, editUpload.single('file'), asyn
     );
     await pool.execute('UPDATE files SET is_current_version = 0 WHERE version_group_id = ?', [file.version_group_id]);
     const [result] = await pool.execute(
-      `INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, is_shared, due_at, timer_minutes, is_public, public_token, material_role, version_group_id, version_number, is_current_version)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, 1)`,
-      [file.folder_id, file.original_name, storedName, file.mime_type, size, file.is_shared || 0, file.due_at || null, file.timer_minutes || null, file.material_role || 'other', file.version_group_id, nextVersion]
+      `INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, is_shared, timer_minutes, is_public, public_token, material_role, version_group_id, version_number, is_current_version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, 1)`,
+      [file.folder_id, file.original_name, storedName, file.mime_type, size, file.is_shared || 0, file.timer_minutes || null, file.material_role || 'other', file.version_group_id, nextVersion]
     );
     if (copies.length) await pool.execute('DELETE FROM file_edit_copies WHERE id = ?', [copies[0].id]);
     const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [result.insertId]);
