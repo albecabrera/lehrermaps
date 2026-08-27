@@ -80,19 +80,16 @@ export default function Schedule({ onNavigate }) {
     api.put('/schedule', next).catch(() => {});
   }, []);
 
-  const assign = useCallback((subject) => {
+  const saveCell = useCallback(({ label, location }) => {
     if (!picker) return;
     const key = `${picker.day}-${picker.period}`;
-    if (!subject) {
-      const next = { ...schedule };
-      delete next[key];
-      persist(next);
-      setPicker(null);
-      return;
-    }
-    const cell = { id: subject.id, label: subject.label, color: subject.color };
-    if (subject.subjectId) cell.subjectId = subject.subjectId;
-    persist({ ...schedule, [key]: cell });
+    const current = schedule[key];
+    if (!label.trim()) return;
+    persist({ ...schedule, [key]: {
+      ...(current || { id: `custom-${Date.now()}`, color: '#2563EB' }),
+      label: label.trim(),
+      location: location.trim(),
+    } });
     setPicker(null);
   }, [picker, schedule, persist]);
 
@@ -102,15 +99,6 @@ export default function Schedule({ onNavigate }) {
     delete next[key];
     persist(next);
   }, [schedule, persist]);
-
-  const updateLocation = useCallback((location) => {
-    if (!picker) return;
-    const key = `${picker.day}-${picker.period}`;
-    const current = schedule[key];
-    if (!current) return;
-    persist({ ...schedule, [key]: { ...current, location: location.trim() } });
-    setPicker(null);
-  }, [picker, schedule, persist]);
 
   const toggleBreakDay = useCallback((breakKey, day) => {
     const current = schedule[breakKey] || {};
@@ -294,8 +282,8 @@ export default function Schedule({ onNavigate }) {
         <SubjectPicker
           rect={picker.rect}
           cell={schedule[`${picker.day}-${picker.period}`]}
-          onSelect={assign}
-          onSaveLocation={updateLocation}
+          onSaveCell={saveCell}
+          onClear={() => unlink(picker.day, picker.period)}
           onClose={() => setPicker(null)}
         />
       )}
@@ -470,8 +458,9 @@ function BreakDayCell({ active, onToggle }) {
   );
 }
 
-function SubjectPicker({ rect, cell, onSelect, onSaveLocation, onClose }) {
+function SubjectPicker({ rect, cell, onSaveCell, onClear, onClose }) {
   useEscapeKey(true, onClose);
+  const [label, setLabel] = useState(cell?.label || '');
   const [location, setLocation] = useState(cell?.location || '');
   const PICKER_W = 220;
   const PICKER_MAX_H = Math.min(360, window.innerHeight - 80);
@@ -514,12 +503,20 @@ function SubjectPicker({ rect, cell, onSelect, onSaveLocation, onClose }) {
           fontFamily: '"DM Sans", -apple-system, sans-serif',
         }}
       >
-        {cell && (
-          <form onSubmit={(event) => { event.preventDefault(); onSaveLocation(location); }} style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <form onSubmit={(event) => { event.preventDefault(); onSaveCell({ label, location }); }} style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-text-2)' }}>
+              Clase o grupo
+              <input
+                autoFocus
+                value={label}
+                onChange={(event) => setLabel(event.target.value)}
+                placeholder="p. ej. Informatik 6"
+                style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, height: 34, padding: '0 9px', border: '1px solid var(--c-border)', borderRadius: 7, background: 'var(--c-input-bg)', color: 'var(--c-text)', font: 'inherit', fontSize: 12 }}
+              />
+            </label>
             <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-text-2)' }}>
               Lugar de la clase
               <input
-                autoFocus
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
                 placeholder="p. ej. S10, S9-2, J004"
@@ -527,13 +524,12 @@ function SubjectPicker({ rect, cell, onSelect, onSaveLocation, onClose }) {
               />
             </label>
             <button type="submit" style={{ width: '100%', padding: '8px 10px', border: 0, borderRadius: 8, background: 'var(--c-text)', color: 'var(--c-surface)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700 }}>
-              Guardar lugar
+              Guardar
             </button>
           </form>
-        )}
         {cell && (
           <button
-            onClick={() => onSelect(null)}
+            onClick={() => { onClear(); onClose(); }}
             style={{
               width: '100%', padding: '8px 10px', border: '1px solid var(--c-border)',
               borderRadius: 8, background: 'transparent', color: 'var(--c-text-2)',
