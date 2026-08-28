@@ -1,8 +1,9 @@
-const CACHE_VERSION = 'lehrermaps-v13';
+const CACHE_VERSION = 'lehrermaps-v14';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/lehrermaps_icon.svg',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',
   '/assets/icons/icon-maskable.svg',
