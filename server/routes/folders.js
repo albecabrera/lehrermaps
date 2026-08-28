@@ -15,27 +15,6 @@ const FOLDER_WITH_COUNT = `
 
 router.get('/', async (req, res) => {
   try {
-    if (req.user?.role === 'student') {
-      // Return only folders that lead to shared material.  The projection is
-      // deliberately small so private notes and usage metadata
-      // never cross the API boundary.
-      const [allFolders] = await pool.execute('SELECT id, subject, group_name, name, parent_id, sort_order FROM folders');
-      const [visibleRows] = await pool.execute(`
-        SELECT DISTINCT f.id FROM folders f
-        WHERE EXISTS (SELECT 1 FROM files fi WHERE fi.folder_id = f.id AND fi.is_shared = 1 AND fi.is_current_version = 1)
-           OR EXISTS (SELECT 1 FROM links li WHERE li.folder_id = f.id AND li.is_shared = 1)
-      `);
-      const byId = new Map(allFolders.map((folder) => [Number(folder.id), folder]));
-      const visible = new Set(visibleRows.map((row) => Number(row.id)));
-      for (const id of [...visible]) {
-        let parent = byId.get(id)?.parent_id;
-        while (parent != null && byId.has(Number(parent))) {
-          visible.add(Number(parent));
-          parent = byId.get(Number(parent)).parent_id;
-        }
-      }
-      return res.json(allFolders.filter((folder) => visible.has(Number(folder.id))));
-    }
     const [rows] = await pool.execute(`
       SELECT f.*, COUNT(fi.id) AS file_count, COALESCE(SUM(fi.size_bytes), 0) AS total_size_bytes,
         (SELECT fi2.id FROM files fi2 WHERE fi2.folder_id = f.id AND fi2.mime_type LIKE 'image/%' ORDER BY fi2.uploaded_at DESC LIMIT 1) AS thumbnail_file_id

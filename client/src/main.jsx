@@ -60,16 +60,14 @@ const SESSION_EXAMS_KEY = 'lm_exams_board_seen';
 
 function Root() {
   const [tick, setTick] = useState(0);
-  const [examsDismissed, setExamsDismissed] = useState(
-    () => !!sessionStorage.getItem(SESSION_EXAMS_KEY)
-  );
+  const [examsDismissed, setExamsDismissed] = useState(true);
 
   const token = localStorage.getItem('lm_token');
   const isTeacher = token ? isTeacherToken(token) : false;
 
   const handleLogin = () => {
     sessionStorage.removeItem(SESSION_EXAMS_KEY);
-    setExamsDismissed(false);
+    setExamsDismissed(true);
     setTick((n) => n + 1);
   };
 

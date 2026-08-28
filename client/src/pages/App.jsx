@@ -8,7 +8,6 @@ import UploadModal from '../components/UploadModal';
 import NewFolderModal from '../components/NewFolderModal';
 import Breadcrumb from '../components/Breadcrumb';
 import ConfirmModal from '../components/ConfirmModal';
-import TimerModal from '../components/TimerModal';
 import GlobalSearch from '../components/GlobalSearch';
 import SearchModal from '../components/SearchModal';
 import KeyboardHelp from '../components/KeyboardHelp';
@@ -25,6 +24,7 @@ import TodayDashboard from '../components/TodayDashboard';
 import FolderGallery from '../components/FolderGallery';
 import FolderIcon from '../components/FolderIcon';
 import { useTheme } from '../contexts/ThemeContext';
+import BrandMark from '../components/BrandMark';
 import { useLang } from '../contexts/LangContext';
 import { useNotebook } from '../contexts/NotebookContext';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -32,6 +32,7 @@ import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/Mobile
 import TeachingMode from '../components/TeachingMode';
 import LessonDashboard from '../components/LessonDashboard';
 import SchoolCalendarPdf from '../components/SchoolCalendarPdf';
+import HomeDashboard from '../components/HomeDashboard';
 
 // Opened views are split into on-demand chunks without changing their layout.
 const Schedule = lazy(() => import('../components/Schedule'));
@@ -67,11 +68,10 @@ export default function App({ onLogout }) {
   const [oneNoteSearchOpen, setOneNoteSearchOpen] = useState(false);
   const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
-  const [timerModal, setTimerModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [pendingDeleteIds, setPendingDeleteIds] = useState(new Set());
   const deleteTimersRef = useRef(new Map());
-  const [viewMode, setViewMode] = useState('subjects');
+  const [viewMode, setViewMode] = useState('home');
   const [examBoardOpen, setExamBoardOpen] = useState(false);
   const [dropOver, setDropOver] = useState(false);
   const [dropFiles, setDropFiles] = useState(null);
@@ -89,8 +89,8 @@ export default function App({ onLogout }) {
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
-  const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, toggleShare, setTimer: setFileTimer, togglePublic, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
-  const { links, add: addLink, remove: removeLink, toggleShare: toggleLinkShare } = useLinks(activeFolder?.id);
+  const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
+  const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { trackFile, trackLink } = useRecentFiles();
 
   useEffect(() => {
@@ -538,10 +538,6 @@ export default function App({ onLogout }) {
     if (activeFile?.id === id) setActiveFile(updated);
   };
 
-  const handleSetFileTimer = (file) => {
-    setTimerModal({ id: file.id, initialMinutes: file.timer_minutes || '' });
-  };
-
   const handleBulkDeleteFiles = async (selectedFiles) => {
     const fileIds = selectedFiles.map((f) => f.id);
     for (const file of selectedFiles) {
@@ -556,27 +552,6 @@ export default function App({ onLogout }) {
     });
   };
 
-  const handleBulkShareFiles = async (selectedFiles) => {
-    const toShare = selectedFiles.filter((f) => !f.is_shared);
-    if (!toShare.length) return;
-    let failed = 0;
-    for (const file of toShare) {
-      try { await toggleShare(file.id); } catch { failed += 1; }
-    }
-    if (failed) setToast({ type: 'error', msg: t('toast.bulk_done_error', { failed, total: toShare.length }) });
-    else setToast({ type: 'success', msg: t('toast.bulk_done') });
-  };
-
-  const handleBulkUnshareFiles = async (selectedFiles) => {
-    const toUnshare = selectedFiles.filter((f) => f.is_shared);
-    if (!toUnshare.length) return;
-    let failed = 0;
-    for (const file of toUnshare) {
-      try { await toggleShare(file.id); } catch { failed += 1; }
-    }
-    if (failed) setToast({ type: 'error', msg: t('toast.bulk_done_error', { failed, total: toUnshare.length }) });
-    else setToast({ type: 'success', msg: t('toast.bulk_done') });
-  };
 
   const handleBulkDownloadFiles = (selectedFiles) => {
     if (!selectedFiles.length) return;
@@ -634,8 +609,8 @@ export default function App({ onLogout }) {
     }
   };
 
-  const handleAddLink = async (title, url, is_shared) => {
-    await addLink(title, url, is_shared);
+  const handleAddLink = async (title, url) => {
+    await addLink(title, url);
   };
 
   const handleDeleteFolder = (folder) => {
@@ -706,7 +681,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || !!timerModal || keyboardHelpOpen || schoolCalendarOpen;
+  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
   const sidebarProps = {
@@ -749,6 +724,19 @@ export default function App({ onLogout }) {
         position: 'relative', flexShrink: 0, gap: 2,
         minHeight: 56, overflowX: 'auto', overflowY: 'visible',
       }}>
+        <button className="lm-app-brand" type="button" onClick={() => { setViewMode('home'); setActivePageId(null); closeFolderView(); }} aria-label="Zur Startseite">
+          <BrandMark size={28} />
+        </button>
+        {isMobile && (
+          <div className="lm-mobile-brand-links" aria-label="Schnellzugriff">
+            <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-mobile-brand-link" aria-label="Notion öffnen" title="Notion öffnen">
+              <img src="/assets/icons/notion.png" alt="" aria-hidden="true" />
+            </a>
+            <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-mobile-brand-link" aria-label="Miro öffnen" title="Miro öffnen">
+              <img src="/assets/icons/miro.png" alt="" aria-hidden="true" />
+            </a>
+          </div>
+        )}
         {isMobile && (
           <button
             className="lm-spring"
@@ -768,7 +756,7 @@ export default function App({ onLogout }) {
           </button>
         )}
         <button
-          className="lm-spring"
+          className="lm-spring lm-topbar-calendar"
           onClick={() => setSchoolCalendarOpen(true)}
           title="Terminplan Schuljahr 2026/27"
           aria-label="Terminplan Schuljahr 2026/27"
@@ -783,7 +771,7 @@ export default function App({ onLogout }) {
           <span aria-hidden="true">🗓</span><span style={{ fontSize: 12 }}>Terminplan</span>
         </button>
         <button
-          className="lm-global-logout"
+          className="lm-global-logout lm-topbar-logout"
           type="button"
           onClick={onLogout}
           aria-label="Logout"
@@ -800,7 +788,7 @@ export default function App({ onLogout }) {
         {!isMobile && <>
         {/* Heute / Startseite */}
         <button
-          className="lm-spring"
+          className="lm-spring lm-topbar-today"
           onClick={() => { setViewMode('today'); setActivePageId(null); closeFolderView(); }}
           style={{
             appearance: 'none', border: 'none', font: 'inherit',
@@ -815,10 +803,10 @@ export default function App({ onLogout }) {
           <span style={{ fontSize: 13 }}>⌂</span>
           <span style={{ fontSize: 13, fontWeight: viewMode === 'today' ? 600 : 500, color: viewMode === 'today' ? 'var(--c-text)' : 'var(--c-text-2)' }}>Heute</span>
         </button>
-        <button className="lm-spring" onClick={() => { setViewMode('lessons'); setActivePageId(null); closeFolderView(); }} style={{ appearance: 'none', border: 'none', font: 'inherit', padding: '10px 16px 12px', cursor: 'pointer', background: viewMode === 'lessons' ? 'var(--c-surface)' : 'transparent', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', gap: 8, color: viewMode === 'lessons' ? accent : 'var(--c-text-2)' }} aria-label="Lehrerhilfe">✦ <span style={{ fontSize: 13, fontWeight: viewMode === 'lessons' ? 600 : 500 }}>Lehrerhilfe</span></button>
+        <button className="lm-spring lm-topbar-lessons" onClick={() => { setViewMode('lessons'); setActivePageId(null); closeFolderView(); }} style={{ appearance: 'none', border: 'none', font: 'inherit', padding: '10px 16px 12px', cursor: 'pointer', background: viewMode === 'lessons' ? 'var(--c-surface)' : 'transparent', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', gap: 8, color: viewMode === 'lessons' ? accent : 'var(--c-text-2)' }} aria-label="Lehrerhilfe">✦ <span style={{ fontSize: 13, fontWeight: viewMode === 'lessons' ? 600 : 500 }}>Lehrerhilfe</span></button>
         {/* Stundenplan toggle */}
         <button
-          className="lm-spring"
+          className="lm-spring lm-topbar-schedule"
           onClick={() => setViewMode((m) => m === 'schedule' ? 'subjects' : 'schedule')}
           style={{
             appearance: 'none', border: 'none', font: 'inherit',
@@ -845,7 +833,7 @@ export default function App({ onLogout }) {
 
         {/* Termine (ExamBoard) toggle */}
         <button
-          className="lm-spring"
+          className="lm-spring lm-topbar-exams"
           onClick={() => setExamBoardOpen(true)}
           style={{
             appearance: 'none', border: 'none', font: 'inherit',
@@ -875,7 +863,7 @@ export default function App({ onLogout }) {
           href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link"
           target="_blank"
           rel="noopener noreferrer"
-          className="lm-spring"
+          className="lm-spring lm-topbar-notion"
           style={{
             appearance: 'none', textDecoration: 'none', font: 'inherit',
             padding: '10px 16px 12px', cursor: 'pointer',
@@ -889,12 +877,13 @@ export default function App({ onLogout }) {
           onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
         >
-          <svg width="13" height="13" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'var(--c-text-3)', flexShrink: 0 }}>
+          <img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" />
+          {/*
             <path d="M6.6 7.3C10.5 10.4 11.9 10.2 19.4 9.7L85.3 5.9c1.4 0 0.2-1.4-0.3-1.6L73.9 0.2C71.7-0.3 69.3 0.2 66.5 0.7L3.2 5.1C1.1 5.4 0.6 6.5 1.4 7.3L6.6 7.3z" fill="currentColor"/>
             <path d="M11.9 18.7v60.5c0 3.3 1.6 4.5 5.3 4.3l73.4-4.3c3.7-0.2 4.6-2.4 4.6-5.2V13.8c0-2.8-1.1-4.3-3.5-4.1l-76.3 4.5c-2.6 0.2-3.5 1.6-3.5 4.5z" fill="currentColor" opacity="0.1"/>
             <path d="M11.9 18.7v60.5c0 3.3 1.6 4.5 5.3 4.3l73.4-4.3c3.7-0.2 4.6-2.4 4.6-5.2V13.8c0-2.8-1.1-4.3-3.5-4.1l-76.3 4.5c-2.6 0.2-3.5 1.6-3.5 4.5z" stroke="currentColor" strokeWidth="4"/>
             <path d="M64.1 17.5l-20.2 1.2c-2.4 0.1-3 0.2-3.8 1.7-0.8 1.4-0.5 2.9 0.5 3.8l2.3 1.8v30.7l-3.1 1.9c-2.8 1.7-4 2.4-4 4.3 0 2.1 1.6 3.4 4.3 3.2L62 64.4c2.7-0.2 3.6-1.8 3.6-3.8v-2l-3.5 0.2V32.1l4.2 15.3c1.2 4.3 2.8 6.1 5.8 5.9 3-0.2 5-2.5 5-8.4V19.6c0-1.8-1.2-2.5-3.2-2.4l-2.6 0.2c-2 0.1-3.2 1.2-3.2 3v24.2l-3.5-12.8c-0.9-3.2-2.2-4.8-4.6-4.6-2.4 0.1-3.6 1.9-3.6 5.7v29.5L54.4 62v-29l-3 0.2V19.7c0-1.3 0.8-2.1 2.2-2.2h10.5z" fill="currentColor"/>
-          </svg>
+          */}
           <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--c-text-2)', letterSpacing: -0.1 }}>
             Notion
           </span>
@@ -905,7 +894,7 @@ export default function App({ onLogout }) {
           href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230"
           target="_blank"
           rel="noopener noreferrer"
-          className="lm-spring"
+          className="lm-spring lm-topbar-miro"
           style={{
             appearance: 'none', textDecoration: 'none', font: 'inherit',
             padding: '10px 16px 12px', cursor: 'pointer',
@@ -919,20 +908,21 @@ export default function App({ onLogout }) {
           onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
         >
-          <svg width="14" height="14" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+          <img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" />
+          {/*
             <rect width="48" height="48" rx="10" fill="#FFD02F"/>
             <path d="M32.8 8h-5.6l5.4 8.8-6.3-8.8H21l5.4 8.8-6.3-8.8h-5.3l9.6 16-9.6 16h5.3l6.3-8.8L21 40h5.3l6.3-8.8L27.2 40h5.6l8-16-8-16z" fill="#050038"/>
-          </svg>
+          */}
           <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--c-text-2)', letterSpacing: -0.1 }}>
             Miro
           </span>
         </a>
         </>}
 
-        <div style={{ flex: 1 }} />
+        <div className="lm-topbar-spacer" style={{ flex: 1 }} />
 
         {/* Right controls — mobil ersetzt durch Bottom-Nav + Mehr-Sheet */}
-        {!isMobile && <div style={{ paddingBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
+        {!isMobile && <div className="lm-topbar-tools" style={{ paddingBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
           <button
             className="lm-spring"
             onClick={() => setFocusMode((v) => !v)}
@@ -1039,7 +1029,16 @@ export default function App({ onLogout }) {
         }}
         onMouseLeave={() => setParallax({ x: 0, y: 0 })}
       >
-        {viewMode === 'today' ? (
+        {viewMode === 'home' ? (
+          <HomeDashboard
+            subjects={SUBJECTS}
+            folders={folders}
+            onOpenSubject={(id) => onSubjectChange(id)}
+            onOpenSchedule={() => setViewMode('schedule')}
+            onOpenExams={() => setExamBoardOpen(true)}
+            onLogout={onLogout}
+          />
+        ) : viewMode === 'today' ? (
           <div style={{ display: 'flex', flex: 1, minWidth: 0 }}>
             {!focusMode && !isMobile && <>
               <Sidebar {...sidebarProps} width={sidebarWidth} onFolderSelect={onFolderSelect} />
@@ -1057,7 +1056,23 @@ export default function App({ onLogout }) {
           </div>
         ) : viewMode === 'schedule' ? (
           <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-            <Schedule onNavigate={(subjectId) => { onSubjectChange(subjectId); }} />
+            <Schedule
+              folders={folders}
+              onClose={() => setViewMode('home')}
+              onNavigate={(target) => {
+                if (!target) return;
+                if (target.folderId) {
+                  const folder = folders.find((candidate) => candidate.id === target.folderId);
+                  if (folder) {
+                    setSubjectId(folder.subject);
+                    onFolderSelect(folder);
+                    setViewMode('subjects');
+                    return;
+                  }
+                }
+                onSubjectChange(target.subjectId || target);
+              }}
+            />
           </div>
         ) : viewMode === 'lessons' ? (
           <LessonDashboard sessions={lessonSessions} folders={folders} accent={accent} onOpen={(folder) => { setActiveFolder(folder); setSubjectId(folder.subject); setTeachingMode(true); }} />
@@ -1456,12 +1471,8 @@ export default function App({ onLogout }) {
                         onDelete={handleDeleteFile}
                         onRename={setRenamingFile}
                         onDeleteLink={handleDeleteLink}
-                        onToggleLinkShare={toggleLinkShare}
                         onUpload={() => setUploadOpen(true)}
                         onAddLink={() => setAddLinkOpen(true)}
-                        onToggleShare={toggleShare}
-                        onTogglePublic={togglePublic}
-                        onSetTimer={handleSetFileTimer}
                         onShowLinkQr={(link) => setHeroQrLink(link)}
                         onFileHover={setHoveredFile}
                         keyboardMarkedFileId={kbdMarkedFileId}
@@ -1472,8 +1483,6 @@ export default function App({ onLogout }) {
                           }
                         }}
                         onBulkDelete={handleBulkDeleteFiles}
-                        onBulkShare={handleBulkShareFiles}
-                        onBulkUnshare={handleBulkUnshareFiles}
                         onBulkDownload={handleBulkDownloadFiles}
                         onBulkMove={handleBulkMoveFiles}
                         onSetRole={handleSetFileRole}
@@ -1642,7 +1651,7 @@ export default function App({ onLogout }) {
           accent={accent}
           active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'home'}
           items={[
-            { id: 'home', label: 'Heute', icon: navIcons.subjects, onClick: () => { setViewMode('today'); setActivePageId(null); closeFolderView(); } },
+            { id: 'home', label: 'Startseite', icon: navIcons.subjects, onClick: () => { setViewMode('home'); setActivePageId(null); closeFolderView(); } },
             { id: 'search', label: t('mobile.search'), icon: navIcons.search, onClick: () => setGlobalSearchOpen(true) },
             { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => setViewMode('schedule') },
             { id: 'more', label: t('mobile.more'), icon: navIcons.more, onClick: () => setMoreSheetOpen(true) },
@@ -1804,26 +1813,6 @@ export default function App({ onLogout }) {
         onClose={() => setOneNoteSearchOpen(false)}
       />
       {keyboardHelpOpen && <KeyboardHelp onClose={() => setKeyboardHelpOpen(false)} />}
-      <TimerModal
-        open={!!timerModal}
-        initialMinutes={timerModal?.initialMinutes}
-        accent={accent}
-        onClose={() => setTimerModal(null)}
-        onSave={async (value) => {
-          if (!timerModal) return;
-          const trimmed = String(value ?? '').trim();
-          const minutes = trimmed === '' ? null : Number(trimmed);
-          try {
-            const updated = await setFileTimer(timerModal.id, minutes);
-            if (activeFile?.id === timerModal.id) setActiveFile(updated);
-            setToast({ type: 'success', msg: t('toast.timer_saved') });
-          } catch (e) {
-            setToast({ type: 'error', msg: e.response?.data?.error || t('toast.timer_error') });
-          } finally {
-            setTimerModal(null);
-          }
-        }}
-      />
       {examBoardOpen && <ExamBoard onDismiss={() => setExamBoardOpen(false)} />}
 
       {toast && (

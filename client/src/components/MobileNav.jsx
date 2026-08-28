@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
-// Gemeinsame Icons für Bottom-Nav-Ziele (Lehrer- und Studenten-App)
+// Shared icons for mobile navigation.
 export const navIcons = {
   subjects: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -70,7 +70,7 @@ export function MobileBottomNav({ accent, items, active }) {
 // „Mehr"-Bottom-Sheet: alles, was auf Desktop in der Kopfleiste wohnt,
 // aber mobil zu selten gebraucht wird, um Platz zu verdienen.
 // Lehrer-Einträge (Termine/Upload/Arbeitsblatt/Notion/Miro) erscheinen nur,
-// wenn die zugehörigen Handler übergeben werden — die Studenten-App
+// when the corresponding handlers are supplied.
 // nutzt dasselbe Sheet nur mit Theme/Sprache/Abmelden.
 export function MobileMoreSheet({
   open, onClose, t, accent,

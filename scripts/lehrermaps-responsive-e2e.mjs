@@ -6,7 +6,6 @@ const { chromium } = require('playwright');
 
 const baseUrl = process.env.LEHRERMAPS_URL || 'http://localhost:8090';
 const teacherPassword = process.env.LEHRERMAPS_TEACHER_PASSWORD || 'lehrer';
-const studentPassword = process.env.LEHRERMAPS_STUDENT_PASSWORD || 'schueler';
 const viewports = [
   { name: 'iPhone SE', width: 375, height: 667, mobile: true, mobileUi: true },
   { name: 'iPhone 12/13', width: 390, height: 844, mobile: true, mobileUi: true },
@@ -51,18 +50,17 @@ async function measureLayout(page, viewport) {
   }
 }
 
-async function login(page, role) {
+async function login(page) {
   // The app keeps API/service-worker activity alive; DOM readiness is the stable
   // boundary for this audit, followed by a short settling delay below.
-  await page.goto(`${baseUrl}/${role === 'student' ? '?student' : ''}`, { waitUntil: 'domcontentloaded', timeout: 10000 });
-  if (role === 'teacher') {
-    const teacherButton = page.getByRole('button', { name: /Lehrer/i });
-    if (await teacherButton.count()) await teacherButton.first().click();
-  }
-  await page.locator('input[type="password"]').fill(role === 'teacher' ? teacherPassword : studentPassword);
+  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+  const teacherButton = page.getByRole('button', { name: /Lehrer/i });
+  if (await teacherButton.count()) await teacherButton.first().click();
+  await page.locator('input[type="password"]').waitFor({ state: 'visible' });
+  await page.locator('input[type="password"]').fill(teacherPassword);
   await page.locator('form button[type="submit"]').click();
   await page.waitForTimeout(700);
-  assert(!(await page.locator('body').innerText()).includes('Falsches Passwort'), `${role} login failed`);
+  assert(!(await page.locator('body').innerText()).includes('Falsches Passwort'), 'teacher login failed');
 }
 
 async function exerciseTeacherMobile(page) {
@@ -90,22 +88,12 @@ async function exerciseTeacherMobile(page) {
   await page.mouse.click(10, 10);
 }
 
-async function exerciseStudentMobile(page) {
-  const folders = page.getByRole('button', { name: /Ordner|Fächer|Folders/i }).last();
-  await folders.click();
-  assert(await page.locator('.lm-drawer').count() === 1, 'student drawer did not open');
-  await page.mouse.click(page.viewportSize().width - 4, page.viewportSize().height / 2);
-  await page.getByRole('button', { name: /Mehr/i }).last().click();
-  assert(await page.locator('.lm-modal-surface').count() === 1, 'student more sheet did not open');
-  await page.mouse.click(page.viewportSize().width - 4, page.viewportSize().height / 2);
-}
-
 async function run() {
   const executablePath = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
   const browser = await chromium.launch({ headless: true, executablePath });
   try {
     for (const viewport of viewports) {
-      for (const role of ['teacher', 'student']) {
+      for (const role of ['teacher']) {
         const context = await browser.newContext({
           viewport: { width: viewport.width, height: viewport.height },
           isMobile: viewport.mobile,
@@ -118,10 +106,9 @@ async function run() {
         page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
         page.on('pageerror', (error) => consoleErrors.push(error.message));
         try {
-          await login(page, role);
+          await login(page);
           await measureLayout(page, viewport);
           if (viewport.mobileUi && role === 'teacher') await exerciseTeacherMobile(page);
-          if (viewport.mobileUi && role === 'student') await exerciseStudentMobile(page);
           await measureLayout(page, viewport);
           assert(!consoleErrors.length, `console errors: ${consoleErrors.join('; ')}`);
           pass(`${viewport.name} · ${role}`, 'login, layout, interaction, console');

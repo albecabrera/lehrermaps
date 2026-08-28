@@ -44,11 +44,11 @@ export default function TeachingMode({ folder, files, links, accent, t, onClose,
   const [mobilePhaseFocus, setMobilePhaseFocus] = useState(false);
   const [laserActive, setLaserActive] = useState(false);
   const [laserPoint, setLaserPoint] = useState(null);
-  const [isMobileLayout, setIsMobileLayout] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 760);
+  const [isMobileLayout, setIsMobileLayout] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 860);
   const phaseTouchStart = useRef(null);
 
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 760px)');
+    const media = window.matchMedia('(max-width: 860px)');
     const onChange = (event) => {
       setIsMobileLayout(event.matches);
       if (!event.matches) setMobilePhaseFocus(false);

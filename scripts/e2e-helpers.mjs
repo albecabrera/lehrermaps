@@ -65,16 +65,14 @@ function formatBody(body) {
   return JSON.stringify(body);
 }
 
-export async function loginApi(role, password) {
+export async function loginApi(password) {
   const client = createApiClient();
-  const endpoint = role === 'student' ? '/api/login-student' : '/api/login';
-  const fallback = role === 'student' ? 'schueler' : 'lehrer';
-  const result = await client.request(endpoint, {
+  const result = await client.request('/api/login', {
     method: 'POST',
-    body: JSON.stringify({ password: password || fallback }),
+    body: JSON.stringify({ password: password || 'lehrer' }),
     token: null,
   });
-  assert(result?.token, `${role} login lieferte kein Token`);
+  assert(result?.token, 'teacher login did not return a token');
   return result.token;
 }
 
@@ -127,22 +125,15 @@ export async function loginPage(page, {
     }, { value: token, dismiss: closeAppointments });
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
   } else {
-    await page.goto(`${baseUrl}/${role === 'student' ? '?student' : ''}`, {
-      waitUntil: 'domcontentloaded', timeout: 15000,
-    });
-    if (role === 'teacher') {
-      const teacherButton = page.getByRole('button', { name: /Lehrer/i });
-      if (await teacherButton.count()) await teacherButton.first().click();
-    }
-    await page.locator('input[type="password"]').fill(password
-      || (role === 'student'
-        ? process.env.LEHRERMAPS_STUDENT_PASSWORD || 'schueler'
-        : process.env.LEHRERMAPS_TEACHER_PASSWORD || 'lehrer'));
+    await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    const teacherButton = page.getByRole('button', { name: /Lehrer/i });
+    if (await teacherButton.count()) await teacherButton.first().click();
+    await page.locator('input[type="password"]').fill(password || process.env.LEHRERMAPS_TEACHER_PASSWORD || 'lehrer');
     await page.locator('form button[type="submit"]').click();
   }
   await page.waitForTimeout(500);
   assert(!/Falsches Passwort/i.test(await page.locator('body').innerText()), `${role} login fehlgeschlagen`);
-  if (closeAppointments && role === 'teacher') await closeInitialAppointmentsOverlay(page);
+  if (closeAppointments) await closeInitialAppointmentsOverlay(page);
 }
 
 export async function readDownload(download) {

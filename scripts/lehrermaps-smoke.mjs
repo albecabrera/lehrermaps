@@ -10,7 +10,6 @@ const prefix = `TEST_LEHRERMAPS_${Date.now()}_`;
 const results = [];
 const createdFiles = [];
 let teacherToken;
-let studentToken;
 let root;
 let child;
 let destination;
@@ -73,26 +72,13 @@ try {
   teacherToken = (await request('/api/login', {
     method: 'POST', body: JSON.stringify({ password: process.env.LEHRERMAPS_TEACHER_PASSWORD || 'lehrer' }),
   }, null)).token;
-  studentToken = (await request('/api/login-student', {
-    method: 'POST', body: JSON.stringify({ password: process.env.LEHRERMAPS_STUDENT_PASSWORD || 'schueler' }),
-  }, null)).token;
-  pass('login docente y estudiante');
+  await requestStatus('/api/login-student', 404, { method: 'POST', body: JSON.stringify({ password: 'removed' }) }, null);
+  pass('teacher login and removed student login');
 
   root = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}ROOT` }) });
   child = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}CHILD`, parent_id: root.id }) });
   destination = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}DESTINATION` }) });
   pass('folder CRUD setup');
-  await check('student read access', async () => {
-    const folders = await request('/api/folders', {}, studentToken);
-    if (!folders.some((folder) => folder.id === root.id)) throw new Error('student cannot read folders');
-    const files = await request(`/api/files/${root.id}`, {}, studentToken);
-    if (!Array.isArray(files)) throw new Error('student file read failed');
-  });
-  await check('student write protection for folders', async () => {
-    await requestStatus('/api/folders', 403, { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}STUDENT` }) }, studentToken);
-    await requestStatus(`/api/folders/${root.id}/notes`, 403, { method: 'PUT', body: JSON.stringify({ content: 'student' }) }, studentToken);
-    await requestStatus(`/api/folders/${root.id}`, 403, { method: 'DELETE' }, studentToken);
-  });
   await check('folder actions', async () => {
     await request(`/api/folders/${root.id}`, { method: 'PUT', body: JSON.stringify({ name: `${prefix}RENAMED` }) });
     await request(`/api/folders/${root.id}/color`, { method: 'PUT', body: JSON.stringify({ color: '#E8472A' }) });
@@ -124,21 +110,13 @@ try {
     createdFiles.push(uploaded.id);
   }
   const primaryFile = await request(`/api/files/${root.id}`).then((files) => files[0]);
-  await check('file search, rename, roles and sharing', async () => {
+  await check('file search, rename and roles', async () => {
     await request(`/api/files/search?q=${encodeURIComponent(prefix)}`);
     await request(`/api/files/${primaryFile.id}`, { method: 'PUT', body: JSON.stringify({ original_name: `${prefix}RENAMED.md`, material_role: 'solution' }) });
-    await request(`/api/files/${primaryFile.id}/share`, { method: 'PUT' });
-    const studentFiles = await request(`/api/files/${root.id}`, {}, studentToken);
-    if (!studentFiles.some((file) => file.id === primaryFile.id)) throw new Error('shared file is not visible to student');
   });
-  await check('student write protection for files', async () => {
-    await requestStatus(`/api/files/${primaryFile.id}`, 403, { method: 'PUT', body: JSON.stringify({ original_name: `${prefix}STUDENT.md` }) }, studentToken);
-    await requestStatus(`/api/files/${primaryFile.id}/share`, 403, { method: 'PUT' }, studentToken);
-    await requestStatus(`/api/files/${primaryFile.id}`, 403, { method: 'DELETE' }, studentToken);
-  });
-  await check('public link, deadline and ZIP', async () => {
-    const publicFile = await request(`/api/files/${primaryFile.id}/public`, { method: 'PUT' });
-    await request(`/api/files/public/${publicFile.public_token}`, {}, null);
+  await check('legacy public routes, deadline and ZIP', async () => {
+    await requestStatus(`/api/files/${primaryFile.id}/public`, 404, { method: 'PUT' });
+    await requestStatus('/api/files/public/legacy-token', 401, {}, null);
     await request(`/api/files/${primaryFile.id}/deadline`, { method: 'PUT', body: JSON.stringify({ due_at: '2030-01-03' }) });
     const zip = await request(`/api/files/zip/${root.id}`);
     if (zip.byteLength < 10) throw new Error('ZIP is empty');
@@ -155,12 +133,6 @@ try {
   exam = await request('/api/exams', { method: 'POST', body: JSON.stringify({ title: `${prefix}EXAM`, class_name: 'TEST', subject: 'Informatik', exam_date: '2030-01-04' }) });
   await request(`/api/exams/${exam.id}`, { method: 'PUT', body: JSON.stringify({ title: `${prefix}EXAM_EDITED`, class_name: 'TEST', exam_date: '2030-01-05' }) });
   pass('exam create and edit');
-  await check('student write protection for schedule, exams and links', async () => {
-    await requestStatus('/api/schedule', 403, { method: 'PUT', body: JSON.stringify({ __smoke: prefix }) }, studentToken);
-    await requestStatus('/api/exams', 403, { method: 'POST', body: JSON.stringify({ title: `${prefix}STUDENT`, class_name: 'TEST', exam_date: '2030-01-06' }) }, studentToken);
-    await requestStatus(`/api/exams/${exam.id}`, 403, { method: 'DELETE' }, studentToken);
-    await requestStatus('/api/links', 403, { method: 'POST', body: JSON.stringify({ folder_id: root.id, title: prefix, url: 'https://example.com' }) }, studentToken);
-  });
 
   originalSchedule = await request('/api/schedule');
   await request('/api/schedule', { method: 'PUT', body: JSON.stringify({ ...originalSchedule, __smoke: prefix }) });
@@ -177,8 +149,9 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const consoleErrors = [];
   page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
-  await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+  await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: /Lehrer/ }).click();
+  await page.locator('input[type=password]').waitFor({ state: 'visible' });
   await page.locator('input[type=password]').fill(process.env.LEHRERMAPS_TEACHER_PASSWORD || 'lehrer');
   await page.locator('form button[type=submit]').click();
   await page.waitForTimeout(1000);
@@ -187,18 +160,14 @@ try {
   if (/Terminal|Arbeitsblatt/.test(teacherText)) throw new Error('removed sections are visible');
   if (consoleErrors.length) throw new Error(`console: ${consoleErrors.join('; ')}`);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.reload({ waitUntil: 'networkidle' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await page.evaluate(() => localStorage.setItem('lm_theme', 'dark'));
-  await page.reload({ waitUntil: 'networkidle' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
   if (await page.locator('body').evaluate((element) => element.scrollWidth > window.innerWidth + 2)) throw new Error('mobile horizontal overflow');
   await page.evaluate(() => localStorage.clear());
-  await page.goto(`${baseUrl}/?student`, { waitUntil: 'networkidle' });
-  await page.locator('input[type=password]').fill(process.env.LEHRERMAPS_STUDENT_PASSWORD || 'schueler');
-  await page.locator('form button[type=submit]').click();
-  await page.waitForTimeout(700);
   if ((await page.locator('body').innerText()).includes('Falsches Passwort')) throw new Error('student login failed');
   await browser.close();
-  pass('teacher/student UI, direct student route, mobile, dark theme and console');
+  pass('teacher UI, mobile, dark theme and console');
 } catch (error) {
   fail('smoke test', error);
 } finally {

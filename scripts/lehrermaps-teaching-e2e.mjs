@@ -11,6 +11,7 @@ const apiBaseUrl = process.env.LEHRERMAPS_API_URL || (new URL(baseUrl).port === 
 const prefix = `TEST_LEHRERMAPS_E2E_${Date.now()}_`;
 const password = process.env.LEHRERMAPS_TEACHER_PASSWORD || 'lehrer';
 let token;
+let rootFolder;
 let folder;
 const files = [];
 let browser;
@@ -38,7 +39,8 @@ async function upload(name, bytes, mime) {
 
 try {
   token = (await request('/api/login', { method: 'POST', body: JSON.stringify({ password }) })).token;
-  folder = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'spanisch', group_name: 'TEST', name: `${prefix}UNTERRICHT` }) });
+  rootFolder = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'spanisch', group_name: 'TEST', name: `${prefix}UNTERRICHT` }) });
+  folder = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'spanisch', group_name: 'TEST', name: `${prefix}STUNDE`, parent_id: rootFolder.id }) });
   const pdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF');
   const docx = await Packer.toBuffer(new Document({ sections: [{ children: [new Paragraph('LehrerMaps E2E')] }] }));
   const pdfFile = await upload(`${prefix}MATERIAL.pdf`, pdf, 'application/pdf');
@@ -46,10 +48,13 @@ try {
 
   browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  await page.goto(baseUrl, { waitUntil: 'networkidle' });
+  await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
   await page.evaluate((value) => localStorage.setItem('lm_token', value), token);
   await page.reload({ waitUntil: 'networkidle' });
-  await page.locator('button').filter({ hasText: folder.name }).last().evaluate((button) => button.click());
+  await page.locator('button').filter({ hasText: rootFolder.name }).last().evaluate((button) => button.click());
+  await page.getByRole('button', { name: folder.name, exact: true }).last().waitFor();
+  if (await page.getByText(pdfFile.original_name, { exact: true }).count()) throw new Error('nested files are visible before selecting their folder');
+  await page.getByRole('button', { name: folder.name, exact: true }).last().evaluate((button) => button.click());
   const tabs = await page.locator('button').evaluateAll((buttons) => buttons.map((button) => button.textContent.trim()).filter((text) => ['Jahresplanung', 'Dateien', 'Notizen'].includes(text)));
   if (tabs.slice(0, 3).join('|') !== 'Jahresplanung|Dateien|Notizen') throw new Error(`tab order: ${tabs.join('|')}`);
   await page.getByRole('button', { name: /Stunde zeigen/ }).evaluate((button) => button.click());
@@ -69,4 +74,5 @@ try {
   if (browser) await browser.close().catch(() => {});
   for (const id of files) await request(`/api/files/${id}`, { method: 'DELETE' }).catch(() => {});
   if (folder) await request(`/api/folders/${folder.id}`, { method: 'DELETE' }).catch(() => {});
+  if (rootFolder) await request(`/api/folders/${rootFolder.id}`, { method: 'DELETE' }).catch(() => {});
 }

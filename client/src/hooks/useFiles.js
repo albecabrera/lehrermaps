@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getFiles, uploadFile, deleteFile, renameFile, moveFile, toggleFileShare, setFileTimer, toggleFilePublic, setFileRole, setFilesRole, commitEditCopy } from '../lib/api';
+import { getFiles, uploadFile, deleteFile, renameFile, moveFile, setFileRole, setFilesRole, commitEditCopy } from '../lib/api';
 
 export function useFiles(folderId) {
   const [files, setFiles] = useState([]);
@@ -51,23 +51,8 @@ export function useFiles(folderId) {
     return updated;
   }, []);
 
-  const toggleShare = useCallback(async (id) => {
-    const updated = await toggleFileShare(id);
-    setFiles((prev) => prev.map((f) => (f.id === id ? updated : f)));
-    return updated;
-  }, []);
 
-  const setTimer = useCallback(async (id, timer_minutes) => {
-    const updated = await setFileTimer(id, timer_minutes);
-    setFiles((prev) => prev.map((f) => (f.id === id ? updated : f)));
-    return updated;
-  }, []);
 
-  const togglePublic = useCallback(async (id) => {
-    const updated = await toggleFilePublic(id);
-    setFiles((prev) => prev.map((f) => (f.id === id ? updated : f)));
-    return updated;
-  }, []);
 
   const setRole = useCallback(async (id, material_role) => {
     const updated = await setFileRole(id, material_role);
@@ -89,5 +74,5 @@ export function useFiles(folderId) {
     return updated;
   }, []);
 
-  return { files, loading, error, reload: load, upload, remove, rename, move, toggleShare, setTimer, togglePublic, setRole, setBulkRole, commitVersion };
+  return { files, loading, error, reload: load, upload, remove, rename, move, setRole, setBulkRole, commitVersion };
 }

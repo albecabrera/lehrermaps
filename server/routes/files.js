@@ -92,33 +92,9 @@ async function getFileById(id) {
   return rows[0] || null;
 }
 
-async function readableFile(id, user) {
-  const [rows] = await pool.execute(
-    user?.role === 'student'
-      ? 'SELECT * FROM files WHERE id = ? AND is_shared = 1 AND is_current_version = 1'
-      : 'SELECT * FROM files WHERE id = ?',
-    [id]
-  );
-  return rows[0] || null;
+async function readableFile(id) {
+  return getFileById(id);
 }
-
-router.get('/public/:token', async (req, res) => {
-  try {
-    const [rows] = await pool.execute(
-      'SELECT * FROM files WHERE public_token = ? AND is_public = 1 LIMIT 1',
-      [req.params.token]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Datei nicht gefunden' });
-    const file = rows[0];
-    const filePath = path.join(UPLOADS_DIR, file.stored_name);
-    if (!existsSync(filePath)) return res.status(404).json({ error: 'Datei nicht auf Disk' });
-    res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(file.original_name)}`);
-    res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
-    createReadStream(filePath).pipe(res);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
 router.use(auth);
 
@@ -128,7 +104,7 @@ router.get('/open/:id', async (req, res) => {
   try {
     if (process.env.NODE_ENV === 'production') return res.status(404).json({ error: 'In Produktion deaktiviert' });
     if (req.user?.role !== 'lehrer') return res.status(403).json({ error: 'Nicht erlaubt' });
-    const file = await readableFile(req.params.id, req.user);
+    const file = await readableFile(req.params.id);
     if (!file) return res.status(404).json({ error: 'Nicht gefunden' });
     const filePath = path.join(UPLOADS_DIR, file.stored_name);
     if (!existsSync(filePath)) return res.status(404).json({ error: 'Datei nicht auf Disk' });
@@ -163,7 +139,7 @@ router.get('/open/:id', async (req, res) => {
 
 router.get('/preview/:id', async (req, res) => {
   try {
-    const file = await readableFile(req.params.id, req.user);
+    const file = await readableFile(req.params.id);
     if (!file) return res.status(404).json({ error: 'Nicht gefunden' });
 
     const ext = file.original_name.split('.').pop().toLowerCase();
@@ -195,7 +171,7 @@ router.get('/preview/:id', async (req, res) => {
 
 router.get('/view/:id', async (req, res) => {
   try {
-    const file = await readableFile(req.params.id, req.user);
+    const file = await readableFile(req.params.id);
     if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
     const filePath = path.join(UPLOADS_DIR, file.stored_name);
     if (!existsSync(filePath)) return res.status(404).json({ error: 'Datei nicht auf Disk' });
@@ -209,7 +185,7 @@ router.get('/view/:id', async (req, res) => {
 
 router.get('/download/:id', async (req, res) => {
   try {
-    const file = await readableFile(req.params.id, req.user);
+    const file = await readableFile(req.params.id);
     if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
     const filePath = path.join(UPLOADS_DIR, file.stored_name);
     if (!existsSync(filePath)) return res.status(404).json({ error: 'Datei nicht auf Disk' });
@@ -224,23 +200,10 @@ router.get('/download/:id', async (req, res) => {
 
 router.get('/zip/:folder_id', async (req, res) => {
   try {
-    const [folders] = await pool.execute(
-      req.user?.role === 'student'
-        ? `SELECT * FROM folders f WHERE f.id = ? AND EXISTS (
-            SELECT 1 FROM files visible
-            WHERE visible.folder_id = f.id AND visible.is_shared = 1 AND visible.is_current_version = 1
-          )`
-        : 'SELECT * FROM folders WHERE id = ?',
-      [req.params.folder_id]
-    );
+    const [folders] = await pool.execute('SELECT * FROM folders WHERE id = ?', [req.params.folder_id]);
     if (!folders.length) return res.status(404).json({ error: 'Ordner nicht gefunden' });
     const folder = folders[0];
-    const [files] = await pool.execute(
-      req.user?.role === 'student'
-        ? 'SELECT * FROM files WHERE folder_id = ? AND is_shared = 1 AND is_current_version = 1'
-        : 'SELECT * FROM files WHERE folder_id = ?',
-      [req.params.folder_id]
-    );
+    const [files] = await pool.execute('SELECT * FROM files WHERE folder_id = ?', [req.params.folder_id]);
 
     const safeName = folder.name.replace(/[^\w\s-]/g, '').trim() || 'ordner';
     res.setHeader('Content-Type', 'application/zip');
@@ -261,7 +224,6 @@ router.get('/zip/:folder_id', async (req, res) => {
 
 router.get('/zip-selected', async (req, res) => {
   try {
-    if (req.user?.role === 'student') return res.status(403).json({ error: 'Nicht erlaubt' });
     const ids = String(req.query.ids || '')
       .split(',')
       .map((s) => Number(s.trim()))
@@ -405,10 +367,7 @@ router.get('/search', async (req, res) => {
 
 router.get('/:folder_id', async (req, res) => {
   try {
-    const isStudent = req.user?.role === 'student';
-    const query = isStudent
-      ? 'SELECT id, folder_id, original_name, mime_type, uploaded_at FROM files WHERE folder_id = ? AND is_shared = 1 AND is_current_version = 1 ORDER BY uploaded_at DESC'
-      : 'SELECT * FROM files WHERE folder_id = ? AND is_current_version = 1 ORDER BY uploaded_at DESC';
+    const query = 'SELECT * FROM files WHERE folder_id = ? AND is_current_version = 1 ORDER BY uploaded_at DESC';
     const [rows] = await pool.execute(query, [req.params.folder_id]);
 
     const parseLeadingNumber = (name = '') => {
@@ -435,52 +394,7 @@ router.get('/:folder_id', async (req, res) => {
   }
 });
 
-router.put('/:id/share', teacherOnly, async (req, res) => {
-  try {
-    await pool.execute(
-      'UPDATE files SET is_shared = IF(is_shared=1, 0, 1) WHERE id = ?',
-      [req.params.id]
-    );
-    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
-    res.json(rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
-router.put('/:id/public', teacherOnly, async (req, res) => {
-  try {
-    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Datei nicht gefunden' });
-    const current = rows[0];
-    const nextPublic = current.is_public ? 0 : 1;
-    const token = current.public_token || randomUUID().replace(/-/g, '');
-    await pool.execute(
-      'UPDATE files SET is_public = ?, public_token = ? WHERE id = ?',
-      [nextPublic, token, req.params.id]
-    );
-    const [updatedRows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
-    res.json(updatedRows[0]);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-router.put('/:id/timer', teacherOnly, async (req, res) => {
-  const raw = req.body?.timer_minutes;
-  const minutes = raw === null || raw === '' || Number(raw) === 0 ? null : Number(raw);
-  if (minutes !== null && (!Number.isInteger(minutes) || minutes < 1 || minutes > 600)) {
-    return res.status(400).json({ error: 'Timer muss zwischen 1 und 600 Minuten liegen' });
-  }
-  try {
-    const [result] = await pool.execute('UPDATE files SET timer_minutes = ? WHERE id = ?', [minutes, req.params.id]);
-    if (!result.affectedRows) return res.status(404).json({ error: 'Datei nicht gefunden' });
-    const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [req.params.id]);
-    res.json(rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
 router.post('/upload', teacherOnly, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Keine Datei übermittelt' });
@@ -596,9 +510,9 @@ router.post('/:id/versions/commit', teacherOnly, editUpload.single('file'), asyn
     );
     await pool.execute('UPDATE files SET is_current_version = 0 WHERE version_group_id = ?', [file.version_group_id]);
     const [result] = await pool.execute(
-      `INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, is_shared, timer_minutes, is_public, public_token, material_role, version_group_id, version_number, is_current_version)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, 1)`,
-      [file.folder_id, file.original_name, storedName, file.mime_type, size, file.is_shared || 0, file.timer_minutes || null, file.material_role || 'other', file.version_group_id, nextVersion]
+      `INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, material_role, version_group_id, version_number, is_current_version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      [file.folder_id, file.original_name, storedName, file.mime_type, size, file.material_role || 'other', file.version_group_id, nextVersion]
     );
     if (copies.length) await pool.execute('DELETE FROM file_edit_copies WHERE id = ?', [copies[0].id]);
     const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [result.insertId]);

@@ -96,7 +96,21 @@ export async function initSchema() {
   await pool.execute("UPDATE folders SET group_name = 'WP Klasse 6–7' WHERE subject = 'informatik' AND group_name = 'inf-67'");
   await pool.execute("UPDATE folders SET group_name = 'WP Klasse 8–10' WHERE subject = 'informatik' AND group_name = 'inf-810'");
   await pool.execute("UPDATE folders SET group_name = 'Q1' WHERE subject = 'sport' AND group_name IN ('Klasse 12', 'sp-q1')");
+  // Keep the Informatik 6 hierarchy stable: 6d and 6f belong below the
+  // Klasse-6 main folder, while the obsolete 6e folder must stay deleted.
+  await pool.execute("DELETE FROM folders WHERE subject = 'informatik' AND (name IN ('6e', 'Klasse 6e Informatik') OR group_name = 'Klasse 6e Informatik')");
+  const [klasse6Folders] = await pool.execute("SELECT id FROM folders WHERE subject = 'informatik' AND name = 'Klasse 6' AND parent_id IS NULL LIMIT 1");
+  let klasse6Id = klasse6Folders[0]?.id;
+  if (!klasse6Id) {
+    const [created] = await pool.execute("INSERT INTO folders (subject, group_name, name, parent_id) VALUES ('informatik', 'Klasse 6', 'Klasse 6', NULL)");
+    klasse6Id = created.insertId;
+  }
+  await pool.execute("UPDATE folders SET parent_id = ?, group_name = 'Klasse 6' WHERE subject = 'informatik' AND name IN ('6d', '6f')", [klasse6Id]);
   await pool.execute('UPDATE files SET version_group_id = lower(hex(randomblob(16))) WHERE version_group_id IS NULL');
+  // Legacy sharing columns remain for SQLite compatibility, but all old access
+  // grants are revoked on every startup so no public or student link survives.
+  await pool.execute('UPDATE files SET is_shared = 0, is_public = 0, public_token = NULL, timer_minutes = NULL WHERE is_shared != 0 OR is_public != 0 OR public_token IS NOT NULL OR timer_minutes IS NOT NULL');
+  await pool.execute('UPDATE links SET is_shared = 0 WHERE is_shared != 0');
   const bookLinks = [[['Klasse 6'], 'click & teach – Buch Informatik Klasse 6', 'https://www.click-and-teach.de/Player/id/1280/page/21'], [['WP 7', 'WP 8', 'WP 9', 'WP 10'], 'click & teach – Buch Informatik', 'https://www.click-and-teach.de/Player/id/1259/page/10']];
   for (const [groups, title, url] of bookLinks) for (const group of groups) await pool.execute('INSERT OR IGNORE INTO links (folder_id, title, url) SELECT f.id, ?, ? FROM folders f WHERE f.subject = \'informatik\' AND f.group_name = ? AND f.parent_id IS NULL AND NOT EXISTS (SELECT 1 FROM links l WHERE l.folder_id = f.id AND l.url = ?)', [title, url, group, url]);
   const [rows] = await pool.execute('SELECT COUNT(*) AS c FROM schedule');

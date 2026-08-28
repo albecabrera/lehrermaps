@@ -106,7 +106,7 @@ try {
       method: 'POST', body: JSON.stringify({ password: `${prefix}FALSCH` }), expectedStatus: 401, token: null,
     });
     await anonymous.request('/api/login-student', {
-      method: 'POST', body: JSON.stringify({ password: `${prefix}FALSCH` }), expectedStatus: 401, token: null,
+      method: 'POST', body: JSON.stringify({ password: `${prefix}FALSCH` }), expectedStatus: 404, token: null,
     });
     await anonymous.request('/api/folders', { expectedStatus: 401, token: null });
   });
@@ -341,6 +341,18 @@ try {
         }).map((node) => node.textContent?.trim()));
         assert(!clipped.length, `${viewport.name}: Wochentage abgeschnitten (${clipped.join(', ')})`);
         if (!viewport.mobile) {
+          const supervisionName = `${prefix}AUFSICHT_UI`;
+          await page.getByRole('button', { name: new RegExp(`${escapeRegExp(prefix)}PAUSE bearbeiten`) }).click();
+          await page.getByLabel('Aufsicht').fill(supervisionName);
+          await page.getByLabel('Ort').fill('Sportplatz');
+          await Promise.all([
+            page.waitForResponse((response) => response.url().includes('/api/schedule') && response.request().method() === 'PUT' && response.ok()),
+            page.getByRole('button', { name: 'Speichern' }).click(),
+          ]);
+          const savedSchedule = await teacher.request('/api/schedule');
+          assert(savedSchedule['break-fruehstueck']?.[0]?.label === supervisionName, 'Bearbeitete Aufsicht wurde nicht gespeichert');
+          assert(savedSchedule['break-fruehstueck']?.[0]?.location === 'Sportplatz', 'Aufsichtsort wurde nicht gespeichert');
+
           const [download] = await Promise.all([
             page.waitForEvent('download'),
             page.getByRole('button', { name: /Als \.ics exportieren/i }).click(),

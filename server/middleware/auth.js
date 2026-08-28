@@ -6,7 +6,7 @@ export default function authMiddleware(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Nicht autorisiert' });
   try {
     req.user = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret');
-    if (req.user?.role !== 'lehrer') return res.status(401).json({ error: 'Token no válido' });
+    if (req.user?.role !== 'lehrer') return res.status(401).json({ error: 'Token ungültig oder nicht autorisiert' });
     next();
   } catch {
     res.status(401).json({ error: 'Token ungültig oder abgelaufen' });

@@ -90,8 +90,6 @@ export const setFilesRole = (ids, material_role) => api.put('/files/roles/bulk',
 export const getLinks = (folderId) => api.get(`/links/${folderId}`).then((r) => r.data);
 export const createLink = (data) => api.post('/links', data).then((r) => r.data);
 export const deleteLink = (id) => api.delete(`/links/${id}`);
-export const toggleLinkShare = (id) => api.put(`/links/${id}/share`).then((r) => r.data);
-
 export const reorderFolders = (items) =>
   api.put('/folders/reorder', { items });
 
@@ -122,14 +120,6 @@ export const searchGlobal = (q, fileOffset = 0, folderOffset = 0, linkOffset = 0
 export const downloadFolderZip = (folderId) => withToken(`/api/files/zip/${folderId}`);
 export const downloadFilesZip = (ids) => withToken(`/api/files/zip-selected?ids=${ids.join(',')}`);
 
-export const toggleFileShare = (id) =>
-  api.put(`/files/${id}/share`).then((r) => r.data);
-export const toggleFilePublic = (id) =>
-  api.put(`/files/${id}/public`).then((r) => r.data);
-export const setFileTimer = (id, timer_minutes) =>
-  api.put(`/files/${id}/timer`, { timer_minutes }).then((r) => r.data);
-export const publicFileUrl = (token) =>
-  `${window.location.origin}/api/files/public/${encodeURIComponent(token)}`;
 
 export const getDocumentAnnotations = (fileId) => api.get(`/files/${fileId}/annotations`).then((r) => r.data);
 export const createDocumentAnnotation = (fileId, data) => api.post(`/files/${fileId}/annotations`, data).then((r) => r.data);

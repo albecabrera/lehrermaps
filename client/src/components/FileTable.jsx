@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import FileBadge from './FileBadge';
 import { detectKind } from '../constants/structure';
-import { downloadFile, publicFileUrl } from '../lib/api';
+import { downloadFile } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 
 export const MATERIAL_ROLES = [
@@ -17,15 +17,13 @@ export const MATERIAL_ROLES = [
 export default function FileTable({
   files, links = [], activeFileId, activeLinkId, activeFile2Id,
   onFileSelect, onFileSecondarySelect, onLinkSelect, accent = '#E8472A',
-  query, onDelete, onRename, onDeleteLink, onToggleLinkShare, onUpload, onAddLink, onToggleShare,
-  onTogglePublic,
-  onSetTimer,
+  query, onDelete, onRename, onDeleteLink, onUpload, onAddLink,
   onShowLinkQr,
   onFileHover,
   keyboardMarkedFileId,
   onFileDragStart,
   hiddenIds = new Set(),
-  onBulkDelete, onBulkShare, onBulkUnshare, onBulkDownload, onBulkMove,
+  onBulkDelete, onBulkDownload, onBulkMove,
   onSetRole, onBulkRole,
   isMobile = false,
 }) {
@@ -277,22 +275,9 @@ export default function FileTable({
           >⋯</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 5, flexWrap: 'wrap' }}>
-          {file.is_shared ? (
-            <span style={{
-              fontSize: 9, fontWeight: 700, letterSpacing: 0.4,
-              color: '#16A34A', background: 'rgba(22,163,74,0.12)',
-              border: '1px solid rgba(22,163,74,0.25)',
-              borderRadius: 4, padding: '1px 5px', flexShrink: 0,
-            }}>✓</span>
-          ) : null}
           {(file.version_number || 1) > 1 && (
             <span style={{ fontSize: 9, fontWeight: 700, color: accent, background: `${accent}12`, border: `1px solid ${accent}30`, borderRadius: 4, padding: '1px 5px' }}>
               v{file.version_number}
-            </span>
-          )}
-          {Number(file.timer_minutes) > 0 && (
-            <span style={{ fontSize: 9, fontWeight: 700, color: accent, background: `${accent}12`, border: `1px solid ${accent}30`, borderRadius: 4, padding: '1px 5px' }}>
-              ⏱ {file.timer_minutes} Min.
             </span>
           )}
           {onSetRole && (
@@ -314,7 +299,7 @@ export default function FileTable({
 
   return (
     <div style={{ position: 'relative' }}>
-      {selectedFiles.length > 0 && (onBulkDownload || onBulkShare || onBulkUnshare || onBulkDelete || onBulkMove || onBulkRole) && (
+      {selectedFiles.length > 0 && (onBulkDownload || onBulkDelete || onBulkMove || onBulkRole) && (
         <div style={{
           marginBottom: 12,
           display: 'flex',
@@ -329,8 +314,6 @@ export default function FileTable({
             {t('table.selected_count', { n: selectedFiles.length })}
           </span>
           <button onClick={() => onBulkDownload?.(selectedFiles)} style={bulkBtnStyle}>{t('table.ctx_download')}</button>
-          <button onClick={() => onBulkShare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.share_toggle')}</button>
-          <button onClick={() => onBulkUnshare?.(selectedFiles)} style={bulkBtnStyle}>{t('student.unshare')}</button>
           {onBulkMove && (
             <button onClick={() => onBulkMove(selectedFiles)} style={bulkBtnStyle}>{t('table.bulk_move')}</button>
           )}
@@ -580,9 +563,6 @@ export default function FileTable({
           onClose={() => setMenuFile(null)}
           onRename={() => { onRename?.(menuFile); setMenuFile(null); }}
           onDelete={() => { onDelete(menuFile); setMenuFile(null); }}
-          onToggleShare={() => { onToggleShare?.(menuFile); setMenuFile(null); }}
-          onTogglePublic={() => { onTogglePublic?.(menuFile.id); setMenuFile(null); }}
-          onSetTimer={() => { onSetTimer?.(menuFile); setMenuFile(null); }}
           t={t}
         />
       )}
@@ -593,7 +573,6 @@ export default function FileTable({
           accent={accent}
           onClose={() => setMenuLink(null)}
           onDelete={() => { onDeleteLink?.(menuLink.id); setMenuLink(null); }}
-          onToggleShare={onToggleLinkShare ? () => { onToggleLinkShare(menuLink.id); setMenuLink(null); } : null}
           t={t}
         />
       )}
@@ -678,7 +657,7 @@ function EmptyState({ query, accent, onUpload, onAddLink, t }) {
   );
 }
 
-function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onToggleShare, onTogglePublic, onSetTimer, t }) {
+function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, t }) {
   const kind = detectKind(file.original_name);
 
   return (
@@ -703,24 +682,6 @@ function FileContextMenu({ file, x, y, accent, onClose, onRename, onDelete, onTo
         </div>
         <MenuItem icon="✎" label={t('rename')} onClick={onRename} />
         <MenuItem icon="↓" label={t('table.ctx_download')} onClick={() => { window.location.href = downloadFile(file.id); onClose(); }} />
-        <MenuItem
-          icon={file.is_shared ? '🔒' : '🔗'}
-          label={file.is_shared ? t('student.unshare') : t('student.share_toggle')}
-          onClick={onToggleShare}
-        />
-        <MenuItem
-          icon={file.is_public ? '🌐' : '🧷'}
-          label={file.is_public ? t('table.public_link_off') : t('table.public_link_on')}
-          onClick={onTogglePublic}
-        />
-        {file.is_public && file.public_token ? (
-          <MenuItem
-            icon="⎘"
-            label={t('student.copy_link')}
-            onClick={() => { navigator.clipboard.writeText(publicFileUrl(file.public_token)); onClose(); }}
-          />
-        ) : null}
-        {onSetTimer && <MenuItem icon="⏱" label={t('table.timer')} onClick={onSetTimer} />}
         <div style={{ height: 1, background: 'var(--c-border)', margin: '4px 2px' }} />
         <MenuItem icon="🗑" label={t('delete')} danger onClick={onDelete} />
       </div>
@@ -748,7 +709,7 @@ function MenuItem({ icon, label, danger, onClick }) {
   );
 }
 
-function LinkContextMenu({ link, x, y, accent, onClose, onDelete, onToggleShare, t }) {
+function LinkContextMenu({ link, x, y, accent, onClose, onDelete, t }) {
   return (
     <>
       <div style={{ position: 'fixed', inset: 0, zIndex: 1050 }} onClick={onClose} />
@@ -766,7 +727,6 @@ function LinkContextMenu({ link, x, y, accent, onClose, onDelete, onToggleShare,
         </div>
         <MenuItem icon="↗" label={t('table.ctx_open_browser')} onClick={() => { window.open(normalizeExternalUrl(link.url), '_blank', 'noopener,noreferrer'); onClose(); }} />
         <MenuItem icon="⎘" label={t('table.ctx_copy_url')} onClick={() => { navigator.clipboard.writeText(link.url); onClose(); }} />
-        {onToggleShare && <MenuItem icon={link.is_shared ? '🔒' : '🔗'} label={link.is_shared ? 'Freigabe für Schüler aufheben' : 'Für Schüler freigeben'} onClick={onToggleShare} />}
         <div style={{ height: 1, background: 'var(--c-border)', margin: '4px 2px' }} />
         <MenuItem icon="🗑" label={t('delete')} danger onClick={onDelete} />
       </div>

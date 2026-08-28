@@ -20,7 +20,7 @@ cp env.txt .env      # dann .env editieren — echte Werte:
 ```
 `.env` — MUSS gesetzt/geändert sein:
 - `JWT_SECRET` (≥32 zufällige Zeichen)
-- `APP_PASSWORD` (Lehrer), `STUDENT_PASSWORD` (Schüler)
+- `APP_PASSWORD` (teacher workspace)
 - `SQLITE_PATH=./data/lehrermaps.sqlite` (opcional), `PORT=3001`
 - `ALLOWED_ORIGIN=https://DEIN-DOMAIN.de`
 
@@ -70,6 +70,8 @@ Auf `https://DEIN-DOMAIN.de`:
 ```bash
 git pull
 cd client && npm ci && npm run build
+# Sync the static build with deletion so obsolete hashed chunks cannot remain public.
+rsync -a --delete dist/ /var/www/lehrermaps/client/dist/
 systemctl restart lehrermaps  # solo si cambió el backend
 ```
 Nginx cacht `service-worker.js`/`manifest.json`/`index.html` mit `no-cache`

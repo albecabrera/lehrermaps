@@ -1,8 +1,8 @@
 # LehrerMaps
 
-LehrerMaps es una aplicación web para docentes que necesitan organizar, preparar y compartir material de clase sin depender de carpetas sueltas, enlaces perdidos o unidades compartidas caóticas.
+LehrerMaps es una aplicación web para docentes que necesitan organizar, preparar material de clase sin depender de carpetas sueltas, enlaces perdidos o unidades compartidas caóticas.
 
-La idea es simple: **materia → grupo → carpeta → archivos, enlaces, notas y planificación**. El docente trabaja en un panel privado y el alumnado accede solo al material marcado como compartido.
+La idea es simple: **materia → grupo → carpeta → archivos, enlaces, notas y planificación**. LehrerMaps is a private workspace for teaching staff.
 
 La versión actual añade un flujo docente más claro: **material por roles de clase**, **modo de enseñanza para mostrar una hora**, y **versionado local para editar copias sin romper el original**.
 
@@ -15,7 +15,6 @@ Un docente no necesita otro “drive bonito”. Necesita una herramienta que aco
 - preparar material por clase, tema o unidad;
 - guardar PDFs, presentaciones, vídeos, imágenes, código y enlaces;
 - tomar notas de preparación sin salir de la app;
-- compartir material con estudiantes de forma controlada;
 - abrir rápidamente lo importante durante la clase;
 - usar la app también en móvil como PWA.
 
@@ -47,10 +46,9 @@ Die Links öffnen den click-&-teach-Player in einem neuen Browser-Tab und bleibe
 - **Modo de enseñanza**: vista limpia para proyectar la clase y ocultar soluciones hasta que el docente las muestre.
 - **Versionado local**: abrir una copia de trabajo, editarla fuera de la app y convertirla luego en una nueva versión sin perder el original.
 - **Previsualización integrada**: soporte para PDF, imágenes, vídeo, audio, Markdown, DOCX y otros formatos comunes.
-- **Vista para estudiantes**: acceso separado con rol `student`; solo muestra contenido compartido.
 - **Links por carpeta**: guarda recursos externos junto al material de clase.
 - **Libros click & teach preconfigurados**: los grupos de Informatik tienen acceso directo a los libros correspondientes para Klasse 6, WP 7, WP 8, WP 9 y WP 10.
-- **QR de acceso**: genera códigos QR para compartir enlaces con el alumnado.
+- **QR para enlaces externos**: genera códigos QR para abrir recursos externos durante la clase.
 - **Notas y cuadernos**: editor enriquecido con Tiptap, notebooks, secciones y páginas.
 - **Horario semanal**: planificación de clases y vinculación con carpetas/materiales.
 - **Búsqueda global**: acceso rápido a carpetas, archivos y contenido relevante.
@@ -69,7 +67,7 @@ Die Links öffnen den click-&-teach-Player in einem neuen Browser-Tab und bleibe
 | Drag & Drop | dnd-kit |
 | Backend | Node.js + Express |
 | Base de datos | SQLite integrada |
-| Auth | JWT con roles `lehrer` y `student` |
+| Auth | JWT for the teacher workspace |
 | Uploads | Multer + filesystem local |
 | Versionado | Copias locales + nuevas versiones en DB |
 | Tiempo real | Socket.io |
@@ -90,7 +88,7 @@ lehrermaps/
 │       ├── contexts/       # Theme, idioma y estado compartido
 │       ├── hooks/          # Hooks de carpetas, archivos, responsive, etc.
 │       ├── lib/api.js      # Cliente Axios + token
-│       └── pages/          # App docente, login y vista estudiante
+│       └── pages/          # App docente, login
 ├── server/
 │   ├── routes/             # Endpoints de auth, folders, files, links, schedule, etc.
 │   ├── db.js               # SQLite local + initSchema()
@@ -133,12 +131,11 @@ Ejemplo de `server/.env`:
 SQLITE_PATH=./data/lehrermaps.sqlite
 JWT_SECRET=cambia_esto_por_un_secreto_largo
 APP_PASSWORD=lehrer
-STUDENT_PASSWORD=contraseña_estudiante
 PORT=3001
 ALLOWED_ORIGIN=http://localhost:5173
 ```
 
-IMPORTANTE: en producción no uses los valores por defecto. Cambiá `JWT_SECRET`, `APP_PASSWORD` y `STUDENT_PASSWORD`.
+IMPORTANTE: en producción no uses los valores por defecto. Cambiá `JWT_SECRET` y `APP_PASSWORD`.
 
 ---
 
@@ -164,10 +161,9 @@ npm run dev
 
 URLs locales habituales:
 
-| Rol | URL |
+| Servicio | URL |
 | --- | --- |
-| Docente | `http://localhost:5173` |
-| Estudiante | `http://localhost:5173/?student` |
+| Workspace docente | `http://localhost:5173` |
 | API backend | `http://localhost:3001/api/health` |
 
 ---
@@ -199,7 +195,7 @@ LehrerMaps está preparada para desplegarse como PWA detrás de **Nginx + HTTPS*
 Requisitos importantes para producción:
 
 - HTTPS válido: los service workers no funcionan en dominios HTTP normales.
-- `JWT_SECRET`, `APP_PASSWORD` y `STUDENT_PASSWORD` deben ser valores propios y seguros.
+- `JWT_SECRET` y `APP_PASSWORD` deben ser valores propios y seguros.
 - `ALLOWED_ORIGIN` debe coincidir exactamente con la URL HTTPS pública.
 - Nginx debe reenviar `/api/` al backend y `/ws` al WebSocket de Socket.IO.
 - `server/uploads` debe existir y ser escribible por el proceso Node.
@@ -219,7 +215,7 @@ La auditoría comprueba el manifest, los iconos, el service worker, los headers 
 La app inicializa/migra tablas desde `server/db.js`:
 
 - `folders`: carpetas por materia, grupo, padre, color, favorito, deadline y notas.
-- `files`: archivos subidos, metadatos, visibilidad, token público, deadline, rol de material y datos de versión.
+- `files`: archivos subidos, metadatos, deadline, rol de material y datos de versión.
 - `file_edit_copies`: copias de trabajo temporales para editar antes de crear una nueva versión.
 - `links`: recursos externos asociados a carpetas.
 - `schedule`: planificación semanal.
@@ -235,7 +231,6 @@ La app inicializa/migra tablas desde `server/db.js`:
 
 ```http
 POST /api/login
-POST /api/login-student
 GET  /api/health
 ```
 
@@ -262,8 +257,6 @@ GET    /api/files/view/:id
 GET    /api/files/download/:id
 GET    /api/files/zip/:folder_id
 PUT    /api/files/:id
-PUT    /api/files/:id/share
-PUT    /api/files/:id/public
 PUT    /api/files/:id/deadline
 PUT    /api/files/:id/folder
 PUT    /api/files/:id           # también acepta material_role, rename o folder_id
@@ -281,7 +274,6 @@ También existen rutas para `links`, `schedule`, `notebooks`, `search`, `exams` 
 ## Seguridad
 
 - Autenticación con JWT.
-- Roles separados: `lehrer` y `student`.
 - La vista estudiante no debe modificar datos.
 - Los archivos no se sirven por nombre original, sino por rutas controladas.
 - Las copias de trabajo para editar quedan fuera de `uploads/` y se ignoran en Git.

@@ -84,6 +84,14 @@ app.get('/api/health', async (_, res) => {
 });
 
 app.use('/api', corsMiddleware);
+// Projection screens are intentionally public: their random, expiring token is
+// the access capability. This must precede every router that installs auth
+// middleware on the /api mount.
+app.get('/api/display/:token', displaySession);
+// A broad private router is mounted at /api below. Reserve the removed student
+// login path as a genuine missing resource instead of letting that middleware
+// turn it into an authentication response.
+app.all('/api/login-student', (_req, res) => res.status(404).json({ error: 'API route not found' }));
 app.use('/api', authRouter);
 app.use('/api/folders', foldersRouter);
 app.use('/api/files', filesRouter);
@@ -96,7 +104,6 @@ app.use('/api/exams', examsRouter);
 app.use('/api/plans', plansRouter);
 app.use('/api', documentAnnotationsRouter);
 app.use('/api', todayDashboardRouter);
-app.get('/api/display/:token', displaySession);
 app.use('/api', lessonSessionsRouter);
 app.get('/display/:token', displayPage);
 

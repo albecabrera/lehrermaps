@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLang } from '../contexts/LangContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useIsMobile } from '../hooks/useIsMobile';
 import api from '../lib/api';
 
 const STORAGE_KEY = 'lm_schedule';
@@ -57,11 +58,15 @@ function hydrateSchedule(raw) {
   return next;
 }
 
-export default function Schedule({ onNavigate }) {
+export default function Schedule({ onNavigate, folders = [], onClose }) {
   const { t, lang } = useLang();
   const [schedule, setSchedule] = useState(() => hydrateSchedule(loadCache()));
   const [picker, setPicker] = useState(null); // { day, period, rect }
+  const [supervisionPicker, setSupervisionPicker] = useState(null); // { breakKey, day, rect }
   const [dragOverKey, setDragOverKey] = useState(null);
+  const isMobile = useIsMobile(860);
+
+  useEscapeKey(isMobile && !!onClose, onClose);
 
   useEffect(() => {
     api.get('/schedule').then((res) => {
@@ -100,15 +105,37 @@ export default function Schedule({ onNavigate }) {
     persist(next);
   }, [schedule, persist]);
 
-  const toggleBreakDay = useCallback((breakKey, day) => {
+  const saveSupervision = useCallback(({ label, location }) => {
+    if (!supervisionPicker) return;
+    const { breakKey, day } = supervisionPicker;
     const current = schedule[breakKey] || {};
-    const updated = { ...current, [day]: !current[day] };
-    if (!updated[day]) delete updated[day];
+    const existing = current[day];
     const next = { ...schedule };
-    if (Object.keys(updated).length === 0) delete next[breakKey];
-    else next[breakKey] = updated;
+    const name = label.trim();
+
+    if (!name) {
+      const updated = { ...current };
+      delete updated[day];
+      if (Object.keys(updated).length === 0) delete next[breakKey];
+      else next[breakKey] = updated;
+    } else {
+      next[breakKey] = {
+        ...current,
+        [day]: {
+          ...(existing && typeof existing === 'object' ? existing : {}),
+          label: name,
+          location: location.trim(),
+        },
+      };
+    }
     persist(next);
-  }, [schedule, persist]);
+    setSupervisionPicker(null);
+  }, [supervisionPicker, schedule, persist]);
+
+  const clearSupervision = useCallback(() => {
+    if (!supervisionPicker) return;
+    saveSupervision({ label: '', location: '' });
+  }, [supervisionPicker, saveSupervision]);
 
   const openPicker = useCallback((day, period, el) => {
     const rect = el.getBoundingClientRect();
@@ -195,6 +222,17 @@ export default function Schedule({ onNavigate }) {
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--c-text)', letterSpacing: -0.4 }}>
           {t('schedule.title')}
         </h2>
+        {isMobile && onClose && (
+          <button
+            className="lm-schedule-close"
+            type="button"
+            onClick={onClose}
+            aria-label="Stundenplan schließen"
+            title="Stundenplan schließen"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        )}
         <button
           onClick={exportIcs}
           style={{
@@ -234,8 +272,8 @@ export default function Schedule({ onNavigate }) {
         {/* Period rows */}
         {Array.from({ length: PERIODS }, (_, p) => (
           [
-            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Frühstückspause" value={schedule['break-fruehstueck'] || {}} onToggleDay={(d) => toggleBreakDay('break-fruehstueck', d)} />,
-            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Mittagspause" value={schedule['break-mittag'] || {}} onToggleDay={(d) => toggleBreakDay('break-mittag', d)} />,
+            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Pause" value={schedule['break-fruehstueck'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-fruehstueck', day, rect: element.getBoundingClientRect() })} />,
+            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Pause" value={schedule['break-mittag'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-mittag', day, rect: element.getBoundingClientRect() })} />,
             <div key={`label-${p}`} style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
@@ -254,6 +292,7 @@ export default function Schedule({ onNavigate }) {
                   onEdit={(el) => openPicker(d, p, el)}
                   onUnlink={() => unlink(d, p)}
                   onNavigate={onNavigate}
+                  folders={folders}
                   dragOver={dragOverKey === key}
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -287,22 +326,33 @@ export default function Schedule({ onNavigate }) {
           onClose={() => setPicker(null)}
         />
       )}
+      {supervisionPicker && (
+        <SupervisionPicker
+          rect={supervisionPicker.rect}
+          entry={schedule[supervisionPicker.breakKey]?.[supervisionPicker.day]}
+          onSave={saveSupervision}
+          onClear={clearSupervision}
+          onClose={() => setSupervisionPicker(null)}
+        />
+      )}
     </div>
   );
 }
 
 function ScheduleCell({
   day, period, cell, onEdit, onUnlink, onNavigate,
+  folders,
   dragOver, onDragOver, onDragLeave, onDrop,
 }) {
   const { t } = useLang();
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
-  const canNav = cell?.subjectId && onNavigate;
+  const navigationTarget = getScheduleNavigationTarget(cell, folders);
+  const canNav = navigationTarget && onNavigate;
 
   const handleClick = () => {
     if (canNav) {
-      onNavigate(cell.subjectId);
+      onNavigate(navigationTarget);
     } else {
       onEdit(ref.current);
     }
@@ -404,6 +454,40 @@ function ScheduleCell({
   );
 }
 
+// Timetable entries are free-form text, so navigation is intentionally based
+// on the normalized class/subject + room combination rather than a fragile
+// preset id. This also covers entries imported from older schedules.
+const SCHEDULE_FOLDER_ROUTES = [
+  { match: /10\s*bdf/, subjectId: 'spanisch', folderName: 'Klasse 10' },
+  { match: /13\s*s(?:1|\b).*g2.*d\s*-?105/, subjectId: 'spanisch', folderName: 'Klasse 13 S' },
+  { match: /6\s*d.*sp.*th\s*1/, subjectId: 'sport', folderName: 'Sport 6d' },
+  { match: /8\s*abcdef/, subjectId: 'informatik', folderName: 'WP8' },
+  { match: /6\s*d.*if.*j\s*-?105/, subjectId: 'informatik', folderName: '6d' },
+  { match: /13.*sp.*g1.*th\s*3/, subjectId: 'sport', folderName: 'Klasse 13 SP' },
+  { match: /6\s*f.*if.*j\s*-?105/, subjectId: 'informatik', folderName: '6f' },
+  { match: /6\s*d.*ks.*f\s*103/, subjectId: 'klasse', folderName: '6d KS' },
+];
+
+function normalizeScheduleText(value) {
+  return String(value || '')
+    .toLocaleLowerCase('de-DE')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function getScheduleNavigationTarget(cell, folders) {
+  if (!cell) return null;
+  const text = normalizeScheduleText(`${cell.label || ''} ${cell.location || ''}`);
+  const route = SCHEDULE_FOLDER_ROUTES.find(({ match }) => match.test(text));
+  if (route) {
+    const folder = folders.find((candidate) => candidate.subject === route.subjectId
+      && normalizeScheduleText(candidate.name) === normalizeScheduleText(route.folderName));
+    return { subjectId: route.subjectId, folderId: folder?.id || null, folderName: route.folderName };
+  }
+  return cell.subjectId ? { subjectId: cell.subjectId, folderId: null } : null;
+}
+
 function readDndPayload(dataTransfer) {
   try {
     const raw = dataTransfer.getData('application/x-lehrermaps-schedule')
@@ -419,30 +503,40 @@ function readDndPayload(dataTransfer) {
 
 const AUFSICHT_COLOR = '#64748B';
 
-function BreakRow({ breakKey, label, value, onToggleDay }) {
+function BreakRow({ breakKey, label, value, onEditDay }) {
   return [
     <div key={`${breakKey}-label`} style={{
       display: 'flex', alignItems: 'center',
       fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
       textTransform: 'uppercase', color: 'var(--c-text-3)',
       justifyContent: 'flex-end', paddingRight: 6,
-      height: 30,
+      minHeight: 76,
     }}>{label}</div>,
     ...[0, 1, 2, 3, 4].map((d) => (
-      <BreakDayCell key={`${breakKey}-${d}`} active={!!value[d]} onToggle={() => onToggleDay(d)} />
+      <BreakDayCell key={`${breakKey}-${d}`} entry={value[d]} onEdit={(element) => onEditDay(d, element)} />
     )),
   ];
 }
 
-function BreakDayCell({ active, onToggle }) {
+function BreakDayCell({ entry, onEdit }) {
   const [hovered, setHovered] = useState(false);
+  const ref = useRef(null);
+  // Older schedules persisted a boolean. Treat it as the original default name
+  // until the user edits it, then persist the richer object shape.
+  const details = entry && typeof entry === 'object' ? entry : {};
+  const active = !!entry;
+  const label = details.label || 'Aufsicht';
+  const location = details.location || details.room || '';
   return (
-    <div
-      onClick={onToggle}
+    <button
+      ref={ref}
+      type="button"
+      onClick={() => onEdit(ref.current)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      aria-label={active ? `${label} bearbeiten` : 'Aufsicht hinzufügen'}
       style={{
-        height: 30, borderRadius: 6, cursor: 'pointer',
+        minHeight: 76, borderRadius: 6, cursor: 'pointer',
         border: `1px solid ${active ? AUFSICHT_COLOR + '66' : hovered ? AUFSICHT_COLOR + '33' : 'var(--c-border)'}`,
         background: active ? `${AUFSICHT_COLOR}18` : hovered ? `${AUFSICHT_COLOR}0C` : 'var(--c-surface)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -450,11 +544,52 @@ function BreakDayCell({ active, onToggle }) {
       }}
     >
       {active ? (
-        <span style={{ fontSize: 9, fontWeight: 700, color: AUFSICHT_COLOR, letterSpacing: 0.3 }}>Aufsicht</span>
+        <span className="lm-schedule-break-details">
+          <span className="lm-schedule-break-label">{label}</span>
+          {location && <span className="lm-schedule-break-location">📍 {location}</span>}
+        </span>
       ) : hovered ? (
         <span style={{ fontSize: 14, color: AUFSICHT_COLOR, opacity: 0.5 }}>+</span>
       ) : null}
-    </div>
+    </button>
+  );
+}
+
+function SupervisionPicker({ rect, entry, onSave, onClear, onClose }) {
+  useEscapeKey(true, onClose);
+  const details = entry && typeof entry === 'object' ? entry : {};
+  const [label, setLabel] = useState(details.label || (entry ? 'Aufsicht' : ''));
+  const [location, setLocation] = useState(details.location || details.room || '');
+  const PICKER_W = 220;
+  const PICKER_MAX_H = Math.min(260, window.innerHeight - 80);
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let left = rect.left;
+  let top = rect.bottom + 6;
+
+  if (left + PICKER_W > vw - 8) left = vw - PICKER_W - 8;
+  if (top + PICKER_MAX_H > vh - 8) top = rect.top - PICKER_MAX_H - 6;
+  left = Math.max(8, left);
+
+  return createPortal(
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1199 }} />
+      <div style={{ position: 'fixed', left, top, width: PICKER_W, maxHeight: PICKER_MAX_H, overflowY: 'auto', zIndex: 1200, background: 'var(--c-surface)', border: '1px solid var(--c-border-soft)', borderRadius: 12, boxShadow: 'var(--c-shadow-modal)', padding: 10, display: 'flex', flexDirection: 'column', gap: 7, animation: 'lmSlideUp .15s cubic-bezier(.4,.7,.3,1)', fontFamily: '"DM Sans", -apple-system, sans-serif' }}>
+        <form onSubmit={(event) => { event.preventDefault(); onSave({ label, location }); }} style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-text-2)' }}>
+            Klasse oder Gruppe
+            <input autoFocus value={label} onChange={(event) => setLabel(event.target.value)} placeholder="z. B. Klasse 6a" style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, height: 34, padding: '0 9px', border: '1px solid var(--c-border)', borderRadius: 7, background: 'var(--c-input-bg)', color: 'var(--c-text)', font: 'inherit', fontSize: 12 }} />
+          </label>
+          <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-text-2)' }}>
+            Raum oder Ort
+            <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="z. B. S10 oder Schulhof" style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, height: 34, padding: '0 9px', border: '1px solid var(--c-border)', borderRadius: 7, background: 'var(--c-input-bg)', color: 'var(--c-text)', font: 'inherit', fontSize: 12 }} />
+          </label>
+          <button type="submit" style={{ width: '100%', padding: '8px 10px', border: 0, borderRadius: 8, background: 'var(--c-text)', color: 'var(--c-surface)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700 }}>Speichern</button>
+        </form>
+        {entry && <button type="button" onClick={onClear} style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--c-border)', borderRadius: 8, background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Aufsicht entfernen</button>}
+      </div>
+    </>,
+    document.body,
   );
 }
 
@@ -505,26 +640,26 @@ function SubjectPicker({ rect, cell, onSaveCell, onClear, onClose }) {
       >
         <form onSubmit={(event) => { event.preventDefault(); onSaveCell({ label, location }); }} style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-text-2)' }}>
-              Clase o grupo
+              Klasse oder Gruppe
               <input
                 autoFocus
                 value={label}
                 onChange={(event) => setLabel(event.target.value)}
-                placeholder="p. ej. Informatik 6"
+                placeholder="z. B. Informatik 6"
                 style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, height: 34, padding: '0 9px', border: '1px solid var(--c-border)', borderRadius: 7, background: 'var(--c-input-bg)', color: 'var(--c-text)', font: 'inherit', fontSize: 12 }}
               />
             </label>
             <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-text-2)' }}>
-              Lugar de la clase
+              Raum oder Ort
               <input
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
-                placeholder="p. ej. S10, S9-2, J004"
+                placeholder="z. B. S10, S9-2, J004"
                 style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, height: 34, padding: '0 9px', border: '1px solid var(--c-border)', borderRadius: 7, background: 'var(--c-input-bg)', color: 'var(--c-text)', font: 'inherit', fontSize: 12 }}
               />
             </label>
             <button type="submit" style={{ width: '100%', padding: '8px 10px', border: 0, borderRadius: 8, background: 'var(--c-text)', color: 'var(--c-surface)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700 }}>
-              Guardar
+              Speichern
             </button>
           </form>
         {cell && (
@@ -536,7 +671,7 @@ function SubjectPicker({ rect, cell, onSaveCell, onClear, onClose }) {
               cursor: 'pointer', fontFamily: 'inherit', fontSize: 12,
             }}
           >
-            Celda vacía
+            Feld leeren
           </button>
         )}
       </div>

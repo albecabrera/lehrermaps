@@ -4,7 +4,7 @@ import { detectKind } from '../constants/structure';
 import { downloadFile, viewFile, previewFile, downloadEditCopy, openEditCopy, getFileVersions } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 
-export default function FilePreview({ file, accent = '#E8472A', onClose, onCommitVersion, isStudent = false }) {
+export default function FilePreview({ file, accent = '#E8472A', onClose, onCommitVersion }) {
   const { t } = useLang();
   const containerRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -101,9 +101,6 @@ export default function FilePreview({ file, accent = '#E8472A', onClose, onCommi
         )}
       </div>
 
-      {isStudent && Number(file.timer_minutes) > 0 && (
-        <StudentTimer file={file} accent={accent} t={t} />
-      )}
 
       <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         <PreviewSurface file={file} kind={kind} accent={accent} t={t} />
@@ -158,80 +155,6 @@ export default function FilePreview({ file, accent = '#E8472A', onClose, onCommi
     </div>
   );
 }
-
-function StudentTimer({ file, accent, t }) {
-  const storageKey = `lm:worksheet-timer:${file.id}`;
-  const [session, setSession] = useState(null);
-  const [now, setNow] = useState(Date.now());
-
-  const readSession = useCallback(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!Number.isFinite(parsed.startedAt) || !Number.isFinite(parsed.durationMinutes)) return null;
-      return parsed;
-    } catch {
-      return null;
-    }
-  }, [storageKey]);
-
-  useEffect(() => {
-    setSession(readSession());
-    setNow(Date.now());
-  }, [readSession]);
-
-  useEffect(() => {
-    if (!session) return undefined;
-    const interval = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(interval);
-  }, [session]);
-
-  const start = () => {
-    const next = { startedAt: Date.now(), durationMinutes: Number(file.timer_minutes) };
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
-    setSession(next);
-    setNow(Date.now());
-  };
-
-  if (!session) {
-    return (
-      <div style={timerBarStyle(accent)}>
-        <span style={{ fontSize: 12, color: 'var(--c-text-2)' }}>{t('student.timer_ready', { minutes: file.timer_minutes })}</span>
-        <button onClick={start} style={timerButtonStyle(accent)}>{t('student.timer_start')}</button>
-      </div>
-    );
-  }
-
-  const totalSeconds = Math.max(0, Math.ceil((session.durationMinutes * 60 * 1000 - (now - session.startedAt)) / 1000));
-  const expired = totalSeconds === 0;
-  return (
-    <div style={{ ...timerBarStyle(accent), background: expired ? 'rgba(220,38,38,0.10)' : `${accent}0D`, borderColor: expired ? 'rgba(220,38,38,0.35)' : `${accent}35` }}>
-      <span style={{ fontSize: 12, fontWeight: 700, color: expired ? '#DC2626' : 'var(--c-text-2)' }}>
-        {expired ? t('student.timer_expired') : t('student.timer_remaining')}
-      </span>
-      <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: 0.8, fontFamily: '"DM Mono", monospace', color: expired ? '#DC2626' : accent }}>
-        {formatTimer(totalSeconds)}
-      </span>
-      <button onClick={start} style={timerButtonStyle(accent)}>{t('student.timer_restart')}</button>
-    </div>
-  );
-}
-
-function formatTimer(seconds) {
-  const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
-  const rest = (seconds % 60).toString().padStart(2, '0');
-  return `${minutes}:${rest}`;
-}
-
-function timerBarStyle(accent) {
-  return { padding: '9px 14px', borderBottom: `1px solid ${accent}35`, background: `${accent}0D`, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, flexWrap: 'wrap' };
-}
-
-function timerButtonStyle(accent) {
-  return { height: 28, padding: '0 11px', border: 'none', borderRadius: 6, background: accent, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' };
-}
-
 
 function EditCopyActions({ file, accent, t, onCommitVersion }) {
   const [state, setState] = useState('idle');
