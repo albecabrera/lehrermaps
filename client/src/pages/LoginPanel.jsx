@@ -238,31 +238,19 @@ export default function LoginPanel({ onLogin }) {
 function WelcomeBanner({ children }) {
   return (
     <div className="lm-welcome-shell" style={{
-      width: '100vw', maxWidth: 'none', marginBottom: 0,
-      borderRadius: 0, overflow: 'hidden',
-      boxShadow: '0 12px 48px rgba(10,14,40,0.35), 0 2px 8px rgba(0,0,0,0.12)',
+      width: 'min(100%, 960px)', maxWidth: 960, marginBottom: 0,
+      borderRadius: 28, overflow: 'hidden',
+      border: '1px solid rgba(148,163,184,0.22)',
+      boxShadow: '0 18px 56px rgba(10,14,40,0.2), 0 3px 12px rgba(0,0,0,0.1)',
     }}>
       <div className="lm-welcome-banner" style={{
-        background: '#101827',
-        minHeight: 'min(720px, calc(100vh - 96px))',
+        background: 'linear-gradient(135deg, #101827 0%, #17243d 58%, #202d4b 100%)',
+        minHeight: 'min(460px, calc(100vh - 180px))',
         padding: 0,
         position: 'relative',
         overflow: 'hidden',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-
-        <img
-          src="/lehrermaps_icon.svg"
-          alt=""
-          aria-hidden="true"
-          draggable="false"
-          style={{
-            position: 'absolute', inset: 0, zIndex: 1,
-            width: '100%', height: '100%',
-            opacity: 0.62,
-            objectFit: 'cover', objectPosition: 'center',
-          }}
-        />
 
         <div className="lm-welcome-overlay" aria-hidden="true" />
         <div className="lm-welcome-content">
