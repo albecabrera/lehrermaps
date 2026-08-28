@@ -454,6 +454,62 @@ html, body, #root {
   background: transparent !important;
 }
 
+/* Premium entry panel: quiet workspace framing, strong hierarchy, focused CTA. */
+.lm-login-content { max-width: 1100px; margin-inline: auto; }
+.lm-welcome-shell {
+  background: color-mix(in srgb, var(--c-surface) 94%, transparent);
+  border-color: color-mix(in srgb, var(--c-text) 10%, transparent) !important;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, .10), 0 4px 14px rgba(15, 23, 42, .05) !important;
+}
+.lm-welcome-banner {
+  min-height: min(540px, calc(100vh - 170px)) !important;
+  background: transparent !important;
+}
+.lm-welcome-content {
+  width: min(900px, calc(100% - 112px));
+  padding: 56px 0;
+  gap: clamp(56px, 11vw, 150px);
+}
+.lm-welcome-copy { max-width: 390px; }
+.lm-welcome-eyebrow { font-size: 11px; font-weight: 700; }
+.lm-welcome-copy .lm-welcome-title {
+  font-size: clamp(46px, 5.8vw, 76px) !important;
+  letter-spacing: -4px;
+  line-height: .94;
+}
+.lm-welcome-copy p { margin-top: 24px; font-size: 16px; }
+.lm-welcome-login { min-width: 220px; }
+.lm-welcome-login button {
+  width: 220px !important;
+  padding: 30px 22px 24px !important;
+  gap: 16px !important;
+  border-width: 1px !important;
+}
+.lm-welcome-login button > div:last-child {
+  min-width: 132px;
+  font-weight: 700;
+  letter-spacing: .1px;
+}
+.lm-welcome-login button > div:last-child::after {
+  content: '  →';
+  display: inline-block;
+  margin-left: 8px;
+  transition: transform .16s ease;
+}
+.lm-welcome-login button:hover > div:last-child::after { transform: translateX(3px); }
+[data-theme="dark"] .lm-welcome-shell {
+  background: color-mix(in srgb, var(--c-surface) 94%, transparent);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .34), 0 4px 14px rgba(0, 0, 0, .22) !important;
+}
+@media (max-width: 860px) {
+  .lm-welcome-content {
+    width: min(calc(100% - 44px), 520px);
+    padding: 44px 0;
+    gap: 32px;
+  }
+  .lm-welcome-login button { width: min(100%, 280px) !important; }
+}
+
 /* ── Arc-only login flicker fix ─────────────────────────────
    Arc's compositor flickers on the login screen due to layered
    gradients, gradient-clipped text, large blurred shadows and the
