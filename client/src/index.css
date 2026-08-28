@@ -441,6 +441,19 @@ html, body, #root {
   .lm-welcome-copy p { margin-inline: auto; }
 }
 
+/* Keep the logo welcome banner free of a painted backdrop on every viewport. */
+.lm-welcome-banner {
+  background: transparent !important;
+}
+.lm-welcome-banner::before,
+.lm-welcome-banner::after,
+.lm-welcome-overlay {
+  display: none !important;
+}
+[data-theme="dark"] .lm-welcome-banner {
+  background: transparent !important;
+}
+
 /* ── Arc-only login flicker fix ─────────────────────────────
    Arc's compositor flickers on the login screen due to layered
    gradients, gradient-clipped text, large blurred shadows and the
