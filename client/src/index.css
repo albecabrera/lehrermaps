@@ -27,6 +27,22 @@
   --c-glass-border: rgba(0, 0, 0, 0.09);
   --c-glass-blur: blur(22px) saturate(150%);
   --c-glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255,255,255,0.7);
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --font-size-fluid: clamp(1rem, 0.95rem + 0.2vw, 1.125rem);
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --touch-target: 44px;
   color-scheme: light;
 }
 
@@ -148,6 +164,183 @@ html, body, #root {
   filter: none !important;
 }
 
+/* Shared code-native brand mark and responsive premium login composition. */
+.lm-brand { display: inline-flex; align-items: center; gap: 10px; }
+.lm-brand-mark { display: inline-flex; flex: 0 0 auto; }
+.lm-brand-mark svg { width: 100%; height: 100%; display: block; }
+.lm-topbar-brand-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: block;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.lm-brand-name { color: var(--c-text); font-size: 17px; font-weight: 750; letter-spacing: -.45px; }
+.lm-login-shell {
+  overflow: auto;
+  background:
+    radial-gradient(ellipse 65% 80% at 0% 100%, rgba(232,71,42,.12), transparent 62%),
+    radial-gradient(ellipse 60% 75% at 100% 0%, rgba(124,58,237,.13), transparent 62%),
+    var(--c-bg) !important;
+}
+.lm-login-topbrand { position: absolute; top: 28px; left: clamp(24px, 5vw, 72px); z-index: 2; }
+.lm-app-brand { align-self: center; padding: 0 14px 0 2px; margin-bottom: 8px; flex-shrink: 0; }
+.lm-app-brand .lm-brand-name { font-size: 14px; }
+.lm-mobile-brand-links { display: none; }
+.lm-mobile-brand-link {
+  width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 34px; border: 1px solid var(--c-border-soft); border-radius: 9px;
+  background: color-mix(in srgb, var(--c-surface) 72%, transparent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+  transition: border-color .16s ease, background .16s ease, transform .12s ease;
+}
+.lm-mobile-brand-link img { width: 19px; height: 19px; object-fit: contain; border-radius: 4px; }
+.lm-mobile-brand-link:hover, .lm-mobile-brand-link:focus-visible { border-color: var(--c-focus); background: var(--c-hover); transform: translateY(-1px); }
+.lm-mobile-brand-link:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+@media (max-width: 860px) {
+  .lm-mobile-brand-links { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; margin: 0 2px 8px 0; }
+}
+.lm-tabbar { gap: 8px !important; }
+/* Authenticated primary navigation: one centered, tactile control row. Utility
+   actions (search, theme and upload) stay pinned at the trailing edge. */
+@media (min-width: 861px) {
+  .lm-tabbar { justify-content: center; padding-inline: 22px !important; }
+  .lm-tabbar > .lm-app-brand { order: 1; margin-right: 4px; }
+  .lm-tabbar > .lm-topbar-today { order: 2; }
+  .lm-tabbar > .lm-topbar-schedule { order: 3; }
+  .lm-tabbar > .lm-topbar-exams { order: 4; }
+  .lm-tabbar > .lm-topbar-calendar { order: 5; }
+  .lm-tabbar > .lm-topbar-notion { order: 6; }
+  .lm-tabbar > .lm-topbar-miro { order: 7; }
+  .lm-tabbar > .lm-topbar-logout { order: 8; margin-left: 4px !important; }
+  .lm-tabbar > .lm-topbar-lessons { display: none !important; }
+  .lm-tabbar > .lm-topbar-spacer { display: none !important; }
+  .lm-tabbar > .lm-topbar-tools { position: absolute; right: 22px; bottom: 8px; }
+}
+.lm-tabbar .lm-topbar-today,
+.lm-tabbar .lm-topbar-schedule,
+.lm-tabbar .lm-topbar-exams,
+.lm-tabbar .lm-topbar-calendar,
+.lm-tabbar .lm-topbar-notion,
+.lm-tabbar .lm-topbar-miro {
+  min-height: 38px;
+  margin-bottom: 8px !important;
+  padding: 0 13px !important;
+  border: 1px solid var(--c-border-soft) !important;
+  border-radius: 11px !important;
+  background: color-mix(in srgb, var(--c-surface) 58%, transparent) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .06), inset 0 1px 0 rgba(255,255,255,.38);
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .12s ease;
+}
+.lm-tabbar .lm-topbar-today:hover,
+.lm-tabbar .lm-topbar-schedule:hover,
+.lm-tabbar .lm-topbar-exams:hover,
+.lm-tabbar .lm-topbar-calendar:hover,
+.lm-tabbar .lm-topbar-notion:hover,
+.lm-tabbar .lm-topbar-miro:hover {
+  border-color: var(--c-focus) !important;
+  background: var(--c-hover) !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, .10);
+  transform: translateY(-1px);
+}
+.lm-tabbar .lm-topbar-today:focus-visible,
+.lm-tabbar .lm-topbar-schedule:focus-visible,
+.lm-tabbar .lm-topbar-exams:focus-visible,
+.lm-tabbar .lm-topbar-calendar:focus-visible,
+.lm-tabbar .lm-topbar-notion:focus-visible,
+.lm-tabbar .lm-topbar-miro:focus-visible,
+.lm-tabbar .lm-topbar-logout:focus-visible,
+.lm-tabbar .lm-app-brand:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 3px;
+}
+.lm-tabbar .lm-topbar-logout {
+  min-height: 38px;
+  margin-bottom: 8px !important;
+  border-radius: 11px !important;
+  box-shadow: 0 1px 2px rgba(127, 29, 29, .08);
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .12s ease;
+}
+.lm-tabbar .lm-topbar-logout:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(220, 38, 38, .16); }
+[data-theme="dark"] .lm-tabbar .lm-topbar-today,
+[data-theme="dark"] .lm-tabbar .lm-topbar-schedule,
+[data-theme="dark"] .lm-tabbar .lm-topbar-exams,
+[data-theme="dark"] .lm-tabbar .lm-topbar-calendar,
+[data-theme="dark"] .lm-tabbar .lm-topbar-notion,
+[data-theme="dark"] .lm-tabbar .lm-topbar-miro {
+  box-shadow: 0 1px 2px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.lm-schedule-close { display: none; }
+.lm-login-content { width: 100%; display: block; }
+.lm-welcome-shell { margin-left: calc(50% - 50vw); }
+.lm-welcome-banner { max-width: none !important; width: 100% !important; border-radius: 30px !important; }
+.lm-welcome-banner { padding: 0 !important; }
+.lm-welcome-title { font-size: clamp(38px, 5vw, 66px) !important; }
+.lm-welcome-overlay {
+  position: absolute; inset: 0; z-index: 2;
+  background: linear-gradient(90deg, rgba(6, 12, 25, .82), rgba(6, 12, 25, .26) 62%, rgba(6, 12, 25, .58));
+  pointer-events: none;
+}
+.lm-welcome-content {
+  position: relative; z-index: 3;
+  width: min(1120px, calc(100% - 48px));
+  display: flex; align-items: center; justify-content: space-between;
+  gap: clamp(32px, 8vw, 120px);
+}
+.lm-welcome-copy { color: #fff; }
+.lm-welcome-eyebrow {
+  margin-bottom: 18px; color: #fca5a5; font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+}
+.lm-welcome-copy .lm-welcome-title {
+  margin: 0; color: #fff; background: none;
+  -webkit-text-fill-color: #fff; letter-spacing: -2px; line-height: 1.04;
+}
+.lm-welcome-copy p { margin: 18px 0 0; color: rgba(255,255,255,.72); font-size: 15px; }
+.lm-welcome-login { flex: 0 0 auto; }
+.lm-login-shell .lm-login-stable { min-height: 100%; }
+@media (max-width: 860px) {
+  .lm-login-shell { justify-content: flex-start !important; padding: 88px 20px 32px !important; }
+  .lm-login-content { display: flex; flex-direction: column; align-items: stretch; gap: 24px; }
+  .lm-welcome-shell { margin-left: calc(50% - 50vw); }
+  .lm-welcome-banner { border-radius: 24px !important; }
+  .lm-welcome-banner { padding: 0 !important; }
+  .lm-welcome-title { font-size: clamp(34px, 11vw, 48px) !important; }
+  .lm-welcome-banner { min-height: calc(100vh - 120px) !important; }
+  .lm-welcome-content { width: min(calc(100% - 40px), 520px); flex-direction: column; align-items: stretch; justify-content: center; gap: 32px; }
+  .lm-welcome-copy { text-align: center; }
+  .lm-welcome-copy p { font-size: 13px; }
+  .lm-welcome-login { display: flex; justify-content: center; }
+  .lm-login-shell .lm-login-stable { min-height: auto; }
+  .lm-login-shell .lm-login-stable > div { width: 100%; }
+  .lm-login-content > div > button { width: 100%; }
+}
+@media (max-width: 860px) {
+  .lm-schedule-close {
+    display: inline-flex;
+    margin-left: auto;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    background: var(--c-surface);
+    color: var(--c-text-2);
+    cursor: pointer;
+    font: 26px/1 inherit;
+  }
+  .lm-schedule-close + button { margin-left: 0 !important; }
+}
+@media (min-width: 600px) and (max-width: 860px) {
+  .lm-login-content { gap: 36px; }
+  .lm-welcome-title { font-size: 48px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lm-login-shell * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
 /* ── Arc-only login flicker fix ─────────────────────────────
    Arc's compositor flickers on the login screen due to layered
    gradients, gradient-clipped text, large blurred shadows and the
@@ -250,6 +443,12 @@ button:active {
 :focus-visible {
   outline: 2px solid var(--c-focus);
   outline-offset: 2px;
+}
+
+@media (max-width: 860px) and (pointer: coarse) {
+  button, [role="button"] { min-width: var(--touch-target); min-height: var(--touch-target); }
+  input:not([type="checkbox"]):not([type="radio"]), select { min-height: var(--touch-target); }
+  :focus-visible { outline-width: 3px; outline-offset: 3px; }
 }
 
 /* File list columns — responsive via container query */
@@ -475,7 +674,7 @@ button:active {
 .lm-annual-type[data-type="presentation"] { color: #7C3AED; background: #EDE9FE; }
 .lm-annual-type[data-type="school_event"] { color: #0369A1; background: #E0F2FE; }
 .lm-annual-cards { display: none; }
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .lm-annual-table-wrap { display: none; }
   .lm-annual-cards { display: grid; gap: 8px; }
   .lm-annual-card { display: grid; gap: 7px; padding: 12px; border: 1px solid var(--c-border); border-radius: 9px; background: var(--c-surface); }
@@ -497,9 +696,9 @@ button:active {
 .lm-canvas-surface{overflow:hidden;touch-action:none}.lm-canvas-world{position:absolute;inset:0;transform-origin:0 0;will-change:transform}.lm-canvas-surface.is-pannable{cursor:grab}.lm-canvas-surface.is-pannable:active{cursor:grabbing}.lm-canvas-zoom{display:flex;align-items:center;gap:4px;margin-left:auto}.lm-canvas-zoom button{min-width:28px;padding:0 7px}.lm-canvas-zoom span{min-width:42px;text-align:center;font-size:11px;color:var(--c-text-2)}
 .lm-canvas-toolbar kbd{font-size:9px;color:var(--c-text-3);margin-left:3px}.lm-canvas-element svg{display:block;width:100%;height:100%;overflow:visible}.lm-canvas-element input{width:100%;height:100%;min-width:80px;border:0;outline:0;background:transparent;color:inherit;font:inherit}.lm-canvas-element.is-draft{opacity:.55;pointer-events:none}.lm-canvas-shortcuts{display:block;margin-left:auto;color:var(--c-text-3);font-size:10px}
 
-/* Stundenplan: preserve readable day columns on narrow phone screens. */
+/* Stundenplan: the grid is the sole horizontal scrolling surface on compact layouts. */
 .lm-schedule-grid-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-.lm-schedule-view { font-size: 15px; }
+.lm-schedule-view { font-size: var(--font-size-fluid); overflow-x: hidden !important; }
 .lm-schedule-header h2 { font-size: clamp(24px, 2.4vw, 32px) !important; }
 .lm-schedule-header button { min-height: 40px; font-size: 14px !important; }
 .lm-schedule-grid { gap: 7px !important; }
@@ -508,7 +707,10 @@ button:active {
 .lm-schedule-cell-label { font-size: clamp(14px, 1.4vw, 18px) !important; font-weight: 700 !important; }
 .lm-schedule-cell-label + div { font-size: 12px !important; }
 .lm-schedule-cell-location { margin-top: 5px; color: var(--c-text-2); font-size: clamp(13px, 1.2vw, 16px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-@media (max-width: 760px) {
+.lm-schedule-break-details { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; padding: 8px; box-sizing: border-box; color: #64748B; }
+.lm-schedule-break-label { max-width: 100%; font-size: 12px; font-weight: 700; letter-spacing: .3px; overflow-wrap: anywhere; }
+.lm-schedule-break-location { max-width: 100%; color: var(--c-text-2); font-size: 11px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+@media (max-width: 860px) {
   .lm-today-view { padding: 20px 14px calc(28px + env(safe-area-inset-bottom)) !important; }
   .lm-today-view > div { max-width: none !important; }
   .lm-today-view h1 { font-size: 24px !important; line-height: 1.15; }
@@ -524,46 +726,49 @@ button:active {
   .lm-today-content section > div:first-child { flex-wrap: wrap; }
   .lm-today-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
-@media (max-width: 760px) {
-  .lm-schedule-view { padding: 18px 14px calc(24px + env(safe-area-inset-bottom)) !important; }
+@media (max-width: 860px) {
+  .lm-schedule-view { padding: 18px max(14px, var(--safe-area-right)) calc(24px + var(--safe-area-bottom)) max(14px, var(--safe-area-left)) !important; }
   .lm-schedule-header { margin-bottom: 16px !important; }
-  .lm-schedule-header button { min-height: 36px; padding: 0 10px !important; font-size: 11px !important; }
+  .lm-schedule-header button { min-height: var(--touch-target); padding: 0 10px !important; font-size: 12px !important; }
   .lm-schedule-grid {
-    min-width: 0 !important;
-    width: 100%;
-    grid-template-columns: 29px repeat(5, minmax(0, 1fr)) !important;
-    gap: 3px !important;
+    min-width: 704px !important;
+    width: max-content;
+    grid-template-columns: 44px repeat(5, minmax(128px, 1fr)) !important;
+    gap: var(--space-2) !important;
   }
   .lm-schedule-cell { min-height: 92px !important; }
   .lm-schedule-cell > div { min-height: 92px !important; }
   .lm-schedule-cell-label {
-    font-size: 11px !important;
+    font-size: 14px !important;
     line-height: 1.15;
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    overflow-wrap: anywhere;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
   .lm-schedule-cell-location {
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.15;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+  .lm-schedule-break-details { gap: 4px; padding: 6px 3px; }
+  .lm-schedule-break-label { font-size: 12px; line-height: 1.15; }
+  .lm-schedule-break-location { font-size: 11px; line-height: 1.15; }
   .lm-schedule-grid > div[style*="text-align: right"] {
-    font-size: 8px !important;
-    padding-right: 2px !important;
+    font-size: 10px !important;
+    padding-right: var(--space-2) !important;
   }
   .lm-schedule-grid > div:not(.lm-schedule-cell):not([style*="text-align: right"]) {
-    font-size: 10px !important;
+    font-size: 11px !important;
   }
   .lm-mobile-nav-label { font-size: 11px !important; }
-  .lm-schedule-grid button { min-width: 30px; min-height: 30px; }
+  .lm-schedule-grid button { min-width: var(--touch-target); min-height: var(--touch-target); }
 }
 
 /* Lehrerhilfe: auf kleinen Displays Panel und Arbeitsbereich untereinander,
    statt die Desktop-Spaltenbreite in ein schmales Telefon zu quetschen. */
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .lm-teaching-mode {
     display: flex !important;
     flex-direction: column;
@@ -637,7 +842,7 @@ button:active {
 .lm-school-calendar-actions button { min-height: 32px; padding: 0 10px; border: 1px solid var(--c-border); border-radius: 7px; background: transparent; color: var(--c-text-2); font: inherit; font-size: 12px; text-decoration: none; cursor: pointer; }
 .lm-school-calendar-actions button { font-size: 20px; line-height: 1; }
 .lm-school-calendar-frame { flex: 1; width: 100%; border: 0; background: #f8fafc; }
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .lm-teaching-phase-back { display: inline-flex; }
 }
 
@@ -673,7 +878,22 @@ button:active {
   box-shadow: 0 0 0 3px #dc2626, 0 0 18px 7px #ff3b30cc, 0 0 0 7px #fff8;
   pointer-events: none;
 }
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .lm-laser-toggle { width: 100%; margin-top: 8px; }
   .lm-teaching-laser { width: 34px; }
+}
+
+/* The brand is the authenticated app home control, not a passive label. */
+.lm-app-brand {
+  appearance: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 10px;
+}
+.lm-app-brand:focus-visible {
+  outline: 2px solid var(--c-accent, #2563eb);
+  outline-offset: 3px;
 }

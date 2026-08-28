@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { login } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 import { useTheme } from '../contexts/ThemeContext';
+import BrandMark from '../components/BrandMark';
 
 const DEFAULT_AVATAR = '/teacher-avatar.jpg';
 
@@ -64,7 +65,7 @@ export default function LoginPanel({ onLogin }) {
   const accent = '#E8472A';
 
   return (
-    <div className="lm-login-stable" style={{
+    <div className="lm-login-stable lm-login-shell" style={{
       minHeight: '100vh', background: 'var(--c-bg)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
@@ -77,6 +78,8 @@ export default function LoginPanel({ onLogin }) {
       position: 'relative',
     }}>
 
+      <div className="lm-login-topbrand"><BrandMark size={36} /></div>
+
       {/* Top-right controls */}
       <div style={{ position: 'fixed', top: 16, right: 16, display: 'flex', gap: 8 }}>
         <button onClick={toggleTheme} style={topBtnStyle}>
@@ -88,34 +91,38 @@ export default function LoginPanel({ onLogin }) {
       </div>
 
       {step === 'select' ? (
-        <>
-          {/* ── Banner ── */}
-          <WelcomeBanner />
+        <div className="lm-login-content">
+          <WelcomeBanner>
+            <div className="lm-welcome-copy">
+              <div className="lm-welcome-eyebrow">LehrerMaps</div>
+              <h1 className="lm-welcome-title">Herzlich<br />Willkommen</h1>
+              <p>Deine Unterrichtsmaterialien an einem Ort.</p>
+            </div>
 
-          {/* ── Role cards ── */}
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <RoleCard
-              label={t('login.teacher_role')}
-              desc={t('login.teacher_desc')}
-              accent="#E8472A"
-              onClick={() => setStep('teacher')}
-              avatar={
-                <TeacherAvatar
-                  avatar={avatar}
-                  onChange={handleAvatarChange}
-                  fileRef={fileRef}
-                  hovered={hoverAvatar}
-                  setHovered={setHoverAvatar}
-                  changeLabel={t('login.change_photo')}
-                />
-              }
-            />
-          </div>
+            <div className="lm-welcome-login">
+              <RoleCard
+                label={t('login.teacher_role')}
+                desc={t('login.teacher_desc')}
+                accent="#E8472A"
+                onClick={() => setStep('teacher')}
+                avatar={
+                  <TeacherAvatar
+                    avatar={avatar}
+                    onChange={handleAvatarChange}
+                    fileRef={fileRef}
+                    hovered={hoverAvatar}
+                    setHovered={setHoverAvatar}
+                    changeLabel={t('login.change_photo')}
+                  />
+                }
+              />
+            </div>
+          </WelcomeBanner>
 
           <div style={{ fontSize: 10, color: 'var(--c-text-3)', marginTop: 36 }}>
             {t('login.footer')}
           </div>
-        </>
+        </div>
       ) : (
         /* ── Password form ── */
         <div className="lm-modal-surface" style={{
@@ -228,126 +235,38 @@ export default function LoginPanel({ onLogin }) {
 }
 
 /* ── Welcome Banner ─────────────────────────────────────── */
-function WelcomeBanner() {
+function WelcomeBanner({ children }) {
   return (
-    <div style={{
-      width: '100%', maxWidth: 480, marginBottom: 36,
-      borderRadius: 24, overflow: 'hidden',
+    <div className="lm-welcome-shell" style={{
+      width: '100vw', maxWidth: 'none', marginBottom: 0,
+      borderRadius: 0, overflow: 'hidden',
       boxShadow: '0 12px 48px rgba(10,14,40,0.35), 0 2px 8px rgba(0,0,0,0.12)',
     }}>
-      <div style={{
-        background: 'linear-gradient(145deg, #0a0f1e 0%, #131929 30%, #1c1040 58%, #3b1f6a 80%, #6b2d4a 100%)',
-        padding: '34px 36px 30px',
+      <div className="lm-welcome-banner" style={{
+        background: '#101827',
+        minHeight: 'min(720px, calc(100vh - 96px))',
+        padding: 0,
         position: 'relative',
         overflow: 'hidden',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
 
-        {/* Decorative orbs */}
-        <div style={{
-          position: 'absolute', top: -50, right: -50,
-          width: 200, height: 200, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(107,45,74,0.55) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: -40, left: -30,
-          width: 160, height: 160, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(59,31,106,0.6) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-        {/* Subtle grid lines */}
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.04,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-          pointerEvents: 'none',
-        }} />
+        <img
+          src="/lehrermaps_icon.svg"
+          alt=""
+          aria-hidden="true"
+          draggable="false"
+          style={{
+            position: 'absolute', inset: 0, zIndex: 1,
+            width: '100%', height: '100%',
+            opacity: 0.62,
+            objectFit: 'cover', objectPosition: 'center',
+          }}
+        />
 
-        {/* School badge */}
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 7,
-          background: 'rgba(255,255,255,0.07)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 20, padding: '5px 13px',
-          marginBottom: 22,
-        }}>
-          <div style={{
-            width: 18, height: 18, borderRadius: 5,
-            background: 'linear-gradient(135deg, #E8472A, #9333EA)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <svg width="10" height="10" viewBox="0 0 26 26" fill="none">
-              <path d="M3 6a2 2 0 0 1 2-2h5l2 2h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z"
-                fill="rgba(255,255,255,0.95)"/>
-            </svg>
-          </div>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)', letterSpacing: 0.2 }}>
-            LehrerMaps
-          </span>
-        </div>
-
-        {/* School name */}
-        <div style={{
-          fontSize: 10, fontWeight: 700, letterSpacing: 1.8,
-          textTransform: 'uppercase', marginBottom: 10,
-          color: 'transparent',
-          background: 'linear-gradient(90deg, #c084fc, #f0abfc)',
-          WebkitBackgroundClip: 'text',
-          backgroundClip: 'text',
-        }}>
-          Elisabeth-Selbert-Gesamtschule · Bonn
-        </div>
-
-        {/* Main heading */}
-        <h1 style={{
-          fontSize: 34, fontWeight: 800, margin: '0 0 10px',
-          letterSpacing: -1.2, lineHeight: 1.12,
-          background: 'linear-gradient(100deg, #ffffff 0%, #e9d5ff 45%, #fca5a5 85%, #fdba74 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-        }}>
-          Herzlich<br />Willkommen
-        </h1>
-
-        <p style={{
-          margin: 0, fontSize: 12.5,
-          color: 'rgba(255,255,255,0.45)',
-          lineHeight: 1.55, maxWidth: 270,
-        }}>
-          Unterrichtsmaterialien verwalten — sicher, schnell und übersichtlich.
-        </p>
-
-        {/* Stats strip */}
-        <div style={{
-          marginTop: 22, paddingTop: 18,
-          borderTop: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex', gap: 0,
-        }}>
-          {[
-            ['4', 'Fächer'],
-            ['∞', 'Dateien'],
-            ['✓', 'DSGVO-konform'],
-          ].map(([val, label], i) => (
-            <div key={label} style={{
-              flex: 1, paddingRight: 12,
-              borderRight: i < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none',
-              marginRight: i < 2 ? 12 : 0,
-            }}>
-              <div style={{
-                fontSize: 16, fontWeight: 800, lineHeight: 1,
-                background: 'linear-gradient(135deg, #e9d5ff, #fca5a5)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>{val}</div>
-              <div style={{
-                fontSize: 9, color: 'rgba(255,255,255,0.38)',
-                letterSpacing: 0.4, textTransform: 'uppercase', marginTop: 3,
-              }}>{label}</div>
-            </div>
-          ))}
+        <div className="lm-welcome-overlay" aria-hidden="true" />
+        <div className="lm-welcome-content">
+          {children}
         </div>
       </div>
     </div>
