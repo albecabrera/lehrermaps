@@ -341,6 +341,106 @@ html, body, #root {
   .lm-login-shell * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 
+/* Login refresh: a calmer editorial welcome surface with clear entry focus. */
+.lm-login-shell {
+  background:
+    radial-gradient(circle at 12% 16%, rgba(232, 71, 42, .10), transparent 26rem),
+    radial-gradient(circle at 90% 84%, rgba(37, 99, 235, .08), transparent 24rem),
+    var(--c-bg) !important;
+}
+.lm-login-topbrand { top: 32px; left: clamp(24px, 5vw, 72px); }
+.lm-login-topbrand .lm-brand-name { font-size: 18px; letter-spacing: -.55px; }
+.lm-welcome-shell {
+  border: 1px solid rgba(148, 163, 184, .28) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .12), 0 2px 8px rgba(15, 23, 42, .05) !important;
+}
+.lm-welcome-banner {
+  min-height: min(510px, calc(100vh - 170px)) !important;
+  background: #f4efe8 !important;
+  color: #172033;
+}
+.lm-welcome-banner::before,
+.lm-welcome-banner::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+.lm-welcome-banner::before {
+  width: 34rem;
+  height: 34rem;
+  right: -11rem;
+  top: -13rem;
+  border: 1px solid rgba(23, 32, 51, .10);
+  border-radius: 50%;
+  box-shadow: 0 0 0 42px rgba(23, 32, 51, .035), 0 0 0 84px rgba(23, 32, 51, .025);
+}
+.lm-welcome-banner::after {
+  width: 15rem;
+  height: 15rem;
+  left: -5rem;
+  bottom: -8rem;
+  border-radius: 38% 62% 48% 52%;
+  background: rgba(232, 71, 42, .12);
+  transform: rotate(-18deg);
+}
+.lm-welcome-overlay {
+  background: linear-gradient(90deg, rgba(244, 239, 232, .15), rgba(244, 239, 232, 0) 72%) !important;
+}
+.lm-welcome-content {
+  width: min(820px, calc(100% - 88px));
+  gap: clamp(36px, 8vw, 108px);
+}
+.lm-welcome-copy { color: #172033; max-width: 370px; }
+.lm-welcome-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 22px;
+  color: #e8472a;
+  letter-spacing: 1.6px;
+}
+.lm-welcome-eyebrow::before {
+  content: '';
+  width: 22px;
+  height: 2px;
+  border-radius: 99px;
+  background: currentColor;
+}
+.lm-welcome-copy .lm-welcome-title {
+  color: #172033 !important;
+  -webkit-text-fill-color: #172033 !important;
+  font-size: clamp(42px, 5.7vw, 72px) !important;
+  letter-spacing: -3.4px;
+  line-height: .98;
+}
+.lm-welcome-copy p { color: #5c6473; font-size: 16px; line-height: 1.55; max-width: 290px; }
+.lm-welcome-login { position: relative; z-index: 1; }
+.lm-welcome-login .lm-role-card,
+.lm-welcome-login button {
+  background: rgba(255, 255, 255, .88) !important;
+  border-color: rgba(23, 32, 51, .12) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 18px 34px rgba(23, 32, 51, .12), 0 2px 5px rgba(23, 32, 51, .06) !important;
+}
+.lm-welcome-login button:hover {
+  border-color: #e8472a !important;
+  box-shadow: 0 20px 42px rgba(232, 71, 42, .18), 0 3px 8px rgba(23, 32, 51, .08) !important;
+}
+[data-theme="dark"] .lm-welcome-banner { background: #182131 !important; }
+[data-theme="dark"] .lm-welcome-overlay { background: linear-gradient(90deg, rgba(24, 33, 49, .12), transparent 72%) !important; }
+[data-theme="dark"] .lm-welcome-copy,
+[data-theme="dark"] .lm-welcome-copy .lm-welcome-title { color: #f5f7fb !important; }
+[data-theme="dark"] .lm-welcome-copy .lm-welcome-title { -webkit-text-fill-color: #f5f7fb !important; }
+[data-theme="dark"] .lm-welcome-copy p { color: #b5bdcc; }
+[data-theme="dark"] .lm-welcome-login button { background: rgba(22, 28, 45, .92) !important; border-color: rgba(255,255,255,.12) !important; }
+@media (max-width: 860px) {
+  .lm-welcome-banner { min-height: calc(100vh - 120px) !important; }
+  .lm-welcome-content { width: min(calc(100% - 44px), 520px); gap: 28px; }
+  .lm-welcome-copy .lm-welcome-title { font-size: clamp(42px, 12vw, 58px) !important; letter-spacing: -2.3px; }
+  .lm-welcome-copy p { margin-inline: auto; }
+}
+
 /* ── Arc-only login flicker fix ─────────────────────────────
    Arc's compositor flickers on the login screen due to layered
    gradients, gradient-clipped text, large blurred shadows and the
