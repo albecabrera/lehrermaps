@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLang } from '../contexts/LangContext';
 import {
   annualPlanExportUrl,
@@ -7,8 +7,11 @@ import {
   deleteAnnualPlanEntry,
   deleteAnnualPlan,
   duplicateAnnualPlanEntry,
+  createFolder,
   getAnnualPlan,
   getAnnualPlanMaterials,
+  getFolders,
+  uploadFile,
   updateAnnualPlan,
   updateAnnualPlanEntry,
 } from '../lib/api';
@@ -19,6 +22,44 @@ const TYPES = [
   ['school_event', 'Schulveranstaltung'], ['other', 'Sonstiges'],
 ];
 const typeLabel = Object.fromEntries(TYPES);
+const annualPlanningFolderRequests = new Map();
+
+function findAnnualPlanningFolder(folders, rootFolderId) {
+  return folders.find((folder) => (
+    Number(folder.parent_id) === Number(rootFolderId) && folder.name === 'Jahresplanung'
+  ));
+}
+
+async function ensureAnnualPlanningFolder(rootFolder) {
+  const requestKey = String(rootFolder.id);
+  if (!annualPlanningFolderRequests.has(requestKey)) {
+    annualPlanningFolderRequests.set(requestKey, (async () => {
+      const folders = await getFolders();
+      const existing = findAnnualPlanningFolder(folders, rootFolder.id);
+      if (existing) return existing;
+
+      try {
+        return await createFolder({
+          subject: rootFolder.subject,
+          group_name: rootFolder.group_name,
+          name: 'Jahresplanung',
+          parent_id: rootFolder.id,
+        });
+      } catch (error) {
+        // A second tab or user may have created the folder between the lookup
+        // and the request. Re-read before surfacing the original error.
+        const refreshedFolders = await getFolders();
+        const createdElsewhere = findAnnualPlanningFolder(refreshedFolders, rootFolder.id);
+        if (createdElsewhere) return createdElsewhere;
+        throw error;
+      }
+    })().catch((error) => {
+      annualPlanningFolderRequests.delete(requestKey);
+      throw error;
+    }));
+  }
+  return annualPlanningFolderRequests.get(requestKey);
+}
 
 function defaultSchoolYear() {
   const now = new Date();
@@ -55,9 +96,14 @@ export default function AnnualPlanning({ rootFolder, accent }) {
   const [materialQuery, setMaterialQuery] = useState('');
   const [materials, setMaterials] = useState({ files: [], folders: [] });
   const [showMaterials, setShowMaterials] = useState(false);
+  const [uploadingWorksheets, setUploadingWorksheets] = useState(false);
+  const [isWorksheetDropTarget, setIsWorksheetDropTarget] = useState(false);
+  const [worksheetUploadStatus, setWorksheetUploadStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const worksheetInputRef = useRef(null);
+  const worksheetDragDepth = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -76,6 +122,12 @@ export default function AnnualPlanning({ rootFolder, accent }) {
     return () => { active = false; };
   }, [rootFolder.id, materialQuery]);
 
+  useEffect(() => {
+    worksheetDragDepth.current = 0;
+    setIsWorksheetDropTarget(false);
+    setWorksheetUploadStatus('');
+  }, [draft?.id]);
+
   const filteredEntries = useMemo(() => entries.filter((entry) => {
     const typeOk = typeFilter === 'all' || entry.entry_type === typeFilter;
     const monthOk = monthFilter === 'all' || String(entry.entry_date).slice(0, 7) === monthFilter;
@@ -88,6 +140,80 @@ export default function AnnualPlanning({ rootFolder, accent }) {
     ...current,
     [key]: current[key].includes(id) ? current[key].filter((item) => item !== id) : [...current[key], id],
   }));
+
+  const uploadWorksheets = async (selectedFiles) => {
+    const files = [...selectedFiles];
+    if (!files.length || !draft || uploadingWorksheets) return;
+
+    setUploadingWorksheets(true);
+    setError('');
+    setWorksheetUploadStatus(t('annual.worksheet_uploading'));
+    try {
+      const annualPlanningFolder = await ensureAnnualPlanningFolder(rootFolder);
+      const uploaded = [];
+      let uploadError;
+      for (const file of files) {
+        try {
+          uploaded.push(await uploadFile(annualPlanningFolder.id, file));
+        } catch (err) {
+          uploadError = err;
+          break;
+        }
+      }
+      if (!uploaded.length) throw uploadError;
+      const uploadedIds = uploaded.map((file) => file.id);
+      const nextDraft = { ...draft, file_ids: [...new Set([...(draft.file_ids || []), ...uploadedIds])] };
+      setDraft(nextDraft);
+      setMaterials((current) => ({
+        ...current,
+        files: [...uploaded, ...current.files.filter((file) => !uploadedIds.includes(file.id))],
+      }));
+      if (nextDraft.id) {
+        const saved = await updateAnnualPlanEntry(nextDraft.id, { ...nextDraft, end_date: nextDraft.end_date || null });
+        setEntries((current) => current.map((item) => item.id === saved.id ? saved : item));
+        setDraft({ ...saved, end_date: saved.end_date || '', file_ids: saved.file_ids || [], folder_ids: saved.folder_ids || [] });
+      }
+      if (uploadError) {
+        setError(uploadError.response?.data?.error || t('annual.worksheet_upload_partial', { n: uploaded.length }));
+        setWorksheetUploadStatus(t('annual.worksheet_upload_partial', { n: uploaded.length }));
+      } else {
+        setWorksheetUploadStatus(t('annual.worksheet_upload_complete', { n: uploaded.length }));
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || t('annual.worksheet_upload_error'));
+      setWorksheetUploadStatus(t('annual.worksheet_upload_error'));
+    } finally {
+      setUploadingWorksheets(false);
+    }
+  };
+
+  const handleWorksheetFiles = (event) => {
+    const files = event.target.files;
+    event.target.value = '';
+    uploadWorksheets(files || []);
+  };
+
+  const handleWorksheetDragEnter = (event) => {
+    event.preventDefault();
+    worksheetDragDepth.current += 1;
+    setIsWorksheetDropTarget(true);
+  };
+
+  const handleWorksheetDragLeave = (event) => {
+    event.preventDefault();
+    worksheetDragDepth.current -= 1;
+    if (worksheetDragDepth.current <= 0) {
+      worksheetDragDepth.current = 0;
+      setIsWorksheetDropTarget(false);
+    }
+  };
+
+  const handleWorksheetDrop = (event) => {
+    event.preventDefault();
+    worksheetDragDepth.current = 0;
+    setIsWorksheetDropTarget(false);
+    uploadWorksheets(event.dataTransfer.files || []);
+  };
 
   const savePlan = async () => {
     setSaving(true); setError('');
@@ -141,7 +267,7 @@ export default function AnnualPlanning({ rootFolder, accent }) {
         </div>
       </div>
 
-      {error && <div className="lm-annual-no-print" style={errorStyle}>{error}</div>}
+      {error && <div className="lm-annual-no-print" role="alert" style={errorStyle}>{error}</div>}
       {!plan && !loading ? (
         <div className="lm-annual-empty" style={emptyStyle}>
           <div style={{ fontSize: 30 }}>🗓️</div>
@@ -169,12 +295,29 @@ export default function AnnualPlanning({ rootFolder, accent }) {
               <label style={{ ...smallLabel, gridColumn: '1 / -1' }}>{t('annual.notes')}<textarea value={draft.notes || ''} onChange={(event) => updateDraft('notes', event.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} /></label>
             </div>
             <div style={{ marginTop: 10 }}>
-              <button type="button" onClick={() => setShowMaterials((value) => !value)} style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>{t('annual.materials')} ({(draft.file_ids.length + draft.folder_ids.length)})</button>
-              {showMaterials && <div style={{ marginTop: 8, border: '1px solid var(--c-border)', borderRadius: 8, padding: 10, background: 'var(--c-surface)', maxHeight: 180, overflow: 'auto' }}>
-                <input value={materialQuery} onChange={(event) => setMaterialQuery(event.target.value)} placeholder={t('annual.material_search')} style={{ ...inputStyle, marginBottom: 8 }} />
+              <button type="button" onClick={() => setShowMaterials((value) => !value)} aria-expanded={showMaterials} aria-controls="lm-annual-materials-area" style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>{t('annual.materials')} ({(draft.file_ids.length + draft.folder_ids.length)})</button>
+              {showMaterials && <div id="lm-annual-materials-area" style={{ marginTop: 8, border: '1px solid var(--c-border)', borderRadius: 8, padding: 10, background: 'var(--c-surface)', maxHeight: 260, overflow: 'auto' }}>
+                <section aria-labelledby="lm-annual-worksheets-title" aria-busy={uploadingWorksheets}>
+                  <div id="lm-annual-worksheets-title" style={{ ...smallLabel, marginBottom: 6 }}>{t('annual.worksheets')}</div>
+                  <input ref={worksheetInputRef} type="file" multiple disabled={saving || uploadingWorksheets} onChange={handleWorksheetFiles} style={visuallyHidden} aria-label={t('annual.select_worksheets')} />
+                  <div
+                    onDragEnter={handleWorksheetDragEnter}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDragLeave={handleWorksheetDragLeave}
+                    onDrop={handleWorksheetDrop}
+                    style={{ border: `1px dashed ${isWorksheetDropTarget ? accent : 'var(--c-border)'}`, borderRadius: 7, padding: 10, background: isWorksheetDropTarget ? `${accent}12` : 'var(--c-surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}
+                  >
+                    <span style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{t('annual.worksheet_drop')}</span>
+                    <button type="button" disabled={saving || uploadingWorksheets} onClick={() => worksheetInputRef.current?.click()} style={buttonStyle(accent, '#fff')}>{uploadingWorksheets ? t('annual.worksheet_uploading') : t('annual.select_worksheets')}</button>
+                  </div>
+                  <div aria-live="polite" role="status" style={{ color: 'var(--c-text-3)', fontSize: 11, marginTop: 5 }}>{worksheetUploadStatus || t('annual.worksheet_count', { n: draft.file_ids.length })}</div>
+                </section>
+                <div style={{ borderTop: '1px solid var(--c-border)', margin: '10px 0', paddingTop: 10 }}>
+                <input value={materialQuery} onChange={(event) => setMaterialQuery(event.target.value)} aria-label={t('annual.material_search')} placeholder={t('annual.material_search')} style={{ ...inputStyle, marginBottom: 8 }} />
                 {materials.folders.map((folder) => <label key={`folder-${folder.id}`} style={checkStyle}><input type="checkbox" checked={draft.folder_ids.includes(folder.id)} onChange={() => toggleMaterial('folder_ids', folder.id)} /> 📁 {folder.name}</label>)}
                 {materials.files.map((file) => <label key={`file-${file.id}`} style={checkStyle}><input type="checkbox" checked={draft.file_ids.includes(file.id)} onChange={() => toggleMaterial('file_ids', file.id)} /> 📄 {file.original_name}</label>)}
                 {!materials.files.length && !materials.folders.length && <span style={{ color: 'var(--c-text-3)', fontSize: 12 }}>{t('annual.no_materials')}</span>}
+                </div>
               </div>}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}><button type="button" onClick={() => setDraft(null)} style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>{t('cancel')}</button><button type="submit" disabled={saving} style={buttonStyle(accent, '#fff')}>{t('save')}</button></div>
@@ -200,3 +343,4 @@ const buttonStyle = (border, color) => ({ height: 30, padding: '0 10px', border:
 const iconButton = { width: 26, height: 26, border: '1px solid var(--c-border)', borderRadius: 5, background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer' };
 const emptyStyle = { minHeight: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px dashed var(--c-border)', borderRadius: 12, color: 'var(--c-text-2)', textAlign: 'center' };
 const errorStyle = { padding: '9px 12px', borderRadius: 7, background: 'var(--c-danger-bg)', color: 'var(--c-danger-text)', fontSize: 12, marginBottom: 10 };
+const visuallyHidden = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 };
