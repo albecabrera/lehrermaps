@@ -1,4 +1,4 @@
-import{N as h,y as D,H as e,g as L,a2 as R,n as B}from"./index-BEQvy8Ml.js";const N=["Spanisch","Informatik","Sport","Klassenleitung"],H=["5a","5b","5c","5d","6a","6b","6c","6d","7a","7b","7c","8a","8b","8c","9a","9b","9c","10a","10b","10c","Q1","Q2"],A=`
+import{N as h,y as D,H as e,g as L,a2 as R,n as B}from"./index-DWvLdzjC.js";const N=["Spanisch","Informatik","Sport","Klassenleitung"],H=["5a","5b","5c","5d","6a","6b","6c","6d","7a","7b","7c","8a","8b","8c","9a","9b","9c","10a","10b","10c","Q1","Q2"],A=`
   @keyframes eb-boardIn   { from{opacity:0;transform:scale(.98)} to{opacity:1;transform:scale(1)} }
   @keyframes eb-cardIn    { from{opacity:0;transform:translateY(24px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
   @keyframes eb-pulse     { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.15)} }

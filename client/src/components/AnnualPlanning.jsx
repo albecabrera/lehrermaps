@@ -299,7 +299,7 @@ export default function AnnualPlanning({ rootFolder, accent }) {
               {showMaterials && <div id="lm-annual-materials-area" style={{ marginTop: 8, border: '1px solid var(--c-border)', borderRadius: 8, padding: 10, background: 'var(--c-surface)', maxHeight: 260, overflow: 'auto' }}>
                 <section aria-labelledby="lm-annual-worksheets-title" aria-busy={uploadingWorksheets}>
                   <div id="lm-annual-worksheets-title" style={{ ...smallLabel, marginBottom: 6 }}>{t('annual.worksheets')}</div>
-                  <input ref={worksheetInputRef} type="file" multiple disabled={saving || uploadingWorksheets} onChange={handleWorksheetFiles} style={visuallyHidden} aria-label={t('annual.select_worksheets')} />
+                  <input id={`annual-worksheet-input-${rootFolder.id}`} ref={worksheetInputRef} type="file" multiple disabled={saving || uploadingWorksheets} onChange={handleWorksheetFiles} style={visuallyHidden} aria-label={t('annual.select_worksheets')} />
                   <div
                     onDragEnter={handleWorksheetDragEnter}
                     onDragOver={(event) => event.preventDefault()}
@@ -308,7 +308,7 @@ export default function AnnualPlanning({ rootFolder, accent }) {
                     style={{ border: `1px dashed ${isWorksheetDropTarget ? accent : 'var(--c-border)'}`, borderRadius: 7, padding: 10, background: isWorksheetDropTarget ? `${accent}12` : 'var(--c-surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}
                   >
                     <span style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{t('annual.worksheet_drop')}</span>
-                    <button type="button" disabled={saving || uploadingWorksheets} onClick={() => worksheetInputRef.current?.click()} style={buttonStyle(accent, '#fff')}>{uploadingWorksheets ? t('annual.worksheet_uploading') : t('annual.select_worksheets')}</button>
+                    <label htmlFor={`annual-worksheet-input-${rootFolder.id}`} aria-disabled={saving || uploadingWorksheets} style={{ ...buttonStyle(accent, '#fff'), opacity: saving || uploadingWorksheets ? .55 : 1, cursor: saving || uploadingWorksheets ? 'not-allowed' : 'pointer', pointerEvents: saving || uploadingWorksheets ? 'none' : 'auto' }}>{uploadingWorksheets ? t('annual.worksheet_uploading') : t('annual.select_worksheets')}</label>
                   </div>
                   <div aria-live="polite" role="status" style={{ color: 'var(--c-text-3)', fontSize: 11, marginTop: 5 }}>{worksheetUploadStatus || t('annual.worksheet_count', { n: draft.file_ids.length })}</div>
                 </section>
