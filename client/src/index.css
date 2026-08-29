@@ -902,6 +902,27 @@ button:active {
 .lm-annual-type[data-type="holiday"] { color: #047857; background: #D1FAE5; }
 .lm-annual-type[data-type="presentation"] { color: #7C3AED; background: #EDE9FE; }
 .lm-annual-type[data-type="school_event"] { color: #0369A1; background: #E0F2FE; }
+.lm-annual-table tbody tr, .lm-annual-card { cursor: pointer; }
+.lm-annual-table tbody tr:focus-visible, .lm-annual-card:focus-visible { outline: 2px solid var(--c-focus); outline-offset: -2px; }
+.lm-annual-table tbody tr:hover, .lm-annual-card:hover { background: var(--c-hover); }
+.lm-annual-detail { position: fixed; inset: 0; z-index: 1800; display: grid; place-items: center; padding: 20px; background: var(--c-overlay); backdrop-filter: blur(5px); }
+.lm-annual-detail-card { width: min(680px, 100%); max-height: min(720px, calc(100vh - 40px)); overflow: auto; border: 1px solid var(--c-border); border-radius: 14px; background: var(--c-surface); color: var(--c-text); box-shadow: var(--c-shadow-modal); }
+.lm-annual-detail-header { display: flex; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--c-border); }
+.lm-annual-detail-header h2 { margin: 4px 0 8px; font-size: 20px; line-height: 1.25; }
+.lm-annual-detail-date { color: var(--c-text-3); font-size: 12px; }
+.lm-annual-detail-close { width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--c-text-2); font-size: 24px; cursor: pointer; }
+.lm-annual-detail-close:hover { background: var(--c-hover); color: var(--c-text); }
+.lm-annual-detail-section { padding: 16px 20px; border-bottom: 1px solid var(--c-border-soft); }
+.lm-annual-detail-section h3 { margin: 0 0 8px; color: var(--c-text-2); font-size: 11px; letter-spacing: .5px; text-transform: uppercase; }
+.lm-annual-detail-section p { margin: 0; white-space: pre-wrap; color: var(--c-text); font-size: 13px; line-height: 1.55; }
+.lm-annual-detail-muted { color: var(--c-text-3) !important; }
+.lm-annual-material-list { display: grid; gap: 7px; }
+.lm-annual-material { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-surface-2); font-size: 13px; }
+.lm-annual-material-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lm-annual-material-actions { display: flex; flex-shrink: 0; gap: 10px; font-size: 12px; }
+.lm-annual-material-actions a { color: var(--c-focus); text-decoration: none; }
+.lm-annual-material-actions a:hover { text-decoration: underline; }
+.lm-annual-detail-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; }
 .lm-annual-cards { display: none; }
 @media (max-width: 860px) {
   .lm-annual-table-wrap { display: none; }
@@ -909,6 +930,9 @@ button:active {
   .lm-annual-card { display: grid; gap: 7px; padding: 12px; border: 1px solid var(--c-border); border-radius: 9px; background: var(--c-surface); }
   .lm-annual-card > div:first-child { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .lm-annual-card p { margin: 0; color: var(--c-text-3); font-size: 12px; }
+  .lm-annual-detail { align-items: end; padding: 0; }
+  .lm-annual-detail-card { max-height: 82vh; border-radius: 16px 16px 0 0; border-bottom: 0; }
+  .lm-annual-material { align-items: flex-start; flex-direction: column; gap: 7px; }
   .lm-annual-editor label { grid-column: auto !important; }
 }
 @media print {

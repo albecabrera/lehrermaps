@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLang } from '../contexts/LangContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import {
   annualPlanExportUrl,
   createAnnualPlan,
@@ -12,6 +13,8 @@ import {
   getAnnualPlanMaterials,
   getFolders,
   uploadFile,
+  viewFile,
+  downloadFile,
   updateAnnualPlan,
   updateAnnualPlanEntry,
 } from '../lib/api';
@@ -95,6 +98,8 @@ export default function AnnualPlanning({ rootFolder, accent }) {
   const [monthFilter, setMonthFilter] = useState('all');
   const [materialQuery, setMaterialQuery] = useState('');
   const [materials, setMaterials] = useState({ files: [], folders: [] });
+  const [materialCatalog, setMaterialCatalog] = useState([]);
+  const [selectedEntry, setSelectedEntry] = useState(null);
   const [showMaterials, setShowMaterials] = useState(false);
   const [uploadingWorksheets, setUploadingWorksheets] = useState(false);
   const [isWorksheetDropTarget, setIsWorksheetDropTarget] = useState(false);
@@ -104,6 +109,8 @@ export default function AnnualPlanning({ rootFolder, accent }) {
   const [error, setError] = useState('');
   const worksheetInputRef = useRef(null);
   const worksheetDragDepth = useRef(0);
+
+  useEscapeKey(!!selectedEntry, () => setSelectedEntry(null));
 
   useEffect(() => {
     let active = true;
@@ -118,7 +125,11 @@ export default function AnnualPlanning({ rootFolder, accent }) {
 
   useEffect(() => {
     let active = true;
-    getAnnualPlanMaterials(rootFolder.id, materialQuery).then((data) => active && setMaterials(data)).catch(() => {});
+    getAnnualPlanMaterials(rootFolder.id, materialQuery).then((data) => {
+      if (!active) return;
+      setMaterials(data);
+      if (!materialQuery) setMaterialCatalog(data.files || []);
+    }).catch(() => {});
     return () => { active = false; };
   }, [rootFolder.id, materialQuery]);
 
@@ -168,6 +179,7 @@ export default function AnnualPlanning({ rootFolder, accent }) {
         ...current,
         files: [...uploaded, ...current.files.filter((file) => !uploadedIds.includes(file.id))],
       }));
+      setMaterialCatalog((current) => [...uploaded, ...current.filter((file) => !uploadedIds.includes(file.id))]);
       if (nextDraft.id) {
         const saved = await updateAnnualPlanEntry(nextDraft.id, { ...nextDraft, end_date: nextDraft.end_date || null });
         setEntries((current) => current.map((item) => item.id === saved.id ? saved : item));
@@ -248,6 +260,12 @@ export default function AnnualPlanning({ rootFolder, accent }) {
     setEntries((current) => [...current, copy]);
   };
 
+  const materialsForEntry = (entry) => (entry?.file_ids || []).map((id) => (
+    materialCatalog.find((file) => Number(file.id) === Number(id))
+      || materials.files.find((file) => Number(file.id) === Number(id))
+      || { id, original_name: `Datei #${id}` }
+  ));
+
   return (
     <div className="lm-annual-planning lm-annual-print" style={{ padding: '16px 20px 30px', color: 'var(--c-text)', minHeight: '100%', overflow: 'auto' }}>
       <div className="lm-annual-no-print" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -323,13 +341,34 @@ export default function AnnualPlanning({ rootFolder, accent }) {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}><button type="button" onClick={() => setDraft(null)} style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>{t('cancel')}</button><button type="submit" disabled={saving} style={buttonStyle(accent, '#fff')}>{t('save')}</button></div>
           </form>}
 
+          {selectedEntry && <div className="lm-annual-detail" role="dialog" aria-modal="true" aria-labelledby="lm-annual-detail-title">
+            <div className="lm-annual-detail-card">
+              <div className="lm-annual-detail-header">
+                <div>
+                  <div className="lm-annual-detail-date">{formatDate(selectedEntry.entry_date)}{selectedEntry.end_date ? ` – ${formatDate(selectedEntry.end_date)}` : ''}</div>
+                  <h2 id="lm-annual-detail-title">{selectedEntry.title}</h2>
+                  <span className="lm-annual-type" data-type={selectedEntry.entry_type}>{typeLabel[selectedEntry.entry_type]}</span>
+                </div>
+                <button type="button" className="lm-annual-detail-close" onClick={() => setSelectedEntry(null)} aria-label={t('annual.detail_close')}>×</button>
+              </div>
+              {selectedEntry.notes && <section className="lm-annual-detail-section"><h3>{t('annual.content')}</h3><p>{selectedEntry.notes}</p></section>}
+              <section className="lm-annual-detail-section"><h3>{t('annual.materials')}</h3>
+                {materialsForEntry(selectedEntry).length ? <div className="lm-annual-material-list">{materialsForEntry(selectedEntry).map((file) => <div className="lm-annual-material" key={file.id}>
+                  <span className="lm-annual-material-name">📄 {file.original_name}</span>
+                  <span className="lm-annual-material-actions"><a href={viewFile(file.id)} target="_blank" rel="noreferrer">{t('annual.open_material')}</a><a href={downloadFile(file.id)} target="_blank" rel="noreferrer">{t('download')}</a></span>
+                </div>)}</div> : <p className="lm-annual-detail-muted">{t('annual.no_materials')}</p>}
+              </section>
+              <div className="lm-annual-detail-footer"><button type="button" onClick={() => { setDraft({ ...selectedEntry, end_date: selectedEntry.end_date || '', file_ids: selectedEntry.file_ids || [], folder_ids: selectedEntry.folder_ids || [] }); setSelectedEntry(null); setShowMaterials(true); }} style={buttonStyle(accent, '#fff')}>{t('annual.edit')}</button><button type="button" onClick={() => setSelectedEntry(null)} style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>{t('cancel')}</button></div>
+            </div>
+          </div>}
+
           <div className="lm-annual-table-wrap">
             <table className="lm-annual-table"><thead><tr><th>{t('annual.date')}</th><th>{t('annual.type')}</th><th>{t('annual.lesson')}</th><th>{t('annual.title_field')}</th><th>{t('annual.materials')}</th><th className="lm-annual-no-print" /></tr></thead><tbody>
-              {filteredEntries.map((entry) => <tr key={entry.id}><td>{formatDate(entry.entry_date)}{entry.end_date && <><br /><span style={{ color: 'var(--c-text-3)', fontSize: 11 }}>– {formatDate(entry.end_date)}</span></>}</td><td><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span></td><td>{entry.lesson_number || '—'}</td><td><strong>{entry.title}</strong>{entry.notes && <div style={{ color: 'var(--c-text-3)', fontSize: 11, marginTop: 3 }}>{entry.notes}</div>}</td><td>{entry.file_ids?.length || entry.folder_ids?.length ? <span title="Verknüpfte Materialien">📎 {(entry.file_ids?.length || 0) + (entry.folder_ids?.length || 0)}</span> : '—'}</td><td className="lm-annual-no-print"><div style={{ display: 'flex', gap: 5 }}><button type="button" title="Eintrag bearbeiten" aria-label="Eintrag bearbeiten" onClick={() => setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] })} style={iconButton}>✎</button><button type="button" title="Eintrag duplizieren" aria-label="Eintrag duplizieren" onClick={() => duplicateEntry(entry)} style={iconButton}>⧉</button><button type="button" title="Eintrag löschen" aria-label="Eintrag löschen" onClick={() => removeEntry(entry)} style={{ ...iconButton, color: '#DC2626' }}>×</button></div></td></tr>)}
+              {filteredEntries.map((entry) => <tr key={entry.id} onClick={() => setSelectedEntry(entry)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }} tabIndex="0" title={t('annual.open_detail')}><td>{formatDate(entry.entry_date)}{entry.end_date && <><br /><span style={{ color: 'var(--c-text-3)', fontSize: 11 }}>– {formatDate(entry.end_date)}</span></>}</td><td><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span></td><td>{entry.lesson_number || '—'}</td><td><strong>{entry.title}</strong>{entry.notes && <div style={{ color: 'var(--c-text-3)', fontSize: 11, marginTop: 3 }}>{entry.notes}</div>}</td><td>{entry.file_ids?.length || entry.folder_ids?.length ? <span title="Verknüpfte Materialien">📎 {(entry.file_ids?.length || 0) + (entry.folder_ids?.length || 0)}</span> : '—'}</td><td className="lm-annual-no-print"><div style={{ display: 'flex', gap: 5 }}><button type="button" title="Eintrag bearbeiten" aria-label="Eintrag bearbeiten" onClick={(event) => { event.stopPropagation(); setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] }); }} style={iconButton}>✎</button><button type="button" title="Eintrag duplizieren" aria-label="Eintrag duplizieren" onClick={(event) => { event.stopPropagation(); duplicateEntry(entry); }} style={iconButton}>⧉</button><button type="button" title="Eintrag löschen" aria-label="Eintrag löschen" onClick={(event) => { event.stopPropagation(); removeEntry(entry); }} style={{ ...iconButton, color: '#DC2626' }}>×</button></div></td></tr>)}
               {!filteredEntries.length && <tr><td colSpan="6" style={{ padding: 34, textAlign: 'center', color: 'var(--c-text-3)' }}>{t('annual.no_entries')}</td></tr>}
             </tbody></table>
           </div>
-          <div className="lm-annual-cards">{filteredEntries.map((entry) => <article key={entry.id} className="lm-annual-card"><div><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span><strong>{entry.title}</strong></div><div style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{formatDate(entry.entry_date)}{entry.end_date ? ` – ${formatDate(entry.end_date)}` : ''} · {entry.lesson_number || t('annual.no_lesson')}</div>{entry.notes && <p>{entry.notes}</p>}<div className="lm-annual-no-print" style={{ display: 'flex', gap: 6 }}><button type="button" title="Eintrag bearbeiten" aria-label="Eintrag bearbeiten" onClick={() => setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] })} style={iconButton}>✎</button><button type="button" title="Eintrag duplizieren" aria-label="Eintrag duplizieren" onClick={() => duplicateEntry(entry)} style={iconButton}>⧉</button><button type="button" title="Eintrag löschen" aria-label="Eintrag löschen" onClick={() => removeEntry(entry)} style={{ ...iconButton, color: '#DC2626' }}>×</button></div></article>)}</div>
+          <div className="lm-annual-cards">{filteredEntries.map((entry) => <article key={entry.id} className="lm-annual-card" onClick={() => setSelectedEntry(entry)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }} tabIndex="0" title={t('annual.open_detail')}><div><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span><strong>{entry.title}</strong></div><div style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{formatDate(entry.entry_date)}{entry.end_date ? ` – ${formatDate(entry.end_date)}` : ''} · {entry.lesson_number || t('annual.no_lesson')}</div>{entry.notes && <p>{entry.notes}</p>}<div className="lm-annual-no-print" style={{ display: 'flex', gap: 6 }}><button type="button" title="Eintrag bearbeiten" aria-label="Eintrag bearbeiten" onClick={(event) => { event.stopPropagation(); setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] }); }} style={iconButton}>✎</button><button type="button" title="Eintrag duplizieren" aria-label="Eintrag duplizieren" onClick={(event) => { event.stopPropagation(); duplicateEntry(entry); }} style={iconButton}>⧉</button><button type="button" title="Eintrag löschen" aria-label="Eintrag löschen" onClick={(event) => { event.stopPropagation(); removeEntry(entry); }} style={{ ...iconButton, color: '#DC2626' }}>×</button></div></article>)}</div>
         </>
       )}
     </div>
