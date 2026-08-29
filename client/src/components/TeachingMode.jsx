@@ -24,7 +24,7 @@ const makePlanningDraft = (folder) => ({
   phases: DEFAULT_PHASES.map(([title, minutes]) => ({ title, minutes, student_instruction: '' })),
 });
 
-export default function TeachingMode({ folder, files, links, accent, t, onClose, startWithPlanner = false }) {
+export default function TeachingMode({ folder, files, links, accent, t, onClose, startWithPlanner = false, initialSessionId = null }) {
   const [session, setSession] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [remaining, setRemaining] = useState(300);
@@ -66,6 +66,10 @@ export default function TeachingMode({ folder, files, links, accent, t, onClose,
     }
     const storageKey = `lm_lesson_session_${folder.id}`;
     const restore = async () => {
+      if (initialSessionId) {
+        const existing = await getLessonSession(initialSessionId).catch(() => null);
+        if (existing) { window.localStorage.setItem(storageKey, String(existing.id)); setSession(existing); setPlanning(false); setRemaining(existing.phases?.[0]?.duration_seconds || 300); setDurationDraft(timeParts(existing.phases?.[0]?.duration_seconds || 300)); return; }
+      }
       const storedId = window.localStorage.getItem(storageKey);
       if (storedId) {
         const existing = await getLessonSession(storedId).catch(() => null);
@@ -81,7 +85,7 @@ export default function TeachingMode({ folder, files, links, accent, t, onClose,
       setPlanning(true);
     };
     restore().catch(() => {});
-  }, [folder.id, folder.name, folder.subject, startWithPlanner]);
+  }, [folder.id, folder.name, folder.subject, startWithPlanner, initialSessionId]);
 
   const phase = session?.phases?.[activeIndex] || null;
   const visibleFiles = useMemo(() => files.filter((file) => showSolutions || (file.material_role || 'other') !== 'solution'), [files, showSolutions]);

@@ -112,6 +112,7 @@ export const createAnnualPlanEntry = (planId, data) => api.post(`/plans/${planId
 export const updateAnnualPlanEntry = (id, data) => api.patch(`/plans/entries/${id}`, data).then((r) => r.data);
 export const duplicateAnnualPlanEntry = (id) => api.post(`/plans/entries/${id}/duplicate`).then((r) => r.data);
 export const deleteAnnualPlanEntry = (id) => api.delete(`/plans/entries/${id}`);
+export const startAnnualPlanLessonSession = (id) => api.post(`/plans/entries/${id}/lesson-session`).then((r) => r.data);
 export const annualPlanExportUrl = (id) => withToken(`/api/plans/${id}/export.csv`);
 
 export const searchGlobal = (q, fileOffset = 0, folderOffset = 0, linkOffset = 0) =>

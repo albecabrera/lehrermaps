@@ -64,7 +64,7 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS document_annotation_history (id INTEGER PRIMARY KEY, annotation_id INTEGER NOT NULL, file_id INTEGER NOT NULL, user_id INTEGER NOT NULL, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, action TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS exams (id INTEGER PRIMARY KEY, title TEXT NOT NULL, class_name TEXT NOT NULL, subject TEXT, exam_date TEXT NOT NULL, exam_time TEXT, notes TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS annual_plans (id INTEGER PRIMARY KEY, root_folder_id INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE, school_year TEXT NOT NULL, start_date TEXT, end_date TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(root_folder_id, school_year))`,
-  `CREATE TABLE IF NOT EXISTS annual_plan_entries (id INTEGER PRIMARY KEY, plan_id INTEGER NOT NULL REFERENCES annual_plans(id) ON DELETE CASCADE, entry_date TEXT NOT NULL, end_date TEXT, entry_type TEXT NOT NULL DEFAULT 'lesson', lesson_number TEXT, title TEXT NOT NULL, notes TEXT, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS annual_plan_entries (id INTEGER PRIMARY KEY, plan_id INTEGER NOT NULL REFERENCES annual_plans(id) ON DELETE CASCADE, entry_date TEXT NOT NULL, end_date TEXT, entry_type TEXT NOT NULL DEFAULT 'lesson', lesson_number TEXT, title TEXT NOT NULL, notes TEXT, sort_order INTEGER NOT NULL DEFAULT 0, lesson_session_id INTEGER REFERENCES lesson_sessions(id) ON DELETE SET NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS annual_plan_materials (id INTEGER PRIMARY KEY, entry_id INTEGER NOT NULL REFERENCES annual_plan_entries(id) ON DELETE CASCADE, file_id INTEGER REFERENCES files(id) ON DELETE CASCADE, folder_id INTEGER REFERENCES folders(id) ON DELETE CASCADE, UNIQUE(entry_id, file_id, folder_id))`,
   `CREATE TABLE IF NOT EXISTS lesson_sessions (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL DEFAULT 1, folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL, title TEXT NOT NULL, lesson_date TEXT NOT NULL, class_name TEXT, subject TEXT, learning_goal TEXT, teacher_notes TEXT, status TEXT NOT NULL DEFAULT 'draft', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS lesson_phases (id INTEGER PRIMARY KEY, lesson_session_id INTEGER NOT NULL REFERENCES lesson_sessions(id) ON DELETE CASCADE, position INTEGER NOT NULL DEFAULT 0, title TEXT NOT NULL, duration_seconds INTEGER NOT NULL DEFAULT 300, description TEXT, teacher_notes TEXT, student_instruction TEXT, student_responses TEXT, status TEXT NOT NULL DEFAULT 'pending', timer_state TEXT NOT NULL DEFAULT 'idle', timer_started_at TEXT, timer_remaining_seconds INTEGER, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
@@ -76,6 +76,12 @@ const schema = [
 
 export async function initSchema() {
   for (const statement of schema) database.exec(statement);
+  // SQLite CREATE TABLE does not evolve existing installations. Keep this
+  // migration additive so annual plans made before Unterrichtszentrale work.
+  const entryColumns = database.prepare('PRAGMA table_info(annual_plan_entries)').all();
+  if (!entryColumns.some((column) => column.name === 'lesson_session_id')) {
+    database.exec('ALTER TABLE annual_plan_entries ADD COLUMN lesson_session_id INTEGER REFERENCES lesson_sessions(id) ON DELETE SET NULL');
+  }
   database.exec(`
     CREATE INDEX IF NOT EXISTS folders_subject_group_parent_order ON folders(subject, group_name, parent_id, sort_order);
     CREATE INDEX IF NOT EXISTS files_folder_current_uploaded ON files(folder_id, is_current_version, uploaded_at);
@@ -85,6 +91,7 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS document_annotation_owner ON document_annotations(file_id, user_id, page_number);
     CREATE INDEX IF NOT EXISTS document_annotation_history_owner ON document_annotation_history(file_id, user_id, created_at);
     CREATE INDEX IF NOT EXISTS annual_plan_entries_plan_date ON annual_plan_entries(plan_id, entry_date, sort_order);
+    CREATE UNIQUE INDEX IF NOT EXISTS annual_plan_entries_lesson_session ON annual_plan_entries(lesson_session_id) WHERE lesson_session_id IS NOT NULL;
     CREATE INDEX IF NOT EXISTS lesson_sessions_user_date ON lesson_sessions(user_id, lesson_date, updated_at);
     CREATE INDEX IF NOT EXISTS lesson_phases_session_position ON lesson_phases(lesson_session_id, position);
     CREATE INDEX IF NOT EXISTS lesson_elements_canvas_layer ON lesson_phase_elements(canvas_id, layer, id);

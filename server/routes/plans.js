@@ -40,10 +40,18 @@ async function getPlan(planId) {
 }
 
 async function getEntries(planId) {
-  const [entries] = await pool.execute(
-    'SELECT * FROM annual_plan_entries WHERE plan_id = ? ORDER BY entry_date ASC, sort_order ASC, id ASC',
-    [planId]
-  );
+  const [entries] = await pool.execute(`
+    SELECT e.*, s.status AS lesson_session_status,
+      COUNT(DISTINCT p.id) AS lesson_phase_count,
+      COUNT(DISTINCT lpm.id) AS lesson_material_count
+    FROM annual_plan_entries e
+    LEFT JOIN lesson_sessions s ON s.id = e.lesson_session_id
+    LEFT JOIN lesson_phases p ON p.lesson_session_id = s.id
+    LEFT JOIN lesson_phase_materials lpm ON lpm.phase_id = p.id
+    WHERE e.plan_id = ?
+    GROUP BY e.id
+    ORDER BY e.entry_date ASC, e.sort_order ASC, e.id ASC
+  `, [planId]);
   if (!entries.length) return [];
   const ids = entries.map((entry) => entry.id);
   const placeholders = ids.map(() => '?').join(',');
@@ -51,13 +59,28 @@ async function getEntries(planId) {
     `SELECT entry_id, file_id, folder_id FROM annual_plan_materials WHERE entry_id IN (${placeholders})`,
     ids
   );
-  const byEntry = new Map(entries.map((entry) => [entry.id, { ...entry, file_ids: [], folder_ids: [] }]));
+  const byEntry = new Map(entries.map((entry) => [entry.id, {
+    ...entry,
+    lesson_session: entry.lesson_session_id ? {
+      id: entry.lesson_session_id,
+      status: entry.lesson_session_status,
+      phase_count: Number(entry.lesson_phase_count || 0),
+      material_count: Number(entry.lesson_material_count || 0),
+    } : null,
+    file_ids: [], folder_ids: [],
+  }]));
   for (const material of materials) {
     const entry = byEntry.get(material.entry_id);
     if (material.file_id) entry.file_ids.push(material.file_id);
     if (material.folder_id) entry.folder_ids.push(material.folder_id);
   }
   return [...byEntry.values()];
+}
+
+async function getEntry(entryId) {
+  const [rows] = await pool.execute('SELECT plan_id FROM annual_plan_entries WHERE id = ?', [entryId]);
+  if (!rows.length) return null;
+  return (await getEntries(rows[0].plan_id)).find((entry) => Number(entry.id) === Number(entryId)) || null;
 }
 
 async function replaceMaterials(connection, entryId, body) {
@@ -205,6 +228,68 @@ router.patch('/entries/:id', teacherOnly, async (req, res) => {
       res.json(entries.find((entry) => entry.id === Number(req.params.id)));
     } catch (error) { await connection.rollback(); throw error; } finally { connection.release(); }
   } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+router.post('/entries/:id/lesson-session', teacherOnly, async (req, res) => {
+  const userId = req.user?.id || 1;
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.execute(`
+      SELECT e.*, p.root_folder_id, f.subject, f.group_name
+      FROM annual_plan_entries e
+      JOIN annual_plans p ON p.id = e.plan_id
+      JOIN folders f ON f.id = p.root_folder_id
+      WHERE e.id = ?
+    `, [req.params.id]);
+    const entry = rows[0];
+    if (!entry) { await connection.rollback(); return res.status(404).json({ error: 'Planungseintrag nicht gefunden' }); }
+    if (entry.entry_type !== 'lesson') { await connection.rollback(); return res.status(400).json({ error: 'Nur Unterrichtseinträge können gestartet werden' }); }
+
+    let sessionId = entry.lesson_session_id;
+    if (sessionId) {
+      const [existing] = await connection.execute('SELECT id FROM lesson_sessions WHERE id = ? AND user_id = ?', [sessionId, userId]);
+      if (!existing.length) sessionId = null;
+    }
+    if (!sessionId) {
+      const [created] = await connection.execute(
+        `INSERT INTO lesson_sessions (user_id, folder_id, title, lesson_date, class_name, subject, learning_goal, teacher_notes, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
+        [userId, entry.root_folder_id, entry.title, entry.entry_date, entry.group_name || null, entry.subject || null, entry.notes || null, entry.notes || null]
+      );
+      sessionId = created.insertId;
+      const phaseDefinitions = [
+        ['Einstieg', 300], ['Erarbeitung', 900], ['Partnerarbeit', 600],
+        ['Sicherung', 600], ['Abschluss', 300],
+      ];
+      let firstPhaseId;
+      for (const [position, [title, duration]] of phaseDefinitions.entries()) {
+        const [phase] = await connection.execute(
+          `INSERT INTO lesson_phases (lesson_session_id, position, title, duration_seconds, description, teacher_notes, student_instruction)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [sessionId, position, title, duration, position === 0 ? entry.notes || null : null, position === 0 ? entry.notes || null : null, position === 0 ? entry.notes || null : null]
+        );
+        if (position === 0) firstPhaseId = phase.insertId;
+      }
+      const [materials] = await connection.execute('SELECT file_id, folder_id FROM annual_plan_materials WHERE entry_id = ?', [entry.id]);
+      for (const material of materials) {
+        await connection.execute(
+          `INSERT OR IGNORE INTO lesson_phase_materials (phase_id, file_id, folder_id, visibility, position) VALUES (?, ?, ?, 'private', ?)`,
+          [firstPhaseId, material.file_id || null, material.folder_id || null, 0]
+        );
+      }
+      await connection.execute('UPDATE annual_plan_entries SET lesson_session_id = ? WHERE id = ? AND lesson_session_id IS NULL', [sessionId, entry.id]);
+      const [linked] = await connection.execute('SELECT lesson_session_id FROM annual_plan_entries WHERE id = ?', [entry.id]);
+      sessionId = linked[0].lesson_session_id;
+    }
+    await connection.commit();
+    const [sessions] = await pool.execute('SELECT * FROM lesson_sessions WHERE id = ? AND user_id = ?', [sessionId, userId]);
+    const entryWithSession = await getEntry(entry.id);
+    res.status(200).json({ session: sessions[0], entry: entryWithSession });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: error.message });
+  } finally { connection.release(); }
 });
 
 router.post('/entries/:id/duplicate', teacherOnly, async (req, res) => {

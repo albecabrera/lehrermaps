@@ -17,6 +17,7 @@ import {
   downloadFile,
   updateAnnualPlan,
   updateAnnualPlanEntry,
+  startAnnualPlanLessonSession,
 } from '../lib/api';
 
 const TYPES = [
@@ -87,11 +88,12 @@ function formatDate(value) {
   return new Date(`${value}T00:00:00`).toLocaleDateString('de-DE');
 }
 
-export default function AnnualPlanning({ rootFolder, accent }) {
+export default function AnnualPlanning({ rootFolder, accent, onOpenLesson }) {
   const { t } = useLang();
   const [schoolYear, setSchoolYear] = useState(defaultSchoolYear);
   const [plan, setPlan] = useState(null);
   const [entries, setEntries] = useState([]);
+  const [startingEntryId, setStartingEntryId] = useState(null);
   const [meta, setMeta] = useState({ start_date: '', end_date: '' });
   const [draft, setDraft] = useState(null);
   const [typeFilter, setTypeFilter] = useState('all');
@@ -260,6 +262,26 @@ export default function AnnualPlanning({ rootFolder, accent }) {
     setEntries((current) => [...current, copy]);
   };
 
+  const startLesson = async (entry) => {
+    setStartingEntryId(entry.id);
+    setError('');
+    try {
+      const result = await startAnnualPlanLessonSession(entry.id);
+      if (result.entry) setEntries((current) => current.map((item) => item.id === result.entry.id ? result.entry : item));
+      onOpenLesson?.(result.session);
+    } catch (err) {
+      setError(err.response?.data?.error || err.message);
+    } finally { setStartingEntryId(null); }
+  };
+
+  const lessonSummary = (entry) => {
+    if (entry.entry_type !== 'lesson') return null;
+    const session = entry.lesson_session;
+    return session
+      ? `${session.status || 'draft'} · ${session.phase_count || 0} Phasen · ${session.material_count || 0} Materialien`
+      : 'Noch nicht gestartet';
+  };
+
   const materialsForEntry = (entry) => (entry?.file_ids || []).map((id) => (
     materialCatalog.find((file) => Number(file.id) === Number(id))
       || materials.files.find((file) => Number(file.id) === Number(id))
@@ -352,6 +374,7 @@ export default function AnnualPlanning({ rootFolder, accent }) {
                 <button type="button" className="lm-annual-detail-close" onClick={() => setSelectedEntry(null)} aria-label={t('annual.detail_close')}>×</button>
               </div>
               {selectedEntry.notes && <section className="lm-annual-detail-section"><h3>{t('annual.content')}</h3><p>{selectedEntry.notes}</p></section>}
+              {selectedEntry.entry_type === 'lesson' && <section className="lm-annual-detail-section"><h3>Unterrichtszentrale</h3><p className="lm-annual-detail-muted">{lessonSummary(selectedEntry)}</p><button type="button" disabled={startingEntryId === selectedEntry.id} onClick={() => startLesson(selectedEntry)} style={buttonStyle(accent, '#fff')}>{startingEntryId === selectedEntry.id ? 'Wird geöffnet …' : selectedEntry.lesson_session ? 'Fortsetzen' : 'Starten'}</button></section>}
               <section className="lm-annual-detail-section"><h3>{t('annual.materials')}</h3>
                 {materialsForEntry(selectedEntry).length ? <div className="lm-annual-material-list">{materialsForEntry(selectedEntry).map((file) => <div className="lm-annual-material" key={file.id}>
                   <span className="lm-annual-material-name">📄 {file.original_name}</span>
@@ -364,11 +387,11 @@ export default function AnnualPlanning({ rootFolder, accent }) {
 
           <div className="lm-annual-table-wrap">
             <table className="lm-annual-table"><thead><tr><th>{t('annual.date')}</th><th>{t('annual.type')}</th><th>{t('annual.lesson')}</th><th>{t('annual.title_field')}</th><th>{t('annual.materials')}</th><th className="lm-annual-no-print" /></tr></thead><tbody>
-              {filteredEntries.map((entry) => <tr key={entry.id} onClick={() => setSelectedEntry(entry)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }} tabIndex="0" title={t('annual.open_detail')}><td>{formatDate(entry.entry_date)}{entry.end_date && <><br /><span style={{ color: 'var(--c-text-3)', fontSize: 11 }}>– {formatDate(entry.end_date)}</span></>}</td><td><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span></td><td>{entry.lesson_number || '—'}</td><td><strong>{entry.title}</strong>{entry.notes && <div style={{ color: 'var(--c-text-3)', fontSize: 11, marginTop: 3 }}>{entry.notes}</div>}</td><td>{entry.file_ids?.length || entry.folder_ids?.length ? <span title="Verknüpfte Materialien">📎 {(entry.file_ids?.length || 0) + (entry.folder_ids?.length || 0)}</span> : '—'}</td><td className="lm-annual-no-print"><div style={{ display: 'flex', gap: 5 }}><button type="button" title="Eintrag bearbeiten" aria-label="Eintrag bearbeiten" onClick={(event) => { event.stopPropagation(); setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] }); }} style={iconButton}>✎</button><button type="button" title="Eintrag duplizieren" aria-label="Eintrag duplizieren" onClick={(event) => { event.stopPropagation(); duplicateEntry(entry); }} style={iconButton}>⧉</button><button type="button" title="Eintrag löschen" aria-label="Eintrag löschen" onClick={(event) => { event.stopPropagation(); removeEntry(entry); }} style={{ ...iconButton, color: '#DC2626' }}>×</button></div></td></tr>)}
+              {filteredEntries.map((entry) => <tr key={entry.id} onClick={() => setSelectedEntry(entry)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }} tabIndex="0" title={t('annual.open_detail')}><td>{formatDate(entry.entry_date)}{entry.end_date && <><br /><span style={{ color: 'var(--c-text-3)', fontSize: 11 }}>– {formatDate(entry.end_date)}</span></>}</td><td><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span></td><td>{entry.lesson_number || '—'}</td><td><strong>{entry.title}</strong>{entry.notes && <div style={{ color: 'var(--c-text-3)', fontSize: 11, marginTop: 3 }}>{entry.notes}</div>}{entry.entry_type === 'lesson' && <div style={{ color: 'var(--c-text-3)', fontSize: 11, marginTop: 3 }}>Unterrichtszentrale: {lessonSummary(entry)}</div>}</td><td>{entry.file_ids?.length || entry.folder_ids?.length ? <span title="Verknüpfte Materialien">📎 {(entry.file_ids?.length || 0) + (entry.folder_ids?.length || 0)}</span> : '—'}</td><td className="lm-annual-no-print"><div style={{ display: 'flex', gap: 5 }}>{entry.entry_type === 'lesson' && <button type="button" title={entry.lesson_session ? 'Unterricht fortsetzen' : 'Unterricht starten'} aria-label={entry.lesson_session ? 'Unterricht fortsetzen' : 'Unterricht starten'} disabled={startingEntryId === entry.id} onClick={(event) => { event.stopPropagation(); startLesson(entry); }} style={{ ...iconButton, width: 'auto', padding: '0 7px', color: accent }}>{startingEntryId === entry.id ? '…' : entry.lesson_session ? '▶' : 'Start'}</button>}<button type="button" title="Eintrag bearbeiten" aria-label="Eintrag bearbeiten" onClick={(event) => { event.stopPropagation(); setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] }); }} style={iconButton}>✎</button><button type="button" title="Eintrag duplizieren" aria-label="Eintrag duplizieren" onClick={(event) => { event.stopPropagation(); duplicateEntry(entry); }} style={iconButton}>⧉</button><button type="button" title="Eintrag löschen" aria-label="Eintrag löschen" onClick={(event) => { event.stopPropagation(); removeEntry(entry); }} style={{ ...iconButton, color: '#DC2626' }}>×</button></div></td></tr>)}
               {!filteredEntries.length && <tr><td colSpan="6" style={{ padding: 34, textAlign: 'center', color: 'var(--c-text-3)' }}>{t('annual.no_entries')}</td></tr>}
             </tbody></table>
           </div>
-          <div className="lm-annual-cards">{filteredEntries.map((entry) => <article key={entry.id} className="lm-annual-card" onClick={() => setSelectedEntry(entry)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }} tabIndex="0" title={t('annual.open_detail')}><div><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span><strong>{entry.title}</strong></div><div style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{formatDate(entry.entry_date)}{entry.end_date ? ` – ${formatDate(entry.end_date)}` : ''} · {entry.lesson_number || t('annual.no_lesson')}</div>{entry.notes && <p>{entry.notes}</p>}<div className="lm-annual-no-print" style={{ display: 'flex', gap: 6 }}><button type="button" title="Eintrag bearbeiten" aria-label="Eintrag bearbeiten" onClick={(event) => { event.stopPropagation(); setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] }); }} style={iconButton}>✎</button><button type="button" title="Eintrag duplizieren" aria-label="Eintrag duplizieren" onClick={(event) => { event.stopPropagation(); duplicateEntry(entry); }} style={iconButton}>⧉</button><button type="button" title="Eintrag löschen" aria-label="Eintrag löschen" onClick={(event) => { event.stopPropagation(); removeEntry(entry); }} style={{ ...iconButton, color: '#DC2626' }}>×</button></div></article>)}</div>
+          <div className="lm-annual-cards">{filteredEntries.map((entry) => <article key={entry.id} className="lm-annual-card" onClick={() => setSelectedEntry(entry)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }} tabIndex="0" title={t('annual.open_detail')}><div><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span><strong>{entry.title}</strong></div><div style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{formatDate(entry.entry_date)}{entry.end_date ? ` – ${formatDate(entry.end_date)}` : ''} · {entry.lesson_number || t('annual.no_lesson')}</div>{entry.notes && <p>{entry.notes}</p>}{entry.entry_type === 'lesson' && <div style={{ color: 'var(--c-text-3)', fontSize: 11, marginBottom: 7 }}>Unterrichtszentrale: {lessonSummary(entry)}</div>}<div className="lm-annual-no-print" style={{ display: 'flex', gap: 6 }}>{entry.entry_type === 'lesson' && <button type="button" disabled={startingEntryId === entry.id} onClick={(event) => { event.stopPropagation(); startLesson(entry); }} style={{ ...buttonStyle(accent, '#fff'), height: 26 }}>{startingEntryId === entry.id ? '…' : entry.lesson_session ? 'Fortsetzen' : 'Starten'}</button>}<button type="button" title="Eintrag bearbeiten" aria-label="Eintrag bearbeiten" onClick={(event) => { event.stopPropagation(); setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] }); }} style={iconButton}>✎</button><button type="button" title="Eintrag duplizieren" aria-label="Eintrag duplizieren" onClick={(event) => { event.stopPropagation(); duplicateEntry(entry); }} style={iconButton}>⧉</button><button type="button" title="Eintrag löschen" aria-label="Eintrag löschen" onClick={(event) => { event.stopPropagation(); removeEntry(entry); }} style={{ ...iconButton, color: '#DC2626' }}>×</button></div></article>)}</div>
         </>
       )}
     </div>

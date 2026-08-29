@@ -87,6 +87,7 @@ export default function App({ onLogout }) {
   const [lessonSessions, setLessonSessions] = useState([]);
   const [teachingMode, setTeachingMode] = useState(false);
   const [startNewLessonPlanning, setStartNewLessonPlanning] = useState(false);
+  const [teachingSessionId, setTeachingSessionId] = useState(null);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
@@ -1503,7 +1504,7 @@ export default function App({ onLogout }) {
                     accent={accent}
                   />
                 ) : (
-                  <AnnualPlanning rootFolder={planningFolder} accent={accent} />
+                  <AnnualPlanning rootFolder={planningFolder} accent={accent} onOpenLesson={(session) => { setActiveFolder(planningFolder); setSubjectId(planningFolder.subject); setStartNewLessonPlanning(false); setTeachingSessionId(session.id); setTeachingMode(true); }} />
                 )}
               </div>
             </div>
@@ -1645,7 +1646,8 @@ export default function App({ onLogout }) {
           accent={accent}
           t={t}
           startWithPlanner={startNewLessonPlanning}
-          onClose={() => { setTeachingMode(false); setStartNewLessonPlanning(false); }}
+          initialSessionId={teachingSessionId}
+          onClose={() => { setTeachingMode(false); setStartNewLessonPlanning(false); setTeachingSessionId(null); }}
         />
       )}
       </FocusMode>
