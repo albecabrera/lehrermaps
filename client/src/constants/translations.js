@@ -77,6 +77,8 @@ export const translations = {
     'bug_checklist.untitled': 'Unbenannter Punkt',
     'bug_checklist.add': 'Punkt hinzufügen',
     'bug_checklist.enter_hint': 'Enter erstellt den nächsten Punkt',
+    'bug_checklist.loading': 'Checkliste wird geladen…',
+    'bug_checklist.sync_error': 'Änderungen konnten nicht synchronisiert werden.',
     'folders.overview_hint': '{{n}} Ordner — Einen auswählen oder neu erstellen.',
 
     // Sidebar

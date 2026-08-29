@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { getBugChecklist, saveBugChecklist } from '../lib/api';
 
 const STORAGE_KEY = 'lehrermaps-bug-checklist';
 
@@ -9,6 +10,24 @@ const createItem = () => ({
   text: '',
   completed: false,
 });
+
+function getLocalItems() {
+  try {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    const parsed = saved ? JSON.parse(saved) : [];
+    return Array.isArray(parsed) ? parsed.filter((item) => item && typeof item.id === 'string' && typeof item.text === 'string' && typeof item.completed === 'boolean') : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalItems(items) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // The checklist remains usable if storage is unavailable or full.
+  }
+}
 
 export function BugChecklistIcon({ size = 16 }) {
   return (
@@ -21,27 +40,73 @@ export function BugChecklistIcon({ size = 16 }) {
 }
 
 export default function BugChecklist({ open, onClose, t }) {
-  const [items, setItems] = useState(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed.filter((item) => item && typeof item.id === 'string' && typeof item.text === 'string') : [];
-    } catch {
-      return [];
-    }
-  });
+  const [items, setItems] = useState([]);
+  const [hydrated, setHydrated] = useState(false);
+  const [syncError, setSyncError] = useState(false);
   const inputRefs = useRef(new Map());
   const focusItemId = useRef(null);
   const closeButtonRef = useRef(null);
+  const hydratedRef = useRef(false);
+  const pendingSaveRef = useRef(false);
 
   useEscapeKey(open, onClose);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    } catch {
-      // The checklist remains usable if storage is unavailable or full.
-    }
+    let cancelled = false;
+    const localItems = getLocalItems();
+
+    const hydrate = async () => {
+      try {
+        const response = await getBugChecklist();
+        if (cancelled) return;
+        const backendItems = Array.isArray(response?.items) ? response.items : [];
+        if (backendItems.length === 0 && localItems.length > 0) {
+          setItems(localItems);
+          saveLocalItems(localItems);
+          try {
+            await saveBugChecklist(localItems);
+            if (!cancelled) setSyncError(false);
+          } catch {
+            if (!cancelled) setSyncError(true);
+          }
+          if (!cancelled) {
+            hydratedRef.current = true;
+            setHydrated(true);
+          }
+          return;
+        }
+        setItems(backendItems);
+        saveLocalItems(backendItems);
+        hydratedRef.current = true;
+        setHydrated(true);
+        setSyncError(false);
+      } catch {
+        if (cancelled) return;
+        setItems(localItems);
+        hydratedRef.current = true;
+        setHydrated(true);
+        setSyncError(true);
+      }
+    };
+
+    hydrate();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!hydratedRef.current || !pendingSaveRef.current) return undefined;
+    saveLocalItems(items);
+    const timer = window.setTimeout(async () => {
+      pendingSaveRef.current = false;
+      try {
+        await saveBugChecklist(items);
+        setSyncError(false);
+      } catch {
+        pendingSaveRef.current = true;
+        setSyncError(true);
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
   }, [items]);
 
   useEffect(() => {
@@ -58,20 +123,27 @@ export default function BugChecklist({ open, onClose, t }) {
     if (open) closeButtonRef.current?.focus();
   }, [open]);
 
-  const addItem = (index = items.length) => {
-    const item = createItem();
-    focusItemId.current = item.id;
-    setItems((current) => [...current.slice(0, index), item, ...current.slice(index)]);
+  const changeItems = (updater) => {
+    if (!hydratedRef.current) return;
+    pendingSaveRef.current = true;
+    setItems(updater);
   };
 
-  const updateItem = (id, changes) => setItems((current) => current.map((item) => (
+  const addItem = (index = items.length) => {
+    if (!hydrated) return;
+    const item = createItem();
+    focusItemId.current = item.id;
+    changeItems((current) => [...current.slice(0, index), item, ...current.slice(index)]);
+  };
+
+  const updateItem = (id, changes) => changeItems((current) => current.map((item) => (
     item.id === id ? { ...item, ...changes } : item
   )));
 
   const deleteItem = (id, index) => {
     const nextItem = items[index + 1] || items[index - 1];
     focusItemId.current = nextItem?.id || null;
-    setItems((current) => current.filter((item) => item.id !== id));
+    changeItems((current) => current.filter((item) => item.id !== id));
   };
 
   if (!open) return null;
@@ -83,20 +155,20 @@ export default function BugChecklist({ open, onClose, t }) {
         <header className="lm-checklist-header">
           <div className="lm-checklist-title-wrap">
             <span className="lm-checklist-icon"><BugChecklistIcon size={18} /></span>
-            <div><h2 id="bug-checklist-title">{t('bug_checklist.title')}</h2><p>{t('bug_checklist.progress', { completed: completedCount, total: items.length })}</p></div>
+            <div><h2 id="bug-checklist-title">{t('bug_checklist.title')}</h2><p>{hydrated ? t('bug_checklist.progress', { completed: completedCount, total: items.length }) : t('bug_checklist.loading')}</p></div>
           </div>
           <button ref={closeButtonRef} className="lm-checklist-close" type="button" onClick={onClose} aria-label={t('bug_checklist.close')}>×</button>
         </header>
         <div className="lm-checklist-items" aria-label={t('bug_checklist.items_label')}>
           {items.length === 0 ? <p className="lm-checklist-empty">{t('bug_checklist.empty')}</p> : items.map((item, index) => (
             <div className="lm-checklist-item" key={item.id}>
-              <input className="lm-checklist-toggle" type="checkbox" checked={item.completed} onChange={() => updateItem(item.id, { completed: !item.completed })} aria-label={t(item.completed ? 'bug_checklist.reopen' : 'bug_checklist.toggle', { text: item.text || t('bug_checklist.untitled') })} />
-              <input ref={(node) => { if (node) inputRefs.current.set(item.id, node); else inputRefs.current.delete(item.id); }} className="lm-checklist-input" value={item.text} onChange={(event) => updateItem(item.id, { text: event.target.value })} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addItem(index + 1); } }} aria-label={t('bug_checklist.item_label', { number: index + 1 })} placeholder={t('bug_checklist.placeholder')} />
-              <button className="lm-checklist-delete" type="button" onClick={() => deleteItem(item.id, index)} aria-label={t('bug_checklist.delete', { text: item.text || t('bug_checklist.untitled') })}><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 4h10M6 4V2.5h4V4m-5.5 0 .6 9h5.8l.6-9M6.5 7v3.5M9.5 7v3.5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+              <input className="lm-checklist-toggle" type="checkbox" disabled={!hydrated} checked={item.completed} onChange={() => updateItem(item.id, { completed: !item.completed })} aria-label={t(item.completed ? 'bug_checklist.reopen' : 'bug_checklist.toggle', { text: item.text || t('bug_checklist.untitled') })} />
+              <input ref={(node) => { if (node) inputRefs.current.set(item.id, node); else inputRefs.current.delete(item.id); }} className="lm-checklist-input" disabled={!hydrated} value={item.text} onChange={(event) => updateItem(item.id, { text: event.target.value })} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addItem(index + 1); } }} aria-label={t('bug_checklist.item_label', { number: index + 1 })} placeholder={t('bug_checklist.placeholder')} />
+              <button className="lm-checklist-delete" type="button" disabled={!hydrated} onClick={() => deleteItem(item.id, index)} aria-label={t('bug_checklist.delete', { text: item.text || t('bug_checklist.untitled') })}><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 4h10M6 4V2.5h4V4m-5.5 0 .6 9h5.8l.6-9M6.5 7v3.5M9.5 7v3.5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
             </div>
           ))}
         </div>
-        <footer className="lm-checklist-footer"><button className="lm-checklist-add" type="button" onClick={() => addItem()}><span aria-hidden="true">+</span> {t('bug_checklist.add')}</button><span>{t('bug_checklist.enter_hint')}</span></footer>
+        <footer className="lm-checklist-footer"><button className="lm-checklist-add" type="button" disabled={!hydrated} onClick={() => addItem()}><span aria-hidden="true">+</span> {t('bug_checklist.add')}</button><span>{syncError ? <span className="lm-checklist-sync-error" role="status">{t('bug_checklist.sync_error')}</span> : t('bug_checklist.enter_hint')}</span></footer>
       </section>
     </div>,
     document.body,

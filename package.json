@@ -10,6 +10,8 @@
     "test:smoke": "node scripts/lehrermaps-smoke.mjs",
     "test:pwa": "node scripts/lehrermaps-pwa-audit.mjs",
     "test:authorization": "node scripts/lehrermaps-authorization-e2e.mjs",
+    "test:today-dashboard": "node scripts/lehrermaps-today-dashboard-api.mjs",
+    "test:bug-checklist": "node scripts/lehrermaps-bug-checklist-api.mjs",
     "test:e2e:teaching": "node scripts/lehrermaps-teaching-e2e.mjs",
     "test:e2e:responsive": "node scripts/lehrermaps-responsive-e2e.mjs",
     "install:all": "npm install && npm install --prefix client && npm install --prefix server"

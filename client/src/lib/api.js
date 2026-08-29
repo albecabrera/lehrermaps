@@ -195,6 +195,9 @@ export const saveTodayDashboardTasks = (tasks) =>
 export const saveTodayDashboardNote = (date, content) =>
   api.put('/today-dashboard/note', { date, content }).then((r) => r.data);
 
+export const getBugChecklist = () => api.get('/bug-checklist').then((r) => r.data);
+export const saveBugChecklist = (items) => api.put('/bug-checklist', { items }).then((r) => r.data);
+
 export const getExams = () => api.get('/exams').then((r) => r.data);
 export const createExam = (data) => api.post('/exams', data).then((r) => r.data);
 export const updateExam = (id, data) => api.put(`/exams/${id}`, data).then((r) => r.data);

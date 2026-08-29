@@ -11,11 +11,15 @@ function getUserId(req) {
 }
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
 function validDate(value) {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
 function normalizeTasks(tasks) {
@@ -25,7 +29,7 @@ function normalizeTasks(tasks) {
   for (const task of tasks) {
     const id = String(task?.id || '').trim();
     const text = String(task?.text || '').trim();
-    if (!id || !text || text.length > 500 || ids.has(id)) return null;
+    if (!id || id.length > 100 || !text || text.length > 500 || ids.has(id) || typeof task?.done !== 'boolean') return null;
     ids.add(id);
     normalized.push({ id, text, done: Boolean(task.done) });
   }
