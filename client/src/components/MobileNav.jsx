@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { BugChecklistIcon } from './BugChecklist';
 
 // Shared icons for mobile navigation.
 export const navIcons = {
@@ -75,7 +76,7 @@ export function MobileBottomNav({ accent, items, active }) {
 export function MobileMoreSheet({
   open, onClose, t, accent,
   isDark, toggleTheme,
-  onExams, onWorksheet, onUpload, uploadDisabled, onLogout,
+  onExams, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onLogout,
   showTeacherLinks = false,
 }) {
   useEscapeKey(open, onClose);
@@ -101,7 +102,7 @@ export function MobileMoreSheet({
   );
 
   const divider = <div style={{ height: 1, background: 'var(--c-border)', margin: '8px 6px' }} />;
-  const hasActions = onExams || onUpload || onWorksheet;
+  const hasActions = onExams || onUpload || onWorksheet || onBugChecklist;
 
   return createPortal(
     <div
@@ -147,6 +148,7 @@ export function MobileMoreSheet({
           ),
         })}
         {onWorksheet && row('✦ Arbeitsblatt', onWorksheet)}
+        {onBugChecklist && row(t('bug_checklist.title'), onBugChecklist, { icon: <BugChecklistIcon /> })}
 
         {hasActions && divider}
 

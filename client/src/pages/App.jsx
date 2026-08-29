@@ -33,6 +33,7 @@ import TeachingMode from '../components/TeachingMode';
 import LessonDashboard from '../components/LessonDashboard';
 import SchoolCalendarPdf from '../components/SchoolCalendarPdf';
 import HomeDashboard from '../components/HomeDashboard';
+import BugChecklist, { BugChecklistIcon } from '../components/BugChecklist';
 
 // Opened views are split into on-demand chunks without changing their layout.
 const Schedule = lazy(() => import('../components/Schedule'));
@@ -50,6 +51,7 @@ export default function App({ onLogout }) {
   const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [schoolCalendarOpen, setSchoolCalendarOpen] = useState(false);
+  const [bugChecklistOpen, setBugChecklistOpen] = useState(false);
 
   const [subjectId, setSubjectId] = useState('spanisch');
   const [activeFolder, setActiveFolder] = useState(null);
@@ -681,7 +683,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen;
+  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
   const sidebarProps = {
@@ -804,6 +806,9 @@ export default function App({ onLogout }) {
           <span style={{ fontSize: 13, fontWeight: viewMode === 'today' ? 600 : 500, color: viewMode === 'today' ? 'var(--c-text)' : 'var(--c-text-2)' }}>Heute</span>
         </button>
         <button className="lm-spring lm-topbar-lessons" onClick={() => { setViewMode('lessons'); setActivePageId(null); closeFolderView(); }} style={{ appearance: 'none', border: 'none', font: 'inherit', padding: '10px 16px 12px', cursor: 'pointer', background: viewMode === 'lessons' ? 'var(--c-surface)' : 'transparent', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', gap: 8, color: viewMode === 'lessons' ? accent : 'var(--c-text-2)' }} aria-label="Lehrerhilfe">✦ <span style={{ fontSize: 13, fontWeight: viewMode === 'lessons' ? 600 : 500 }}>Lehrerhilfe</span></button>
+        <button className="lm-spring lm-topbar-checklist" type="button" onClick={() => setBugChecklistOpen(true)} aria-label={t('bug_checklist.open')} title={t('bug_checklist.open')} style={{ appearance: 'none', border: 'none', font: 'inherit', width: 38, height: 38, padding: 0, marginBottom: 8, cursor: 'pointer', background: 'transparent', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--c-text-2)' }}>
+          <BugChecklistIcon size={17} />
+        </button>
         {/* Stundenplan toggle */}
         <button
           className="lm-spring lm-topbar-schedule"
@@ -1671,6 +1676,7 @@ export default function App({ onLogout }) {
         onWorksheet={() => setWorksheetGenOpen(true)}
         onUpload={() => setUploadOpen(true)}
         uploadDisabled={!activeFolder}
+        onBugChecklist={() => setBugChecklistOpen(true)}
         onLogout={onLogout}
         showTeacherLinks
       />
@@ -1694,6 +1700,7 @@ export default function App({ onLogout }) {
       />
       {hasModalOpen && <div className="lm-depth-overlay" />}
       {schoolCalendarOpen && <SchoolCalendarPdf onClose={() => setSchoolCalendarOpen(false)} />}
+      <BugChecklist open={bugChecklistOpen} onClose={() => setBugChecklistOpen(false)} t={t} />
       {folderZoom && (
         <div
           style={{

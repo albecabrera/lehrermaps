@@ -208,17 +208,19 @@ html, body, #root {
   .lm-tabbar { justify-content: center; padding-inline: 22px !important; }
   .lm-tabbar > .lm-app-brand { order: 1; margin-right: 4px; }
   .lm-tabbar > .lm-topbar-today { order: 2; }
-  .lm-tabbar > .lm-topbar-schedule { order: 3; }
-  .lm-tabbar > .lm-topbar-exams { order: 4; }
-  .lm-tabbar > .lm-topbar-calendar { order: 5; }
-  .lm-tabbar > .lm-topbar-notion { order: 6; }
-  .lm-tabbar > .lm-topbar-miro { order: 7; }
-  .lm-tabbar > .lm-topbar-logout { order: 8; margin-left: 4px !important; }
+  .lm-tabbar > .lm-topbar-checklist { order: 3; }
+  .lm-tabbar > .lm-topbar-schedule { order: 4; }
+  .lm-tabbar > .lm-topbar-exams { order: 5; }
+  .lm-tabbar > .lm-topbar-calendar { order: 6; }
+  .lm-tabbar > .lm-topbar-notion { order: 7; }
+  .lm-tabbar > .lm-topbar-miro { order: 8; }
+  .lm-tabbar > .lm-topbar-logout { order: 9; margin-left: 4px !important; }
   .lm-tabbar > .lm-topbar-lessons { display: none !important; }
   .lm-tabbar > .lm-topbar-spacer { display: none !important; }
   .lm-tabbar > .lm-topbar-tools { position: absolute; right: 22px; bottom: 8px; }
 }
 .lm-tabbar .lm-topbar-today,
+.lm-tabbar .lm-topbar-checklist,
 .lm-tabbar .lm-topbar-schedule,
 .lm-tabbar .lm-topbar-exams,
 .lm-tabbar .lm-topbar-calendar,
@@ -234,6 +236,7 @@ html, body, #root {
   transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .12s ease;
 }
 .lm-tabbar .lm-topbar-today:hover,
+.lm-tabbar .lm-topbar-checklist:hover,
 .lm-tabbar .lm-topbar-schedule:hover,
 .lm-tabbar .lm-topbar-exams:hover,
 .lm-tabbar .lm-topbar-calendar:hover,
@@ -245,6 +248,7 @@ html, body, #root {
   transform: translateY(-1px);
 }
 .lm-tabbar .lm-topbar-today:focus-visible,
+.lm-tabbar .lm-topbar-checklist:focus-visible,
 .lm-tabbar .lm-topbar-schedule:focus-visible,
 .lm-tabbar .lm-topbar-exams:focus-visible,
 .lm-tabbar .lm-topbar-calendar:focus-visible,
@@ -263,6 +267,62 @@ html, body, #root {
   transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .12s ease;
 }
 .lm-tabbar .lm-topbar-logout:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(220, 38, 38, .16); }
+
+/* Local-only bug checklist, shared by the desktop menu and mobile More sheet. */
+.lm-checklist-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1800;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--c-overlay);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: lmFadeIn .14s ease-out;
+}
+.lm-checklist-modal {
+  width: min(560px, 100%);
+  max-height: min(680px, calc(100vh - 40px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: var(--c-surface);
+  box-shadow: var(--c-shadow-modal);
+  animation: lmSlideUp .18s cubic-bezier(.4,.7,.3,1);
+}
+.lm-checklist-header,
+.lm-checklist-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; }
+.lm-checklist-header { border-bottom: 1px solid var(--c-border); }
+.lm-checklist-title-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.lm-checklist-icon { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 9px; color: var(--c-text-2); background: var(--c-surface-2); }
+.lm-checklist-title-wrap h2 { margin: 0; color: var(--c-text); font-size: 15px; line-height: 1.2; }
+.lm-checklist-title-wrap p { margin: 3px 0 0; color: var(--c-text-3); font-size: 12px; line-height: 1.2; }
+.lm-checklist-close,
+.lm-checklist-delete { display: inline-grid; place-items: center; border: 0; color: var(--c-text-2); background: transparent; cursor: pointer; font: inherit; }
+.lm-checklist-close { width: 32px; height: 32px; border-radius: 8px; font-size: 24px; line-height: 1; }
+.lm-checklist-close:hover,
+.lm-checklist-delete:hover { color: var(--c-danger-text); background: var(--c-danger-bg); }
+.lm-checklist-items { display: grid; gap: 6px; overflow-y: auto; padding: 12px 16px; }
+.lm-checklist-empty { margin: 12px 0; color: var(--c-text-3); font-size: 13px; text-align: center; }
+.lm-checklist-item { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 5px 4px; border-radius: 8px; }
+.lm-checklist-item:focus-within { background: var(--c-hover-2); }
+.lm-checklist-toggle { width: 16px; height: 16px; flex: 0 0 16px; margin: 0; accent-color: var(--c-focus); cursor: pointer; }
+.lm-checklist-input { width: 100%; min-width: 0; height: 34px; border: 1px solid transparent; border-radius: 7px; outline: none; background: transparent; color: var(--c-text); font: inherit; font-size: 14px; padding: 0 8px; }
+.lm-checklist-input::placeholder { color: var(--c-text-3); }
+.lm-checklist-input:focus { border-color: var(--c-focus); background: var(--c-input-bg); }
+.lm-checklist-toggle:checked + .lm-checklist-input { color: var(--c-text-3); text-decoration: line-through; }
+.lm-checklist-delete { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 7px; }
+.lm-checklist-footer { border-top: 1px solid var(--c-border); color: var(--c-text-3); font-size: 11px; }
+.lm-checklist-add { height: 32px; padding: 0 10px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-surface-2); color: var(--c-text); cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; }
+.lm-checklist-add:hover { border-color: var(--c-focus); background: var(--c-hover); }
+@media (max-width: 560px) {
+  .lm-checklist-backdrop { align-items: end; padding: 0; }
+  .lm-checklist-modal { max-height: 78vh; border-radius: 18px 18px 0 0; border-bottom: 0; }
+  .lm-checklist-footer { align-items: flex-start; flex-direction: column; gap: 7px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+}
 [data-theme="dark"] .lm-tabbar .lm-topbar-today,
 [data-theme="dark"] .lm-tabbar .lm-topbar-schedule,
 [data-theme="dark"] .lm-tabbar .lm-topbar-exams,
