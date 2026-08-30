@@ -78,7 +78,7 @@ export const translations = {
     'bug_checklist.add': 'Punkt hinzufügen',
     'bug_checklist.enter_hint': 'Enter erstellt den nächsten Punkt',
     'bug_checklist.loading': 'Checkliste wird geladen…',
-    'bug_checklist.sync_error': 'Speichern fehlgeschlagen. Bitte prüfe die Verbindung und versuche es erneut.',
+    'bug_checklist.sync_error': 'Verbindung zum Server unterbrochen. Deine Änderungen bleiben auf diesem Gerät erhalten. Bitte prüfe die Verbindung und versuche es erneut.',
     'folders.overview_hint': '{{n}} Ordner — Einen auswählen oder neu erstellen.',
 
     // Sidebar
