@@ -12,6 +12,7 @@
     "test:authorization": "node scripts/lehrermaps-authorization-e2e.mjs",
     "test:today-dashboard": "node scripts/lehrermaps-today-dashboard-api.mjs",
     "test:bug-checklist": "node scripts/lehrermaps-bug-checklist-api.mjs",
+    "test:pending-sync": "node scripts/lehrermaps-pending-sync.mjs",
     "test:annual-planning": "node scripts/lehrermaps-annual-plan-api.mjs",
     "test:e2e:teaching": "node scripts/lehrermaps-teaching-e2e.mjs",
     "test:e2e:responsive": "node scripts/lehrermaps-responsive-e2e.mjs",

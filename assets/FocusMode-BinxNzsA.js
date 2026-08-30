@@ -1,0 +1,1 @@
+import{U as t,L as d}from"./index-CD0oFeHN.js";function u({active:s,onExit:e,children:r}){return t.useEffect(()=>{if(!s)return;const o=n=>{n.key==="Escape"&&(e==null||e())};return window.addEventListener("keydown",o),()=>window.removeEventListener("keydown",o)},[s,e]),d.jsx("div",{style:{display:"contents"},"data-focus-mode":s?"on":"off",children:r})}export{u as default};

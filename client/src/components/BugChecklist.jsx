@@ -2,6 +2,7 @@ import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { getBugChecklist, saveBugChecklist } from '../lib/api';
+import { usePendingSync } from '../lib/pendingSync';
 
 const STORAGE_KEY = 'lehrermaps-bug-checklist';
 
@@ -11,21 +12,13 @@ const createItem = () => ({
   completed: false,
 });
 
-function getLocalItems() {
+function getLegacyItems() {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     const parsed = saved ? JSON.parse(saved) : [];
     return Array.isArray(parsed) ? parsed.filter((item) => item && typeof item.id === 'string' && typeof item.text === 'string' && typeof item.completed === 'boolean') : [];
   } catch {
     return [];
-  }
-}
-
-function saveLocalItems(items) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    // The checklist remains usable if storage is unavailable or full.
   }
 }
 
@@ -40,74 +33,20 @@ export function BugChecklistIcon({ size = 16 }) {
 }
 
 export default function BugChecklist({ open, onClose, t }) {
-  const [items, setItems] = useState([]);
-  const [hydrated, setHydrated] = useState(false);
-  const [syncError, setSyncError] = useState(false);
+  const [items, setItems, sync] = usePendingSync({
+    storageKey: `${STORAGE_KEY}:pending`, initialValue: [],
+    load: () => getBugChecklist().then((response) => Array.isArray(response?.items) ? response.items : []),
+    save: saveBugChecklist, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
+    confirm: (response, value) => JSON.stringify(response?.items) === JSON.stringify(value),
+    saveDelay: 500,
+    readLegacy: () => { const items = getLegacyItems(); return items.length ? items : undefined; },
+    clearLegacy: () => window.localStorage.removeItem(STORAGE_KEY),
+  });
+  const hydrated = sync.hydrated;
   const inputRefs = useRef(new Map());
   const focusItemId = useRef(null);
   const closeButtonRef = useRef(null);
-  const hydratedRef = useRef(false);
-  const pendingSaveRef = useRef(false);
-
   useEscapeKey(open, onClose);
-
-  useEffect(() => {
-    let cancelled = false;
-    const localItems = getLocalItems();
-
-    const hydrate = async () => {
-      try {
-        const response = await getBugChecklist();
-        if (cancelled) return;
-        const backendItems = Array.isArray(response?.items) ? response.items : [];
-        if (backendItems.length === 0 && localItems.length > 0) {
-          setItems(localItems);
-          saveLocalItems(localItems);
-          try {
-            await saveBugChecklist(localItems);
-            if (!cancelled) setSyncError(false);
-          } catch {
-            if (!cancelled) setSyncError(true);
-          }
-          if (!cancelled) {
-            hydratedRef.current = true;
-            setHydrated(true);
-          }
-          return;
-        }
-        setItems(backendItems);
-        saveLocalItems(backendItems);
-        hydratedRef.current = true;
-        setHydrated(true);
-        setSyncError(false);
-      } catch {
-        if (cancelled) return;
-        setItems(localItems);
-        hydratedRef.current = true;
-        setHydrated(true);
-        setSyncError(true);
-      }
-    };
-
-    hydrate();
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    if (!hydratedRef.current || !pendingSaveRef.current) return undefined;
-    saveLocalItems(items);
-    const timer = window.setTimeout(async () => {
-      pendingSaveRef.current = false;
-      try {
-        await saveBugChecklist(items);
-        setSyncError(false);
-      } catch {
-        pendingSaveRef.current = true;
-        setSyncError(true);
-      }
-    }, 500);
-    return () => window.clearTimeout(timer);
-  }, [items]);
 
   useEffect(() => {
     if (!open || !focusItemId.current) return;
@@ -124,9 +63,8 @@ export default function BugChecklist({ open, onClose, t }) {
   }, [open]);
 
   const changeItems = (updater) => {
-    if (!hydratedRef.current) return;
-    pendingSaveRef.current = true;
-    setItems(updater);
+    if (!hydrated) return;
+    setItems(updater(items));
   };
 
   const addItem = (index = items.length) => {
@@ -168,7 +106,7 @@ export default function BugChecklist({ open, onClose, t }) {
             </div>
           ))}
         </div>
-        <footer className="lm-checklist-footer"><button className="lm-checklist-add" type="button" disabled={!hydrated} onClick={() => addItem()}><span aria-hidden="true">+</span> {t('bug_checklist.add')}</button><span>{syncError ? <span className="lm-checklist-sync-error" role="status">{t('bug_checklist.sync_error')}</span> : t('bug_checklist.enter_hint')}</span></footer>
+        <footer className="lm-checklist-footer"><button className="lm-checklist-add" type="button" disabled={!hydrated} onClick={() => addItem()}><span aria-hidden="true">+</span> {t('bug_checklist.add')}</button><span>{sync.status === 'error' ? <span className="lm-checklist-sync-error" role="status">{t('bug_checklist.sync_error')}</span> : (sync.status === 'pending' ? t('bug_checklist.sync_pending') : t('bug_checklist.sync_saved'))}</span></footer>
       </section>
     </div>,
     document.body,

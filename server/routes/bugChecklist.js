@@ -3,13 +3,16 @@ import pool from '../db.js';
 import auth, { teacherOnly } from '../middleware/auth.js';
 
 const router = Router();
-const USER_ID = 1;
 const MAX_ITEMS = 100;
 const MAX_ID_LENGTH = 128;
 const MAX_TEXT_LENGTH = 1000;
 
 router.use(auth);
 router.use(teacherOnly);
+
+function getUserId(req) {
+  return Number.isInteger(req.user?.user_id) ? req.user.user_id : 1;
+}
 
 function normalizeItems(payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)
@@ -31,9 +34,9 @@ function normalizeItems(payload) {
   return items;
 }
 
-router.get('/bug-checklist', async (_req, res) => {
+router.get('/bug-checklist', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT items_json FROM bug_checklists WHERE user_id = ?', [USER_ID]);
+    const [rows] = await pool.execute('SELECT items_json FROM bug_checklists WHERE user_id = ?', [getUserId(req)]);
     let items = [];
     try { items = normalizeItems({ items: JSON.parse(rows[0]?.items_json || '[]') }) || []; } catch {}
     res.json({ items });
@@ -50,7 +53,7 @@ router.put('/bug-checklist', async (req, res) => {
     await pool.execute(
       `INSERT INTO bug_checklists (user_id, items_json) VALUES (?, ?)
        ON CONFLICT(user_id) DO UPDATE SET items_json = excluded.items_json, updated_at = CURRENT_TIMESTAMP`,
-      [USER_ID, JSON.stringify(items)]
+      [getUserId(req), JSON.stringify(items)]
     );
     res.json({ items });
   } catch (error) {

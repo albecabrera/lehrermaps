@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { getTodayDashboard, saveTodayDashboardNote, saveTodayDashboardTasks } from '../lib/api';
+import { usePendingSync } from '../lib/pendingSync';
 
 const LEGACY_TASKS_KEY = 'lm_today_tasks';
 const LEGACY_NOTE_PREFIX = 'lm_today_note_';
@@ -10,114 +11,48 @@ function todayKey() {
   return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
-function readLegacy(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch { return fallback; }
-}
-
-function readText(key) {
-  try { return localStorage.getItem(key) || ''; } catch { return ''; }
-}
+const readLegacyTasks = () => {
+  try { const tasks = JSON.parse(localStorage.getItem(LEGACY_TASKS_KEY) || '[]'); return Array.isArray(tasks) && tasks.length ? tasks : undefined; } catch { return undefined; }
+};
+const readLegacyNote = (date) => {
+  try { const note = localStorage.getItem(LEGACY_NOTE_PREFIX + date); return note ? note : undefined; } catch { return undefined; }
+};
 
 export default function TodayDashboard({
   subject, folders = [], onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
 }) {
   const date = todayKey();
-  const [tasks, setTasks] = useState(() => readLegacy(LEGACY_TASKS_KEY, []));
+  const [tasks, setTasks, tasksSync] = usePendingSync({
+    storageKey: 'lm_pending_today_tasks', initialValue: [],
+    load: () => getTodayDashboard(date).then((dashboard) => Array.isArray(dashboard.tasks) ? dashboard.tasks : []),
+    save: saveTodayDashboardTasks, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
+    confirm: (response, value) => JSON.stringify(response?.tasks) === JSON.stringify(value),
+    readLegacy: readLegacyTasks, clearLegacy: () => localStorage.removeItem(LEGACY_TASKS_KEY),
+  });
+  const [note, setNote, noteSync] = usePendingSync({
+    storageKey: `lm_pending_today_note_${date}`, initialValue: '',
+    load: () => getTodayDashboard(date).then((dashboard) => typeof dashboard.note === 'string' ? dashboard.note : ''),
+    save: (value) => saveTodayDashboardNote(date, value), isBackendEmpty: (value) => value === '', isValid: (value) => typeof value === 'string',
+    confirm: (response, value) => response?.date === date && response?.content === value,
+    saveDelay: 400,
+    readLegacy: () => readLegacyNote(date), clearLegacy: () => localStorage.removeItem(LEGACY_NOTE_PREFIX + date),
+  });
   const [taskText, setTaskText] = useState('');
-  const [note, setNote] = useState(() => readText(LEGACY_NOTE_PREFIX + date));
-  const [loaded, setLoaded] = useState(false);
-  const [saveError, setSaveError] = useState(false);
-  const saveQueue = useRef(Promise.resolve());
-  const noteTimer = useRef(null);
-  const noteRef = useRef('');
-  const noteDirty = useRef(false);
-  const tasksChanged = useRef(false);
-  const noteChanged = useRef(false);
+  const loaded = tasksSync.hydrated && noteSync.hydrated;
+  const saveStatus = tasksSync.status === 'error' || noteSync.status === 'error'
+    ? 'error'
+    : (tasksSync.status === 'pending' || noteSync.status === 'pending' ? 'pending' : 'saved');
   const favorites = folders.filter((folder) => folder.is_favorite).slice(0, 4);
-
-  const queueSave = (save) => {
-    saveQueue.current = saveQueue.current.catch(() => {}).then(save);
-    return saveQueue.current;
-  };
-
-  const persistTasks = (next) => {
-    tasksChanged.current = true;
-    setTasks(next);
-    queueSave(() => saveTodayDashboardTasks(next))
-      .then(() => setSaveError(false))
-      .catch(() => setSaveError(true));
-  };
-
-  const persistNote = (value) => {
-    noteDirty.current = false;
-    queueSave(() => saveTodayDashboardNote(date, value))
-      .then(() => setSaveError(false))
-      .catch(() => setSaveError(true));
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    const legacyTasks = readLegacy(LEGACY_TASKS_KEY, []);
-    const legacyNote = readText(LEGACY_NOTE_PREFIX + date);
-    tasksChanged.current = false;
-    noteChanged.current = false;
-    setLoaded(false);
-    setTasks(legacyTasks);
-    setNote(legacyNote);
-    noteRef.current = legacyNote;
-
-    getTodayDashboard(date).then((dashboard) => {
-      if (cancelled) return;
-      const serverTasks = Array.isArray(dashboard.tasks) ? dashboard.tasks : [];
-      const serverNote = typeof dashboard.note === 'string' ? dashboard.note : '';
-
-      // Keep existing device-only entries when the authenticated account is first upgraded.
-      if (!tasksChanged.current) {
-        setTasks(serverTasks);
-        if (serverTasks.length === 0 && legacyTasks.length > 0) {
-          setTasks(legacyTasks);
-          queueSave(() => saveTodayDashboardTasks(legacyTasks))
-            .then(() => { localStorage.removeItem(LEGACY_TASKS_KEY); setSaveError(false); })
-            .catch(() => setSaveError(true));
-        }
-      }
-      if (!noteChanged.current) {
-        setNote(serverNote);
-        noteRef.current = serverNote;
-        if (!serverNote && legacyNote) {
-          setNote(legacyNote);
-          noteRef.current = legacyNote;
-          queueSave(() => saveTodayDashboardNote(date, legacyNote))
-            .then(() => { localStorage.removeItem(LEGACY_NOTE_PREFIX + date); setSaveError(false); })
-            .catch(() => setSaveError(true));
-        }
-      }
-      setLoaded(true);
-    }).catch(() => {
-      if (!cancelled) setLoaded(true);
-    });
-
-    return () => {
-      cancelled = true;
-      clearTimeout(noteTimer.current);
-      if (noteDirty.current) persistNote(noteRef.current);
-    };
-  }, [date]);
 
   const addTask = () => {
     const text = taskText.trim();
     if (!text) return;
-    persistTasks([{ id: `${Date.now()}`, text, done: false }, ...tasks].slice(0, 20));
+    setTasks([{ id: `${Date.now()}`, text, done: false }, ...tasks].slice(0, 20));
     setTaskText('');
   };
 
   const saveNote = (value) => {
-    noteChanged.current = true;
     setNote(value);
-    noteRef.current = value;
-    noteDirty.current = true;
-    clearTimeout(noteTimer.current);
-    noteTimer.current = setTimeout(() => persistNote(value), 400);
   };
 
   const cardStyle = {
@@ -174,9 +109,9 @@ export default function TodayDashboard({
             <div style={{ display: 'grid', gap: 6 }}>
               {tasks.map((task) => (
                 <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 0', borderBottom: '1px solid var(--c-border)' }}>
-                  <input type="checkbox" disabled={!loaded} checked={task.done} onChange={() => persistTasks(tasks.map((item) => item.id === task.id ? { ...item, done: !item.done } : item))} />
+                  <input type="checkbox" disabled={!loaded} checked={task.done} onChange={() => setTasks(tasks.map((item) => item.id === task.id ? { ...item, done: !item.done } : item))} />
                   <span style={{ flex: 1, fontSize: 13, color: task.done ? 'var(--c-text-3)' : 'var(--c-text)', textDecoration: task.done ? 'line-through' : 'none' }}>{task.text}</span>
-                  <button disabled={!loaded} onClick={() => persistTasks(tasks.filter((item) => item.id !== task.id))} aria-label="Aufgabe löschen" style={{ border: 0, background: 'transparent', color: 'var(--c-text-3)', cursor: 'pointer' }}>×</button>
+                  <button disabled={!loaded} onClick={() => setTasks(tasks.filter((item) => item.id !== task.id))} aria-label="Aufgabe löschen" style={{ border: 0, background: 'transparent', color: 'var(--c-text-3)', cursor: 'pointer' }}>×</button>
                 </div>
               ))}
             </div>
@@ -185,10 +120,10 @@ export default function TodayDashboard({
           <section style={cardStyle} aria-busy={!loaded}>
             <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Tagesnotiz</h2>
             <textarea value={note} disabled={!loaded} onChange={(e) => saveNote(e.target.value)} placeholder="Was ist heute wichtig?" rows={6} style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', border: '1px solid var(--c-border)', borderRadius: 8, padding: 10, background: 'var(--c-bg)', color: 'var(--c-text)', fontFamily: 'inherit', fontSize: 12, lineHeight: 1.5 }} />
-            <div style={{ marginTop: 7, color: saveError ? 'var(--c-danger-text)' : 'var(--c-text-3)', fontSize: 10 }}>
-              {saveError
+            <div style={{ marginTop: 7, color: saveStatus === 'error' ? 'var(--c-danger-text)' : 'var(--c-text-3)', fontSize: 10 }}>
+              {saveStatus === 'error'
                 ? 'Nicht in der Datenbank gespeichert. Bitte prüfe die Verbindung und versuche es erneut.'
-                : 'Wird in deinem Konto gespeichert.'}
+                : (saveStatus === 'pending' ? 'Wird gespeichert…' : 'In deinem Konto gespeichert.')}
             </div>
           </section>
 
