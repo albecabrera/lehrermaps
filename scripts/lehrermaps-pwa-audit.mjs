@@ -13,7 +13,12 @@ const fail = (name, detail) => results.push({ name, status: 'FAIL', detail });
 const warn = (name, detail) => results.push({ name, status: 'WARN', detail });
 
 async function get(url) {
-  return fetch(`${baseUrl}${url}`, { redirect: 'manual' });
+  return fetch(`${baseUrl}${url}`, { redirect: 'manual', headers: { Accept: url.endsWith('.json') || url.startsWith('/api/') ? 'application/json' : '*/*' } });
+}
+
+function requireContentType(response, pattern, resource) {
+  const type = response.headers.get('content-type') || '';
+  if (!pattern.test(type)) throw new Error(`${resource}: Content-Type=${type || '(missing)'} (possible SPA fallback)`);
 }
 
 async function check(name, callback) {
@@ -36,6 +41,7 @@ await check('base URL', async () => {
 await check('manifest', async () => {
   const response = await get('/manifest.json');
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  requireContentType(response, /application\/(manifest\+json|json)/i, '/manifest.json');
   const manifest = await response.json();
   for (const field of ['name', 'short_name', 'start_url', 'scope', 'display', 'icons']) {
     if (manifest[field] === undefined) throw new Error(`missing ${field}`);
@@ -44,6 +50,7 @@ await check('manifest', async () => {
   for (const icon of manifest.icons) {
     const iconResponse = await get(icon.src);
     if (!iconResponse.ok) throw new Error(`${icon.src} -> HTTP ${iconResponse.status}`);
+    requireContentType(iconResponse, /^image\//i, icon.src);
   }
   pass('manifest', `${manifest.icons.length} icons`);
 });
@@ -51,6 +58,7 @@ await check('manifest', async () => {
 await check('service worker', async () => {
   const response = await get('/service-worker.js');
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  requireContentType(response, /javascript|ecmascript/i, '/service-worker.js');
   const source = await response.text();
   for (const marker of ["addEventListener('install'", "addEventListener('activate'", "addEventListener('fetch'"]) {
     if (!source.includes(marker)) throw new Error(`missing ${marker}`);
@@ -72,6 +80,7 @@ await check('cache headers', async () => {
 await check('API health', async () => {
   const response = await get('/api/health');
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  requireContentType(response, /application\/json/i, '/api/health');
   const body = await response.json();
   if (body.ok !== true) throw new Error('health response is not ok=true');
   pass('API health');

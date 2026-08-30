@@ -2,8 +2,8 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { randomUUID } from 'crypto';
-import { createReadStream, existsSync, symlinkSync, unlinkSync, mkdirSync } from 'fs';
-import { copyFile, unlink, mkdir, stat } from 'fs/promises';
+import { createReadStream, existsSync, symlinkSync, unlinkSync, mkdirSync, renameSync } from 'fs';
+import { copyFile, unlink, mkdir, stat, readFile, writeFile, rm } from 'fs/promises';
 import os from 'os';
 import { exec, execFile } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -12,6 +12,7 @@ const require = createRequire(import.meta.url);
 const { ZipArchive } = require('archiver');
 import pool from '../db.js';
 import auth, { teacherOnly } from '../middleware/auth.js';
+import { validateDeclaredMime, validateFileContent } from '../lib/fileValidation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Tests can provide an isolated storage root without changing production's
@@ -20,6 +21,9 @@ const STORAGE_DIR = process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_D
 const UPLOADS_DIR = STORAGE_DIR ? path.join(STORAGE_DIR, 'uploads') : path.join(__dirname, '..', 'uploads');
 const PREVIEWS_DIR = STORAGE_DIR ? path.join(STORAGE_DIR, 'previews') : path.join(__dirname, '..', 'previews');
 const EDITS_DIR = STORAGE_DIR ? path.join(STORAGE_DIR, 'edit-copies') : path.join(__dirname, '..', 'edit-copies');
+const STAGING_DIR = STORAGE_DIR ? path.join(STORAGE_DIR, 'staging') : path.join(os.tmpdir(), 'lehrermaps-upload-staging');
+mkdirSync(UPLOADS_DIR, { recursive: true });
+mkdirSync(STAGING_DIR, { recursive: true });
 
 const CONVERTIBLE_EXTS = new Set(['doc', 'docx', 'odt', 'rtf', 'ppt', 'pptx', 'odp', 'xls', 'xlsx', 'ods']);
 const converting = new Set();
@@ -54,7 +58,7 @@ async function convertToPdf(storedName, ext) {
 }
 
 const storage = multer.diskStorage({
-  destination: UPLOADS_DIR,
+  destination: STAGING_DIR,
   filename: (_, __, cb) => cb(null, `${randomUUID()}`),
 });
 
@@ -399,17 +403,30 @@ router.get('/:folder_id', async (req, res) => {
 router.post('/upload', teacherOnly, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Keine Datei übermittelt' });
   const { folder_id } = req.body;
-  if (!folder_id) return res.status(400).json({ error: 'folder_id fehlt' });
+  if (!folder_id) { await rm(req.file.path, { force: true }); return res.status(400).json({ error: 'folder_id fehlt' }); }
 
   try {
-    const [result] = await pool.execute(
-      'INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, version_group_id) VALUES (?, ?, ?, ?, ?, ?)',
-      [folder_id, req.file.originalname, req.file.filename, req.file.mimetype, req.file.size, randomUUID().replace(/-/g, '')]
-    );
+    const [folders] = await pool.execute('SELECT id FROM folders WHERE id = ?', [folder_id]);
+    if (!folders.length) { await rm(req.file.path, { force: true }); return res.status(404).json({ error: 'Zielordner nicht gefunden' }); }
+    validateFileContent(req.file.originalname, await readFile(req.file.path));
+    validateDeclaredMime(req.file.originalname, req.file.mimetype);
+    const finalPath = path.join(UPLOADS_DIR, req.file.filename);
+    renameSync(req.file.path, finalPath);
+    let result;
+    try {
+      [result] = await pool.execute(
+        'INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, version_group_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [folder_id, req.file.originalname, req.file.filename, req.file.mimetype, req.file.size, randomUUID().replace(/-/g, '')]
+      );
+    } catch (error) {
+      await rm(finalPath, { force: true });
+      throw error;
+    }
     const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    await rm(req.file.path, { force: true }).catch(() => {});
+    res.status(/nicht erlaubt|stimmt nicht|Dateiname|Tippfehler|Dateigröße/.test(e.message) ? 400 : 500).json({ error: e.message });
   }
 });
 
@@ -485,6 +502,8 @@ router.get('/:id/edit-copy/download', async (req, res) => {
 });
 
 router.post('/:id/versions/commit', teacherOnly, editUpload.single('file'), async (req, res) => {
+  let stagedPath;
+  let finalPath;
   try {
     const file = await getFileById(req.params.id);
     if (!file) return res.status(404).json({ error: 'Datei nicht gefunden' });
@@ -493,32 +512,43 @@ router.post('/:id/versions/commit', teacherOnly, editUpload.single('file'), asyn
 
     let size;
     const storedName = randomUUID();
+    stagedPath = path.join(STAGING_DIR, storedName);
+    let content;
     if (req.file) {
       size = req.file.size;
-      await writeFile(path.join(UPLOADS_DIR, storedName), req.file.buffer);
+      content = req.file.buffer;
+      validateFileContent(file.original_name, content);
+      validateDeclaredMime(file.original_name, req.file.mimetype);
+      await writeFile(stagedPath, content, { flag: 'wx' });
     } else {
       const copyPath = path.join(EDITS_DIR, copies[0].copy_name);
       if (!existsSync(copyPath)) return res.status(404).json({ error: 'Arbeitskopie nicht auf Disk' });
       const info = await stat(copyPath);
       size = info.size;
-      await copyFile(copyPath, path.join(UPLOADS_DIR, storedName));
+      content = await readFile(copyPath);
+      validateFileContent(file.original_name, content);
+      await copyFile(copyPath, stagedPath);
     }
-
-    const [[{ nextVersion }]] = await pool.execute(
-      'SELECT COALESCE(MAX(version_number), 0) + 1 AS nextVersion FROM files WHERE version_group_id = ?',
-      [file.version_group_id]
-    );
-    await pool.execute('UPDATE files SET is_current_version = 0 WHERE version_group_id = ?', [file.version_group_id]);
-    const [result] = await pool.execute(
-      `INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, material_role, version_group_id, version_number, is_current_version)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-      [file.folder_id, file.original_name, storedName, file.mime_type, size, file.material_role || 'other', file.version_group_id, nextVersion]
-    );
-    if (copies.length) await pool.execute('DELETE FROM file_edit_copies WHERE id = ?', [copies[0].id]);
+    finalPath = path.join(UPLOADS_DIR, storedName);
+    const result = pool.transaction((connection) => {
+      const [[{ nextVersion }]] = connection.execute('SELECT COALESCE(MAX(version_number), 0) + 1 AS nextVersion FROM files WHERE version_group_id = ?', [file.version_group_id]);
+      connection.execute('UPDATE files SET is_current_version = 0 WHERE version_group_id = ?', [file.version_group_id]);
+      const [inserted] = connection.execute(
+        `INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, material_role, version_group_id, version_number, is_current_version)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+        [file.folder_id, file.original_name, storedName, file.mime_type, size, file.material_role || 'other', file.version_group_id, nextVersion]
+      );
+      if (copies.length) connection.execute('DELETE FROM file_edit_copies WHERE id = ?', [copies[0].id]);
+      renameSync(stagedPath, finalPath);
+      return inserted;
+    });
+    if (copies.length) await rm(path.join(EDITS_DIR, copies[0].copy_name), { force: true });
     const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    if (stagedPath) await rm(stagedPath, { force: true }).catch(() => {});
+    if (finalPath) await rm(finalPath, { force: true }).catch(() => {});
+    res.status(/nicht erlaubt|stimmt nicht|Dateiname|Tippfehler|Dateigröße/.test(e.message) ? 400 : 500).json({ error: e.message });
   }
 });
 
@@ -551,18 +581,31 @@ router.put('/:id', teacherOnly, async (req, res) => {
 });
 
 router.delete('/:id', teacherOnly, async (req, res) => {
+  const quarantined = [];
   try {
-    const [rows] = await pool.execute('SELECT stored_name FROM files WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.execute('SELECT stored_name, version_group_id, is_current_version FROM files WHERE id = ?', [req.params.id]);
     if (rows.length) {
       const { stored_name } = rows[0];
       const filePath = path.join(UPLOADS_DIR, stored_name);
       const pdfPath = path.join(PREVIEWS_DIR, `${stored_name}.pdf`);
-      if (existsSync(filePath)) await unlink(filePath).catch(() => {});
-      if (existsSync(pdfPath)) await unlink(pdfPath).catch(() => {});
+      const [copies] = await pool.execute('SELECT copy_name FROM file_edit_copies WHERE file_id = ?', [req.params.id]);
+      const paths = [filePath, pdfPath, ...copies.map((copy) => path.join(EDITS_DIR, copy.copy_name))];
+      for (const source of paths) if (existsSync(source)) {
+        const target = path.join(STAGING_DIR, `.delete-${randomUUID()}`);
+        renameSync(source, target);
+        quarantined.push({ source, target });
+      }
     }
-    await pool.execute('DELETE FROM files WHERE id = ?', [req.params.id]);
+    pool.transaction((connection) => {
+      connection.execute('DELETE FROM files WHERE id = ?', [req.params.id]);
+      if (rows[0]?.is_current_version && rows[0]?.version_group_id) {
+        connection.execute(`UPDATE files SET is_current_version=1 WHERE id=(SELECT id FROM files WHERE version_group_id=? ORDER BY version_number DESC, id DESC LIMIT 1)`, [rows[0].version_group_id]);
+      }
+    });
+    for (const item of quarantined) await rm(item.target, { force: true });
     res.json({ ok: true });
   } catch (e) {
+    for (const item of quarantined.reverse()) if (existsSync(item.target)) renameSync(item.target, item.source);
     res.status(500).json({ error: e.message });
   }
 });

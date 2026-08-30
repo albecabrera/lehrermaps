@@ -10,8 +10,16 @@ const ENTRY_TYPES = new Set(['lesson', 'holiday', 'exam', 'classwork', 'presenta
 
 function validDate(value, nullable = true) {
   if (nullable && (value === undefined || value === null || value === '')) return true;
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(value));
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
+  if (!match) return false;
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return date.getUTCFullYear() === Number(match[1])
+    && date.getUTCMonth() === Number(match[2]) - 1
+    && date.getUTCDate() === Number(match[3]);
 }
+
+const isUniqueConflict = (error) => error?.errcode === 2067 || /UNIQUE constraint failed/i.test(error?.message || '');
+const ENTRY_TEXT_FIELDS = ['content', 'learning_objectives', 'activities', 'homework'];
 
 function validateRange(start, end) {
   if (!validDate(start, false) || !validDate(end)) return 'Ungültiges Datum';
@@ -19,14 +27,10 @@ function validateRange(start, end) {
   return null;
 }
 
-function materialIds(body = {}) {
-  const files = Array.isArray(body.file_ids)
-    ? body.file_ids.map(Number).filter((id) => Number.isInteger(id) && id > 0).slice(0, 100)
-    : [];
-  const folders = Array.isArray(body.folder_ids)
-    ? body.folder_ids.map(Number).filter((id) => Number.isInteger(id) && id > 0).slice(0, 100)
-    : [];
-  return { files: [...new Set(files)], folders: [...new Set(folders)] };
+function validatePlanBounds(start, end, plan) {
+  if (plan.start_date && start < plan.start_date) return 'Datum liegt vor dem Planungszeitraum';
+  if (plan.end_date && (end || start) > plan.end_date) return 'Datum liegt nach dem Planungszeitraum';
+  return null;
 }
 
 async function getPlan(planId) {
@@ -83,15 +87,26 @@ async function getEntry(entryId) {
   return (await getEntries(rows[0].plan_id)).find((entry) => Number(entry.id) === Number(entryId)) || null;
 }
 
-async function replaceMaterials(connection, entryId, body) {
-  const { files, folders } = materialIds(body);
-  await connection.execute('DELETE FROM annual_plan_materials WHERE entry_id = ?', [entryId]);
-  for (const fileId of files) {
-    await connection.execute('INSERT IGNORE INTO annual_plan_materials (entry_id, file_id) VALUES (?, ?)', [entryId, fileId]);
-  }
-  for (const folderId of folders) {
-    await connection.execute('INSERT IGNORE INTO annual_plan_materials (entry_id, folder_id) VALUES (?, ?)', [entryId, folderId]);
-  }
+async function materialContext(entryId) {
+  const [rows] = await pool.execute(`
+    SELECT e.id, root.subject, root.group_name
+    FROM annual_plan_entries e
+    JOIN annual_plans p ON p.id = e.plan_id
+    JOIN folders root ON root.id = p.root_folder_id
+    WHERE e.id = ?
+  `, [entryId]);
+  return rows[0] || null;
+}
+
+async function validateMaterial(entryId, kind, materialId) {
+  const context = await materialContext(entryId);
+  if (!context) return { error: 'Planungseintrag nicht gefunden', status: 404 };
+  const sql = kind === 'file'
+    ? `SELECT fi.id FROM files fi JOIN folders f ON f.id = fi.folder_id
+       WHERE fi.id = ? AND fi.is_current_version = 1 AND f.subject = ? AND f.group_name = ?`
+    : 'SELECT id FROM folders WHERE id = ? AND subject = ? AND group_name = ?';
+  const [rows] = await pool.execute(sql, [materialId, context.subject, context.group_name]);
+  return rows.length ? { context } : { error: 'Material nicht gefunden oder gehört zu einer anderen Klasse', status: 400 };
 }
 
 router.get('/materials', teacherOnly, async (req, res) => {
@@ -155,7 +170,7 @@ router.post('/', teacherOnly, async (req, res) => {
     );
     res.status(201).json(await getPlan(result.insertId));
   } catch (error) {
-    res.status(error.code === 'ER_DUP_ENTRY' ? 409 : 500).json({ error: error.code === 'ER_DUP_ENTRY' ? 'Diese Jahresplanung existiert bereits' : error.message });
+    res.status(isUniqueConflict(error) ? 409 : 500).json({ error: isUniqueConflict(error) ? 'Diese Jahresplanung existiert bereits' : error.message });
   }
 });
 
@@ -165,12 +180,13 @@ router.patch('/:id', teacherOnly, async (req, res) => {
   const schoolYear = String(req.body?.school_year ?? plan.school_year).trim();
   const startDate = req.body?.start_date ?? plan.start_date;
   const endDate = req.body?.end_date ?? plan.end_date;
+  if (!validDate(startDate) || !validDate(endDate)) return res.status(400).json({ error: 'Ungültiges Planungsdatum' });
   if (startDate && endDate && endDate < startDate) return res.status(400).json({ error: 'Enddatum darf nicht vor dem Startdatum liegen' });
   try {
     await pool.execute('UPDATE annual_plans SET school_year = ?, start_date = ?, end_date = ? WHERE id = ?', [schoolYear, startDate || null, endDate || null, req.params.id]);
     res.json(await getPlan(req.params.id));
   } catch (error) {
-    res.status(error.code === 'ER_DUP_ENTRY' ? 409 : 500).json({ error: error.message });
+    res.status(isUniqueConflict(error) ? 409 : 500).json({ error: isUniqueConflict(error) ? 'Diese Jahresplanung existiert bereits' : error.message });
   }
 });
 
@@ -186,125 +202,164 @@ router.post('/:id/entries', teacherOnly, async (req, res) => {
   const title = String(body.title || '').trim();
   const type = String(body.entry_type || 'lesson');
   const rangeError = validateRange(body.entry_date, body.end_date);
-  if (!title || rangeError || !ENTRY_TYPES.has(type)) return res.status(400).json({ error: rangeError || 'Titel und gültiger Eintragstyp erforderlich' });
+  const boundsError = !rangeError && validatePlanBounds(body.entry_date, body.end_date, plan);
+  if (rangeError || boundsError || !ENTRY_TYPES.has(type)) return res.status(400).json({ error: rangeError || boundsError || 'Gültiger Eintragstyp erforderlich' });
   try {
-    const connection = await pool.getConnection();
-    try {
-      await connection.beginTransaction();
-      const [result] = await connection.execute(
-        'INSERT INTO annual_plan_entries (plan_id, entry_date, end_date, entry_type, lesson_number, title, notes, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [plan.id, body.entry_date, body.end_date || null, type, body.lesson_number || null, title, body.notes || null, Number(body.sort_order) || 0]
+    const result = pool.transaction((connection) => {
+      const [inserted] = connection.execute(
+        'INSERT INTO annual_plan_entries (plan_id, entry_date, end_date, entry_type, lesson_number, title, notes, sort_order, content, learning_objectives, activities, homework) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [plan.id, body.entry_date, body.end_date || null, type, body.lesson_number || null, title, body.notes || null, Number(body.sort_order) || 0, ...ENTRY_TEXT_FIELDS.map((field) => body[field] || null)]
       );
-      await replaceMaterials(connection, result.insertId, body);
-      await connection.commit();
-      const entries = await getEntries(plan.id);
-      res.status(201).json(entries.find((entry) => entry.id === result.insertId));
-    } catch (error) { await connection.rollback(); throw error; } finally { connection.release(); }
+      return inserted;
+    });
+    const entries = await getEntries(plan.id);
+    res.status(201).json(entries.find((entry) => entry.id === result.insertId));
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 router.patch('/entries/:id', teacherOnly, async (req, res) => {
-  const [rows] = await pool.execute('SELECT * FROM annual_plan_entries WHERE id = ?', [req.params.id]);
+  const [rows] = await pool.execute('SELECT e.*, p.start_date AS plan_start_date, p.end_date AS plan_end_date FROM annual_plan_entries e JOIN annual_plans p ON p.id=e.plan_id WHERE e.id = ?', [req.params.id]);
   if (!rows.length) return res.status(404).json({ error: 'Planungseintrag nicht gefunden' });
   const current = rows[0];
   const body = req.body || {};
   const nextDate = body.entry_date ?? current.entry_date;
-  const nextEnd = body.end_date ?? current.end_date;
+  const nextEnd = Object.prototype.hasOwnProperty.call(body, 'end_date') ? body.end_date : current.end_date;
   const rangeError = validateRange(nextDate, nextEnd);
-  if (rangeError) return res.status(400).json({ error: rangeError });
+  const boundsError = !rangeError && validatePlanBounds(nextDate, nextEnd, { start_date: current.plan_start_date, end_date: current.plan_end_date });
+  if (rangeError || boundsError) return res.status(400).json({ error: rangeError || boundsError });
   const type = String(body.entry_type ?? current.entry_type);
   if (!ENTRY_TYPES.has(type)) return res.status(400).json({ error: 'Ungültiger Eintragstyp' });
+  const title = Object.prototype.hasOwnProperty.call(body, 'title') ? String(body.title || '').trim() : current.title;
   try {
-    const connection = await pool.getConnection();
-    try {
-      await connection.beginTransaction();
-      await connection.execute(
-        'UPDATE annual_plan_entries SET entry_date = ?, end_date = ?, entry_type = ?, lesson_number = ?, title = ?, notes = ?, sort_order = ? WHERE id = ?',
-        [nextDate, nextEnd || null, type, body.lesson_number ?? current.lesson_number, String(body.title ?? current.title).trim(), body.notes ?? current.notes, Number(body.sort_order ?? current.sort_order) || 0, req.params.id]
+    const values = [nextDate, nextEnd || null, type,
+        Object.prototype.hasOwnProperty.call(body, 'lesson_number') ? body.lesson_number || null : current.lesson_number,
+        title,
+        Object.prototype.hasOwnProperty.call(body, 'notes') ? body.notes || null : current.notes,
+        Object.prototype.hasOwnProperty.call(body, 'sort_order') ? Number(body.sort_order) || 0 : current.sort_order,
+        ...ENTRY_TEXT_FIELDS.map((field) => Object.prototype.hasOwnProperty.call(body, field) ? body[field] || null : current[field]),
+        req.params.id];
+    pool.transaction((connection) => {
+      connection.execute(
+        'UPDATE annual_plan_entries SET entry_date = ?, end_date = ?, entry_type = ?, lesson_number = ?, title = ?, notes = ?, sort_order = ?, content = ?, learning_objectives = ?, activities = ?, homework = ? WHERE id = ?',
+        values
       );
-      if (body.file_ids !== undefined || body.folder_ids !== undefined) await replaceMaterials(connection, req.params.id, body);
-      await connection.commit();
-      const entries = await getEntries(current.plan_id);
-      res.json(entries.find((entry) => entry.id === Number(req.params.id)));
-    } catch (error) { await connection.rollback(); throw error; } finally { connection.release(); }
+    });
+    const entries = await getEntries(current.plan_id);
+    res.json(entries.find((entry) => entry.id === Number(req.params.id)));
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+router.post('/entries/:id/materials', teacherOnly, async (req, res) => {
+  const kind = req.body?.kind;
+  const materialId = Number(req.body?.id);
+  if (!['file', 'folder'].includes(kind) || !Number.isInteger(materialId) || materialId < 1) {
+    return res.status(400).json({ error: 'Materialtyp und ID erforderlich' });
+  }
+  try {
+    const validation = await validateMaterial(req.params.id, kind, materialId);
+    if (validation.error) return res.status(validation.status).json({ error: validation.error });
+    const column = kind === 'file' ? 'file_id' : 'folder_id';
+    await pool.execute(`INSERT OR IGNORE INTO annual_plan_materials (entry_id, ${column}) VALUES (?, ?)`, [req.params.id, materialId]);
+    res.json(await getEntry(req.params.id));
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+router.delete('/entries/:id/materials/:kind/:materialId', teacherOnly, async (req, res) => {
+  const kind = req.params.kind;
+  const materialId = Number(req.params.materialId);
+  if (!['file', 'folder'].includes(kind) || !Number.isInteger(materialId) || materialId < 1) {
+    return res.status(400).json({ error: 'Ungültiges Material' });
+  }
+  try {
+    if (!await materialContext(req.params.id)) return res.status(404).json({ error: 'Planungseintrag nicht gefunden' });
+    const column = kind === 'file' ? 'file_id' : 'folder_id';
+    await pool.execute(`DELETE FROM annual_plan_materials WHERE entry_id = ? AND ${column} = ?`, [req.params.id, materialId]);
+    res.json(await getEntry(req.params.id));
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 router.post('/entries/:id/lesson-session', teacherOnly, async (req, res) => {
   const userId = req.user?.id || 1;
-  const connection = await pool.getConnection();
   try {
-    await connection.beginTransaction();
-    const [rows] = await connection.execute(`
-      SELECT e.*, p.root_folder_id, f.subject, f.group_name
-      FROM annual_plan_entries e
-      JOIN annual_plans p ON p.id = e.plan_id
-      JOIN folders f ON f.id = p.root_folder_id
-      WHERE e.id = ?
-    `, [req.params.id]);
-    const entry = rows[0];
-    if (!entry) { await connection.rollback(); return res.status(404).json({ error: 'Planungseintrag nicht gefunden' }); }
-    if (entry.entry_type !== 'lesson') { await connection.rollback(); return res.status(400).json({ error: 'Nur Unterrichtseinträge können gestartet werden' }); }
+    const result = pool.transaction((connection) => {
+      const [rows] = connection.execute(`
+        SELECT e.*, p.root_folder_id, f.subject, f.group_name
+        FROM annual_plan_entries e
+        JOIN annual_plans p ON p.id = e.plan_id
+        JOIN folders f ON f.id = p.root_folder_id
+        WHERE e.id = ?
+      `, [req.params.id]);
+      const entry = rows[0];
+      if (!entry) return { status: 404, error: 'Planungseintrag nicht gefunden' };
+      if (entry.entry_type !== 'lesson') return { status: 400, error: 'Nur Unterrichtseinträge können gestartet werden' };
 
-    let sessionId = entry.lesson_session_id;
-    if (sessionId) {
-      const [existing] = await connection.execute('SELECT id FROM lesson_sessions WHERE id = ? AND user_id = ?', [sessionId, userId]);
-      if (!existing.length) sessionId = null;
-    }
-    if (!sessionId) {
-      const [created] = await connection.execute(
+      let sessionId = entry.lesson_session_id;
+      if (sessionId) {
+        const [existing] = connection.execute('SELECT id FROM lesson_sessions WHERE id = ? AND user_id = ?', [sessionId, userId]);
+        if (!existing.length) sessionId = null;
+      }
+      if (!sessionId) {
+        const [created] = connection.execute(
         `INSERT INTO lesson_sessions (user_id, folder_id, title, lesson_date, class_name, subject, learning_goal, teacher_notes, status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
-        [userId, entry.root_folder_id, entry.title, entry.entry_date, entry.group_name || null, entry.subject || null, entry.notes || null, entry.notes || null]
-      );
-      sessionId = created.insertId;
-      const phaseDefinitions = [
-        ['Einstieg', 300], ['Erarbeitung', 900], ['Partnerarbeit', 600],
-        ['Sicherung', 600], ['Abschluss', 300],
-      ];
-      let firstPhaseId;
-      for (const [position, [title, duration]] of phaseDefinitions.entries()) {
-        const [phase] = await connection.execute(
-          `INSERT INTO lesson_phases (lesson_session_id, position, title, duration_seconds, description, teacher_notes, student_instruction)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [sessionId, position, title, duration, position === 0 ? entry.notes || null : null, position === 0 ? entry.notes || null : null, position === 0 ? entry.notes || null : null]
+          [userId, entry.root_folder_id, entry.title || 'Unterricht', entry.entry_date, entry.group_name || null, entry.subject || null, entry.content || null, null]
         );
-        if (position === 0) firstPhaseId = phase.insertId;
-      }
-      const [materials] = await connection.execute('SELECT file_id, folder_id FROM annual_plan_materials WHERE entry_id = ?', [entry.id]);
-      for (const material of materials) {
-        await connection.execute(
-          `INSERT OR IGNORE INTO lesson_phase_materials (phase_id, file_id, folder_id, visibility, position) VALUES (?, ?, ?, 'private', ?)`,
-          [firstPhaseId, material.file_id || null, material.folder_id || null, 0]
+        sessionId = created.insertId;
+        const phaseDefinitions = [['Einstieg', 300], ['Erarbeitung', 900], ['Partnerarbeit', 600], ['Sicherung', 600], ['Abschluss', 300]];
+        let firstPhaseId;
+        for (const [position, [phaseTitle, duration]] of phaseDefinitions.entries()) {
+          const [phase] = connection.execute(
+            'INSERT INTO lesson_phases (lesson_session_id, position, title, duration_seconds) VALUES (?, ?, ?, ?)',
+            [sessionId, position, phaseTitle, duration]
+          );
+          if (position === 0) firstPhaseId = phase.insertId;
+        }
+        const [materials] = connection.execute('SELECT file_id, folder_id FROM annual_plan_materials WHERE entry_id = ?', [entry.id]);
+        for (const material of materials) {
+          connection.execute(
+            `INSERT OR IGNORE INTO lesson_phase_materials (phase_id, file_id, folder_id, visibility, position) VALUES (?, ?, ?, 'private', 0)`,
+            [firstPhaseId, material.file_id || null, material.folder_id || null]
+          );
+        }
+        connection.execute('UPDATE annual_plan_entries SET lesson_session_id = ? WHERE id = ?', [sessionId, entry.id]);
+      } else {
+        // Planning remains the source of truth only for these general fields.
+        // Phase content, timers, teacher notes and student responses are never touched.
+        connection.execute(
+          'UPDATE lesson_sessions SET lesson_date = ?, title = ?, learning_goal = ? WHERE id = ? AND user_id = ?',
+          [entry.entry_date, entry.title || 'Unterricht', entry.content || null, sessionId, userId]
         );
       }
-      await connection.execute('UPDATE annual_plan_entries SET lesson_session_id = ? WHERE id = ? AND lesson_session_id IS NULL', [sessionId, entry.id]);
-      const [linked] = await connection.execute('SELECT lesson_session_id FROM annual_plan_entries WHERE id = ?', [entry.id]);
-      sessionId = linked[0].lesson_session_id;
-    }
-    await connection.commit();
-    const [sessions] = await pool.execute('SELECT * FROM lesson_sessions WHERE id = ? AND user_id = ?', [sessionId, userId]);
-    const entryWithSession = await getEntry(entry.id);
-    res.status(200).json({ session: sessions[0], entry: entryWithSession });
+      const [sessions] = connection.execute('SELECT * FROM lesson_sessions WHERE id = ? AND user_id = ?', [sessionId, userId]);
+      return { session: sessions[0], entryId: entry.id };
+    });
+    if (result.error) return res.status(result.status).json({ error: result.error });
+    const entryWithSession = await getEntry(result.entryId);
+    res.status(200).json({ session: result.session, entry: entryWithSession });
   } catch (error) {
-    await connection.rollback();
     res.status(500).json({ error: error.message });
-  } finally { connection.release(); }
+  }
 });
 
 router.post('/entries/:id/duplicate', teacherOnly, async (req, res) => {
-  const [rows] = await pool.execute('SELECT * FROM annual_plan_entries WHERE id = ?', [req.params.id]);
-  if (!rows.length) return res.status(404).json({ error: 'Planungseintrag nicht gefunden' });
-  const entry = rows[0];
   try {
-    const [result] = await pool.execute(
-      'INSERT INTO annual_plan_entries (plan_id, entry_date, end_date, entry_type, lesson_number, title, notes, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [entry.plan_id, entry.entry_date, entry.end_date, entry.entry_type, entry.lesson_number, entry.title, entry.notes, entry.sort_order]
-    );
-    const [materials] = await pool.execute('SELECT file_id, folder_id FROM annual_plan_materials WHERE entry_id = ?', [entry.id]);
-    for (const material of materials) await pool.execute('INSERT IGNORE INTO annual_plan_materials (entry_id, file_id, folder_id) VALUES (?, ?, ?)', [result.insertId, material.file_id, material.folder_id]);
-    const entries = await getEntries(entry.plan_id);
-    res.status(201).json(entries.find((item) => item.id === result.insertId));
+    const duplicated = pool.transaction((connection) => {
+      const [rows] = connection.execute('SELECT * FROM annual_plan_entries WHERE id = ?', [req.params.id]);
+      if (!rows.length) return null;
+      const entry = rows[0];
+      const [result] = connection.execute(
+        `INSERT INTO annual_plan_entries
+          (plan_id, entry_date, end_date, entry_type, lesson_number, title, notes, sort_order, content, learning_objectives, activities, homework, lesson_session_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        [entry.plan_id, entry.entry_date, entry.end_date, entry.entry_type, entry.lesson_number, entry.title, entry.notes, entry.sort_order, ...ENTRY_TEXT_FIELDS.map((field) => entry[field])]
+      );
+      const [materials] = connection.execute('SELECT file_id, folder_id FROM annual_plan_materials WHERE entry_id = ?', [entry.id]);
+      for (const material of materials) connection.execute('INSERT OR IGNORE INTO annual_plan_materials (entry_id, file_id, folder_id) VALUES (?, ?, ?)', [result.insertId, material.file_id, material.folder_id]);
+      return { id: result.insertId, planId: entry.plan_id };
+    });
+    if (!duplicated) return res.status(404).json({ error: 'Planungseintrag nicht gefunden' });
+    const entries = await getEntries(duplicated.planId);
+    res.status(201).json(entries.find((item) => item.id === duplicated.id));
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
@@ -319,8 +374,8 @@ router.get('/:id/export.csv', teacherOnly, async (req, res) => {
   const entries = await getEntries(plan.id);
   const escape = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
   const lines = [
-    ['Datum', 'Bis', 'Typ', 'Stunde', 'Titel', 'Notizen', 'Dateien', 'Ordner'].map(escape).join(';'),
-    ...entries.map((entry) => [entry.entry_date, entry.end_date, entry.entry_type, entry.lesson_number, entry.title, entry.notes, entry.file_ids.join(','), entry.folder_ids.join(',')].map(escape).join(';')),
+    ['Datum', 'Bis', 'Typ', 'Stunde', 'Titel', 'Notizen', 'Inhalt', 'Lernziele', 'Aktivitäten', 'Hausaufgaben', 'Dateien', 'Ordner'].map(escape).join(';'),
+    ...entries.map((entry) => [entry.entry_date, entry.end_date, entry.entry_type, entry.lesson_number, entry.title, entry.notes, entry.content, entry.learning_objectives, entry.activities, entry.homework, entry.file_ids.join(','), entry.folder_ids.join(',')].map(escape).join(';')),
   ];
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="Jahresplanung-${plan.school_year.replaceAll('/', '-')}.csv"`);

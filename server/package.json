@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "storage:reconcile": "node scripts/reconcile-storage.mjs"
   },
   "dependencies": {
     "@homebridge/node-pty-prebuilt-multiarch": "^0.12.0",

@@ -555,13 +555,6 @@ html, body, #root {
   font-weight: 700;
   letter-spacing: .1px;
 }
-.lm-welcome-login button > div:last-child::after {
-  content: '  →';
-  display: inline-block;
-  margin-left: 8px;
-  transition: transform .16s ease;
-}
-.lm-welcome-login button:hover > div:last-child::after { transform: translateX(3px); }
 [data-theme="dark"] .lm-welcome-shell {
   background: color-mix(in srgb, var(--c-surface) 94%, transparent);
   box-shadow: 0 30px 90px rgba(0, 0, 0, .34), 0 4px 14px rgba(0, 0, 0, .22) !important;
@@ -925,8 +918,7 @@ button:active {
 .lm-annual-material { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-surface-2); font-size: 13px; }
 .lm-annual-material-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lm-annual-material-actions { display: flex; flex-shrink: 0; gap: 10px; font-size: 12px; }
-.lm-annual-material-actions a { color: var(--c-focus); text-decoration: none; }
-.lm-annual-material-actions a:hover { text-decoration: underline; }
+.lm-annual-material-actions button { min-height: 44px; border: 0; background: transparent; color: #E8472A; font: inherit; cursor: pointer; }
 .lm-annual-detail-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; }
 .lm-annual-cards { display: none; }
 @media (max-width: 860px) {
@@ -939,6 +931,11 @@ button:active {
   .lm-annual-detail-card { max-height: 82vh; border-radius: 16px 16px 0 0; border-bottom: 0; }
   .lm-annual-material { align-items: flex-start; flex-direction: column; gap: 7px; }
   .lm-annual-editor label { grid-column: auto !important; }
+  .lm-annual-planning { overflow-x: hidden !important; font-size: 16px; }
+  .lm-annual-planning input, .lm-annual-planning textarea, .lm-annual-planning select { font-size: 16px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lm-annual-planning *, .lm-welcome-login * { transition: none !important; animation: none !important; }
 }
 @media print {
   body.lm-print-planning #root > * { visibility: hidden; }

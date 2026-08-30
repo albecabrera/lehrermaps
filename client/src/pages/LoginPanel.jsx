@@ -305,7 +305,7 @@ function RoleCard({ label, desc, accent, onClick, avatar, loading = false }) {
       }}>
         {loading ? '...' : 'Einloggen'}
         {!loading && (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <svg aria-hidden="true" focusable="false" width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path d="M2 5h6M6 3l2 2-2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         )}

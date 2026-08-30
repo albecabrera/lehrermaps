@@ -8,6 +8,7 @@ User=lehrermaps.albertoca_3otieb5t8ze
 Group=psacln
 WorkingDirectory=/var/www/vhosts/lehrermaps.albertocabrera.de/httpdocs/server
 EnvironmentFile=/var/www/vhosts/lehrermaps.albertocabrera.de/httpdocs/server/.env
+Environment=BIND_HOST=127.0.0.1
 ExecStart=/usr/bin/node /var/www/vhosts/lehrermaps.albertocabrera.de/httpdocs/server/index.js
 Restart=on-failure
 RestartSec=5

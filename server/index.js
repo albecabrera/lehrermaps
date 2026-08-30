@@ -20,6 +20,7 @@ import notebooksRouter from './routes/notebooks.js';
 import searchRouter from './routes/search.js';
 import examsRouter from './routes/exams.js';
 import plansRouter from './routes/plans.js';
+import planArchivesRouter from './routes/planArchives.js';
 import lessonSessionsRouter, { displaySession, displayPage } from './routes/lessonSessions.js';
 import documentAnnotationsRouter from './routes/documentAnnotations.js';
 import todayDashboardRouter from './routes/todayDashboard.js';
@@ -37,6 +38,7 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 const server = http.createServer(app);
 const production = process.env.NODE_ENV === 'production';
+const bindHost = process.env.BIND_HOST || (production ? '127.0.0.1' : '0.0.0.0');
 const terminalEnabled = !production && process.env.ENABLE_TERMINAL === 'true';
 
 if (production) {
@@ -103,6 +105,7 @@ app.use('/api', notebooksRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/exams', examsRouter);
 app.use('/api/plans', plansRouter);
+app.use('/api/plan-archives', planArchivesRouter);
 app.use('/api', documentAnnotationsRouter);
 app.use('/api', todayDashboardRouter);
 app.use('/api', bugChecklistRouter);
@@ -237,8 +240,8 @@ app.use((err, req, res, _next) => {
 
 initSchema()
   .then(() => {
-    server.listen(PORT, () => {
-      console.log(`LehrerMaps server running on http://localhost:${PORT}`);
+    server.listen(PORT, bindHost, () => {
+      console.log(`LehrerMaps server running on http://${bindHost}:${PORT}`);
     });
   })
   .catch((e) => {

@@ -113,7 +113,37 @@ export const updateAnnualPlanEntry = (id, data) => api.patch(`/plans/entries/${i
 export const duplicateAnnualPlanEntry = (id) => api.post(`/plans/entries/${id}/duplicate`).then((r) => r.data);
 export const deleteAnnualPlanEntry = (id) => api.delete(`/plans/entries/${id}`);
 export const startAnnualPlanLessonSession = (id) => api.post(`/plans/entries/${id}/lesson-session`).then((r) => r.data);
-export const annualPlanExportUrl = (id) => withToken(`/api/plans/${id}/export.csv`);
+export const downloadAuthenticated = async (url, fallbackName = 'download') => {
+  const response = await api.get(url, { responseType: 'blob', timeout: 0 });
+  const href = URL.createObjectURL(response.data);
+  const disposition = response.headers['content-disposition'] || '';
+  const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  const plain = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+  const link = document.createElement('a');
+  link.href = href;
+  link.download = encoded ? decodeURIComponent(encoded) : plain || fallbackName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(href);
+};
+export const openAuthenticated = async (url) => {
+  const response = await api.get(url, { responseType: 'blob', timeout: 0 });
+  const href = URL.createObjectURL(response.data);
+  window.open(href, '_blank', 'noopener,noreferrer');
+  window.setTimeout(() => URL.revokeObjectURL(href), 60_000);
+};
+export const exportAnnualPlanZip = (id, materials = 'linked') => downloadAuthenticated(`/plan-archives/${id}/export.zip?materials=${encodeURIComponent(materials)}`, 'annual-plan.zip');
+export const previewAnnualPlanImport = (rootFolderId, schoolYear, archive) => {
+  const form = new FormData();
+  form.append('root_folder_id', rootFolderId);
+  form.append('school_year', schoolYear);
+  form.append('archive', archive);
+  return api.post('/plan-archives/import/preview', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 0 }).then((r) => r.data);
+};
+export const commitAnnualPlanImport = (token) => api.post('/plan-archives/import/commit', { token }).then((r) => r.data);
+export const attachAnnualPlanMaterial = (entryId, kind, id) => api.post(`/plans/entries/${entryId}/materials`, { kind, id }).then((r) => r.data);
+export const unlinkAnnualPlanMaterial = (entryId, kind, id) => api.delete(`/plans/entries/${entryId}/materials/${kind}/${id}`).then((r) => r.data);
 
 export const searchGlobal = (q, fileOffset = 0, folderOffset = 0, linkOffset = 0) =>
   api.get('/files/search', { params: { q, fileOffset, folderOffset, linkOffset } }).then((r) => r.data);

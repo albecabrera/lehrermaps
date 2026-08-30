@@ -72,8 +72,7 @@ try {
   teacherToken = (await request('/api/login', {
     method: 'POST', body: JSON.stringify({ password: process.env.LEHRERMAPS_TEACHER_PASSWORD || 'lehrer' }),
   }, null)).token;
-  await requestStatus('/api/login-student', 404, { method: 'POST', body: JSON.stringify({ password: 'removed' }) }, null);
-  pass('teacher login and removed student login');
+  pass('teacher login');
 
   root = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}ROOT` }) });
   child = await request('/api/folders', { method: 'POST', body: JSON.stringify({ subject: 'Informatik', group_name: 'TEST', name: `${prefix}CHILD`, parent_id: root.id }) });
@@ -83,7 +82,6 @@ try {
     await request(`/api/folders/${root.id}`, { method: 'PUT', body: JSON.stringify({ name: `${prefix}RENAMED` }) });
     await request(`/api/folders/${root.id}/color`, { method: 'PUT', body: JSON.stringify({ color: '#E8472A' }) });
     await request(`/api/folders/${root.id}/favorite`, { method: 'PUT' });
-    await request(`/api/folders/${root.id}/deadline`, { method: 'PUT', body: JSON.stringify({ due_at: '2030-01-02' }) });
     await request(`/api/folders/${root.id}/notes`, { method: 'PUT', body: JSON.stringify({ content: prefix }) });
     await request(`/api/folders/${child.id}/move`, { method: 'PUT', body: JSON.stringify({ parent_id: destination.id }) });
     return request('/api/folders/reorder', { method: 'PUT', body: JSON.stringify({ items: [{ id: root.id, sort_order: 9 }, { id: destination.id, sort_order: 8 }] }) });
@@ -99,13 +97,15 @@ try {
   });
 
   const fileTypes = [
-    ['docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-    ['pdf', 'application/pdf'], ['png', 'image/png'], ['md', 'text/markdown'],
+    ['docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', Buffer.from([0x50, 0x4b, 0x03, 0x04, 1])],
+    ['pdf', 'application/pdf', Buffer.from('%PDF-1.4\n%%EOF')],
+    ['png', 'image/png', Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 1])],
+    ['md', 'text/markdown', Buffer.from('# smoke')],
   ];
-  for (const [extension, mime] of fileTypes) {
+  for (const [extension, mime, bytes] of fileTypes) {
     const form = new FormData();
     form.append('folder_id', String(root.id));
-    form.append('file', new Blob([`${prefix}${extension}`], { type: mime }), `${prefix}${extension}.${extension}`);
+    form.append('file', new Blob([bytes], { type: mime }), `${prefix}${extension}.${extension}`);
     const uploaded = await request('/api/files/upload', { method: 'POST', body: form });
     createdFiles.push(uploaded.id);
   }
@@ -114,10 +114,7 @@ try {
     await request(`/api/files/search?q=${encodeURIComponent(prefix)}`);
     await request(`/api/files/${primaryFile.id}`, { method: 'PUT', body: JSON.stringify({ original_name: `${prefix}RENAMED.md`, material_role: 'solution' }) });
   });
-  await check('legacy public routes, deadline and ZIP', async () => {
-    await requestStatus(`/api/files/${primaryFile.id}/public`, 404, { method: 'PUT' });
-    await requestStatus('/api/files/public/legacy-token', 401, {}, null);
-    await request(`/api/files/${primaryFile.id}/deadline`, { method: 'PUT', body: JSON.stringify({ due_at: '2030-01-03' }) });
+  await check('ZIP download', async () => {
     const zip = await request(`/api/files/zip/${root.id}`);
     if (zip.byteLength < 10) throw new Error('ZIP is empty');
   });

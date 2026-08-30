@@ -1,9 +1,22 @@
 import { Router } from 'express';
+import path from 'path';
+import os from 'os';
+import { existsSync, mkdirSync, renameSync } from 'fs';
+import { rm } from 'fs/promises';
+import { randomUUID } from 'crypto';
+import { fileURLToPath } from 'url';
 import pool from '../db.js';
 import auth, { teacherOnly } from '../middleware/auth.js';
 
 const router = Router();
 router.use(auth);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const storageRoot = process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_DIR) : null;
+const uploadsDir = storageRoot ? path.join(storageRoot, 'uploads') : path.join(__dirname, '..', 'uploads');
+const previewsDir = storageRoot ? path.join(storageRoot, 'previews') : path.join(__dirname, '..', 'previews');
+const editsDir = storageRoot ? path.join(storageRoot, 'edit-copies') : path.join(__dirname, '..', 'edit-copies');
+const stagingDir = storageRoot ? path.join(storageRoot, 'staging') : path.join(os.tmpdir(), 'lehrermaps-upload-staging');
+mkdirSync(stagingDir, { recursive: true });
 
 const FOLDER_WITH_COUNT = `
   SELECT f.*, COUNT(fi.id) AS file_count
@@ -216,10 +229,35 @@ router.put('/:id/color', teacherOnly, async (req, res) => {
 });
 
 router.delete('/:id', teacherOnly, async (req, res) => {
+  const quarantined = [];
   try {
-    await pool.execute('DELETE FROM folders WHERE id = ?', [req.params.id]);
+    const [files] = await pool.execute(`
+      WITH RECURSIVE descendants(id) AS (
+        SELECT id FROM folders WHERE id = ?
+        UNION ALL SELECT f.id FROM folders f JOIN descendants d ON f.parent_id = d.id
+      )
+      SELECT fi.id, fi.stored_name FROM files fi JOIN descendants d ON d.id = fi.folder_id
+    `, [req.params.id]);
+    const fileIds = files.map((file) => file.id);
+    let copies = [];
+    if (fileIds.length) {
+      const placeholders = fileIds.map(() => '?').join(',');
+      [copies] = await pool.execute(`SELECT copy_name FROM file_edit_copies WHERE file_id IN (${placeholders})`, fileIds);
+    }
+    const paths = [
+      ...files.flatMap((file) => [path.join(uploadsDir, file.stored_name), path.join(previewsDir, `${file.stored_name}.pdf`)]),
+      ...copies.map((copy) => path.join(editsDir, copy.copy_name)),
+    ];
+    for (const source of paths) if (existsSync(source)) {
+      const target = path.join(stagingDir, `.delete-${randomUUID()}`);
+      renameSync(source, target);
+      quarantined.push({ source, target });
+    }
+    pool.transaction((connection) => connection.execute('DELETE FROM folders WHERE id = ?', [req.params.id]));
+    for (const item of quarantined) await rm(item.target, { force: true });
     res.json({ ok: true });
   } catch (e) {
+    for (const item of quarantined.reverse()) if (existsSync(item.target)) renameSync(item.target, item.source);
     res.status(500).json({ error: e.message });
   }
 });

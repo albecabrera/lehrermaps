@@ -41,6 +41,28 @@ class Connection {
   async commit() { database.exec('COMMIT'); }
   async rollback() { try { database.exec('ROLLBACK'); } catch {} }
   release() {}
+  transaction(callback) {
+    database.exec('BEGIN IMMEDIATE');
+    const syncConnection = {
+      execute(sql, values = []) {
+        const query = translate(sql);
+        const statement = database.prepare(query);
+        if (/^\s*(SELECT|WITH|PRAGMA|EXPLAIN)\b/i.test(query)) return [statement.all(...values), []];
+        const result = statement.run(...values);
+        if (/^\s*INSERT\b/i.test(query)) return [{ insertId: Number(result.lastInsertRowid), affectedRows: result.changes }, []];
+        return [{ affectedRows: result.changes }, []];
+      },
+    };
+    try {
+      const result = callback(syncConnection);
+      if (result && typeof result.then === 'function') throw new Error('SQLite transaction callbacks must be synchronous');
+      database.exec('COMMIT');
+      return result;
+    } catch (error) {
+      try { database.exec('ROLLBACK'); } catch {}
+      throw error;
+    }
+  }
 }
 
 const pool = new Connection();
@@ -83,6 +105,20 @@ export async function initSchema() {
   if (!entryColumns.some((column) => column.name === 'lesson_session_id')) {
     database.exec('ALTER TABLE annual_plan_entries ADD COLUMN lesson_session_id INTEGER REFERENCES lesson_sessions(id) ON DELETE SET NULL');
   }
+  for (const column of ['content', 'learning_objectives', 'activities', 'homework']) {
+    if (!entryColumns.some((entryColumn) => entryColumn.name === column)) {
+      database.exec(`ALTER TABLE annual_plan_entries ADD COLUMN ${column} TEXT`);
+    }
+  }
+  // Nullable columns do not participate in SQLite composite uniqueness. Remove
+  // legacy duplicate associations before adding the two correct partial indexes.
+  database.exec(`
+    DELETE FROM annual_plan_materials
+    WHERE id NOT IN (
+      SELECT MIN(id) FROM annual_plan_materials
+      GROUP BY entry_id, file_id, folder_id
+    );
+  `);
   database.exec(`
     CREATE INDEX IF NOT EXISTS folders_subject_group_parent_order ON folders(subject, group_name, parent_id, sort_order);
     CREATE INDEX IF NOT EXISTS files_folder_current_uploaded ON files(folder_id, is_current_version, uploaded_at);
@@ -93,10 +129,23 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS document_annotation_history_owner ON document_annotation_history(file_id, user_id, created_at);
     CREATE INDEX IF NOT EXISTS annual_plan_entries_plan_date ON annual_plan_entries(plan_id, entry_date, sort_order);
     CREATE UNIQUE INDEX IF NOT EXISTS annual_plan_entries_lesson_session ON annual_plan_entries(lesson_session_id) WHERE lesson_session_id IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS annual_plan_material_file_unique ON annual_plan_materials(entry_id, file_id) WHERE file_id IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS annual_plan_material_folder_unique ON annual_plan_materials(entry_id, folder_id) WHERE folder_id IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS files_one_current_version ON files(version_group_id) WHERE is_current_version = 1;
     CREATE INDEX IF NOT EXISTS lesson_sessions_user_date ON lesson_sessions(user_id, lesson_date, updated_at);
     CREATE INDEX IF NOT EXISTS lesson_phases_session_position ON lesson_phases(lesson_session_id, position);
     CREATE INDEX IF NOT EXISTS lesson_elements_canvas_layer ON lesson_phase_elements(canvas_id, layer, id);
     CREATE INDEX IF NOT EXISTS today_dashboard_notes_user_date ON today_dashboard_notes(user_id, note_date);
+  `);
+  database.exec(`
+    CREATE TRIGGER IF NOT EXISTS annual_plan_materials_validate_insert
+    BEFORE INSERT ON annual_plan_materials
+    WHEN (NEW.file_id IS NULL) = (NEW.folder_id IS NULL)
+    BEGIN SELECT RAISE(ABORT, 'annual plan material must reference exactly one file or folder'); END;
+    CREATE TRIGGER IF NOT EXISTS annual_plan_materials_validate_update
+    BEFORE UPDATE ON annual_plan_materials
+    WHEN (NEW.file_id IS NULL) = (NEW.folder_id IS NULL)
+    BEGIN SELECT RAISE(ABORT, 'annual plan material must reference exactly one file or folder'); END;
   `);
   for (const table of ['schedule', 'notebooks', 'sections', 'pages', 'blocks', 'document_annotations', 'annual_plans', 'annual_plan_entries', 'lesson_sessions', 'lesson_phases', 'lesson_phase_canvases', 'lesson_phase_elements']) database.exec(`CREATE TRIGGER IF NOT EXISTS ${table}_touch_updated_at AFTER UPDATE ON ${table} FOR EACH ROW BEGIN UPDATE ${table} SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;`);
   await pool.execute("UPDATE folders SET group_name = 'Klasse 9' WHERE subject = 'spanisch' AND group_name = 'es-9'");

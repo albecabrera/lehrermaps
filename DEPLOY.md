@@ -22,6 +22,7 @@ cp env.txt .env      # dann .env editieren — echte Werte:
 - `JWT_SECRET` (≥32 zufällige Zeichen)
 - `APP_PASSWORD` (teacher workspace)
 - `SQLITE_PATH=./data/lehrermaps.sqlite` (opcional), `PORT=3001`
+- `BIND_HOST=127.0.0.1` for a host reverse proxy (`0.0.0.0` only inside an isolated container network)
 - `ALLOWED_ORIGIN=https://DEIN-DOMAIN.de`
 
 SQLite se crea automáticamente al iniciar, sin servidor, credenciales ni permisos
@@ -70,10 +71,15 @@ Auf `https://DEIN-DOMAIN.de`:
 ```bash
 git pull
 cd client && npm ci && npm run build
-# Sync the static build with deletion so obsolete hashed chunks cannot remain public.
-rsync -a --delete dist/ /var/www/lehrermaps/client/dist/
+# Build first, then atomically sync static assets before restarting the API.
+test -f dist/index.html && test -f dist/service-worker.js
+rsync -a --delete --delay-updates dist/ /var/www/lehrermaps/client/dist/
 systemctl restart lehrermaps  # solo si cambió el backend
 ```
+Never restart before the static sync completes: mixed HTML/hashed assets cause a
+temporary broken application shell. Plan ZIP imports additionally require the
+system `unzip` executable. Run `npm run storage:reconcile --prefix server` first
+in dry-run mode before any storage cleanup; normal orphan blobs are never deleted.
 Nginx cacht `service-worker.js`/`manifest.json`/`index.html` mit `no-cache`
 (siehe deploy/nginx.conf) → neuer Build wird beim nächsten Laden aktiv, der
 SW (stale-while-revalidate, `skipWaiting`/`clients.claim`) übernimmt automatisch.
