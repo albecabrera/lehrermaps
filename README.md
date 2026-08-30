@@ -4,7 +4,7 @@ LehrerMaps es una aplicación web para docentes que necesitan organizar, prepara
 
 La idea es simple: **materia → grupo → carpeta → archivos, enlaces, notas y planificación**. LehrerMaps is a private workspace for teaching staff.
 
-La versión actual añade un flujo docente más claro: **material por roles de clase**, **modo de enseñanza para mostrar una hora**, y **versionado local para editar copias sin romper el original**.
+La versión actual añade un flujo docente más claro: **planificación anual por hora lectiva**, **material por roles de clase**, **modo de enseñanza para mostrar una hora**, **panel diario persistente** y **versionado local para editar copias sin romper el original**.
 
 ---
 
@@ -51,6 +51,10 @@ Die Links öffnen den click-&-teach-Player in einem neuen Browser-Tab und bleibe
 - **QR para enlaces externos**: genera códigos QR para abrir recursos externos durante la clase.
 - **Notas y cuadernos**: editor enriquecido con Tiptap, notebooks, secciones y páginas.
 - **Horario semanal**: planificación de clases y vinculación con carpetas/materiales.
+- **Planificación anual**: crea planes por curso escolar y materia, añade horas lectivas, fechas, temas/títulos, notas, tipos de actividad y materiales vinculados.
+- **Arbeitsblätter por hora**: cada hora de la planificación anual puede reunir directamente hojas de trabajo, presentaciones, recuadros de resumen y otros recursos; se admiten formatos habituales como `.png`, `.jpeg`, `.doc`, `.docx`, `.pdf`, `.txt`, `.xls`, `.xlsx`, `.ppt` y `.pptx`.
+- **Acceso desde la planificación**: las horas planificadas pueden abrirse en el modo de enseñanza con sus materiales y contenidos preparados.
+- **Panel diario persistente**: tareas y notas del día se guardan en el backend y permanecen disponibles después de recargar o volver a iniciar sesión.
 - **Búsqueda global**: acceso rápido a carpetas, archivos y contenido relevante.
 - **PWA instalable**: usable como app en móvil/escritorio cuando se sirve por HTTPS.
 - **Terminal integrada para docente**: acceso protegido por JWT mediante Socket.io + xterm.js.
@@ -222,6 +226,8 @@ La app inicializa/migra tablas desde `server/db.js`:
 - `notebooks`, `sections`, `pages`, `blocks`: sistema de notas/cuadernos.
 - `quick_notes`: notas rápidas.
 - `exams`: planificación o gestión de exámenes.
+- `annual_plans`, `annual_plan_entries`, `annual_plan_materials`: planificación anual por materia, hora y curso escolar, con enlaces a archivos y carpetas.
+- `today_dashboard`: tareas y notas rápidas persistentes del panel diario.
 
 ---
 
