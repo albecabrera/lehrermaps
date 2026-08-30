@@ -82,4 +82,16 @@ unconfirmedQueue.set(['must remain pending']);
 await unconfirmedQueue.flush();
 assert.ok(unconfirmedLocal.getItem('pending'), 'an unconfirmed response cannot clear pending data');
 
+let loadAttempts = 0;
+const loadRetryQueue = new PendingSyncQueue({
+  storage: storage(), storageKey: 'pending',
+  load: async () => { loadAttempts += 1; if (loadAttempts === 1) throw new Error('offline'); return ['server']; },
+  save: async () => {}, isBackendEmpty: (value) => value.length === 0, onlineTarget: null,
+});
+await loadRetryQueue.hydrate().catch(() => {});
+assert.equal(loadRetryQueue.status, 'error', 'an initial load failure is surfaced');
+loadRetryQueue.retryNow();
+await new Promise((resolve) => setImmediate(resolve));
+assert.deepEqual(loadRetryQueue.value, ['server'], 'manual retry rehydrates after an initial load failure');
+
 console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'pending precedence', 'confirmed legacy migration', 'response confirmation'] }));

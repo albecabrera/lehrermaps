@@ -53,6 +53,7 @@ export class PendingSyncQueue {
     this.retryCount = 0;
     this.timer = null;
     this.legacyPending = false;
+    this.loadFailed = false;
     this.onlineTarget = onlineTarget;
     this.onOnline = () => this.retryNow();
     onlineTarget?.addEventListener?.('online', this.onOnline);
@@ -75,6 +76,7 @@ export class PendingSyncQueue {
   async hydrate() {
     try {
       const backendValue = await this.load();
+      this.loadFailed = false;
       const storedPending = readPending(this.storage, this.storageKey);
       const pending = storedPending && this.isValid(storedPending.value) ? storedPending : null;
       if (storedPending && !pending) clearPending(this.storage, this.storageKey);
@@ -91,6 +93,7 @@ export class PendingSyncQueue {
       this.notify();
       return this.snapshot();
     } catch (error) {
+      this.loadFailed = true;
       const pending = readPending(this.storage, this.storageKey);
       if (pending) {
         this.value = pending.value;
@@ -162,6 +165,12 @@ export class PendingSyncQueue {
   }
 
   retryNow() {
+    if (this.loadFailed) {
+      this.status = 'pending';
+      this.notify();
+      this.hydrate().catch(() => {});
+      return;
+    }
     if (!readPending(this.storage, this.storageKey)) return;
     if (this.timer !== null) {
       this.cancel(this.timer);
@@ -198,5 +207,5 @@ export function usePendingSync(options) {
     };
   }, [options.storageKey]);
 
-  return [state.value, (value) => queueRef.current?.set(value), state];
+  return [state.value, (value) => queueRef.current?.set(value), state, () => queueRef.current?.retryNow()];
 }

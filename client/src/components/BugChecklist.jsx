@@ -33,7 +33,7 @@ export function BugChecklistIcon({ size = 16 }) {
 }
 
 export default function BugChecklist({ open, onClose, t }) {
-  const [items, setItems, sync] = usePendingSync({
+  const [items, setItems, sync, retrySync] = usePendingSync({
     storageKey: `${STORAGE_KEY}:pending`, initialValue: [],
     load: () => getBugChecklist().then((response) => Array.isArray(response?.items) ? response.items : []),
     save: saveBugChecklist, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
@@ -106,7 +106,7 @@ export default function BugChecklist({ open, onClose, t }) {
             </div>
           ))}
         </div>
-        <footer className="lm-checklist-footer"><button className="lm-checklist-add" type="button" disabled={!hydrated} onClick={() => addItem()}><span aria-hidden="true">+</span> {t('bug_checklist.add')}</button><span>{sync.status === 'error' ? <span className="lm-checklist-sync-error" role="status">{t('bug_checklist.sync_error')}</span> : (sync.status === 'pending' ? t('bug_checklist.sync_pending') : t('bug_checklist.sync_saved'))}</span></footer>
+        <footer className="lm-checklist-footer"><button className="lm-checklist-add" type="button" disabled={!hydrated} onClick={() => addItem()}><span aria-hidden="true">+</span> {t('bug_checklist.add')}</button><span>{sync.status === 'error' ? <span className="lm-checklist-sync-error" role="status">{t('bug_checklist.sync_error')} <button type="button" onClick={retrySync} style={{ marginLeft: 6, border: 0, background: 'transparent', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>{t('bug_checklist.retry')}</button></span> : (sync.status === 'pending' ? t('bug_checklist.sync_pending') : t('bug_checklist.sync_saved'))}</span></footer>
       </section>
     </div>,
     document.body,
