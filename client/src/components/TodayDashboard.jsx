@@ -18,15 +18,6 @@ function readText(key) {
   try { return localStorage.getItem(key) || ''; } catch { return ''; }
 }
 
-function writeLegacy(key, value) {
-  try {
-    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export default function TodayDashboard({
   subject, folders = [], onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
 }) {
@@ -52,7 +43,6 @@ export default function TodayDashboard({
   const persistTasks = (next) => {
     tasksChanged.current = true;
     setTasks(next);
-    writeLegacy(LEGACY_TASKS_KEY, next);
     queueSave(() => saveTodayDashboardTasks(next))
       .then(() => setSaveError(false))
       .catch(() => setSaveError(true));
@@ -60,7 +50,6 @@ export default function TodayDashboard({
 
   const persistNote = (value) => {
     noteDirty.current = false;
-    writeLegacy(LEGACY_NOTE_PREFIX + date, value);
     queueSave(() => saveTodayDashboardNote(date, value))
       .then(() => setSaveError(false))
       .catch(() => setSaveError(true));
@@ -198,7 +187,7 @@ export default function TodayDashboard({
             <textarea value={note} disabled={!loaded} onChange={(e) => saveNote(e.target.value)} placeholder="Was ist heute wichtig?" rows={6} style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', border: '1px solid var(--c-border)', borderRadius: 8, padding: 10, background: 'var(--c-bg)', color: 'var(--c-text)', fontFamily: 'inherit', fontSize: 12, lineHeight: 1.5 }} />
             <div style={{ marginTop: 7, color: saveError ? 'var(--c-danger-text)' : 'var(--c-text-3)', fontSize: 10 }}>
               {saveError
-                ? 'Nicht in der Datenbank gespeichert. Der lokale Entwurf bleibt auf diesem Gerät erhalten.'
+                ? 'Nicht in der Datenbank gespeichert. Bitte prüfe die Verbindung und versuche es erneut.'
                 : 'Wird in deinem Konto gespeichert.'}
             </div>
           </section>
