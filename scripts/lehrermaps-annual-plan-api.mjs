@@ -33,7 +33,9 @@ try {
   const rootB = await request('/folders', { method: 'POST', body: JSON.stringify({ subject: 'Test', group_name: 'B', name: 'Class B' }) }, 201);
   const plan = await request('/plans', { method: 'POST', body: JSON.stringify({ root_folder_id: rootA.id, school_year: '2030/31', start_date: '2030-08-01', end_date: '2031-07-31' }) }, 201);
   await request(`/plans/${plan.id}/entries`, { method: 'POST', body: JSON.stringify({ entry_date: '2030-02-31' }) }, 400);
+  await request(`/plans/${plan.id}/entries`, { method: 'POST', body: JSON.stringify({ entry_date: '2030-08-10', title: 'Without content' }) }, 400);
   const entry = await request(`/plans/${plan.id}/entries`, { method: 'POST', body: JSON.stringify({ entry_date: '2030-08-10', title: '', content: 'General content', learning_objectives: 'Objective', activities: 'Activity', homework: 'Homework' }) }, 201);
+  assert.equal(entry.title, 'General content');
   const patched = await request(`/plans/entries/${entry.id}`, { method: 'PATCH', body: JSON.stringify({ activities: 'Changed' }) });
   assert.equal(patched.content, 'General content');
   assert.equal(patched.activities, 'Changed');

@@ -2,26 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLang } from '../contexts/LangContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import {
-  exportAnnualPlanZip,
-  previewAnnualPlanImport,
-  commitAnnualPlanImport,
-  downloadAuthenticated,
-  openAuthenticated,
-  attachAnnualPlanMaterial,
-  unlinkAnnualPlanMaterial,
-  createAnnualPlan,
-  createAnnualPlanEntry,
-  deleteAnnualPlanEntry,
-  deleteAnnualPlan,
-  duplicateAnnualPlanEntry,
-  createFolder,
-  getAnnualPlan,
-  getAnnualPlanMaterials,
-  getFolders,
-  uploadFile,
-  updateAnnualPlan,
-  updateAnnualPlanEntry,
-  startAnnualPlanLessonSession,
+  attachAnnualPlanMaterial, commitAnnualPlanImport, createAnnualPlan, createAnnualPlanEntry,
+  createFolder, deleteAnnualPlanEntry, downloadAuthenticated, duplicateAnnualPlanEntry,
+  exportAnnualPlanZip, getAnnualPlan, getAnnualPlanMaterials, getFolders, openAuthenticated,
+  previewAnnualPlanImport, startAnnualPlanLessonSession, unlinkAnnualPlanMaterial, updateAnnualPlan,
+  updateAnnualPlanEntry, uploadFile,
 } from '../lib/api';
 
 const TYPES = [
@@ -31,43 +16,6 @@ const TYPES = [
 ];
 const typeLabel = Object.fromEntries(TYPES);
 const annualPlanningFolderRequests = new Map();
-
-function findAnnualPlanningFolder(folders, rootFolderId) {
-  return folders.find((folder) => (
-    Number(folder.parent_id) === Number(rootFolderId) && folder.name === 'Jahresplanung'
-  ));
-}
-
-async function ensureAnnualPlanningFolder(rootFolder) {
-  const requestKey = String(rootFolder.id);
-  if (!annualPlanningFolderRequests.has(requestKey)) {
-    annualPlanningFolderRequests.set(requestKey, (async () => {
-      const folders = await getFolders();
-      const existing = findAnnualPlanningFolder(folders, rootFolder.id);
-      if (existing) return existing;
-
-      try {
-        return await createFolder({
-          subject: rootFolder.subject,
-          group_name: rootFolder.group_name,
-          name: 'Jahresplanung',
-          parent_id: rootFolder.id,
-        });
-      } catch (error) {
-        // A second tab or user may have created the folder between the lookup
-        // and the request. Re-read before surfacing the original error.
-        const refreshedFolders = await getFolders();
-        const createdElsewhere = findAnnualPlanningFolder(refreshedFolders, rootFolder.id);
-        if (createdElsewhere) return createdElsewhere;
-        throw error;
-      }
-    })().catch((error) => {
-      annualPlanningFolderRequests.delete(requestKey);
-      throw error;
-    }));
-  }
-  return annualPlanningFolderRequests.get(requestKey);
-}
 
 function defaultSchoolYear() {
   const now = new Date();
@@ -83,13 +31,40 @@ function schoolYearDates(year) {
 function emptyEntry() {
   return {
     entry_date: new Date().toISOString().slice(0, 10), end_date: '', entry_type: 'lesson',
-    lesson_number: '', title: '', notes: '', content: '', learning_objectives: '', activities: '', homework: '', file_ids: [], folder_ids: [],
+    lesson_number: '', title: '', notes: '', content: '', learning_objectives: '', activities: '', homework: '',
+    file_ids: [], folder_ids: [],
   };
 }
 
 function formatDate(value) {
-  if (!value) return '—';
-  return new Date(`${value}T00:00:00`).toLocaleDateString('de-DE');
+  return value ? new Date(`${value}T00:00:00`).toLocaleDateString('de-DE') : '—';
+}
+
+function entryHeading(entry) {
+  return entry.title || entry.content || 'Unterrichtsstunde';
+}
+
+async function ensureAnnualPlanningFolder(rootFolder) {
+  const requestKey = String(rootFolder.id);
+  if (!annualPlanningFolderRequests.has(requestKey)) {
+    annualPlanningFolderRequests.set(requestKey, (async () => {
+      const folders = await getFolders();
+      const existing = folders.find((folder) => Number(folder.parent_id) === Number(rootFolder.id) && folder.name === 'Jahresplanung');
+      if (existing) return existing;
+      try {
+        return await createFolder({ subject: rootFolder.subject, group_name: rootFolder.group_name, name: 'Jahresplanung', parent_id: rootFolder.id });
+      } catch (error) {
+        const refreshed = await getFolders();
+        const createdElsewhere = refreshed.find((folder) => Number(folder.parent_id) === Number(rootFolder.id) && folder.name === 'Jahresplanung');
+        if (createdElsewhere) return createdElsewhere;
+        throw error;
+      }
+    })().catch((error) => {
+      annualPlanningFolderRequests.delete(requestKey);
+      throw error;
+    }));
+  }
+  return annualPlanningFolderRequests.get(requestKey);
 }
 
 export default function AnnualPlanning({ rootFolder, accent, onOpenLesson }) {
@@ -97,21 +72,23 @@ export default function AnnualPlanning({ rootFolder, accent, onOpenLesson }) {
   const [schoolYear, setSchoolYear] = useState(defaultSchoolYear);
   const [plan, setPlan] = useState(null);
   const [entries, setEntries] = useState([]);
-  const [startingEntryId, setStartingEntryId] = useState(null);
-  const [meta, setMeta] = useState({ start_date: '', end_date: '' });
-  const [draft, setDraft] = useState(null);
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [monthFilter, setMonthFilter] = useState('all');
-  const [materialQuery, setMaterialQuery] = useState('');
+  const [meta, setMeta] = useState(schoolYearDates(defaultSchoolYear()));
+  const [draft, setDraft] = useState(emptyEntry);
   const [materials, setMaterials] = useState({ files: [], folders: [] });
   const [materialCatalog, setMaterialCatalog] = useState([]);
+  const [materialQuery, setMaterialQuery] = useState('');
   const [selectedEntry, setSelectedEntry] = useState(null);
-  const [showMaterials, setShowMaterials] = useState(false);
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [showDetails, setShowDetails] = useState(false);
+  const [showPlanSettings, setShowPlanSettings] = useState(false);
   const [uploadingWorksheets, setUploadingWorksheets] = useState(false);
   const [isWorksheetDropTarget, setIsWorksheetDropTarget] = useState(false);
   const [worksheetUploadStatus, setWorksheetUploadStatus] = useState('');
+  const [startingEntryId, setStartingEntryId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const worksheetInputRef = useRef(null);
   const archiveInputRef = useRef(null);
@@ -121,7 +98,7 @@ export default function AnnualPlanning({ rootFolder, accent, onOpenLesson }) {
 
   useEffect(() => {
     let active = true;
-    setLoading(true); setError(''); setDraft(null);
+    setLoading(true); setError(''); setNotice(''); setDraft(emptyEntry()); setShowDetails(false);
     getAnnualPlan(rootFolder.id, schoolYear).then((data) => {
       if (!active) return;
       setPlan(data.plan); setEntries(data.entries || []);
@@ -140,312 +117,167 @@ export default function AnnualPlanning({ rootFolder, accent, onOpenLesson }) {
     return () => { active = false; };
   }, [rootFolder.id, materialQuery]);
 
-  useEffect(() => {
-    worksheetDragDepth.current = 0;
-    setIsWorksheetDropTarget(false);
-    setWorksheetUploadStatus('');
-  }, [draft?.id]);
-
-  const filteredEntries = useMemo(() => entries.filter((entry) => {
-    const typeOk = typeFilter === 'all' || entry.entry_type === typeFilter;
-    const monthOk = monthFilter === 'all' || String(entry.entry_date).slice(0, 7) === monthFilter;
-    return typeOk && monthOk;
-  }), [entries, monthFilter, typeFilter]);
   const months = useMemo(() => [...new Set(entries.map((entry) => String(entry.entry_date).slice(0, 7)))].sort(), [entries]);
-
+  const filteredEntries = useMemo(() => entries.filter((entry) => (
+    (typeFilter === 'all' || entry.entry_type === typeFilter)
+    && (monthFilter === 'all' || String(entry.entry_date).slice(0, 7) === monthFilter)
+  )), [entries, monthFilter, typeFilter]);
   const updateDraft = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
   const toggleMaterial = (key, id) => setDraft((current) => ({
-    ...current,
-    [key]: current[key].includes(id) ? current[key].filter((item) => item !== id) : [...current[key], id],
+    ...current, [key]: current[key].includes(id) ? current[key].filter((item) => item !== id) : [...current[key], id],
   }));
-
-  const uploadWorksheets = async (selectedFiles) => {
-    const files = [...selectedFiles];
-    if (!files.length || !draft || uploadingWorksheets) return;
-
-    setUploadingWorksheets(true);
-    setError('');
-    setWorksheetUploadStatus(t('annual.worksheet_uploading'));
-    try {
-      const annualPlanningFolder = await ensureAnnualPlanningFolder(rootFolder);
-      const uploaded = [];
-      let uploadError;
-      for (const file of files) {
-        try {
-          uploaded.push(await uploadFile(annualPlanningFolder.id, file, (progress) => {
-            const percent = progress.total ? Math.round((progress.loaded / progress.total) * 100) : 0;
-            setWorksheetUploadStatus(`${file.name}: ${percent}%`);
-          }));
-        } catch (err) {
-          uploadError = err;
-          break;
-        }
-      }
-      if (!uploaded.length) throw uploadError;
-      const uploadedIds = uploaded.map((file) => file.id);
-      const nextDraft = { ...draft, file_ids: [...new Set([...(draft.file_ids || []), ...uploadedIds])] };
-      setDraft(nextDraft);
-      setMaterials((current) => ({
-        ...current,
-        files: [...uploaded, ...current.files.filter((file) => !uploadedIds.includes(file.id))],
-      }));
-      setMaterialCatalog((current) => [...uploaded, ...current.filter((file) => !uploadedIds.includes(file.id))]);
-      if (nextDraft.id) {
-        let saved = nextDraft;
-        for (const id of uploadedIds) saved = await attachAnnualPlanMaterial(nextDraft.id, 'file', id);
-        setEntries((current) => current.map((item) => item.id === saved.id ? saved : item));
-        setDraft({ ...saved, end_date: saved.end_date || '', file_ids: saved.file_ids || [], folder_ids: saved.folder_ids || [] });
-      }
-      if (uploadError) {
-        setError(uploadError.response?.data?.error || t('annual.worksheet_upload_partial', { n: uploaded.length }));
-        setWorksheetUploadStatus(t('annual.worksheet_upload_partial', { n: uploaded.length }));
-      } else {
-        setWorksheetUploadStatus(t('annual.worksheet_upload_complete', { n: uploaded.length }));
-      }
-    } catch (err) {
-      setError(err.response?.data?.error || t('annual.worksheet_upload_error'));
-      setWorksheetUploadStatus(t('annual.worksheet_upload_error'));
-    } finally {
-      setUploadingWorksheets(false);
-    }
-  };
-
-  const handleWorksheetFiles = (event) => {
-    const files = event.target.files;
-    event.target.value = '';
-    uploadWorksheets(files || []);
-  };
-
-  const handleWorksheetDragEnter = (event) => {
-    event.preventDefault();
-    worksheetDragDepth.current += 1;
-    setIsWorksheetDropTarget(true);
-  };
-
-  const handleWorksheetDragLeave = (event) => {
-    event.preventDefault();
-    worksheetDragDepth.current -= 1;
-    if (worksheetDragDepth.current <= 0) {
-      worksheetDragDepth.current = 0;
-      setIsWorksheetDropTarget(false);
-    }
-  };
-
-  const handleWorksheetDrop = (event) => {
-    event.preventDefault();
-    worksheetDragDepth.current = 0;
-    setIsWorksheetDropTarget(false);
-    uploadWorksheets(event.dataTransfer.files || []);
-  };
-
-  const savePlan = async () => {
-    setSaving(true); setError('');
-    try {
-      const saved = plan
-        ? await updateAnnualPlan(plan.id, { school_year: schoolYear, ...meta })
-        : await createAnnualPlan({ root_folder_id: rootFolder.id, school_year: schoolYear, ...meta });
-      setPlan(saved);
-    } catch (err) { setError(err.response?.data?.error || err.message); } finally { setSaving(false); }
-  };
-
-  const saveEntry = async (event) => {
-    event.preventDefault();
-    if (!draft?.entry_date) return;
-    setSaving(true); setError('');
-    try {
-      const payload = { ...draft, end_date: draft.end_date || null };
-      let saved = draft.id ? await updateAnnualPlanEntry(draft.id, payload) : await createAnnualPlanEntry(plan.id, payload);
-      if (!draft.id) {
-        for (const kind of ['file', 'folder']) for (const id of draft[`${kind}_ids`] || []) saved = await attachAnnualPlanMaterial(saved.id, kind, id);
-      } else {
-        const original = entries.find((entry) => entry.id === draft.id) || { file_ids: [], folder_ids: [] };
-        for (const kind of ['file', 'folder']) {
-          const key = `${kind}_ids`;
-          for (const id of draft[key] || []) if (!(original[key] || []).includes(id)) saved = await attachAnnualPlanMaterial(draft.id, kind, id);
-          for (const id of original[key] || []) if (!(draft[key] || []).includes(id)) saved = await unlinkAnnualPlanMaterial(draft.id, kind, id);
-        }
-      }
-      setEntries((current) => draft.id ? current.map((item) => item.id === saved.id ? saved : item) : [...current, saved]);
-      setDraft(null); setShowMaterials(false);
-    } catch (err) { setError(err.response?.data?.error || err.message); } finally { setSaving(false); }
-  };
-
-  const removeEntry = async (entry) => {
-    if (!window.confirm(`„${entry.title}“ wirklich löschen?`)) return;
-    await deleteAnnualPlanEntry(entry.id);
-    setEntries((current) => current.filter((item) => item.id !== entry.id));
-  };
-
-  const duplicateEntry = async (entry) => {
-    const copy = await duplicateAnnualPlanEntry(entry.id);
-    setEntries((current) => [...current, copy]);
-  };
-
-  const startLesson = async (entry) => {
-    setStartingEntryId(entry.id);
-    setError('');
-    try {
-      const result = await startAnnualPlanLessonSession(entry.id);
-      if (result.entry) setEntries((current) => current.map((item) => item.id === result.entry.id ? result.entry : item));
-      onOpenLesson?.(result.session);
-    } catch (err) {
-      setError(err.response?.data?.error || err.message);
-    } finally { setStartingEntryId(null); }
-  };
-
-  const lessonSummary = (entry) => {
-    if (entry.entry_type !== 'lesson') return null;
-    const session = entry.lesson_session;
-    return session
-      ? `${session.status || 'draft'} · ${session.phase_count || 0} Phasen · ${session.material_count || 0} Materialien`
-      : 'Noch nicht gestartet';
-  };
-
-  const materialsForEntry = (entry) => (entry?.file_ids || []).map((id) => (
+  const materialsForEntry = (entry) => (entry.file_ids || []).map((id) => (
     materialCatalog.find((file) => Number(file.id) === Number(id))
       || materials.files.find((file) => Number(file.id) === Number(id))
       || { id, original_name: `Datei #${id}` }
   ));
 
+  const uploadWorksheets = async (selectedFiles) => {
+    const files = [...selectedFiles];
+    if (!files.length || uploadingWorksheets) return;
+    setUploadingWorksheets(true); setError(''); setNotice('');
+    try {
+      const folder = await ensureAnnualPlanningFolder(rootFolder);
+      const uploaded = [];
+      let uploadError;
+      for (const file of files) {
+        try {
+          uploaded.push(await uploadFile(folder.id, file, (progress) => {
+            const percent = progress.total ? Math.round((progress.loaded / progress.total) * 100) : 0;
+            setWorksheetUploadStatus(`${file.name}: ${percent}%`);
+          }));
+        } catch (err) { uploadError = err; break; }
+      }
+      if (!uploaded.length) throw uploadError;
+      const uploadedIds = uploaded.map((file) => file.id);
+      setDraft((current) => ({ ...current, file_ids: [...new Set([...(current.file_ids || []), ...uploadedIds])] }));
+      setMaterials((current) => ({ ...current, files: [...uploaded, ...current.files.filter((file) => !uploadedIds.includes(file.id))] }));
+      setMaterialCatalog((current) => [...uploaded, ...current.filter((file) => !uploadedIds.includes(file.id))]);
+      setWorksheetUploadStatus(uploadError ? t('annual.worksheet_upload_partial', { n: uploaded.length }) : t('annual.worksheet_upload_complete', { n: uploaded.length }));
+      if (uploadError) setError(uploadError.response?.data?.error || t('annual.worksheet_upload_partial', { n: uploaded.length }));
+    } catch (err) {
+      setError(err.response?.data?.error || t('annual.worksheet_upload_error'));
+      setWorksheetUploadStatus(t('annual.worksheet_upload_error'));
+    } finally { setUploadingWorksheets(false); }
+  };
+
+  const savePlan = async () => {
+    setSaving(true); setError(''); setNotice('');
+    try {
+      const saved = plan ? await updateAnnualPlan(plan.id, { school_year: schoolYear, ...meta }) : await createAnnualPlan({ root_folder_id: rootFolder.id, school_year: schoolYear, ...meta });
+      setPlan(saved); setNotice('Planungszeitraum gespeichert.');
+    } catch (err) { setError(err.response?.data?.error || err.message); } finally { setSaving(false); }
+  };
+
+  const saveEntry = async (event) => {
+    event.preventDefault();
+    if (!draft.entry_date || !draft.content.trim()) return;
+    setSaving(true); setError(''); setNotice('');
+    try {
+      let activePlan = plan;
+      if (!activePlan) {
+        activePlan = await createAnnualPlan({ root_folder_id: rootFolder.id, school_year: schoolYear, ...meta });
+        setPlan(activePlan);
+      }
+      const payload = { ...draft, content: draft.content.trim(), title: draft.title.trim(), end_date: draft.end_date || null };
+      let saved = draft.id ? await updateAnnualPlanEntry(draft.id, payload) : await createAnnualPlanEntry(activePlan.id, payload);
+      const original = draft.id ? entries.find((entry) => entry.id === draft.id) || { file_ids: [], folder_ids: [] } : { file_ids: [], folder_ids: [] };
+      for (const kind of ['file', 'folder']) {
+        const key = `${kind}_ids`;
+        for (const id of draft[key] || []) if (!(original[key] || []).includes(id)) saved = await attachAnnualPlanMaterial(saved.id, kind, id);
+        for (const id of original[key] || []) if (!(draft[key] || []).includes(id)) saved = await unlinkAnnualPlanMaterial(saved.id, kind, id);
+      }
+      setEntries((current) => draft.id ? current.map((entry) => entry.id === saved.id ? saved : entry) : [...current, saved]);
+      setDraft(emptyEntry()); setShowDetails(false); setWorksheetUploadStatus('');
+      setNotice(draft.id ? 'Unterricht aktualisiert.' : 'Unterricht gespeichert.');
+    } catch (err) { setError(err.response?.data?.error || err.message); } finally { setSaving(false); }
+  };
+
+  const editEntry = (entry) => {
+    setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] });
+    setShowDetails(Boolean(entry.end_date || entry.lesson_number || entry.title || entry.notes || entry.learning_objectives || entry.activities || entry.homework));
+    setSelectedEntry(null); window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const removeEntry = async (entry) => {
+    if (!window.confirm(`„${entryHeading(entry)}“ wirklich löschen?`)) return;
+    await deleteAnnualPlanEntry(entry.id);
+    setEntries((current) => current.filter((item) => item.id !== entry.id));
+  };
+  const duplicateEntry = async (entry) => {
+    const copy = await duplicateAnnualPlanEntry(entry.id);
+    setEntries((current) => [...current, copy]);
+  };
+  const startLesson = async (entry) => {
+    setStartingEntryId(entry.id); setError('');
+    try {
+      const result = await startAnnualPlanLessonSession(entry.id);
+      if (result.entry) setEntries((current) => current.map((item) => item.id === result.entry.id ? result.entry : item));
+      onOpenLesson?.(result.session);
+    } catch (err) { setError(err.response?.data?.error || err.message); } finally { setStartingEntryId(null); }
+  };
   const importArchive = async (event) => {
-    const archive = event.target.files?.[0];
-    event.target.value = '';
+    const archive = event.target.files?.[0]; event.target.value = '';
     if (!archive) return;
     setSaving(true); setError('');
     try {
       const preview = await previewAnnualPlanImport(rootFolder.id, schoolYear, archive);
-      const accepted = window.confirm(`${preview.entries} Einträge und ${preview.attachments} Anlagen als neue Jahresplanung ${preview.school_year} importieren?`);
-      if (!accepted) return;
+      if (!window.confirm(`${preview.entries} Einträge und ${preview.attachments} Anlagen als neue Jahresplanung ${preview.school_year} importieren?`)) return;
       await commitAnnualPlanImport(preview.token);
       const loaded = await getAnnualPlan(rootFolder.id, preview.school_year);
-      setSchoolYear(preview.school_year); setPlan(loaded.plan); setEntries(loaded.entries || []);
-    } catch (err) { setError(err.response?.data?.error || err.message); }
-    finally { setSaving(false); }
+      setSchoolYear(preview.school_year); setPlan(loaded.plan); setEntries(loaded.entries || []); setNotice('Jahresplanung importiert.');
+    } catch (err) { setError(err.response?.data?.error || err.message); } finally { setSaving(false); }
   };
 
-  return (
-    <div className="lm-annual-planning lm-annual-print" style={{ padding: '16px 20px 30px', color: 'var(--c-text)', minHeight: '100%', overflow: 'auto' }}>
-      <div className="lm-annual-no-print" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{t('annual.title')}</div>
-          <div style={{ fontSize: 12, color: 'var(--c-text-3)', marginTop: 3 }}>{rootFolder.group_name} · {t('annual.subtitle')}</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label style={{ fontSize: 11, color: 'var(--c-text-3)' }}>{t('annual.school_year')}
-            <input value={schoolYear} onChange={(event) => setSchoolYear(event.target.value)} placeholder="2026/27" style={inputStyle} />
-          </label>
-          <button onClick={savePlan} disabled={saving || !/^\d{4}\/\d{2}$/.test(schoolYear)} style={buttonStyle(accent, '#fff')}>{plan ? t('save') : t('annual.create')}</button>
-          {plan && <>
-            <button type="button" onClick={() => exportAnnualPlanZip(plan.id)} className="lm-annual-action" style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>{t('annual.export')}</button>
-            <button onClick={() => { document.body.classList.add('lm-print-planning'); window.print(); window.setTimeout(() => document.body.classList.remove('lm-print-planning'), 500); }} className="lm-annual-action" style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>{t('notes.print')}</button>
-          </>}
-          <input ref={archiveInputRef} type="file" accept=".zip,application/zip" onChange={importArchive} style={visuallyHidden} aria-label="Jahresplanung importieren" />
-          <button type="button" disabled={saving} onClick={() => archiveInputRef.current?.click()} className="lm-annual-action" style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>Importieren</button>
-        </div>
+  return <div className="lm-annual-planning lm-annual-print">
+    <header className="lm-annual-header lm-annual-no-print">
+      <div><p className="lm-annual-eyebrow">{rootFolder.group_name}</p><h1>{t('annual.title')}</h1><p>{t('annual.subtitle')}</p></div>
+      <div className="lm-annual-header-actions">
+        <label>Schuljahr<input value={schoolYear} onChange={(event) => setSchoolYear(event.target.value)} placeholder="2026/27" /></label>
+        {plan && <><button type="button" onClick={() => exportAnnualPlanZip(plan.id)} className="lm-annual-secondary">{t('annual.export')}</button><button type="button" onClick={() => { document.body.classList.add('lm-print-planning'); window.print(); window.setTimeout(() => document.body.classList.remove('lm-print-planning'), 500); }} className="lm-annual-secondary">{t('notes.print')}</button></>}
+        <input ref={archiveInputRef} type="file" accept=".zip,application/zip" onChange={importArchive} className="lm-visually-hidden" />
+        <button type="button" disabled={saving} onClick={() => archiveInputRef.current?.click()} className="lm-annual-secondary">Importieren</button>
       </div>
+    </header>
 
-      {error && <div className="lm-annual-no-print" role="alert" style={errorStyle}>{error}</div>}
-      {!plan && !loading ? (
-        <div className="lm-annual-empty" style={emptyStyle}>
-          <div style={{ fontSize: 30 }}>🗓️</div>
-          <strong>{t('annual.empty_title')}</strong>
-          <span>{t('annual.empty_text')}</span>
-          <button onClick={savePlan} disabled={saving} style={buttonStyle(accent, '#fff')}>{t('annual.create')}</button>
+    {error && <div className="lm-annual-feedback is-error" role="alert">{error}</div>}
+    {notice && <div className="lm-annual-feedback is-success" role="status">{notice}</div>}
+
+    {!loading && <form onSubmit={saveEntry} className="lm-annual-quick-entry lm-annual-no-print">
+      <div className="lm-annual-quick-heading"><div><p className="lm-annual-eyebrow">{draft.id ? 'Unterricht bearbeiten' : 'Schnellerfassung'}</p><h2>{draft.id ? entryHeading(draft) : 'Neue Unterrichtsstunde'}</h2><p>Datum, Inhalt und Materialien – alles Weitere ist optional.</p></div>{draft.id && <button type="button" className="lm-annual-secondary" onClick={() => { setDraft(emptyEntry()); setShowDetails(false); }}>Abbrechen</button>}</div>
+      <div className="lm-annual-primary-fields">
+        <label>Datum<input type="date" required value={draft.entry_date} onChange={(event) => updateDraft('entry_date', event.target.value)} /></label>
+        <label className="lm-annual-content-field">Inhalt<textarea required value={draft.content} onChange={(event) => updateDraft('content', event.target.value)} rows="3" placeholder="Was wird in dieser Stunde behandelt?" autoFocus={!draft.id} /></label>
+      </div>
+      <section className="lm-annual-material-picker" aria-labelledby="lm-annual-materials-heading">
+        <div><h3 id="lm-annual-materials-heading">{t('annual.materials')}</h3><p>Direkt hochladen oder vorhandene Materialien verknüpfen.</p></div>
+        <input ref={worksheetInputRef} type="file" multiple disabled={saving || uploadingWorksheets} onChange={(event) => { const files = event.target.files; event.target.value = ''; uploadWorksheets(files || []); }} className="lm-visually-hidden" id={`annual-worksheet-input-${rootFolder.id}`} />
+        <div className={`lm-annual-dropzone${isWorksheetDropTarget ? ' is-active' : ''}`} onDragEnter={(event) => { event.preventDefault(); worksheetDragDepth.current += 1; setIsWorksheetDropTarget(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={(event) => { event.preventDefault(); worksheetDragDepth.current -= 1; if (worksheetDragDepth.current <= 0) { worksheetDragDepth.current = 0; setIsWorksheetDropTarget(false); } }} onDrop={(event) => { event.preventDefault(); worksheetDragDepth.current = 0; setIsWorksheetDropTarget(false); uploadWorksheets(event.dataTransfer.files || []); }}>
+          <span>📎 Dateien hier ablegen</span><label htmlFor={`annual-worksheet-input-${rootFolder.id}`}>{uploadingWorksheets ? t('annual.worksheet_uploading') : 'Dateien auswählen'}</label>
         </div>
-      ) : loading ? <div style={{ padding: 30, color: 'var(--c-text-3)' }}>{t('loading')}</div> : (
-        <>
-          <div className="lm-annual-no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            <label style={smallLabel}>{t('annual.start')}<input type="date" value={meta.start_date} onChange={(event) => setMeta({ ...meta, start_date: event.target.value })} style={inputStyle} /></label>
-            <label style={smallLabel}>{t('annual.end')}<input type="date" value={meta.end_date} onChange={(event) => setMeta({ ...meta, end_date: event.target.value })} style={inputStyle} /></label>
-            <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} style={inputStyle}><option value="all">{t('annual.all_types')}</option>{TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
-            <select value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={inputStyle}><option value="all">{t('annual.all_months')}</option>{months.map((month) => <option key={month} value={month}>{month}</option>)}</select>
-            <button className="lm-annual-action" onClick={() => setDraft(emptyEntry())} style={buttonStyle(accent, '#fff')}>＋ {t('annual.add')}</button>
-          </div>
+        {worksheetUploadStatus && <p className="lm-annual-upload-status" role="status">{worksheetUploadStatus}</p>}
+        {draft.file_ids.length > 0 && <div className="lm-annual-selected-materials">{materialsForEntry(draft).map((file) => <span key={file.id}>📄 {file.original_name}<button type="button" aria-label={`${file.original_name} entfernen`} onClick={() => toggleMaterial('file_ids', file.id)}>×</button></span>)}</div>}
+        <label className="lm-annual-material-search">Vorhandene Materialien durchsuchen<input value={materialQuery} onChange={(event) => setMaterialQuery(event.target.value)} placeholder={t('annual.material_search')} /></label>
+        {(materials.files.length || materials.folders.length) > 0 && <div className="lm-annual-material-results">{materials.folders.map((folder) => <label key={`folder-${folder.id}`}><input type="checkbox" checked={draft.folder_ids.includes(folder.id)} onChange={() => toggleMaterial('folder_ids', folder.id)} /> 📁 {folder.name}</label>)}{materials.files.map((file) => <label key={`file-${file.id}`}><input type="checkbox" checked={draft.file_ids.includes(file.id)} onChange={() => toggleMaterial('file_ids', file.id)} /> 📄 {file.original_name}</label>)}</div>}
+      </section>
+      <details className="lm-annual-details" open={showDetails} onToggle={(event) => setShowDetails(event.currentTarget.open)}><summary>Mehr Details (optional)</summary><div className="lm-annual-details-grid">
+        <label>Typ<select value={draft.entry_type} onChange={(event) => updateDraft('entry_type', event.target.value)}>{TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <label>Stunde<input value={draft.lesson_number} onChange={(event) => updateDraft('lesson_number', event.target.value)} placeholder="z. B. 1.–2." /></label>
+        <label>Enddatum<input type="date" value={draft.end_date} onChange={(event) => updateDraft('end_date', event.target.value)} /></label>
+        <label>Titel (optional)<input value={draft.title} onChange={(event) => updateDraft('title', event.target.value)} placeholder="Wird sonst aus dem Inhalt erzeugt" /></label>
+        <label className="lm-annual-full-width">Notizen<textarea value={draft.notes} onChange={(event) => updateDraft('notes', event.target.value)} rows="2" /></label>
+        <label>Lernziele<textarea value={draft.learning_objectives} onChange={(event) => updateDraft('learning_objectives', event.target.value)} rows="2" /></label>
+        <label>Aktivitäten<textarea value={draft.activities} onChange={(event) => updateDraft('activities', event.target.value)} rows="2" /></label>
+        <label className="lm-annual-full-width">Hausaufgaben<textarea value={draft.homework} onChange={(event) => updateDraft('homework', event.target.value)} rows="2" /></label>
+      </div></details>
+      <div className="lm-annual-save-row"><span>{draft.file_ids.length + draft.folder_ids.length} Material{draft.file_ids.length + draft.folder_ids.length === 1 ? '' : 'ien'} verknüpft</span><button type="submit" disabled={saving || !draft.entry_date || !draft.content.trim()} style={{ background: accent }}>{saving ? 'Wird gespeichert …' : 'Unterricht speichern'}</button></div>
+    </form>}
 
-          {draft && <form onSubmit={saveEntry} className="lm-annual-editor lm-annual-no-print" style={{ border: `1px solid ${accent}55`, background: 'var(--c-surface-2)', borderRadius: 10, padding: 14, marginBottom: 14 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
-              <label style={smallLabel}>{t('annual.date')}<input type="date" required value={draft.entry_date} onChange={(event) => updateDraft('entry_date', event.target.value)} style={inputStyle} /></label>
-              <label style={smallLabel}>{t('annual.end')}<input type="date" value={draft.end_date || ''} onChange={(event) => updateDraft('end_date', event.target.value)} style={inputStyle} /></label>
-              <label style={smallLabel}>{t('annual.type')}<select value={draft.entry_type} onChange={(event) => updateDraft('entry_type', event.target.value)} style={inputStyle}>{TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-              <label style={smallLabel}>{t('annual.lesson')}<input value={draft.lesson_number || ''} onChange={(event) => updateDraft('lesson_number', event.target.value)} placeholder="z. B. 1.–2." style={inputStyle} /></label>
-              <label style={{ ...smallLabel, gridColumn: 'span 2' }}>{t('annual.title_field')}<input value={draft.title || ''} onChange={(event) => updateDraft('title', event.target.value)} style={inputStyle} /></label>
-              <label style={{ ...smallLabel, gridColumn: '1 / -1' }}>{t('annual.notes')}<textarea value={draft.notes || ''} onChange={(event) => updateDraft('notes', event.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} /></label>
-              <label style={{ ...smallLabel, gridColumn: '1 / -1' }}>Inhalt<textarea value={draft.content || ''} onChange={(event) => updateDraft('content', event.target.value)} rows={3} style={{ ...inputStyle, height: 'auto', resize: 'vertical' }} /></label>
-              <label style={{ ...smallLabel, gridColumn: '1 / -1' }}>Lernziele<textarea value={draft.learning_objectives || ''} onChange={(event) => updateDraft('learning_objectives', event.target.value)} rows={2} style={{ ...inputStyle, height: 'auto', resize: 'vertical' }} /></label>
-              <label style={{ ...smallLabel, gridColumn: '1 / -1' }}>Aktivitäten<textarea value={draft.activities || ''} onChange={(event) => updateDraft('activities', event.target.value)} rows={2} style={{ ...inputStyle, height: 'auto', resize: 'vertical' }} /></label>
-              <label style={{ ...smallLabel, gridColumn: '1 / -1' }}>Hausaufgaben<textarea value={draft.homework || ''} onChange={(event) => updateDraft('homework', event.target.value)} rows={2} style={{ ...inputStyle, height: 'auto', resize: 'vertical' }} /></label>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <button type="button" onClick={() => setShowMaterials((value) => !value)} aria-expanded={showMaterials} aria-controls="lm-annual-materials-area" style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>{t('annual.materials')} ({(draft.file_ids.length + draft.folder_ids.length)})</button>
-              {showMaterials && <div id="lm-annual-materials-area" style={{ marginTop: 8, border: '1px solid var(--c-border)', borderRadius: 8, padding: 10, background: 'var(--c-surface)', maxHeight: 260, overflow: 'auto' }}>
-                <section aria-labelledby="lm-annual-worksheets-title" aria-busy={uploadingWorksheets}>
-                  <div id="lm-annual-worksheets-title" style={{ ...smallLabel, marginBottom: 6 }}>{t('annual.worksheets')}</div>
-                  <input id={`annual-worksheet-input-${rootFolder.id}`} ref={worksheetInputRef} type="file" multiple disabled={saving || uploadingWorksheets} onChange={handleWorksheetFiles} style={visuallyHidden} aria-label={t('annual.select_worksheets')} />
-                  <div
-                    onDragEnter={handleWorksheetDragEnter}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDragLeave={handleWorksheetDragLeave}
-                    onDrop={handleWorksheetDrop}
-                    style={{ border: `1px dashed ${isWorksheetDropTarget ? accent : 'var(--c-border)'}`, borderRadius: 7, padding: 10, background: isWorksheetDropTarget ? `${accent}12` : 'var(--c-surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}
-                  >
-                    <span style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{t('annual.worksheet_drop')}</span>
-                    <label htmlFor={`annual-worksheet-input-${rootFolder.id}`} aria-disabled={saving || uploadingWorksheets} style={{ ...buttonStyle(accent, '#fff'), opacity: saving || uploadingWorksheets ? .55 : 1, cursor: saving || uploadingWorksheets ? 'not-allowed' : 'pointer', pointerEvents: saving || uploadingWorksheets ? 'none' : 'auto' }}>{uploadingWorksheets ? t('annual.worksheet_uploading') : t('annual.select_worksheets')}</label>
-                  </div>
-                  <div aria-live="polite" role="status" style={{ color: 'var(--c-text-3)', fontSize: 11, marginTop: 5 }}>{worksheetUploadStatus || t('annual.worksheet_count', { n: draft.file_ids.length })}</div>
-                </section>
-                <div style={{ borderTop: '1px solid var(--c-border)', margin: '10px 0', paddingTop: 10 }}>
-                <input value={materialQuery} onChange={(event) => setMaterialQuery(event.target.value)} aria-label={t('annual.material_search')} placeholder={t('annual.material_search')} style={{ ...inputStyle, marginBottom: 8 }} />
-                {materials.folders.map((folder) => <label key={`folder-${folder.id}`} style={checkStyle}><input type="checkbox" checked={draft.folder_ids.includes(folder.id)} onChange={() => toggleMaterial('folder_ids', folder.id)} /> 📁 {folder.name}</label>)}
-                {materials.files.map((file) => <label key={`file-${file.id}`} style={checkStyle}><input type="checkbox" checked={draft.file_ids.includes(file.id)} onChange={() => toggleMaterial('file_ids', file.id)} /> 📄 {file.original_name}</label>)}
-                {!materials.files.length && !materials.folders.length && <span style={{ color: 'var(--c-text-3)', fontSize: 12 }}>{t('annual.no_materials')}</span>}
-                </div>
-              </div>}
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}><button type="button" onClick={() => setDraft(null)} style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>{t('cancel')}</button><button type="submit" disabled={saving} style={buttonStyle(accent, '#fff')}>{t('save')}</button></div>
-          </form>}
-
-          {selectedEntry && <div className="lm-annual-detail" role="dialog" aria-modal="true" aria-labelledby="lm-annual-detail-title">
-            <div className="lm-annual-detail-card">
-              <div className="lm-annual-detail-header">
-                <div>
-                  <div className="lm-annual-detail-date">{formatDate(selectedEntry.entry_date)}{selectedEntry.end_date ? ` – ${formatDate(selectedEntry.end_date)}` : ''}</div>
-                  <h2 id="lm-annual-detail-title">{selectedEntry.title}</h2>
-                  <span className="lm-annual-type" data-type={selectedEntry.entry_type}>{typeLabel[selectedEntry.entry_type]}</span>
-                </div>
-                <button type="button" className="lm-annual-detail-close" onClick={() => setSelectedEntry(null)} aria-label={t('annual.detail_close')}>×</button>
-              </div>
-              {selectedEntry.notes && <section className="lm-annual-detail-section"><h3>{t('annual.notes')}</h3><p>{selectedEntry.notes}</p></section>}
-              {['content', 'learning_objectives', 'activities', 'homework'].map((field) => selectedEntry[field] && <section key={field} className="lm-annual-detail-section"><h3>{{ content: 'Inhalt', learning_objectives: 'Lernziele', activities: 'Aktivitäten', homework: 'Hausaufgaben' }[field]}</h3><p>{selectedEntry[field]}</p></section>)}
-              {selectedEntry.entry_type === 'lesson' && <section className="lm-annual-detail-section"><h3>Unterrichtszentrale</h3><p className="lm-annual-detail-muted">{lessonSummary(selectedEntry)}</p><button type="button" disabled={startingEntryId === selectedEntry.id} onClick={() => startLesson(selectedEntry)} style={buttonStyle(accent, '#fff')}>{startingEntryId === selectedEntry.id ? 'Wird geöffnet …' : selectedEntry.lesson_session ? 'Fortsetzen' : 'Starten'}</button></section>}
-              <section className="lm-annual-detail-section"><h3>{t('annual.materials')}</h3>
-                {materialsForEntry(selectedEntry).length ? <div className="lm-annual-material-list">{materialsForEntry(selectedEntry).map((file) => <div className="lm-annual-material" key={file.id}>
-                  <span className="lm-annual-material-name">📄 {file.original_name}</span>
-                  <span className="lm-annual-material-actions"><button type="button" onClick={() => openAuthenticated(`/files/view/${file.id}`)}>{t('annual.open_material')}</button><button type="button" onClick={() => downloadAuthenticated(`/files/download/${file.id}`, file.original_name)}>{t('download')}</button></span>
-                </div>)}</div> : <p className="lm-annual-detail-muted">{t('annual.no_materials')}</p>}
-                {(selectedEntry.folder_ids || []).map((id) => <div className="lm-annual-material" key={`folder-${id}`}><span className="lm-annual-material-name">📁 {materials.folders.find((folder) => Number(folder.id) === Number(id))?.name || `Ordner #${id}`}</span></div>)}
-              </section>
-              <div className="lm-annual-detail-footer"><button type="button" onClick={() => { setDraft({ ...selectedEntry, end_date: selectedEntry.end_date || '', file_ids: selectedEntry.file_ids || [], folder_ids: selectedEntry.folder_ids || [] }); setSelectedEntry(null); setShowMaterials(true); }} style={buttonStyle(accent, '#fff')}>{t('annual.edit')}</button><button type="button" onClick={() => setSelectedEntry(null)} style={buttonStyle('var(--c-border)', 'var(--c-text-2)')}>{t('cancel')}</button></div>
-            </div>
-          </div>}
-
-          <div className="lm-annual-table-wrap">
-            <table className="lm-annual-table"><thead><tr><th>{t('annual.date')}</th><th>{t('annual.type')}</th><th>{t('annual.lesson')}</th><th>{t('annual.title_field')}</th><th>{t('annual.materials')}</th><th className="lm-annual-no-print" /></tr></thead><tbody>
-              {filteredEntries.map((entry) => <tr key={entry.id} onClick={() => setSelectedEntry(entry)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }} tabIndex="0" title={t('annual.open_detail')}><td>{formatDate(entry.entry_date)}{entry.end_date && <><br /><span style={{ color: 'var(--c-text-3)', fontSize: 11 }}>– {formatDate(entry.end_date)}</span></>}</td><td><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span></td><td>{entry.lesson_number || '—'}</td><td><strong>{entry.title}</strong>{entry.notes && <div style={{ color: 'var(--c-text-3)', fontSize: 11, marginTop: 3 }}>{entry.notes}</div>}{entry.entry_type === 'lesson' && <div style={{ color: 'var(--c-text-3)', fontSize: 11, marginTop: 3 }}>Unterrichtszentrale: {lessonSummary(entry)}</div>}</td><td>{entry.file_ids?.length || entry.folder_ids?.length ? <span title="Verknüpfte Materialien">📎 {(entry.file_ids?.length || 0) + (entry.folder_ids?.length || 0)}</span> : '—'}</td><td className="lm-annual-no-print"><div style={{ display: 'flex', gap: 5 }}>{entry.entry_type === 'lesson' && <button type="button" title={entry.lesson_session ? 'Unterricht fortsetzen' : 'Unterricht starten'} aria-label={entry.lesson_session ? 'Unterricht fortsetzen' : 'Unterricht starten'} disabled={startingEntryId === entry.id} onClick={(event) => { event.stopPropagation(); startLesson(entry); }} style={{ ...iconButton, width: 'auto', padding: '0 7px', color: accent }}>{startingEntryId === entry.id ? '…' : entry.lesson_session ? '▶' : 'Start'}</button>}<button type="button" title="Eintrag bearbeiten" aria-label="Eintrag bearbeiten" onClick={(event) => { event.stopPropagation(); setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] }); }} style={iconButton}>✎</button><button type="button" title="Eintrag duplizieren" aria-label="Eintrag duplizieren" onClick={(event) => { event.stopPropagation(); duplicateEntry(entry); }} style={iconButton}>⧉</button><button type="button" title="Eintrag löschen" aria-label="Eintrag löschen" onClick={(event) => { event.stopPropagation(); removeEntry(entry); }} style={{ ...iconButton, color: '#DC2626' }}>×</button></div></td></tr>)}
-              {!filteredEntries.length && <tr><td colSpan="6" style={{ padding: 34, textAlign: 'center', color: 'var(--c-text-3)' }}>{t('annual.no_entries')}</td></tr>}
-            </tbody></table>
-          </div>
-          <div className="lm-annual-cards">{filteredEntries.map((entry) => <article key={entry.id} className="lm-annual-card" onClick={() => setSelectedEntry(entry)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }} tabIndex="0" title={t('annual.open_detail')}><div><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span><strong>{entry.title}</strong></div><div style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{formatDate(entry.entry_date)}{entry.end_date ? ` – ${formatDate(entry.end_date)}` : ''} · {entry.lesson_number || t('annual.no_lesson')}</div>{entry.notes && <p>{entry.notes}</p>}{entry.entry_type === 'lesson' && <div style={{ color: 'var(--c-text-3)', fontSize: 11, marginBottom: 7 }}>Unterrichtszentrale: {lessonSummary(entry)}</div>}<div className="lm-annual-no-print" style={{ display: 'flex', gap: 6 }}>{entry.entry_type === 'lesson' && <button type="button" disabled={startingEntryId === entry.id} onClick={(event) => { event.stopPropagation(); startLesson(entry); }} style={{ ...buttonStyle(accent, '#fff'), height: 26 }}>{startingEntryId === entry.id ? '…' : entry.lesson_session ? 'Fortsetzen' : 'Starten'}</button>}<button type="button" title="Eintrag bearbeiten" aria-label="Eintrag bearbeiten" onClick={(event) => { event.stopPropagation(); setDraft({ ...entry, end_date: entry.end_date || '', file_ids: entry.file_ids || [], folder_ids: entry.folder_ids || [] }); }} style={iconButton}>✎</button><button type="button" title="Eintrag duplizieren" aria-label="Eintrag duplizieren" onClick={(event) => { event.stopPropagation(); duplicateEntry(entry); }} style={iconButton}>⧉</button><button type="button" title="Eintrag löschen" aria-label="Eintrag löschen" onClick={(event) => { event.stopPropagation(); removeEntry(entry); }} style={{ ...iconButton, color: '#DC2626' }}>×</button></div></article>)}</div>
-        </>
-      )}
-    </div>
-  );
+    {!loading && <details className="lm-annual-plan-settings lm-annual-no-print" open={showPlanSettings} onToggle={(event) => setShowPlanSettings(event.currentTarget.open)}><summary>Planungszeitraum und Einstellungen</summary><div><label>Start<input type="date" value={meta.start_date} onChange={(event) => setMeta({ ...meta, start_date: event.target.value })} /></label><label>Ende<input type="date" value={meta.end_date} onChange={(event) => setMeta({ ...meta, end_date: event.target.value })} /></label><button type="button" onClick={savePlan} disabled={saving || !/^\d{4}\/\d{2}$/.test(schoolYear)} style={{ background: accent }}>{plan ? 'Zeitraum speichern' : 'Planungszeitraum anlegen'}</button></div></details>}
+    {loading ? <div className="lm-annual-loading">{t('loading')}</div> : <>
+      <section className="lm-annual-list-section"><div className="lm-annual-list-header"><div><p className="lm-annual-eyebrow">Übersicht</p><h2>Geplante Unterrichtsstunden</h2><p>{filteredEntries.length} von {entries.length} Einträgen</p></div><div className="lm-annual-filters"><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">{t('annual.all_types')}</option>{TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}><option value="all">{t('annual.all_months')}</option>{months.map((month) => <option key={month} value={month}>{month}</option>)}</select></div></div>
+        {filteredEntries.length ? <div className="lm-annual-entry-list">{filteredEntries.map((entry) => <article key={entry.id} className="lm-annual-entry-card" tabIndex="0" onClick={() => setSelectedEntry(entry)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }}><time dateTime={entry.entry_date}>{formatDate(entry.entry_date)}</time><div className="lm-annual-entry-content"><div><span className="lm-annual-type" data-type={entry.entry_type}>{typeLabel[entry.entry_type]}</span>{entry.lesson_number && <span className="lm-annual-lesson-number">{entry.lesson_number}</span>}</div><h3>{entryHeading(entry)}</h3><p>{entry.content || entry.notes || 'Kein Inhalt hinterlegt.'}</p>{(entry.file_ids?.length || entry.folder_ids?.length) > 0 && <span className="lm-annual-attachment-count">📎 {(entry.file_ids?.length || 0) + (entry.folder_ids?.length || 0)} Materialien</span>}</div><div className="lm-annual-entry-actions"><button type="button" onClick={(event) => { event.stopPropagation(); editEntry(entry); }}>Bearbeiten</button>{entry.entry_type === 'lesson' && <button type="button" onClick={(event) => { event.stopPropagation(); startLesson(entry); }} disabled={startingEntryId === entry.id} style={{ color: accent }}>{startingEntryId === entry.id ? '…' : entry.lesson_session ? 'Fortsetzen' : 'Starten'}</button>}<button type="button" aria-label="Eintrag duplizieren" onClick={(event) => { event.stopPropagation(); duplicateEntry(entry); }}>⧉</button><button type="button" aria-label="Eintrag löschen" className="is-danger" onClick={(event) => { event.stopPropagation(); removeEntry(entry); }}>×</button></div></article>)}</div> : <div className="lm-annual-empty"><strong>Noch keine Einträge</strong><span>Erfasse oben die erste Unterrichtsstunde für dieses Schuljahr.</span></div>}
+      </section>
+    </>}
+    {selectedEntry && <div className="lm-annual-detail" role="dialog" aria-modal="true" aria-labelledby="lm-annual-detail-title"><div className="lm-annual-detail-card"><div className="lm-annual-detail-header"><div><div className="lm-annual-detail-date">{formatDate(selectedEntry.entry_date)}</div><h2 id="lm-annual-detail-title">{entryHeading(selectedEntry)}</h2><span className="lm-annual-type" data-type={selectedEntry.entry_type}>{typeLabel[selectedEntry.entry_type]}</span></div><button type="button" className="lm-annual-detail-close" onClick={() => setSelectedEntry(null)} aria-label={t('annual.detail_close')}>×</button></div>{['content', 'notes', 'learning_objectives', 'activities', 'homework'].map((field) => selectedEntry[field] && <section key={field} className="lm-annual-detail-section"><h3>{{ content: 'Inhalt', notes: 'Notizen', learning_objectives: 'Lernziele', activities: 'Aktivitäten', homework: 'Hausaufgaben' }[field]}</h3><p>{selectedEntry[field]}</p></section>)}<section className="lm-annual-detail-section"><h3>{t('annual.materials')}</h3>{materialsForEntry(selectedEntry).length ? <div className="lm-annual-material-list">{materialsForEntry(selectedEntry).map((file) => <div className="lm-annual-material" key={file.id}><span className="lm-annual-material-name">📄 {file.original_name}</span><span className="lm-annual-material-actions"><button type="button" onClick={() => openAuthenticated(`/files/view/${file.id}`)}>{t('annual.open_material')}</button><button type="button" onClick={() => downloadAuthenticated(`/files/download/${file.id}`, file.original_name)}>{t('download')}</button></span></div>)}</div> : <p className="lm-annual-detail-muted">{t('annual.no_materials')}</p>}</section><div className="lm-annual-detail-footer"><button type="button" onClick={() => editEntry(selectedEntry)} style={{ background: accent }}>Bearbeiten</button><button type="button" onClick={() => setSelectedEntry(null)}>Schließen</button></div></div></div>}
+  </div>;
 }
-
-const inputStyle = { minHeight: 44, padding: '0 10px', border: '1px solid var(--c-border)', borderRadius: 8, background: 'var(--c-input-bg)', color: 'var(--c-text)', fontSize: 14, fontFamily: 'inherit', marginLeft: 5, maxWidth: '100%', boxSizing: 'border-box' };
-const smallLabel = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, color: 'var(--c-text-3)', textTransform: 'uppercase', letterSpacing: .4 };
-const checkStyle = { display: 'block', fontSize: 12, color: 'var(--c-text-2)', padding: '4px 0' };
-const buttonStyle = (border, color) => ({ minHeight: 44, padding: '0 14px', border: `1px solid ${border}`, borderRadius: 8, background: border === color ? 'transparent' : border, color, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' });
-const iconButton = { width: 44, height: 44, border: '1px solid var(--c-border)', borderRadius: 8, background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer' };
-const emptyStyle = { minHeight: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px dashed var(--c-border)', borderRadius: 12, color: 'var(--c-text-2)', textAlign: 'center' };
-const errorStyle = { padding: '9px 12px', borderRadius: 7, background: 'var(--c-danger-bg)', color: 'var(--c-danger-text)', fontSize: 12, marginBottom: 10 };
-const visuallyHidden = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 };

@@ -21,6 +21,12 @@ function validDate(value, nullable = true) {
 const isUniqueConflict = (error) => error?.errcode === 2067 || /UNIQUE constraint failed/i.test(error?.message || '');
 const ENTRY_TEXT_FIELDS = ['content', 'learning_objectives', 'activities', 'homework'];
 
+function generatedEntryTitle(content) {
+  const normalized = String(content || '').trim().replace(/\s+/g, ' ');
+  if (!normalized) return 'Unterrichtsstunde';
+  return normalized.length > 90 ? `${normalized.slice(0, 87).trimEnd()}…` : normalized;
+}
+
 function validateRange(start, end) {
   if (!validDate(start, false) || !validDate(end)) return 'Ungültiges Datum';
   if (end && String(end) < String(start)) return 'Enddatum darf nicht vor dem Startdatum liegen';
@@ -199,16 +205,17 @@ router.post('/:id/entries', teacherOnly, async (req, res) => {
   const plan = await getPlan(req.params.id);
   if (!plan) return res.status(404).json({ error: 'Jahresplanung nicht gefunden' });
   const body = req.body || {};
-  const title = String(body.title || '').trim();
+  const content = String(body.content || '').trim();
+  const title = String(body.title || '').trim() || generatedEntryTitle(body.content);
   const type = String(body.entry_type || 'lesson');
   const rangeError = validateRange(body.entry_date, body.end_date);
   const boundsError = !rangeError && validatePlanBounds(body.entry_date, body.end_date, plan);
-  if (rangeError || boundsError || !ENTRY_TYPES.has(type)) return res.status(400).json({ error: rangeError || boundsError || 'Gültiger Eintragstyp erforderlich' });
+  if (!content || rangeError || boundsError || !ENTRY_TYPES.has(type)) return res.status(400).json({ error: !content ? 'Inhalt erforderlich' : rangeError || boundsError || 'Gültiger Eintragstyp erforderlich' });
   try {
     const result = pool.transaction((connection) => {
       const [inserted] = connection.execute(
         'INSERT INTO annual_plan_entries (plan_id, entry_date, end_date, entry_type, lesson_number, title, notes, sort_order, content, learning_objectives, activities, homework) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [plan.id, body.entry_date, body.end_date || null, type, body.lesson_number || null, title, body.notes || null, Number(body.sort_order) || 0, ...ENTRY_TEXT_FIELDS.map((field) => body[field] || null)]
+        [plan.id, body.entry_date, body.end_date || null, type, body.lesson_number || null, title, body.notes || null, Number(body.sort_order) || 0, content, ...ENTRY_TEXT_FIELDS.slice(1).map((field) => body[field] || null)]
       );
       return inserted;
     });
@@ -222,21 +229,25 @@ router.patch('/entries/:id', teacherOnly, async (req, res) => {
   if (!rows.length) return res.status(404).json({ error: 'Planungseintrag nicht gefunden' });
   const current = rows[0];
   const body = req.body || {};
+  const nextContent = Object.prototype.hasOwnProperty.call(body, 'content') ? String(body.content || '').trim() : current.content;
   const nextDate = body.entry_date ?? current.entry_date;
   const nextEnd = Object.prototype.hasOwnProperty.call(body, 'end_date') ? body.end_date : current.end_date;
   const rangeError = validateRange(nextDate, nextEnd);
   const boundsError = !rangeError && validatePlanBounds(nextDate, nextEnd, { start_date: current.plan_start_date, end_date: current.plan_end_date });
-  if (rangeError || boundsError) return res.status(400).json({ error: rangeError || boundsError });
+  if (!nextContent || rangeError || boundsError) return res.status(400).json({ error: !nextContent ? 'Inhalt erforderlich' : rangeError || boundsError });
   const type = String(body.entry_type ?? current.entry_type);
   if (!ENTRY_TYPES.has(type)) return res.status(400).json({ error: 'Ungültiger Eintragstyp' });
-  const title = Object.prototype.hasOwnProperty.call(body, 'title') ? String(body.title || '').trim() : current.title;
+  const title = Object.prototype.hasOwnProperty.call(body, 'title')
+    ? String(body.title || '').trim() || generatedEntryTitle(nextContent)
+    : current.title;
   try {
     const values = [nextDate, nextEnd || null, type,
         Object.prototype.hasOwnProperty.call(body, 'lesson_number') ? body.lesson_number || null : current.lesson_number,
         title,
         Object.prototype.hasOwnProperty.call(body, 'notes') ? body.notes || null : current.notes,
         Object.prototype.hasOwnProperty.call(body, 'sort_order') ? Number(body.sort_order) || 0 : current.sort_order,
-        ...ENTRY_TEXT_FIELDS.map((field) => Object.prototype.hasOwnProperty.call(body, field) ? body[field] || null : current[field]),
+        nextContent,
+        ...ENTRY_TEXT_FIELDS.slice(1).map((field) => Object.prototype.hasOwnProperty.call(body, field) ? body[field] || null : current[field]),
         req.params.id];
     pool.transaction((connection) => {
       connection.execute(
