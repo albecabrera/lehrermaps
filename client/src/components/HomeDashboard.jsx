@@ -1,5 +1,5 @@
 /** Main authenticated landing page: the app's navigation hub. */
-export default function HomeDashboard({ subjects = [], folders = [], onOpenSubject, onOpenSchedule, onOpenExams, onLogout }) {
+export default function HomeDashboard({ subjects = [], folders = [], onOpenSubject, onOpenSchedule, onOpenExams }) {
   const countFor = (subjectId) => folders.filter((folder) => folder.subject === subjectId).length;
   const card = {
     background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: 16,
@@ -33,7 +33,6 @@ export default function HomeDashboard({ subjects = [], folders = [], onOpenSubje
           <div className="lm-home-action-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 10 }}>
             <button type="button" onClick={onOpenSchedule} style={action}><span aria-hidden="true">📅</span> Stundenplan</button>
             <button type="button" onClick={onOpenExams} style={action}><span aria-hidden="true">🗓</span> Termine</button>
-            <button type="button" onClick={onLogout} style={{ ...action, color: '#dc2626', borderColor: '#dc262655', background: '#dc262612' }}><span aria-hidden="true">↪</span> Logout</button>
           </div>
         </section>
       </div>

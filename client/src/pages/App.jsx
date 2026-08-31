@@ -1070,7 +1070,6 @@ export default function App({ onLogout }) {
             onOpenSubject={(id) => onSubjectChange(id)}
             onOpenSchedule={() => setViewMode('schedule')}
             onOpenExams={() => setExamBoardOpen(true)}
-            onLogout={onLogout}
           />
         ) : viewMode === 'today' ? (
           <div style={{ display: 'flex', flex: 1, minWidth: 0 }}>
