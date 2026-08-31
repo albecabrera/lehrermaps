@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { createLessonCanvasElement, deleteLessonCanvasElement, getLessonCanvas, setLessonCanvasVisibility, updateLessonCanvasElement } from '../../lib/api';
+import { createLessonCanvasElement, deleteLessonCanvasElement, getLessonCanvas, saveLessonCanvasViewport, setLessonCanvasVisibility, updateLessonCanvasElement } from '../../lib/api';
 
 const VISIBILITY = { private: 'Privat', ready: 'Vorbereitet', displayed: 'Anzeigen', solution: 'Lösung' };
 const colors = ['#172033', '#2563EB', '#DC2626', '#16A34A', '#D97706'];
@@ -16,13 +16,13 @@ export default function TeachingCanvas({ sessionId, phase, files = [], accent })
   const [draftStroke, setDraftStroke] = useState([]);
   const [draftShape, setDraftShape] = useState(null);
   const [editingId, setEditingId] = useState(null);
-  const [viewport, setViewport] = useState(() => { try { return JSON.parse(localStorage.getItem(`lm-teaching-viewport:${sessionId}:${phase?.id}`)) || { x: 0, y: 0, scale: 1 }; } catch { return { x: 0, y: 0, scale: 1 }; } });
+  const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
   const [panning, setPanning] = useState(null);
   const [spacePressed, setSpacePressed] = useState(false);
   const panRef = useRef(null);
 
-  useEffect(() => { let cancelled = false; setLoading(true); getLessonCanvas(sessionId, phase?.id).then((value) => { if (!cancelled) setCanvas(value); }).catch(() => { if (!cancelled) setCanvas(null); }).finally(() => { if (!cancelled) setLoading(false); }); return () => { cancelled = true; }; }, [sessionId, phase?.id]);
-  useEffect(() => { try { localStorage.setItem(`lm-teaching-viewport:${sessionId}:${phase?.id}`, JSON.stringify(viewport)); } catch {} }, [sessionId, phase?.id, viewport]);
+  useEffect(() => { let cancelled = false; setLoading(true); getLessonCanvas(sessionId, phase?.id).then((value) => { if (!cancelled) { setCanvas(value); try { setViewport(value?.viewport_json ? JSON.parse(value.viewport_json) : { x: 0, y: 0, scale: 1 }); } catch { setViewport({ x: 0, y: 0, scale: 1 }); } } }).catch(() => { if (!cancelled) setCanvas(null); }).finally(() => { if (!cancelled) setLoading(false); }); return () => { cancelled = true; }; }, [sessionId, phase?.id]);
+  useEffect(() => { if (!canvas || !phase?.id) return undefined; const timer = setTimeout(() => { saveLessonCanvasViewport(sessionId, phase.id, viewport).catch(() => {}); }, 500); return () => clearTimeout(timer); }, [canvas, phase?.id, sessionId, viewport]);
   useEffect(() => { const down = (event) => { const tag = event.target?.tagName?.toLowerCase(); const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || event.target?.isContentEditable; if (event.code === 'Space' && !typing && !event.repeat) { event.preventDefault(); setSpacePressed(true); } if (!typing && (event.key === 'Delete' || event.key === 'Backspace') && selected) remove(selected); if (!typing && !event.metaKey && !event.ctrlKey && !event.altKey) { const shortcuts = { a: 'arrow', c: 'circle', r: 'rectangle', t: 'text', v: 'select', h: 'hand', p: 'pen', e: 'eraser' }; if (shortcuts[event.key.toLowerCase()]) { event.preventDefault(); setTool(shortcuts[event.key.toLowerCase()]); } if (event.key === 'Escape') { setTool('select'); setSelected(null); setEditingId(null); } } }; const up = (event) => { if (event.code === 'Space') setSpacePressed(false); }; window.addEventListener('keydown', down); window.addEventListener('keyup', up); return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); }; }, [selected]);
   const add = async (type, content = {}) => { const position = { x: 8 + ((canvas?.elements?.length || 0) * 3) % 70, y: 12 + ((canvas?.elements?.length || 0) * 4) % 60, w: 18, h: 8 }; return addAt(type, position, content); };
   const addAt = async (type, position, content = {}) => {

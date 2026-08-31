@@ -74,7 +74,7 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, folder_id INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE, original_name TEXT NOT NULL, stored_name TEXT NOT NULL, mime_type TEXT, size_bytes INTEGER, uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, timer_minutes INTEGER, is_shared INTEGER NOT NULL DEFAULT 0, due_at TEXT, is_public INTEGER NOT NULL DEFAULT 0, public_token TEXT, material_role TEXT NOT NULL DEFAULT 'other', version_group_id TEXT, version_number INTEGER NOT NULL DEFAULT 1, is_current_version INTEGER NOT NULL DEFAULT 1)`,
   `CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, folder_id INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE, title TEXT NOT NULL, url TEXT NOT NULL, is_shared INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS file_edit_copies (id INTEGER PRIMARY KEY, file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE, copy_name TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-  `CREATE TABLE IF NOT EXISTS schedule (id INTEGER PRIMARY KEY, data TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS schedule (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL DEFAULT 1, data TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS notebooks (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, title TEXT NOT NULL, color TEXT DEFAULT '#3B82F6', position INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS sections (id INTEGER PRIMARY KEY, notebook_id INTEGER NOT NULL REFERENCES notebooks(id) ON DELETE CASCADE, title TEXT NOT NULL, color TEXT DEFAULT '#64748B', position INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS pages (id INTEGER PRIMARY KEY, section_id INTEGER NOT NULL REFERENCES sections(id) ON DELETE CASCADE, title TEXT NOT NULL, template_id TEXT, position INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
@@ -83,6 +83,7 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS today_dashboard_tasks (user_id INTEGER PRIMARY KEY, tasks_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS today_dashboard_notes (user_id INTEGER NOT NULL, note_date TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, note_date))`,
   `CREATE TABLE IF NOT EXISTS bug_checklists (user_id INTEGER PRIMARY KEY, items_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS user_backups (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, payload_json TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS document_annotations (id INTEGER PRIMARY KEY, file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE, user_id INTEGER NOT NULL DEFAULT 1, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS document_annotation_history (id INTEGER PRIMARY KEY, annotation_id INTEGER NOT NULL, file_id INTEGER NOT NULL, user_id INTEGER NOT NULL, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, action TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS exams (id INTEGER PRIMARY KEY, title TEXT NOT NULL, class_name TEXT NOT NULL, subject TEXT, exam_date TEXT NOT NULL, exam_time TEXT, notes TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
@@ -99,6 +100,10 @@ const schema = [
 
 export async function initSchema() {
   for (const statement of schema) database.exec(statement);
+  const scheduleColumns = database.prepare('PRAGMA table_info(schedule)').all();
+  if (!scheduleColumns.some((column) => column.name === 'user_id')) {
+    database.exec('ALTER TABLE schedule ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1');
+  }
   // SQLite CREATE TABLE does not evolve existing installations. Keep this
   // migration additive so annual plans made before Unterrichtszentrale work.
   const entryColumns = database.prepare('PRAGMA table_info(annual_plan_entries)').all();
@@ -120,6 +125,10 @@ export async function initSchema() {
     );
   `);
   database.exec(`
+    DELETE FROM schedule
+    WHERE id NOT IN (
+      SELECT MAX(id) FROM schedule GROUP BY user_id
+    );
     CREATE INDEX IF NOT EXISTS folders_subject_group_parent_order ON folders(subject, group_name, parent_id, sort_order);
     CREATE INDEX IF NOT EXISTS files_folder_current_uploaded ON files(folder_id, is_current_version, uploaded_at);
     CREATE INDEX IF NOT EXISTS files_public_token ON files(public_token, is_public);
@@ -136,6 +145,8 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS lesson_phases_session_position ON lesson_phases(lesson_session_id, position);
     CREATE INDEX IF NOT EXISTS lesson_elements_canvas_layer ON lesson_phase_elements(canvas_id, layer, id);
     CREATE INDEX IF NOT EXISTS today_dashboard_notes_user_date ON today_dashboard_notes(user_id, note_date);
+    CREATE UNIQUE INDEX IF NOT EXISTS schedule_user_unique ON schedule(user_id);
+    CREATE INDEX IF NOT EXISTS user_backups_user_created ON user_backups(user_id, created_at DESC);
   `);
   database.exec(`
     CREATE TRIGGER IF NOT EXISTS annual_plan_materials_validate_insert
@@ -170,14 +181,13 @@ export async function initSchema() {
   await pool.execute('UPDATE links SET is_shared = 0 WHERE is_shared != 0');
   const bookLinks = [[['Klasse 6'], 'click & teach – Buch Informatik Klasse 6', 'https://www.click-and-teach.de/Player/id/1280/page/21'], [['WP 7', 'WP 8', 'WP 9', 'WP 10'], 'click & teach – Buch Informatik', 'https://www.click-and-teach.de/Player/id/1259/page/10']];
   for (const [groups, title, url] of bookLinks) for (const group of groups) await pool.execute('INSERT OR IGNORE INTO links (folder_id, title, url) SELECT f.id, ?, ? FROM folders f WHERE f.subject = \'informatik\' AND f.group_name = ? AND f.parent_id IS NULL AND NOT EXISTS (SELECT 1 FROM links l WHERE l.folder_id = f.id AND l.url = ?)', [title, url, group, url]);
-  const [rows] = await pool.execute('SELECT COUNT(*) AS c FROM schedule');
-  if (Number(rows[0].c) === 0) await pool.execute("INSERT INTO schedule (data) VALUES ('{}')");
+  const [rows] = await pool.execute('SELECT COUNT(*) AS c FROM schedule WHERE user_id = 1');
+  if (Number(rows[0].c) === 0) await pool.execute("INSERT INTO schedule (user_id, data) VALUES (1, '{}')");
 
   // Repair timetable JSON from the legacy recovery import, which escaped each
   // quote before saving it and therefore made the record invalid JSON.
-  const [scheduleRows] = await pool.execute('SELECT id, data FROM schedule ORDER BY id LIMIT 1');
-  const schedule = scheduleRows[0];
-  if (schedule) {
+  const [scheduleRows] = await pool.execute('SELECT id, data FROM schedule ORDER BY id');
+  for (const schedule of scheduleRows) {
     try {
       JSON.parse(schedule.data);
     } catch {

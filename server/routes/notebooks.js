@@ -214,6 +214,35 @@ router.delete('/pages/:id', async (req, res) => {
   }
 });
 
+router.put('/pages/:id/rich-text', async (req, res) => {
+  const html = typeof req.body?.html === 'string' ? req.body.html : null;
+  if (html === null) return res.status(400).json({ error: 'html required' });
+  try {
+    const [owns] = await pool.execute(
+      `SELECT p.id FROM pages p
+       INNER JOIN sections s ON s.id = p.section_id
+       INNER JOIN notebooks n ON n.id = s.notebook_id
+       WHERE p.id = ? AND n.user_id = ?`,
+      [req.params.id, getUserId(req)]
+    );
+    if (!owns.length) return res.status(404).json({ error: 'page not found' });
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      await conn.execute('DELETE FROM blocks WHERE page_id = ? AND type = ?', [req.params.id, 'rich_text']);
+      const [result] = await conn.execute(
+        'INSERT INTO blocks (page_id, type, content, pos_x, pos_y, width, z_index) VALUES (?, ?, ?, 0, 0, 900, 1)',
+        [req.params.id, 'rich_text', JSON.stringify({ html })]
+      );
+      await conn.commit();
+      res.json({ id: result.insertId, html });
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally { conn.release(); }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/blocks/:pageId', async (req, res) => {
   try {
     const [owns] = await pool.execute(

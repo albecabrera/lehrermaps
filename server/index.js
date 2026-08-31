@@ -25,6 +25,7 @@ import lessonSessionsRouter, { displaySession, displayPage } from './routes/less
 import documentAnnotationsRouter from './routes/documentAnnotations.js';
 import todayDashboardRouter from './routes/todayDashboard.js';
 import bugChecklistRouter from './routes/bugChecklist.js';
+import backupsRouter from './routes/backups.js';
 
 // Load the production configuration next to this module.  The service may be
 // started from the project root by a process manager, so relying on cwd would
@@ -109,6 +110,7 @@ app.use('/api/plan-archives', planArchivesRouter);
 app.use('/api', documentAnnotationsRouter);
 app.use('/api', todayDashboardRouter);
 app.use('/api', bugChecklistRouter);
+app.use('/api/backups', backupsRouter);
 app.use('/api', lessonSessionsRouter);
 app.get('/display/:token', displayPage);
 

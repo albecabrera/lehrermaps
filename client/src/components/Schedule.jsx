@@ -26,11 +26,18 @@ const STUNDENPLAN_SUBJECTS = [
   { id: 'frei',            label: 'Frei',             color: '#94A3B8' },
 ];
 
+function storageKey() {
+  try {
+    const token = localStorage.getItem('lm_token');
+    const payload = token ? JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) : {};
+    return `${STORAGE_KEY}:${payload.user_id ?? payload.id ?? payload.sub ?? 'default'}`;
+  } catch { return `${STORAGE_KEY}:default`; }
+}
 function loadCache() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem(storageKey()) || '{}'); } catch { return {}; }
 }
 function writeCache(s) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  localStorage.setItem(storageKey(), JSON.stringify(s));
 }
 
 function hydrateSchedule(raw) {

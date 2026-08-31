@@ -182,6 +182,7 @@ export const createLessonDisplaySession = (id) => api.post(`/lesson-sessions/${i
 export const updateLessonDisplaySession = (token, active_phase_id) => api.patch(`/display/${encodeURIComponent(token)}`, { active_phase_id }).then((r) => r.data);
 export const getDisplaySession = (token) => axios.get(`/api/display/${encodeURIComponent(token)}`).then((r) => r.data);
 export const getLessonCanvas = (sessionId, phaseId) => api.get(`/lesson-sessions/${sessionId}/canvas`, { params: { phase_id: phaseId } }).then((r) => r.data);
+export const saveLessonCanvasViewport = (sessionId, phaseId, viewport) => api.put(`/lesson-sessions/${sessionId}/canvas/viewport`, { phase_id: phaseId, viewport }).then((r) => r.data);
 export const createLessonCanvasElement = (sessionId, phaseId, data) => api.post(`/lesson-sessions/${sessionId}/canvas`, { phase_id: phaseId, ...data }).then((r) => r.data);
 export const updateLessonCanvasElement = (id, data) => api.patch(`/lesson-canvas-elements/${id}`, data).then((r) => r.data);
 export const deleteLessonCanvasElement = (id) => api.delete(`/lesson-canvas-elements/${id}`);
@@ -213,6 +214,10 @@ export const patchPage = (id, data) => api.patch(`/pages/${id}`, data).then((r) 
 export const deletePage = (id) => api.delete(`/pages/${id}`);
 export const getBlocks = (pageId) => api.get(`/blocks/${pageId}`).then((r) => r.data);
 export const saveBlocks = (pageId, blocks) => api.put(`/blocks/${pageId}`, { blocks }).then((r) => r.data);
+export const savePageRichText = (pageId, html) => api.put(`/pages/${pageId}/rich-text`, { html }).then((r) => r.data);
+export const createBackup = () => api.post('/backups').then((r) => r.data);
+export const getBackups = () => api.get('/backups').then((r) => r.data);
+export const getBackup = (id) => api.get(`/backups/${id}`).then((r) => r.data);
 export const getQuickNotes = () => api.get('/quicknotes').then((r) => r.data);
 export const createQuickNote = (content) => api.post('/quicknotes', { content }).then((r) => r.data);
 export const deleteQuickNote = (id) => api.delete(`/quicknotes/${id}`);

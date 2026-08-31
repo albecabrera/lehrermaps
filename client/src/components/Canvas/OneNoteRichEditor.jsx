@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Table from '@tiptap/extension-table';
@@ -9,11 +9,13 @@ import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
+import { getBlocks, savePageRichText } from '../../lib/api';
 
-const STORAGE_KEY = 'lm_editor_rich';
+const LEGACY_STORAGE_KEY = 'lm_editor_rich';
 
 export default function OneNoteRichEditor({ pageId, activeTab, mode = 'onenote' }) {
-  const storageKey = useMemo(() => `${STORAGE_KEY}:${pageId}`, [pageId]);
+  const loadedPage = useRef(null);
+  const [saveError, setSaveError] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -38,17 +40,35 @@ export default function OneNoteRichEditor({ pageId, activeTab, mode = 'onenote' 
 
   useEffect(() => {
     if (!editor) return;
-    const saved = localStorage.getItem(storageKey);
-    editor.commands.setContent(saved || '<p></p>', false);
-  }, [editor, storageKey]);
+    let cancelled = false;
+    loadedPage.current = null;
+    setSaveError(false);
+    getBlocks(pageId).then((blocks) => {
+      if (cancelled) return;
+      const richBlock = blocks.find((block) => block.type === 'rich_text');
+      let html = richBlock?.content ? JSON.parse(richBlock.content).html : '';
+      if (!html) {
+        try { html = localStorage.getItem(`${LEGACY_STORAGE_KEY}:${pageId}`) || ''; } catch { html = ''; }
+      }
+      editor.commands.setContent(html || '<p></p>', false);
+      loadedPage.current = pageId;
+    }).catch(() => {
+      if (!cancelled) { editor.commands.setContent('<p></p>', false); setSaveError(true); }
+    });
+    return () => { cancelled = true; };
+  }, [editor, pageId]);
 
   useEffect(() => {
     if (!editor) return;
     let timeout;
     const onUpdate = () => {
       clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        localStorage.setItem(storageKey, editor.getHTML());
+      if (loadedPage.current !== pageId) return;
+      timeout = setTimeout(async () => {
+        try {
+          await savePageRichText(pageId, editor.getHTML());
+          setSaveError(false);
+        } catch { setSaveError(true); }
       }, 600);
     };
     editor.on('update', onUpdate);
@@ -56,7 +76,7 @@ export default function OneNoteRichEditor({ pageId, activeTab, mode = 'onenote' 
       clearTimeout(timeout);
       editor.off('update', onUpdate);
     };
-  }, [editor, storageKey]);
+  }, [editor, pageId]);
 
   if (!editor) return null;
 
@@ -111,7 +131,7 @@ export default function OneNoteRichEditor({ pageId, activeTab, mode = 'onenote' 
             {tool.label}
           </button>
         ))}
-        <span style={{ marginLeft: 'auto', fontSize: 12, color: '#666', alignSelf: 'center' }}>{activeTab}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 12, color: saveError ? '#b91c1c' : '#666', alignSelf: 'center' }}>{saveError ? 'Save failed' : activeTab}</span>
       </div>
 
       <div

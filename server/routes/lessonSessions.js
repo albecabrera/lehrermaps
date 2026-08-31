@@ -41,10 +41,11 @@ async function canvasForPhase(phaseId, create = true) {
 
 function parseJson(value) { try { return value ? JSON.parse(value) : {}; } catch { return {}; } }
 function json(value) { return JSON.stringify(value ?? {}); }
+function getUserId(req) { return Number.isInteger(req.user?.user_id) ? req.user.user_id : (Number.isInteger(req.user?.id) ? req.user.id : 1); }
 
 router.get('/lesson-sessions/:id/canvas', async (req, res) => {
   try {
-    const session = await getSession(req.params.id, req.user?.id || 1);
+    const session = await getSession(req.params.id, getUserId(req));
     if (!session) return res.status(404).json({ error: 'Stunde nicht gefunden' });
     const [phases] = await pool.execute('SELECT id FROM lesson_phases WHERE lesson_session_id = ? ORDER BY position, id', [session.id]);
     const phaseId = Number(req.query.phase_id) || phases[0]?.id;
@@ -53,10 +54,27 @@ router.get('/lesson-sessions/:id/canvas', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+router.put('/lesson-sessions/:id/canvas/viewport', teacherOnly, async (req, res) => {
+  try {
+    const session = await getSession(req.params.id, getUserId(req));
+    const phase = await ownedPhase(req.body?.phase_id, getUserId(req));
+    if (!session || !phase || Number(phase.lesson_session_id) !== Number(session.id)) return res.status(404).json({ error: 'Phase nicht gefunden' });
+    const viewport = req.body?.viewport || {};
+    const safeViewport = {
+      x: Number.isFinite(Number(viewport.x)) ? Number(viewport.x) : 0,
+      y: Number.isFinite(Number(viewport.y)) ? Number(viewport.y) : 0,
+      scale: Math.max(0.35, Math.min(2.5, Number(viewport.scale) || 1)),
+    };
+    const canvas = await canvasForPhase(phase.id);
+    await pool.execute('UPDATE lesson_phase_canvases SET viewport_json = ? WHERE id = ?', [json(safeViewport), canvas.id]);
+    res.json({ ...canvas, viewport: safeViewport });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 router.post('/lesson-sessions/:id/canvas', teacherOnly, async (req, res) => {
   try {
-    const session = await getSession(req.params.id, req.user?.id || 1);
-    const phase = await ownedPhase(req.body?.phase_id, req.user?.id || 1);
+    const session = await getSession(req.params.id, getUserId(req));
+    const phase = await ownedPhase(req.body?.phase_id, getUserId(req));
     if (!session || !phase || Number(phase.lesson_session_id) !== Number(session.id)) return res.status(404).json({ error: 'Phase nicht gefunden' });
     const canvas = await canvasForPhase(phase.id);
     const body = req.body || {};
@@ -68,7 +86,7 @@ router.post('/lesson-sessions/:id/canvas', teacherOnly, async (req, res) => {
 
 router.patch('/lesson-canvas-elements/:id', teacherOnly, async (req, res) => {
   try {
-    const [owned] = await pool.execute('SELECT e.id FROM lesson_phase_elements e JOIN lesson_phase_canvases c ON c.id = e.canvas_id JOIN lesson_phases p ON p.id = c.phase_id JOIN lesson_sessions s ON s.id = p.lesson_session_id WHERE e.id = ? AND s.user_id = ?', [req.params.id, req.user?.id || 1]);
+    const [owned] = await pool.execute('SELECT e.id FROM lesson_phase_elements e JOIN lesson_phase_canvases c ON c.id = e.canvas_id JOIN lesson_phases p ON p.id = c.phase_id JOIN lesson_sessions s ON s.id = p.lesson_session_id WHERE e.id = ? AND s.user_id = ?', [req.params.id, getUserId(req)]);
     if (!owned.length) return res.status(404).json({ error: 'Element nicht gefunden' });
     const allowed = ['type', 'visibility', 'layer', 'is_live_annotation'];
     const sets = [];
@@ -83,18 +101,18 @@ router.patch('/lesson-canvas-elements/:id', teacherOnly, async (req, res) => {
 });
 
 router.delete('/lesson-canvas-elements/:id', teacherOnly, async (req, res) => {
-  try { const [result] = await pool.execute('DELETE FROM lesson_phase_elements WHERE id = ? AND EXISTS (SELECT 1 FROM lesson_phase_canvases c JOIN lesson_phases p ON p.id = c.phase_id JOIN lesson_sessions s ON s.id = p.lesson_session_id WHERE c.id = lesson_phase_elements.canvas_id AND s.user_id = ?)', [req.params.id, req.user?.id || 1]); if (!result.affectedRows) return res.status(404).json({ error: 'Element nicht gefunden' }); res.json({ ok: true }); }
+  try { const [result] = await pool.execute('DELETE FROM lesson_phase_elements WHERE id = ? AND EXISTS (SELECT 1 FROM lesson_phase_canvases c JOIN lesson_phases p ON p.id = c.phase_id JOIN lesson_sessions s ON s.id = p.lesson_session_id WHERE c.id = lesson_phase_elements.canvas_id AND s.user_id = ?)', [req.params.id, getUserId(req)]); if (!result.affectedRows) return res.status(404).json({ error: 'Element nicht gefunden' }); res.json({ ok: true }); }
   catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 router.put('/lesson-canvas-elements/:id/visibility', teacherOnly, async (req, res) => {
-  try { const visibility = ['private', 'ready', 'displayed', 'solution', 'student'].includes(req.body?.visibility) ? req.body.visibility : 'private'; const [result] = await pool.execute('UPDATE lesson_phase_elements SET visibility = ? WHERE id = ? AND EXISTS (SELECT 1 FROM lesson_phase_canvases c JOIN lesson_phases p ON p.id = c.phase_id JOIN lesson_sessions s ON s.id = p.lesson_session_id WHERE c.id = lesson_phase_elements.canvas_id AND s.user_id = ?)', [visibility, req.params.id, req.user?.id || 1]); if (!result.affectedRows) return res.status(404).json({ error: 'Element nicht gefunden' }); res.json({ ok: true, visibility }); }
+  try { const visibility = ['private', 'ready', 'displayed', 'solution', 'student'].includes(req.body?.visibility) ? req.body.visibility : 'private'; const [result] = await pool.execute('UPDATE lesson_phase_elements SET visibility = ? WHERE id = ? AND EXISTS (SELECT 1 FROM lesson_phase_canvases c JOIN lesson_phases p ON p.id = c.phase_id JOIN lesson_sessions s ON s.id = p.lesson_session_id WHERE c.id = lesson_phase_elements.canvas_id AND s.user_id = ?)', [visibility, req.params.id, getUserId(req)]); if (!result.affectedRows) return res.status(404).json({ error: 'Element nicht gefunden' }); res.json({ ok: true, visibility }); }
   catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 router.post('/lesson-phases/:id/live-layer', teacherOnly, async (req, res) => {
   try {
-    const phase = await ownedPhase(req.params.id, req.user?.id || 1);
+    const phase = await ownedPhase(req.params.id, getUserId(req));
     if (!phase) return res.status(404).json({ error: 'Phase nicht gefunden' });
     const canvas = await canvasForPhase(phase.id);
     const elements = Array.isArray(req.body?.elements) ? req.body.elements : [];
@@ -105,7 +123,7 @@ router.post('/lesson-phases/:id/live-layer', teacherOnly, async (req, res) => {
 
 router.post('/lesson-phases/:id/live-layer/save', teacherOnly, async (req, res) => {
   try {
-    const phase = await ownedPhase(req.params.id, req.user?.id || 1);
+    const phase = await ownedPhase(req.params.id, getUserId(req));
     if (!phase) return res.status(404).json({ error: 'Phase nicht gefunden' });
     await pool.execute('UPDATE lesson_phase_elements SET is_live_annotation = 0 WHERE canvas_id IN (SELECT id FROM lesson_phase_canvases WHERE phase_id = ?)', [phase.id]);
     res.json(await canvasForPhase(phase.id));
@@ -114,7 +132,7 @@ router.post('/lesson-phases/:id/live-layer/save', teacherOnly, async (req, res) 
 
 router.delete('/lesson-phases/:id/live-layer', teacherOnly, async (req, res) => {
   try {
-    const phase = await ownedPhase(req.params.id, req.user?.id || 1);
+    const phase = await ownedPhase(req.params.id, getUserId(req));
     if (!phase) return res.status(404).json({ error: 'Phase nicht gefunden' });
     await pool.execute('DELETE FROM lesson_phase_elements WHERE canvas_id IN (SELECT id FROM lesson_phase_canvases WHERE phase_id = ?) AND is_live_annotation = 1', [phase.id]);
     res.json({ ok: true });
@@ -123,7 +141,7 @@ router.delete('/lesson-phases/:id/live-layer', teacherOnly, async (req, res) => 
 
 router.get('/lesson-sessions', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM lesson_sessions WHERE user_id = ? ORDER BY lesson_date DESC, updated_at DESC', [req.user?.id || 1]);
+    const [rows] = await pool.execute('SELECT * FROM lesson_sessions WHERE user_id = ? ORDER BY lesson_date DESC, updated_at DESC', [getUserId(req)]);
     res.json(rows);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -136,7 +154,7 @@ router.post('/lesson-sessions', teacherOnly, async (req, res) => {
     await connection.beginTransaction();
     const [result] = await connection.execute(
       `INSERT INTO lesson_sessions (user_id, folder_id, title, lesson_date, class_name, subject, learning_goal, teacher_notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
-      [req.user?.id || 1, body.folder_id || null, String(body.title).trim(), body.lesson_date || new Date().toISOString().slice(0, 10), body.class_name || null, body.subject || null, body.learning_goal || null, body.teacher_notes || null]
+      [getUserId(req), body.folder_id || null, String(body.title).trim(), body.lesson_date || new Date().toISOString().slice(0, 10), body.class_name || null, body.subject || null, body.learning_goal || null, body.teacher_notes || null]
     );
     const phases = Array.isArray(body.phases) ? body.phases : [];
     for (const [index, phase] of phases.entries()) {
@@ -149,7 +167,7 @@ router.post('/lesson-sessions', teacherOnly, async (req, res) => {
 
 router.get('/lesson-sessions/:id', async (req, res) => {
   try {
-    const session = await withPhases(await getSession(req.params.id, req.user?.id || 1));
+    const session = await withPhases(await getSession(req.params.id, getUserId(req)));
     if (!session) return res.status(404).json({ error: 'Stunde nicht gefunden' });
     res.json(session);
   } catch (error) { res.status(500).json({ error: error.message }); }
@@ -161,20 +179,20 @@ router.patch('/lesson-sessions/:id', teacherOnly, async (req, res) => {
   if (!entries.length) return res.status(400).json({ error: 'Keine Änderungen' });
   try {
     const values = entries.map((key) => req.body[key] ?? null);
-    await pool.execute(`UPDATE lesson_sessions SET ${entries.map((key) => `${key} = ?`).join(', ')} WHERE id = ? AND user_id = ?`, [...values, req.params.id, req.user?.id || 1]);
-    res.json(await withPhases(await getSession(req.params.id, req.user?.id || 1)));
+    await pool.execute(`UPDATE lesson_sessions SET ${entries.map((key) => `${key} = ?`).join(', ')} WHERE id = ? AND user_id = ?`, [...values, req.params.id, getUserId(req)]);
+    res.json(await withPhases(await getSession(req.params.id, getUserId(req))));
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 router.delete('/lesson-sessions/:id', teacherOnly, async (req, res) => {
-  try { await pool.execute('DELETE FROM lesson_sessions WHERE id = ? AND user_id = ?', [req.params.id, req.user?.id || 1]); res.json({ ok: true }); }
+  try { await pool.execute('DELETE FROM lesson_sessions WHERE id = ? AND user_id = ?', [req.params.id, getUserId(req)]); res.json({ ok: true }); }
   catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 router.post('/lesson-sessions/:id/phases', teacherOnly, async (req, res) => {
   const phase = req.body || {};
   try {
-    if (!await getSession(req.params.id, req.user?.id || 1)) return res.status(404).json({ error: 'Stunde nicht gefunden' });
+    if (!await getSession(req.params.id, getUserId(req))) return res.status(404).json({ error: 'Stunde nicht gefunden' });
     const [result] = await pool.execute(`INSERT INTO lesson_phases (lesson_session_id, position, title, duration_seconds, description, teacher_notes, student_instruction, student_responses) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [req.params.id, Number(phase.position) || 0, phase.title || 'Neue Phase', Math.max(0, Number(phase.duration_seconds) || 300), phase.description || null, phase.teacher_notes || null, phase.student_instruction || null, phase.student_responses || null]);
     const [rows] = await pool.execute(`SELECT ${phaseFields} FROM lesson_phases WHERE id = ?`, [result.insertId]);
     res.status(201).json(rows[0]);
@@ -186,7 +204,7 @@ router.patch('/lesson-phases/:id', teacherOnly, async (req, res) => {
   const entries = allowed.filter((key) => Object.prototype.hasOwnProperty.call(req.body || {}, key));
   if (!entries.length) return res.status(400).json({ error: 'Keine Änderungen' });
   try {
-    const [result] = await pool.execute(`UPDATE lesson_phases SET ${entries.map((key) => `${key} = ?`).join(', ')} WHERE id = ? AND EXISTS (SELECT 1 FROM lesson_sessions s WHERE s.id = lesson_phases.lesson_session_id AND s.user_id = ?)`, [...entries.map((key) => req.body[key] ?? null), req.params.id, req.user?.id || 1]);
+    const [result] = await pool.execute(`UPDATE lesson_phases SET ${entries.map((key) => `${key} = ?`).join(', ')} WHERE id = ? AND EXISTS (SELECT 1 FROM lesson_sessions s WHERE s.id = lesson_phases.lesson_session_id AND s.user_id = ?)`, [...entries.map((key) => req.body[key] ?? null), req.params.id, getUserId(req)]);
     if (!result.affectedRows) return res.status(404).json({ error: 'Phase nicht gefunden' });
     const [rows] = await pool.execute(`SELECT ${phaseFields} FROM lesson_phases WHERE id = ?`, [req.params.id]);
     res.json(rows[0]);
@@ -194,14 +212,14 @@ router.patch('/lesson-phases/:id', teacherOnly, async (req, res) => {
 });
 
 router.delete('/lesson-phases/:id', teacherOnly, async (req, res) => {
-  try { await pool.execute('DELETE FROM lesson_phases WHERE id = ? AND EXISTS (SELECT 1 FROM lesson_sessions s WHERE s.id = lesson_phases.lesson_session_id AND s.user_id = ?)', [req.params.id, req.user?.id || 1]); res.json({ ok: true }); }
+  try { await pool.execute('DELETE FROM lesson_phases WHERE id = ? AND EXISTS (SELECT 1 FROM lesson_sessions s WHERE s.id = lesson_phases.lesson_session_id AND s.user_id = ?)', [req.params.id, getUserId(req)]); res.json({ ok: true }); }
   catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 router.put('/lesson-phases/:id/visibility', teacherOnly, async (req, res) => {
   const visibility = ['private', 'ready', 'displayed', 'solution', 'student'].includes(req.body?.visibility) ? req.body.visibility : 'private';
   try {
-    const [owned] = await pool.execute(`SELECT p.id, s.folder_id FROM lesson_phases p JOIN lesson_sessions s ON s.id = p.lesson_session_id WHERE p.id = ? AND s.user_id = ?`, [req.params.id, req.user?.id || 1]);
+    const [owned] = await pool.execute(`SELECT p.id, s.folder_id FROM lesson_phases p JOIN lesson_sessions s ON s.id = p.lesson_session_id WHERE p.id = ? AND s.user_id = ?`, [req.params.id, getUserId(req)]);
     if (!owned.length) return res.status(404).json({ error: 'Phase nicht gefunden' });
     if (req.body?.file_id) {
       const [files] = await pool.execute('SELECT id FROM files WHERE id = ? AND folder_id = ?', [req.body.file_id, owned[0].folder_id]);
@@ -214,7 +232,7 @@ router.put('/lesson-phases/:id/visibility', teacherOnly, async (req, res) => {
 
 router.post('/lesson-sessions/:id/display-session', teacherOnly, async (req, res) => {
   try {
-    if (!await getSession(req.params.id, req.user?.id || 1)) return res.status(404).json({ error: 'Stunde nicht gefunden' });
+    if (!await getSession(req.params.id, getUserId(req))) return res.status(404).json({ error: 'Stunde nicht gefunden' });
     const token = crypto.randomBytes(32).toString('hex');
     await pool.execute("INSERT INTO lesson_display_sessions (lesson_session_id, token, expires_at) VALUES (?, ?, datetime('now', '+12 hours'))", [req.params.id, token]);
     res.status(201).json({ token, url: `/display/${token}` });
@@ -223,7 +241,7 @@ router.post('/lesson-sessions/:id/display-session', teacherOnly, async (req, res
 
 router.patch('/display/:token', teacherOnly, async (req, res) => {
   try {
-    const [result] = await pool.execute(`UPDATE lesson_display_sessions SET active_phase_id = ? WHERE token = ? AND expires_at > CURRENT_TIMESTAMP AND EXISTS (SELECT 1 FROM lesson_sessions s WHERE s.id = lesson_display_sessions.lesson_session_id AND s.user_id = ?)`, [req.body?.active_phase_id || null, req.params.token, req.user?.id || 1]);
+    const [result] = await pool.execute(`UPDATE lesson_display_sessions SET active_phase_id = ? WHERE token = ? AND expires_at > CURRENT_TIMESTAMP AND EXISTS (SELECT 1 FROM lesson_sessions s WHERE s.id = lesson_display_sessions.lesson_session_id AND s.user_id = ?)`, [req.body?.active_phase_id || null, req.params.token, getUserId(req)]);
     if (!result.affectedRows) return res.status(404).json({ error: 'Anzeigesitzung nicht gefunden' });
     res.json({ ok: true });
   } catch (error) { res.status(500).json({ error: error.message }); }
