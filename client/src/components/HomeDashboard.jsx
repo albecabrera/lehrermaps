@@ -1,38 +1,46 @@
 /** Main authenticated landing page: the app's navigation hub. */
 export default function HomeDashboard({ subjects = [], folders = [], onOpenSubject, onOpenSchedule, onOpenExams }) {
   const countFor = (subjectId) => folders.filter((folder) => folder.subject === subjectId).length;
-  const card = {
-    background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: 16,
-    padding: 20, color: 'var(--c-text)', fontFamily: 'inherit', textAlign: 'left',
-  };
-  const action = {
-    border: '1px solid var(--c-border)', borderRadius: 11, background: 'var(--c-surface-2)',
-    color: 'var(--c-text)', padding: '12px 14px', minHeight: 48, cursor: 'pointer',
-    font: 'inherit', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10,
-  };
   return (
-    <main className="lm-home-view" style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: 'clamp(24px, 5vw, 58px) clamp(18px, 5vw, 64px) 48px' }}>
-      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-        <section aria-labelledby="home-subjects-title">
-          <h2 id="home-subjects-title" style={{ margin: '0 0 12px', fontSize: 16 }}>Alle Fächer</h2>
-          <div className="lm-home-subject-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12 }}>
+    <main className="lm-home-view">
+      <div className="lm-home-shell">
+        <header className="lm-home-intro">
+          <p className="lm-home-kicker">Mein Arbeitsbereich</p>
+          <h1>Guten Tag</h1>
+          <p>Alles Wichtige für deinen Unterricht an einem klaren Ort.</p>
+        </header>
+        <section className="lm-home-section" aria-labelledby="home-subjects-title">
+          <div className="lm-home-section-heading">
+            <div>
+              <p className="lm-home-kicker">Unterricht</p>
+              <h2 id="home-subjects-title">Alle Fächer</h2>
+            </div>
+            <span>{subjects.length} Bereiche</span>
+          </div>
+          <div className="lm-home-subject-grid">
             {subjects.map((subject) => (
-              <button key={subject.id} type="button" onClick={() => onOpenSubject(subject.id)} style={{ ...card, cursor: 'pointer', borderTop: `4px solid ${subject.color}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                  <span style={{ width: 38, height: 38, borderRadius: 11, display: 'grid', placeItems: 'center', background: subject.colorSoft, color: subject.colorDark, fontSize: 12, fontWeight: 900 }}>{subject.short}</span>
-                  <span style={{ fontSize: 16, fontWeight: 800 }}>{subject.name}</span>
+              <button key={subject.id} type="button" className="lm-home-subject-card" onClick={() => onOpenSubject(subject.id)} style={{ '--subject-color': subject.color, '--subject-soft': subject.colorSoft, '--subject-dark': subject.colorDark }}>
+                <div className="lm-home-subject-card-top">
+                  <span className="lm-home-subject-monogram">{subject.short}</span>
+                  <span className="lm-home-subject-arrow" aria-hidden="true">↗</span>
                 </div>
-                <div style={{ marginTop: 15, color: 'var(--c-text-3)', fontSize: 12 }}>{countFor(subject.id)} Ordner</div>
+                <span className="lm-home-subject-name">{subject.name}</span>
+                <span className="lm-home-subject-meta">{countFor(subject.id)} Ordner</span>
               </button>
             ))}
           </div>
         </section>
 
-        <section aria-labelledby="home-actions-title" style={{ marginTop: 30 }}>
-          <h2 id="home-actions-title" style={{ margin: '0 0 12px', fontSize: 16 }}>Schnellzugriff</h2>
-          <div className="lm-home-action-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 10 }}>
-            <button type="button" onClick={onOpenSchedule} style={action}><span aria-hidden="true">📅</span> Stundenplan</button>
-            <button type="button" onClick={onOpenExams} style={action}><span aria-hidden="true">🗓</span> Termine</button>
+        <section className="lm-home-section lm-home-quick-section" aria-labelledby="home-actions-title">
+          <div className="lm-home-section-heading">
+            <div>
+              <p className="lm-home-kicker">Direktzugriff</p>
+              <h2 id="home-actions-title">Schnellzugriff</h2>
+            </div>
+          </div>
+          <div className="lm-home-action-grid">
+            <button type="button" className="lm-home-action-card" onClick={onOpenSchedule}><span className="lm-home-action-icon" aria-hidden="true">📅</span><span><strong>Stundenplan</strong><small>Deine Woche im Überblick</small></span><b aria-hidden="true">→</b></button>
+            <button type="button" className="lm-home-action-card" onClick={onOpenExams}><span className="lm-home-action-icon" aria-hidden="true">🗓</span><span><strong>Termine</strong><small>Prüfungen und wichtige Daten</small></span><b aria-hidden="true">→</b></button>
           </div>
         </section>
       </div>

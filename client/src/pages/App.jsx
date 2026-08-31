@@ -740,7 +740,7 @@ export default function App({ onLogout }) {
 
   return (
     <Suspense fallback={null}>
-    <div style={{
+    <div className="lm-app-shell" style={{
       position: 'fixed', inset: 0,
       display: 'flex', flexDirection: 'column',
       background: 'var(--c-bg)', color: 'var(--c-text)',
@@ -749,7 +749,7 @@ export default function App({ onLogout }) {
     }}>
       <div className={hasModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Tab bar */}
-      <div className="lm-tabbar" style={{
+      <header className="lm-tabbar" style={{
         display: 'flex', alignItems: 'flex-end', padding: '8px 16px 0',
         background: 'var(--c-tab-bg)', borderBottom: '1px solid var(--c-border)',
         position: 'relative', flexShrink: 0, gap: 2,
@@ -819,7 +819,7 @@ export default function App({ onLogout }) {
         {!isMobile && <>
         {/* Heute / Startseite */}
         <button
-          className="lm-spring lm-topbar-today"
+          className={`lm-spring lm-topbar-today${viewMode === 'today' ? ' is-active' : ''}`}
           onClick={() => { setViewMode('today'); setActivePageId(null); closeFolderView(); }}
           style={{
             appearance: 'none', border: 'none', font: 'inherit',
@@ -840,7 +840,7 @@ export default function App({ onLogout }) {
         </button>
         {/* Stundenplan toggle */}
         <button
-          className="lm-spring lm-topbar-schedule"
+          className={`lm-spring lm-topbar-schedule${viewMode === 'schedule' ? ' is-active' : ''}`}
           onClick={() => setViewMode((m) => m === 'schedule' ? 'subjects' : 'schedule')}
           style={{
             appearance: 'none', border: 'none', font: 'inherit',
@@ -1049,7 +1049,7 @@ export default function App({ onLogout }) {
           </button>
 
         </div>}
-      </div>
+      </header>
 
       {/* Body */}
       <FocusMode active={focusMode} onExit={() => setFocusMode(false)}>
