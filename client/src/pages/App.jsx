@@ -16,7 +16,7 @@ import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
 import { useRecentFiles } from '../hooks/useRecentFiles';
-import { downloadFolderZip, downloadFilesZip, getLessonSessions, viewFile } from '../lib/api';
+import { downloadFolderZip, downloadFilesZip, getLessonSessions, viewFile, previewFile } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
@@ -88,6 +88,8 @@ export default function App({ onLogout }) {
   const [teachingMode, setTeachingMode] = useState(false);
   const [startNewLessonPlanning, setStartNewLessonPlanning] = useState(false);
   const [teachingSessionId, setTeachingSessionId] = useState(null);
+  const [printReadyFolder, setPrintReadyFolder] = useState(null);
+  const printReadyCreationRef = useRef(false);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
@@ -95,6 +97,16 @@ export default function App({ onLogout }) {
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { trackFile, trackLink } = useRecentFiles();
+
+  useEffect(() => {
+    const existing = folders.find((folder) => folder.subject === 'system' && folder.name === 'Druckfertig');
+    if (existing) { setPrintReadyFolder(existing); return; }
+    if (foldersLoading || printReadyCreationRef.current) return;
+    printReadyCreationRef.current = true;
+    addFolder('system', 'Druckfertig', 'Druckfertig')
+      .then(setPrintReadyFolder)
+      .catch(() => setToast({ type: 'error', msg: 'Druckfertig konnte nicht eingerichtet werden.' }));
+  }, [folders, foldersLoading, addFolder]);
 
   useEffect(() => {
     if (!activeFolder?.id) { setFolderLessonSessions([]); return undefined; }
@@ -383,6 +395,21 @@ export default function App({ onLogout }) {
         color: color || accent,
       });
     }
+  };
+
+  const openPrintReady = (sourceRect = null) => {
+    if (!printReadyFolder) {
+      setToast({ type: 'warning', msg: 'Druckfertig wird gerade eingerichtet.' });
+      return;
+    }
+    setViewMode('subjects');
+    onFolderSelect(printReadyFolder, sourceRect);
+  };
+
+  const openPrintReadyFile = (file) => {
+    const ext = file.original_name?.split('.').pop()?.toLowerCase();
+    const convertible = new Set(['doc', 'docx', 'odt', 'rtf', 'ppt', 'pptx', 'odp', 'xls', 'xlsx', 'ods']);
+    window.open(convertible.has(ext) ? previewFile(file.id) : viewFile(file.id), '_blank', 'noopener,noreferrer');
   };
 
   const handleGlobalNavigate = (targetSubject, folderId, target = null) => {
@@ -708,6 +735,7 @@ export default function App({ onLogout }) {
     onToggleFavorite: toggleFavorite,
     onSetFolderColor: setFolderColor,
     onMoveFileToFolder: handleMoveFileToFolder,
+    onPrintReady: openPrintReady,
   };
 
   return (
@@ -1222,8 +1250,8 @@ export default function App({ onLogout }) {
               <div style={{ padding: '20px 28px 0', flexShrink: 0 }}>
                 <Breadcrumb
                   items={[
-                    { label: t('subject.' + subjectId), onClick: closeFolderView },
-                    { label: activeFolder.group_name, onClick: closeFolderView },
+                    { label: activeFolder.subject === 'system' ? 'Druckfertig' : t('subject.' + subjectId), onClick: closeFolderView },
+                    ...(activeFolder.subject === 'system' ? [] : [{ label: activeFolder.group_name, onClick: closeFolderView }]),
                     ...activeFolderPath.slice(0, -1).map((f) => ({
                       label: f.name,
                       onClick: () => onFolderSelect(f),
@@ -1471,6 +1499,7 @@ export default function App({ onLogout }) {
                           if (from && to) setPreviewHero({ from, to, accent, phase: 'start' });
                         }}
                         onFileSecondarySelect={(f) => { setActiveFile2(f); trackFile(f, activeFolder?.id, subjectId); }}
+                        onFileDoubleClick={activeFolder.subject === 'system' ? openPrintReadyFile : undefined}
                         onLinkSelect={(l) => { setActiveLink(l); setActiveFile(null); trackLink(l, activeFolder?.id, subjectId); }}
                         accent={accent}
                         query={query}
@@ -1688,7 +1717,7 @@ export default function App({ onLogout }) {
         onClose={() => { setUploadOpen(false); setDropFiles(null); }}
         accent={accent}
         targetFolder={activeFolder
-          ? `${t('subject.' + subjectId)} › ${activeFolder.group_name} › ${activeFolder.name}`
+          ? (activeFolder.subject === 'system' ? activeFolder.name : `${t('subject.' + subjectId)} › ${activeFolder.group_name} › ${activeFolder.name}`)
           : undefined}
         onUpload={handleUpload}
         initialFiles={dropFiles}

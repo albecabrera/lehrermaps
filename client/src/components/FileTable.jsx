@@ -16,7 +16,7 @@ export const MATERIAL_ROLES = [
 
 export default function FileTable({
   files, links = [], activeFileId, activeLinkId, activeFile2Id,
-  onFileSelect, onFileSecondarySelect, onLinkSelect, accent = '#E8472A',
+  onFileSelect, onFileSecondarySelect, onLinkSelect, onFileDoubleClick, accent = '#E8472A',
   query, onDelete, onRename, onDeleteLink, onUpload, onAddLink,
   onShowLinkQr,
   onFileHover,
@@ -210,7 +210,7 @@ export default function FileTable({
           }
         }}
         className="lm-spring lm-stagger-in"
-        onDoubleClick={() => onRename?.(file)}
+        onDoubleClick={() => (onFileDoubleClick ? onFileDoubleClick(file) : onRename?.(file))}
         onKeyDown={(e) => {
           if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
             e.preventDefault();

@@ -34,6 +34,7 @@ export default function Sidebar({
   onReorderFolders, onToggleFavorite,
   onSetFolderColor,
   onMoveFileToFolder,
+  onPrintReady,
   onMoveFolder,
 
 }) {
@@ -168,6 +169,24 @@ export default function Sidebar({
           })}
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={onPrintReady}
+        title="Druckfertig"
+        aria-label="Druckfertig"
+        style={{
+          margin: collapsed ? '8px 4px' : '10px 10px 2px', height: 34,
+          border: '1px solid #0F766E55', borderRadius: 8,
+          background: '#0F766E12', color: '#0F766E', cursor: 'pointer',
+          fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start',
+          gap: 8, padding: collapsed ? 0 : '0 10px', flexShrink: 0,
+        }}
+      >
+        <span aria-hidden="true" style={{ fontSize: 15 }}>▣</span>
+        {!collapsed && <span>Druckfertig</span>}
+      </button>
 
       {/* Header */}
       <div style={{

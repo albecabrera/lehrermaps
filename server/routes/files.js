@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const { ZipArchive } = require('archiver');
 import pool from '../db.js';
 import auth, { teacherOnly } from '../middleware/auth.js';
-import { validateDeclaredMime, validateFileContent } from '../lib/fileValidation.js';
+import { safeFileName, validateDeclaredMime, validateFileContent } from '../lib/fileValidation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Tests can provide an isolated storage root without changing production's
@@ -65,19 +65,10 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 300 * 1024 * 1024 },
-  fileFilter: (_, file, cb) => {
-    if (
-      file.mimetype.startsWith('image/') ||
-      file.mimetype.startsWith('video/') ||
-      file.mimetype.startsWith('audio/') ||
-      file.mimetype.startsWith('text/') ||
-      file.mimetype.startsWith('application/')
-    ) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Dateityp ${file.mimetype} nicht erlaubt`));
-    }
-  },
+  // The destination folder decides whether strict content validation applies.
+  // This keeps normal material protected while allowing Druckfertig to hold
+  // any printable/exportable format the browser or operating system provides.
+  fileFilter: (_, file, cb) => cb(null, true),
 });
 const editUpload = multer({
   storage: multer.memoryStorage(),
@@ -406,17 +397,25 @@ router.post('/upload', teacherOnly, upload.single('file'), async (req, res) => {
   if (!folder_id) { await rm(req.file.path, { force: true }); return res.status(400).json({ error: 'folder_id fehlt' }); }
 
   try {
-    const [folders] = await pool.execute('SELECT id FROM folders WHERE id = ?', [folder_id]);
+    const [folders] = await pool.execute('SELECT id, subject, name FROM folders WHERE id = ?', [folder_id]);
     if (!folders.length) { await rm(req.file.path, { force: true }); return res.status(404).json({ error: 'Zielordner nicht gefunden' }); }
-    validateFileContent(req.file.originalname, await readFile(req.file.path));
-    validateDeclaredMime(req.file.originalname, req.file.mimetype);
+    const printReady = folders[0].subject === 'system' && folders[0].name === 'Druckfertig';
+    const originalName = printReady ? safeFileName(req.file.originalname) : req.file.originalname;
+    if (!originalName || originalName.length > 255) {
+      await rm(req.file.path, { force: true });
+      return res.status(400).json({ error: 'Ungültiger Dateiname' });
+    }
+    if (!printReady) {
+      validateFileContent(originalName, await readFile(req.file.path));
+      validateDeclaredMime(originalName, req.file.mimetype);
+    }
     const finalPath = path.join(UPLOADS_DIR, req.file.filename);
     renameSync(req.file.path, finalPath);
     let result;
     try {
       [result] = await pool.execute(
         'INSERT INTO files (folder_id, original_name, stored_name, mime_type, size_bytes, version_group_id) VALUES (?, ?, ?, ?, ?, ?)',
-        [folder_id, req.file.originalname, req.file.filename, req.file.mimetype, req.file.size, randomUUID().replace(/-/g, '')]
+        [folder_id, originalName, req.file.filename, req.file.mimetype || 'application/octet-stream', req.file.size, randomUUID().replace(/-/g, '')]
       );
     } catch (error) {
       await rm(finalPath, { force: true });
@@ -426,7 +425,7 @@ router.post('/upload', teacherOnly, upload.single('file'), async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (e) {
     await rm(req.file.path, { force: true }).catch(() => {});
-    res.status(/nicht erlaubt|stimmt nicht|Dateiname|Tippfehler|Dateigröße/.test(e.message) ? 400 : 500).json({ error: e.message });
+    res.status(/nicht erlaubt|stimmt nicht|Dateiname|Tippfehler|Dateigröße|Ungültiger/.test(e.message) ? 400 : 500).json({ error: e.message });
   }
 });
 
