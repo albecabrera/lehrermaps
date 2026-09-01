@@ -747,9 +747,10 @@ export default function App({ onLogout }) {
       fontFamily: '"DM Sans", -apple-system, BlinkMacSystemFont, sans-serif',
       fontFeatureSettings: '"ss01", "cv11"',
     }}>
+      <a className="lm-skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <div className={hasModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Tab bar */}
-      <header className="lm-tabbar" style={{
+      <header className="lm-tabbar" aria-label="Hauptnavigation" style={{
         display: 'flex', alignItems: 'flex-end', padding: '8px 16px 0',
         background: 'var(--c-tab-bg)', borderBottom: '1px solid var(--c-border)',
         position: 'relative', flexShrink: 0, gap: 2,
@@ -1154,6 +1155,9 @@ export default function App({ onLogout }) {
 
         <div
           ref={contentPaneRef}
+          id="main-content"
+          role="main"
+          tabIndex={-1}
           style={{ flex: 1, minWidth: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}
           onPointerDown={(e) => {
             if (!activeFolder || e.pointerType === 'mouse' && e.clientX > 28) return;

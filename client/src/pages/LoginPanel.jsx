@@ -62,14 +62,14 @@ export default function LoginPanel({ onLogin }) {
   const back = () => { setStep('select'); setPassword(''); setError(''); };
 
   const isTeacher = true;
-  const accent = '#E8472A';
+  const accent = '#173B66';
 
   return (
     <div className="lm-login-stable lm-login-shell" style={{
       minHeight: '100vh', background: 'var(--c-bg)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      fontFamily: '"DM Sans", -apple-system, sans-serif',
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif',
       // paddingTop 64 statt 24: garantiert Abstand zu den fixed
       // Sprach-/Theme-Buttons (top:16, Höhe 32) — Flexbox respektiert
       // padding als Mindestabstand auch wenn justifyContent:center bei
@@ -244,7 +244,7 @@ function WelcomeBanner({ children }) {
       boxShadow: '0 18px 56px rgba(10,14,40,0.2), 0 3px 12px rgba(0,0,0,0.1)',
     }}>
       <div className="lm-welcome-banner" style={{
-        background: 'linear-gradient(135deg, #101827 0%, #17243d 58%, #202d4b 100%)',
+        background: 'linear-gradient(135deg, #102C4D 0%, #173B66 56%, #0F6F75 100%)',
         minHeight: 'min(460px, calc(100vh - 180px))',
         padding: 0,
         position: 'relative',

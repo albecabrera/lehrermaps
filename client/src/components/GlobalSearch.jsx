@@ -143,6 +143,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
 
   return createPortal(
     <div
+      role="presentation"
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 1300,
@@ -155,6 +156,9 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
     >
       <div
         className="lm-modal-surface"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Globale Suche"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 620,
@@ -189,6 +193,7 @@ export default function GlobalSearch({ open, onClose, onNavigate }) {
             onChange={handleChange}
             onKeyDown={handleInputKeyDown}
             placeholder={t('search.placeholder')}
+            aria-label={t('search.placeholder')}
             style={{
               flex: 1, border: 'none', background: 'transparent', outline: 'none',
               fontSize: 16, color: 'var(--c-text)', fontFamily: 'inherit',

@@ -14,6 +14,7 @@ export default function ConfirmModal({
 
   return createPortal(
     <div
+      role="presentation"
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 1400,
@@ -25,6 +26,10 @@ export default function ConfirmModal({
     >
       <div
         className="lm-modal-surface"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-modal-title"
+        aria-describedby="confirm-modal-message"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 420,
@@ -35,10 +40,10 @@ export default function ConfirmModal({
           border: '1px solid var(--c-border-soft)',
         }}
       >
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, color: 'var(--c-text)' }}>
+        <div id="confirm-modal-title" style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, color: 'var(--c-text)' }}>
           {title}
         </div>
-        <div style={{ fontSize: 13, color: 'var(--c-text-2)', lineHeight: 1.6, marginBottom: warning ? 12 : 20 }}>
+        <div id="confirm-modal-message" style={{ fontSize: 13, color: 'var(--c-text-2)', lineHeight: 1.6, marginBottom: warning ? 12 : 20 }}>
           {message}
         </div>
         {warning && (
