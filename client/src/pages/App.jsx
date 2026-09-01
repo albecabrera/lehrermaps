@@ -759,33 +759,27 @@ export default function App({ onLogout }) {
           <BrandMark size={28} />
         </button>
         {isMobile && (
-          <div className="lm-mobile-brand-links" aria-label="Schnellzugriff">
-            <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-mobile-brand-link" aria-label="Notion öffnen" title="Notion öffnen">
-              <img src="/assets/icons/notion.png" alt="" aria-hidden="true" />
-            </a>
-            <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-mobile-brand-link" aria-label="Miro öffnen" title="Miro öffnen">
-              <img src="/assets/icons/miro.png" alt="" aria-hidden="true" />
-            </a>
+          <div className="lm-mobile-header-actions">
+            <button
+              className="lm-spring lm-mobile-menu-trigger"
+              onClick={() => setSidebarDrawerOpen(true)}
+              title={t('sidebar.expand')}
+              aria-label={t('sidebar.expand')}
+              type="button"
+            >
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <path d="M1.5 4h12M1.5 7.5h12M1.5 11h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+            <button className="lm-mobile-header-action" type="button" onClick={() => setSchoolCalendarOpen(true)} title="Terminplan Schuljahr 2026/27" aria-label="Terminplan Schuljahr 2026/27">
+              <span aria-hidden="true">🗓</span>
+            </button>
+            <button className="lm-mobile-header-action is-danger" type="button" onClick={onLogout} title="Logout" aria-label="Logout">
+              <span aria-hidden="true">↪</span>
+            </button>
           </div>
         )}
-        {isMobile && (
-          <button
-            className="lm-spring lm-mobile-menu-trigger"
-            onClick={() => setSidebarDrawerOpen(true)}
-            title={t('sidebar.expand')}
-            aria-label={t('sidebar.expand')}
-            style={{
-              flexShrink: 0, width: 34, height: 34, marginBottom: 10,
-              border: '1px solid var(--c-border)', borderRadius: 8,
-              background: 'var(--c-surface)', color: 'var(--c-text-2)', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <path d="M1.5 4h12M1.5 7.5h12M1.5 11h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </button>
-        )}
+        {!isMobile && <>
         <button
           className="lm-spring lm-topbar-calendar"
           onClick={() => setSchoolCalendarOpen(true)}
@@ -815,6 +809,7 @@ export default function App({ onLogout }) {
         >
           <span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span>
         </button>
+        </>}
         {/* Mobil wandern Stundenplan/Termine/Notion/Miro in Bottom-Nav + Mehr-Sheet */}
         {!isMobile && <>
         {/* Heute / Startseite */}

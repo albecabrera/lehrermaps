@@ -1298,8 +1298,8 @@ button:active {
     min-height: 64px !important;
     align-items: center !important;
     gap: 6px !important;
-    padding: 8px 12px !important;
-    overflow: visible !important;
+    padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)) !important;
+    overflow: hidden !important;
   }
   .lm-tabbar .lm-app-brand {
     width: 42px;
@@ -1312,36 +1312,36 @@ button:active {
     background: color-mix(in srgb, var(--c-surface) 88%, transparent);
     box-shadow: 0 4px 14px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255,255,255,.42);
   }
-  .lm-mobile-brand-links { display: none !important; }
-  .lm-mobile-menu-trigger {
-    width: 42px !important;
-    height: 42px !important;
-    margin: 0 0 0 auto !important;
-    border: 1px solid var(--c-border-soft) !important;
-    border-radius: 12px !important;
-    background: color-mix(in srgb, var(--c-surface) 88%, transparent) !important;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255,255,255,.42);
+  .lm-mobile-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    flex-shrink: 0;
   }
-  .lm-tabbar .lm-topbar-calendar,
-  .lm-tabbar .lm-topbar-logout {
+  .lm-mobile-menu-trigger,
+  .lm-mobile-header-action {
     width: 42px !important;
     min-width: 42px;
     height: 42px !important;
-    min-height: 42px !important;
+    min-height: 42px;
     margin: 0 !important;
     padding: 0 !important;
-    justify-content: center;
     border: 1px solid var(--c-border-soft) !important;
     border-radius: 12px !important;
     background: color-mix(in srgb, var(--c-surface) 88%, transparent) !important;
     box-shadow: 0 4px 14px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255,255,255,.42);
+    color: var(--c-text-2);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
-  .lm-tabbar .lm-topbar-logout {
+  .lm-mobile-header-action.is-danger {
     border-color: rgba(220, 38, 38, .22) !important;
     background: rgba(220, 38, 38, .07) !important;
+    color: #dc2626;
   }
-  .lm-topbar-calendar-label,
-  .lm-topbar-logout-label { display: none; }
   .lm-home-view { padding-top: 32px; padding-bottom: calc(32px + var(--safe-area-bottom)); }
   .lm-home-intro { margin-bottom: 38px; }
   .lm-home-action-grid { grid-template-columns: 1fr; }
