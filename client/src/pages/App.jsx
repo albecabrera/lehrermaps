@@ -770,7 +770,7 @@ export default function App({ onLogout }) {
         )}
         {isMobile && (
           <button
-            className="lm-spring"
+            className="lm-spring lm-mobile-menu-trigger"
             onClick={() => setSidebarDrawerOpen(true)}
             title={t('sidebar.expand')}
             aria-label={t('sidebar.expand')}
@@ -799,7 +799,7 @@ export default function App({ onLogout }) {
             color: 'var(--c-text-2)', flexShrink: 0,
           }}
         >
-          <span aria-hidden="true">🗓</span><span style={{ fontSize: 12 }}>Terminplan</span>
+          <span aria-hidden="true">🗓</span><span className="lm-topbar-calendar-label" style={{ fontSize: 12 }}>Terminplan</span>
         </button>
         <button
           className="lm-global-logout lm-topbar-logout"
@@ -813,7 +813,7 @@ export default function App({ onLogout }) {
             display: 'inline-flex', alignItems: 'center', gap: 6,
           }}
         >
-          <span aria-hidden="true">↪</span> Logout
+          <span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span>
         </button>
         {/* Mobil wandern Stundenplan/Termine/Notion/Miro in Bottom-Nav + Mehr-Sheet */}
         {!isMobile && <>
