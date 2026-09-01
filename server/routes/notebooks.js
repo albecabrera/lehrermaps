@@ -16,6 +16,19 @@ function getUserId(req) {
   return 0;
 }
 
+function toIsoTimestamp(value) {
+  if (!value) return null;
+  const normalized = typeof value === 'string' && !/[zZ]|[+-]\d\d:\d\d$/.test(value)
+    ? `${value.replace(' ', 'T')}Z`
+    : value;
+  const timestamp = new Date(normalized);
+  return Number.isNaN(timestamp.getTime()) ? null : timestamp.toISOString();
+}
+
+function serializeBlock(block) {
+  return { ...block, updatedAt: toIsoTimestamp(block.updated_at) };
+}
+
 router.get('/notebooks', async (req, res) => {
   try {
     const [rows] = await pool.execute(
@@ -217,6 +230,7 @@ router.delete('/pages/:id', async (req, res) => {
 router.put('/pages/:id/rich-text', async (req, res) => {
   const html = typeof req.body?.html === 'string' ? req.body.html : null;
   if (html === null) return res.status(400).json({ error: 'html required' });
+  const updatedAt = new Date().toISOString();
   try {
     const [owns] = await pool.execute(
       `SELECT p.id FROM pages p
@@ -231,11 +245,11 @@ router.put('/pages/:id/rich-text', async (req, res) => {
       await conn.beginTransaction();
       await conn.execute('DELETE FROM blocks WHERE page_id = ? AND type = ?', [req.params.id, 'rich_text']);
       const [result] = await conn.execute(
-        'INSERT INTO blocks (page_id, type, content, pos_x, pos_y, width, z_index) VALUES (?, ?, ?, 0, 0, 900, 1)',
-        [req.params.id, 'rich_text', JSON.stringify({ html })]
+        'INSERT INTO blocks (page_id, type, content, pos_x, pos_y, width, z_index, updated_at) VALUES (?, ?, ?, 0, 0, 900, 1, ?)',
+        [req.params.id, 'rich_text', JSON.stringify({ html }), updatedAt]
       );
       await conn.commit();
-      res.json({ id: result.insertId, html });
+      res.json({ id: result.insertId, html, updatedAt });
     } catch (error) {
       await conn.rollback();
       throw error;
@@ -257,7 +271,7 @@ router.get('/blocks/:pageId', async (req, res) => {
       'SELECT * FROM blocks WHERE page_id = ? ORDER BY z_index ASC, id ASC',
       [req.params.pageId]
     );
-    res.json(rows);
+    res.json(rows.map(serializeBlock));
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

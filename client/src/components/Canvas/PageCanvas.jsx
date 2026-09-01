@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useNotebook } from '../../contexts/NotebookContext';
 import OneNoteRichEditor from './OneNoteRichEditor';
 
-const NOTE_KEY = 'lm_editor_note';
 const TABS = ['Start', 'Einfügen', 'Zeichnen', 'Ansicht', 'Notizbuch'];
 
 export default function PageCanvas({ pageId }) {
@@ -16,34 +15,10 @@ export default function PageCanvas({ pageId }) {
   } = useNotebook();
 
   const [activeTab, setActiveTab] = useState('Start');
-  const [noteText, setNoteText] = useState('');
-  const [drawMode, setDrawMode] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [notebookColWidth, setNotebookColWidth] = useState(230);
   const [pagesColWidth, setPagesColWidth] = useState(300);
   const [notebookCollapsed, setNotebookCollapsed] = useState(false);
   const [pagesCollapsed, setPagesCollapsed] = useState(false);
-  const editorRef = useRef(null);
-  const historyRef = useRef(['']);
-  const redoRef = useRef([]);
-  const pendingCursorRef = useRef(null);
-
-  useEffect(() => {
-    const key = `${NOTE_KEY}:${pageId}`;
-    const saved = localStorage.getItem(key) || '';
-    setNoteText(saved);
-    historyRef.current = [saved];
-    redoRef.current = [];
-  }, [pageId]);
-
-  useEffect(() => {
-    if (!editorRef.current) return;
-    editorRef.current.innerHTML = noteText || '<p><br/></p>';
-  }, [pageId]);
-
-  useEffect(() => {
-    localStorage.setItem(`${NOTE_KEY}:${pageId}`, noteText);
-  }, [noteText, pageId]);
 
   const nbId = activeNotebookId || notebooks[0]?.id || null;
   const sectionList = nbId ? (sectionsByNotebook[nbId] || []) : [];
@@ -51,157 +26,6 @@ export default function PageCanvas({ pageId }) {
     ? activeSectionId
     : (sectionList[0]?.id || null);
   const visiblePages = effectiveSectionId ? (pagesBySection[effectiveSectionId] || []) : [];
-
-  const pushHistory = (nextText) => {
-    historyRef.current.push(nextText);
-    if (historyRef.current.length > 120) historyRef.current.shift();
-    redoRef.current = [];
-  };
-
-  const insertHtmlAtCursor = (html) => {
-    const sel = window.getSelection();
-    const range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
-    if (!range || !editorRef.current?.contains(range.commonAncestorContainer)) {
-      editorRef.current?.focus();
-      document.execCommand('insertHTML', false, html);
-    } else {
-      range.deleteContents();
-      const temp = document.createElement('div');
-      temp.innerHTML = html;
-      const frag = document.createDocumentFragment();
-      let node;
-      let lastNode = null;
-      while ((node = temp.firstChild)) {
-        lastNode = frag.appendChild(node);
-      }
-      range.insertNode(frag);
-      if (lastNode) {
-        range.setStartAfter(lastNode);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-    }
-    const next = editorRef.current?.innerHTML || '';
-    pushHistory(next);
-    setNoteText(next);
-  };
-
-  const insertSnippet = (snippet) => {
-    editorRef.current?.focus();
-    if (snippet === '__TABLE__') {
-      insertHtmlAtCursor('<table style="border-collapse:collapse;width:100%;margin:6px 0;"><tbody><tr><td style="border:1px solid #c9ccd3;padding:6px;">&nbsp;</td><td style="border:1px solid #c9ccd3;padding:6px;">&nbsp;</td></tr><tr><td style="border:1px solid #c9ccd3;padding:6px;">&nbsp;</td><td style="border:1px solid #c9ccd3;padding:6px;">&nbsp;</td></tr></tbody></table><p></p>');
-      return;
-    }
-    if (snippet === '__CODE__') {
-      insertHtmlAtCursor('<pre style="background:#0f172a;color:#e2e8f0;padding:8px;border-radius:6px;"><code>code</code></pre><p></p>');
-      return;
-    }
-    if (snippet === '__IMAGE__') {
-      const url = window.prompt('Bild-URL eingeben:');
-      if (!url) return;
-      insertHtmlAtCursor(`<p><img src="${url}" alt="" style="max-width:100%;border:1px solid #d0d0d0;border-radius:6px;" /></p><p></p>`);
-      return;
-    }
-    if (snippet === '__DIVIDER__') {
-      insertHtmlAtCursor('<hr/><p></p>');
-      return;
-    }
-    if (snippet === '__TODO__') {
-      insertHtmlAtCursor('<p>☐ Aufgabe</p>');
-      return;
-    }
-    if (snippet === '__HEADING__') {
-      document.execCommand('formatBlock', false, 'h2');
-      return;
-    }
-    insertHtmlAtCursor(`<p>${snippet}</p>`);
-    pendingCursorRef.current = null;
-  };
-
-  const runCmd = (command, value = null) => {
-    editorRef.current?.focus();
-    document.execCommand(command, false, value);
-    const next = editorRef.current?.innerHTML || '';
-    historyRef.current[historyRef.current.length - 1] = next;
-    setNoteText(next);
-  };
-
-  const undo = () => {
-    if (historyRef.current.length <= 1) return;
-    const current = historyRef.current.pop();
-    redoRef.current.push(current ?? '');
-    const prev = historyRef.current[historyRef.current.length - 1] ?? '';
-    setNoteText(prev);
-  };
-
-  const redo = () => {
-    if (!redoRef.current.length) return;
-    const next = redoRef.current.pop() ?? '';
-    historyRef.current.push(next);
-    setNoteText(next);
-  };
-
-  const onTextChange = () => {
-    const value = editorRef.current?.innerHTML || '';
-    setNoteText(value);
-    historyRef.current[historyRef.current.length - 1] = value;
-  };
-
-  const clearNote = () => {
-    pushHistory('');
-    setNoteText('');
-    setTimeout(() => editorRef.current?.focus(), 0);
-  };
-
-  const renderTools = () => {
-    if (activeTab === 'Zeichnen') {
-      return (
-        <>
-          <ToolBtn onClick={() => setDrawMode((v) => !v)} label={drawMode ? '✍️' : '🖊'} sub={drawMode ? 'Ink ON' : 'Ink OFF'} />
-          <ToolBtn onClick={() => insertSnippet('✍️ Zeichnung/Ink Notiz')} label="✎" sub="Ink note" />
-          <ToolBtn onClick={undo} label="↶" sub="Undo" />
-          <ToolBtn onClick={redo} label="↷" sub="Redo" />
-        </>
-      );
-    }
-    if (activeTab === 'Ansicht') {
-      return (
-        <>
-          <ToolBtn onClick={() => {}} label="100%" sub="Zoom" />
-          <ToolBtn onClick={() => {}} label="📄" sub="Líneas" />
-          <ToolBtn onClick={clearNote} label="⌫" sub="Clear" />
-        </>
-      );
-    }
-    if (activeTab === 'Einfügen') {
-      return (
-        <>
-          <ToolBtn onClick={() => insertSnippet('Neuer Text')} label="📝" sub="Text" />
-          <ToolBtn onClick={() => insertSnippet('__TABLE__')} label="▦" sub="Tabelle" />
-          <ToolBtn onClick={() => insertSnippet('__IMAGE__')} label="🖼" sub="Bild" />
-          <ToolBtn onClick={() => insertSnippet('__CODE__')} label="</>" sub="Code" />
-          <ToolBtn onClick={() => insertSnippet('__DIVIDER__')} label="—" sub="Linie" />
-        </>
-      );
-    }
-    return (
-      <>
-        <ToolBtn onClick={() => runCmd('bold')} label="B" sub="Fett" />
-        <ToolBtn onClick={() => runCmd('italic')} label="I" sub="Kursiv" />
-        <ToolBtn onClick={() => runCmd('underline')} label="U" sub="Unterl." />
-        <ToolBtn onClick={() => runCmd('insertUnorderedList')} label="•" sub="Liste" />
-        <ToolBtn onClick={() => runCmd('formatBlock', 'h2')} label="H1" sub="Titel" />
-        <ToolBtn onClick={() => insertSnippet('__TODO__')} label="☑" sub="Aufgabe" />
-        <ToolBtn onClick={() => insertSnippet('__TABLE__')} label="▦" sub="Tabelle" />
-        <ToolBtn onClick={() => insertSnippet('__CODE__')} label="</>" sub="Code" />
-        <ToolBtn onClick={() => insertSnippet('__IMAGE__')} label="🖼" sub="Bild" />
-        <ToolBtn onClick={() => insertSnippet('__DIVIDER__')} label="—" sub="Linie" />
-        <ToolBtn onClick={undo} label="↶" sub="Undo" />
-        <ToolBtn onClick={redo} label="↷" sub="Redo" />
-      </>
-    );
-  };
 
   const startResize = (col) => (e) => {
     e.preventDefault();
@@ -426,39 +250,5 @@ function RailBtn({ label }) {
     <button style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16 }}>
       {label}
     </button>
-  );
-}
-
-function ToolBtn({ onClick, label, sub }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        minWidth: 62,
-        border: '1px solid #cfcfd4',
-        background: '#fff',
-        color: '#333',
-        borderRadius: 4,
-        padding: '6px 8px',
-        fontSize: 15,
-        lineHeight: 1.1,
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        display: 'grid',
-        placeItems: 'center',
-      }}
-    >
-      <span>{label}</span>
-      {sub ? <span style={{ fontSize: 10, color: '#666', marginTop: 3 }}>{sub}</span> : null}
-    </button>
-  );
-}
-
-function RibbonGroup({ title, children }) {
-  return (
-    <div style={{ border: '1px solid #dbdbe0', borderRadius: 4, background: '#f8f8fa', padding: '4px 6px 20px', position: 'relative', display: 'flex', gap: 6, alignItems: 'center' }}>
-      {children}
-      <div style={{ position: 'absolute', bottom: 3, left: 0, right: 0, textAlign: 'center', fontSize: 10, color: '#666' }}>{title}</div>
-    </div>
   );
 }

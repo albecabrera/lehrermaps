@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { createRequire } from 'node:module';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const require = createRequire(new URL('../client/package.json', import.meta.url));
 const { chromium } = require('playwright');
@@ -19,6 +21,19 @@ const viewports = [
 const results = [];
 const pass = (name, detail = '') => results.push({ name, status: 'PASS', detail });
 const fail = (name, error) => results.push({ name, status: 'FAIL', detail: error.message });
+
+export function browserLaunchOptions(environment = process.env) {
+  return environment.CHROME_PATH
+    ? { headless: true, executablePath: environment.CHROME_PATH }
+    : { headless: true };
+}
+
+export function browserLaunchError(error, environment = process.env) {
+  const configuredBrowser = environment.CHROME_PATH
+    ? `CHROME_PATH=${environment.CHROME_PATH}`
+    : 'the bundled Playwright Chromium';
+  return `Could not launch ${configuredBrowser}. Install the bundled browser with "npx playwright install chromium" from client/, or set CHROME_PATH to a valid Chromium/Chrome executable. Original error: ${error.message}`;
+}
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -72,10 +87,10 @@ async function exerciseTeacherMobile(page) {
     else await page.keyboard.press('Escape');
     await page.waitForTimeout(100);
   }
-  const menu = page.getByRole('button', { name: /Sidebar|Seitenleiste|Ordner/i }).first();
+  const menu = page.getByRole('button', { name: /Sidebar ausklappen|Seitenleiste öffnen/i }).first();
   if (await menu.count()) {
     await menu.click();
-    assert(await page.locator('.lm-drawer').count() === 1, 'teacher drawer did not open');
+    await page.locator('.lm-drawer').waitFor({ state: 'visible' });
     await page.mouse.click(page.viewportSize().width - 4, page.viewportSize().height / 2);
   }
   const more = page.getByRole('button', { name: /Mehr/i }).last();
@@ -89,8 +104,12 @@ async function exerciseTeacherMobile(page) {
 }
 
 async function run() {
-  const executablePath = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-  const browser = await chromium.launch({ headless: true, executablePath });
+  let browser;
+  try {
+    browser = await chromium.launch(browserLaunchOptions());
+  } catch (error) {
+    throw new Error(browserLaunchError(error));
+  }
   try {
     for (const viewport of viewports) {
       for (const role of ['teacher']) {
@@ -126,7 +145,9 @@ async function run() {
   if (results.some(({ status }) => status === 'FAIL')) process.exitCode = 1;
 }
 
-run().catch((error) => {
-  console.error(JSON.stringify({ status: 'FAIL', error: error.message }, null, 2));
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  run().catch((error) => {
+    console.error(JSON.stringify({ status: 'FAIL', error: error.message }, null, 2));
+    process.exitCode = 1;
+  });
+}

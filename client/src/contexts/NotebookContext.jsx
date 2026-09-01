@@ -180,15 +180,7 @@ export function NotebookProvider({ children }) {
   };
 
   const openOneNoteHome = async () => {
-    // Abrir editor inmediatamente (modo local) para respuesta instantánea al clic
-    setActivePageId('onenote_local');
-    try {
-      await openNotebookEditor(activeNotebookId || null);
-    } catch {
-      setActiveNotebookId(null);
-      setActiveSectionId(null);
-      setActivePageId('onenote_local');
-    }
+    await openNotebookEditor(activeNotebookId || null);
   };
 
   const createNotebookQuick = async (title = '') => {

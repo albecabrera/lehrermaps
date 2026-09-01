@@ -12,9 +12,9 @@ function readPending(storage, key) {
   }
 }
 
-function writePending(storage, key, value) {
+function writePending(storage, key, pending) {
   try {
-    storage?.setItem(key, JSON.stringify({ value }));
+    storage?.setItem(key, JSON.stringify(pending));
   } catch {
     // A full or unavailable localStorage must not make the editor unusable.
   }
@@ -30,7 +30,7 @@ function clearPending(storage, key) {
  * newer local change.
  */
 export class PendingSyncQueue {
-  constructor({ storage = globalThis.localStorage, storageKey, load, save, confirm = () => true, isBackendEmpty, isValid = () => true, readLegacy, clearLegacy, saveDelay = 0, retryDelays = DEFAULT_RETRY_DELAYS, schedule = setTimeout, cancel = clearTimeout, onlineTarget = globalThis.window }) {
+  constructor({ storage = globalThis.localStorage, storageKey, load, save, confirm = () => true, isBackendEmpty, isValid = () => true, createPending = (value) => ({ value }), shouldUsePending = () => true, getLoadedValue = (value) => value, readLegacy, clearLegacy, saveDelay = 0, retryDelays = DEFAULT_RETRY_DELAYS, schedule = setTimeout, cancel = clearTimeout, onlineTarget = globalThis.window }) {
     this.storage = storage;
     this.storageKey = storageKey;
     this.load = load;
@@ -38,6 +38,9 @@ export class PendingSyncQueue {
     this.confirm = confirm;
     this.isBackendEmpty = isBackendEmpty;
     this.isValid = isValid;
+    this.createPending = createPending;
+    this.shouldUsePending = shouldUsePending;
+    this.getLoadedValue = getLoadedValue;
     this.readLegacy = readLegacy;
     this.clearLegacy = clearLegacy;
     this.saveDelay = saveDelay;
@@ -79,15 +82,16 @@ export class PendingSyncQueue {
       this.loadFailed = false;
       const storedPending = readPending(this.storage, this.storageKey);
       const pending = storedPending && this.isValid(storedPending.value) ? storedPending : null;
-      if (storedPending && !pending) clearPending(this.storage, this.storageKey);
-      const legacyValue = !pending && this.isBackendEmpty(backendValue) ? this.readLegacy?.() : undefined;
-      const shouldMigrateLegacy = !pending && legacyValue !== undefined && legacyValue !== null;
-      this.value = pending ? pending.value : (shouldMigrateLegacy ? legacyValue : backendValue);
+      const usePending = pending && this.shouldUsePending(pending, backendValue);
+      if (storedPending && !usePending) clearPending(this.storage, this.storageKey);
+      const legacyValue = !usePending && this.isBackendEmpty(backendValue) ? this.readLegacy?.() : undefined;
+      const shouldMigrateLegacy = !usePending && legacyValue !== undefined && legacyValue !== null;
+      this.value = usePending ? pending.value : (shouldMigrateLegacy ? legacyValue : this.getLoadedValue(backendValue));
       this.hydrated = true;
-      if (pending || shouldMigrateLegacy) {
+      if (usePending || shouldMigrateLegacy) {
         this.status = 'pending';
         this.legacyPending = shouldMigrateLegacy;
-        writePending(this.storage, this.storageKey, this.value);
+        writePending(this.storage, this.storageKey, usePending ? pending : this.createPending(this.value));
         this.scheduleFlush(0);
       }
       this.notify();
@@ -116,7 +120,7 @@ export class PendingSyncQueue {
     this.version += 1;
     this.status = 'pending';
     this.retryCount = 0;
-    writePending(this.storage, this.storageKey, value);
+    writePending(this.storage, this.storageKey, this.createPending(value));
     this.notify();
     this.scheduleFlush(this.saveDelay);
   }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Table from '@tiptap/extension-table';
@@ -10,12 +10,40 @@ import TaskItem from '@tiptap/extension-task-item';
 import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import { getBlocks, savePageRichText } from '../../lib/api';
-
-const LEGACY_STORAGE_KEY = 'lm_editor_rich';
+import { usePendingSync } from '../../lib/pendingSync';
+import { LEGACY_RICH_TEXT_PREFIX, PENDING_RICH_TEXT_PREFIX, createRichTextPending, isNewerRichTextPending, isPersistedPageId, readRichTextState } from '../../lib/onenotePersistence';
 
 export default function OneNoteRichEditor({ pageId, activeTab, mode = 'onenote' }) {
   const loadedPage = useRef(null);
-  const [saveError, setSaveError] = useState(false);
+  const validPageId = isPersistedPageId(pageId);
+  const pendingKey = `${PENDING_RICH_TEXT_PREFIX}:${pageId}`;
+  const legacyKey = `${LEGACY_RICH_TEXT_PREFIX}:${pageId}`;
+  const [html, setHtml, sync, retrySync] = usePendingSync({
+    storageKey: pendingKey,
+    initialValue: '',
+    load: async () => {
+      if (!validPageId) return { html: '', updatedAt: null };
+      return readRichTextState(await getBlocks(pageId));
+    },
+    save: async (nextHtml) => {
+      if (!validPageId) throw new Error('A persisted page is required before saving rich text');
+      return savePageRichText(pageId, nextHtml);
+    },
+    confirm: (response, nextHtml) => response?.html === nextHtml,
+    isBackendEmpty: (value) => !value.html,
+    isValid: (value) => typeof value === 'string',
+    createPending: createRichTextPending,
+    shouldUsePending: isNewerRichTextPending,
+    getLoadedValue: (value) => value.html,
+    readLegacy: () => {
+      if (!validPageId) return null;
+      try { return localStorage.getItem(legacyKey) || null; } catch { return null; }
+    },
+    clearLegacy: () => {
+      try { localStorage.removeItem(legacyKey); } catch {}
+    },
+    saveDelay: 600,
+  });
 
   const editor = useEditor({
     extensions: [
@@ -39,44 +67,22 @@ export default function OneNoteRichEditor({ pageId, activeTab, mode = 'onenote' 
   });
 
   useEffect(() => {
-    if (!editor) return;
-    let cancelled = false;
-    loadedPage.current = null;
-    setSaveError(false);
-    getBlocks(pageId).then((blocks) => {
-      if (cancelled) return;
-      const richBlock = blocks.find((block) => block.type === 'rich_text');
-      let html = richBlock?.content ? JSON.parse(richBlock.content).html : '';
-      if (!html) {
-        try { html = localStorage.getItem(`${LEGACY_STORAGE_KEY}:${pageId}`) || ''; } catch { html = ''; }
-      }
-      editor.commands.setContent(html || '<p></p>', false);
-      loadedPage.current = pageId;
-    }).catch(() => {
-      if (!cancelled) { editor.commands.setContent('<p></p>', false); setSaveError(true); }
-    });
-    return () => { cancelled = true; };
-  }, [editor, pageId]);
+    if (!editor || !sync.hydrated) return;
+    editor.commands.setContent(html || '<p></p>', false);
+    loadedPage.current = pageId;
+  }, [editor, html, pageId, sync.hydrated]);
 
   useEffect(() => {
     if (!editor) return;
-    let timeout;
     const onUpdate = () => {
-      clearTimeout(timeout);
-      if (loadedPage.current !== pageId) return;
-      timeout = setTimeout(async () => {
-        try {
-          await savePageRichText(pageId, editor.getHTML());
-          setSaveError(false);
-        } catch { setSaveError(true); }
-      }, 600);
+      if (loadedPage.current !== pageId || !validPageId) return;
+      setHtml(editor.getHTML());
     };
     editor.on('update', onUpdate);
     return () => {
-      clearTimeout(timeout);
       editor.off('update', onUpdate);
     };
-  }, [editor, pageId]);
+  }, [editor, pageId, setHtml, validPageId]);
 
   if (!editor) return null;
 
@@ -131,7 +137,10 @@ export default function OneNoteRichEditor({ pageId, activeTab, mode = 'onenote' 
             {tool.label}
           </button>
         ))}
-        <span style={{ marginLeft: 'auto', fontSize: 12, color: saveError ? '#b91c1c' : '#666', alignSelf: 'center' }}>{saveError ? 'Save failed' : activeTab}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 12, color: sync.status === 'error' ? '#b91c1c' : sync.status === 'pending' ? '#a16207' : '#666', alignSelf: 'center' }}>
+          {sync.status === 'error' ? 'Speichern fehlgeschlagen – wird erneut versucht' : sync.status === 'pending' ? 'Synchronisierung ausstehend' : activeTab}
+        </span>
+        {sync.status === 'error' ? <button onClick={retrySync} style={{ minWidth: 0, fontSize: 12 }}>Erneut versuchen</button> : null}
       </div>
 
       <div
