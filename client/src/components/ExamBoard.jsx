@@ -6,7 +6,7 @@ const TERMIN_TITEL = [
   'Lehrerkonferenz',
   'Teamsitzung',
   'Jahrgangskonferenz',
-  'Fachvorsitzende Konferenz',
+  'Fachkonferenz',
   'Zeugniskonferenz',
   'Klassenarbeit',
   'Klausur',
