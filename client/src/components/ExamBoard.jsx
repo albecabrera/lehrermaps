@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getExams, createExam, deleteExam, updateExam } from '../lib/api';
 
 const FAECHER = ['Spanisch', 'Informatik', 'Sport', 'Klassenleitung'];
+const TERMIN_TITEL = ['Lehrerkonferenz', 'Teamsitzung', 'Sonstiges'];
 const KLASSEN = [
   '5a','5b','5c','5d',
   '6a','6b','6c','6d',
@@ -426,12 +427,13 @@ function ExamForm({ initial, onSave, onClose }) {
           {initial ? '✏️ Termin bearbeiten' : '＋ Neuer Termin'}
         </div>
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }}>
-          <Field label="Titel *" value={form.title} onChange={set('title')} placeholder="z.B. Klassenarbeit Nr. 2"/>
+          <SelectField label="Titel *" value={form.title} onChange={set('title')}
+            options={TERMIN_TITEL} placeholder="Titel wählen oder eingeben…" allowCustom/>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
             <SelectField label="Klasse *" value={form.class_name} onChange={set('class_name')}
               options={KLASSEN} placeholder="Klasse wählen…" allowCustom/>
             <SelectField label="Fach" value={form.subject} onChange={set('subject')}
-              options={FAECHER} placeholder="Fach wählen…"/>
+              options={FAECHER} placeholder="Fach wählen oder eingeben…" allowCustom/>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
             <Field label="Datum *" type="date" value={form.exam_date} onChange={set('exam_date')}/>
