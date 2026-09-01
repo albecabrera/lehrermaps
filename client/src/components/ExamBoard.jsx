@@ -2,7 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { getExams, createExam, deleteExam, updateExam } from '../lib/api';
 
 const FAECHER = ['Spanisch', 'Informatik', 'Sport', 'Klassenleitung'];
-const TERMIN_TITEL = ['Lehrerkonferenz', 'Teamsitzung', 'Sonstiges'];
+const TERMIN_TITEL = [
+  'Lehrerkonferenz',
+  'Teamsitzung',
+  'Jahrgangskonferenz',
+  'Fachvorsitzende Konferenz',
+  'Zeugniskonferenz',
+  'Klassenarbeit',
+  'Klausur',
+  'Test',
+  'Sonstiges',
+];
 const KLASSEN = [
   '5a','5b','5c','5d',
   '6a','6b','6c','6d',
