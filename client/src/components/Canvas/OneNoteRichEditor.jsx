@@ -21,6 +21,7 @@ export default function OneNoteRichEditor({ pageId, activeTab, mode = 'onenote' 
   const [html, setHtml, sync, retrySync] = usePendingSync({
     storageKey: pendingKey,
     initialValue: '',
+    enabled: validPageId,
     load: async () => {
       if (!validPageId) return { html: '', updatedAt: null };
       return readRichTextState(await getBlocks(pageId));
@@ -43,6 +44,7 @@ export default function OneNoteRichEditor({ pageId, activeTab, mode = 'onenote' 
       try { localStorage.removeItem(legacyKey); } catch {}
     },
     saveDelay: 600,
+    refreshInterval: 7_500,
   });
 
   const editor = useEditor({

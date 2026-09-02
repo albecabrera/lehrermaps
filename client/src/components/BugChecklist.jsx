@@ -35,12 +35,14 @@ export function BugChecklistIcon({ size = 16 }) {
 export default function BugChecklist({ open, onClose, t }) {
   const [items, setItems, sync, retrySync] = usePendingSync({
     storageKey: `${STORAGE_KEY}:pending`, initialValue: [],
+    enabled: open,
     load: () => getBugChecklist().then((response) => Array.isArray(response?.items) ? response.items : []),
     save: saveBugChecklist, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
     confirm: (response, value) => JSON.stringify(response?.items) === JSON.stringify(value),
     saveDelay: 500,
     readLegacy: () => { const items = getLegacyItems(); return items.length ? items : undefined; },
     clearLegacy: () => window.localStorage.removeItem(STORAGE_KEY),
+    refreshInterval: 7_500,
   });
   const hydrated = sync.hydrated;
   const inputRefs = useRef(new Map());

@@ -30,7 +30,7 @@ function clearPending(storage, key) {
  * newer local change.
  */
 export class PendingSyncQueue {
-  constructor({ storage = globalThis.localStorage, storageKey, load, save, confirm = () => true, isBackendEmpty, isValid = () => true, createPending = (value) => ({ value }), shouldUsePending = () => true, getLoadedValue = (value) => value, readLegacy, clearLegacy, saveDelay = 0, retryDelays = DEFAULT_RETRY_DELAYS, schedule = setTimeout, cancel = clearTimeout, onlineTarget = globalThis.window }) {
+  constructor({ storage = globalThis.localStorage, storageKey, load, save, confirm = () => true, isBackendEmpty, isValid = () => true, createPending = (value) => ({ value }), shouldUsePending = () => true, getLoadedValue = (value) => value, readLegacy, clearLegacy, saveDelay = 0, retryDelays = DEFAULT_RETRY_DELAYS, refreshInterval = 0, schedule = setTimeout, cancel = clearTimeout, onlineTarget = globalThis.window, visibilityTarget = globalThis.document }) {
     this.storage = storage;
     this.storageKey = storageKey;
     this.load = load;
@@ -53,13 +53,23 @@ export class PendingSyncQueue {
     this.hydrated = false;
     this.version = 0;
     this.sending = false;
+    this.loading = false;
     this.retryCount = 0;
     this.timer = null;
+    this.refreshTimer = null;
+    this.refreshInterval = refreshInterval;
     this.legacyPending = false;
     this.loadFailed = false;
     this.onlineTarget = onlineTarget;
+    this.visibilityTarget = visibilityTarget;
     this.onOnline = () => this.retryNow();
+    this.onFocus = () => this.refresh().finally(() => this.scheduleRefresh());
+    this.onVisibilityChange = () => {
+      if (!this.visibilityTarget?.hidden) this.refresh().finally(() => this.scheduleRefresh());
+    };
     onlineTarget?.addEventListener?.('online', this.onOnline);
+    onlineTarget?.addEventListener?.('focus', this.onFocus);
+    visibilityTarget?.addEventListener?.('visibilitychange', this.onVisibilityChange);
   }
 
   snapshot() {
@@ -77,6 +87,8 @@ export class PendingSyncQueue {
   }
 
   async hydrate() {
+    if (this.loading) return this.snapshot();
+    this.loading = true;
     try {
       const backendValue = await this.load();
       this.loadFailed = false;
@@ -111,6 +123,46 @@ export class PendingSyncQueue {
       this.hydrated = true;
       this.notify();
       throw error;
+    } finally {
+      this.loading = false;
+      this.scheduleRefresh();
+    }
+  }
+
+  hasPendingEdit() {
+    return Boolean(readPending(this.storage, this.storageKey));
+  }
+
+  scheduleRefresh() {
+    if (!this.refreshInterval || this.refreshTimer !== null || this.visibilityTarget?.hidden) return;
+    this.refreshTimer = this.schedule(() => {
+      this.refreshTimer = null;
+      this.refresh().catch(() => {}).finally(() => this.scheduleRefresh());
+    }, this.refreshInterval);
+  }
+
+  async refresh() {
+    if (this.loading || this.sending || !this.hydrated || this.visibilityTarget?.hidden) return this.snapshot();
+    this.loading = true;
+    try {
+      const backendValue = await this.load();
+      this.loadFailed = false;
+      if (!this.hasPendingEdit()) {
+        this.value = this.getLoadedValue(backendValue);
+        this.status = 'saved';
+        this.notify();
+      }
+      return this.snapshot();
+    } catch (error) {
+      // A background read must not look like a failed user save. Only surface
+      // the retry state when this device actually has unsynchronised edits.
+      if (this.hasPendingEdit()) {
+        this.status = 'error';
+        this.notify();
+      }
+      throw error;
+    } finally {
+      this.loading = false;
     }
   }
 
@@ -175,7 +227,10 @@ export class PendingSyncQueue {
       this.hydrate().catch(() => {});
       return;
     }
-    if (!readPending(this.storage, this.storageKey)) return;
+    if (!readPending(this.storage, this.storageKey)) {
+      this.refresh().catch(() => {});
+      return;
+    }
     if (this.timer !== null) {
       this.cancel(this.timer);
       this.timer = null;
@@ -188,7 +243,10 @@ export class PendingSyncQueue {
 
   dispose() {
     if (this.timer !== null) this.cancel(this.timer);
+    if (this.refreshTimer !== null) this.cancel(this.refreshTimer);
     this.onlineTarget?.removeEventListener?.('online', this.onOnline);
+    this.onlineTarget?.removeEventListener?.('focus', this.onFocus);
+    this.visibilityTarget?.removeEventListener?.('visibilitychange', this.onVisibilityChange);
     this.listeners.clear();
   }
 }
@@ -200,6 +258,11 @@ export function usePendingSync(options) {
   const [state, setState] = useState({ value: options.initialValue, status: 'saved', hydrated: false });
 
   useEffect(() => {
+    if (optionsRef.current.enabled === false) {
+      queueRef.current = null;
+      setState({ value: optionsRef.current.initialValue, status: 'saved', hydrated: false });
+      return undefined;
+    }
     const queue = new PendingSyncQueue(optionsRef.current);
     queueRef.current = queue;
     const unsubscribe = queue.subscribe(setState);
@@ -209,7 +272,7 @@ export function usePendingSync(options) {
       queue.dispose();
       queueRef.current = null;
     };
-  }, [options.storageKey]);
+  }, [options.storageKey, options.enabled]);
 
   return [state.value, (value) => queueRef.current?.set(value), state, () => queueRef.current?.retryNow()];
 }

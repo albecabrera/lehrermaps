@@ -28,6 +28,7 @@ export default function TodayDashboard({
     save: saveTodayDashboardTasks, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
     confirm: (response, value) => JSON.stringify(response?.tasks) === JSON.stringify(value),
     readLegacy: readLegacyTasks, clearLegacy: () => localStorage.removeItem(LEGACY_TASKS_KEY),
+    refreshInterval: 7_500,
   });
   const [note, setNote, noteSync] = usePendingSync({
     storageKey: `lm_pending_today_note_${date}`, initialValue: '',
@@ -36,6 +37,7 @@ export default function TodayDashboard({
     confirm: (response, value) => response?.date === date && response?.content === value,
     saveDelay: 400,
     readLegacy: () => readLegacyNote(date), clearLegacy: () => localStorage.removeItem(LEGACY_NOTE_PREFIX + date),
+    refreshInterval: 7_500,
   });
   const [taskText, setTaskText] = useState('');
   const loaded = tasksSync.hydrated && noteSync.hydrated;

@@ -17,6 +17,17 @@ function scheduler() {
   };
 }
 
+function events(hidden = false) {
+  const listeners = new Map();
+  return {
+    hidden,
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: (name) => listeners.delete(name),
+    emit(name) { listeners.get(name)?.(); },
+    listenerCount: () => listeners.size,
+  };
+}
+
 const local = storage();
 const clock = scheduler();
 let backend = [];
@@ -94,4 +105,63 @@ loadRetryQueue.retryNow();
 await new Promise((resolve) => setImmediate(resolve));
 assert.deepEqual(loadRetryQueue.value, ['server'], 'manual retry rehydrates after an initial load failure');
 
-console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'pending precedence', 'confirmed legacy migration', 'response confirmation'] }));
+const refreshLocal = storage();
+const refreshClock = scheduler();
+const refreshWindow = events();
+const refreshDocument = events();
+let sharedValue = ['first device'];
+const refreshQueue = new PendingSyncQueue({
+  storage: refreshLocal, storageKey: 'pending', load: async () => sharedValue,
+  save: async (value) => { sharedValue = value; return value; },
+  isBackendEmpty: (value) => value.length === 0, refreshInterval: 7_500,
+  schedule: refreshClock.schedule, cancel: refreshClock.cancel,
+  onlineTarget: refreshWindow, visibilityTarget: refreshDocument,
+});
+await refreshQueue.hydrate();
+sharedValue = ['second device'];
+await refreshClock.runNext();
+assert.deepEqual(refreshQueue.value, ['second device'], 'a confirmed resource refreshes external backend changes');
+
+refreshQueue.set(['unsaved local edit']);
+sharedValue = ['third device'];
+await refreshQueue.refresh();
+assert.deepEqual(refreshQueue.value, ['unsaved local edit'], 'refresh never overwrites a local pending edit');
+
+await refreshClock.runNext();
+await refreshClock.runNext();
+sharedValue = ['focus update'];
+refreshWindow.emit('focus');
+await new Promise((resolve) => setImmediate(resolve));
+assert.deepEqual(refreshQueue.value, ['focus update'], 'window focus refreshes a confirmed resource');
+sharedValue = ['visibility update'];
+refreshDocument.hidden = false;
+refreshDocument.emit('visibilitychange');
+await new Promise((resolve) => setImmediate(resolve));
+assert.deepEqual(refreshQueue.value, ['visibility update'], 'visibility recovery refreshes a confirmed resource');
+sharedValue = ['online update'];
+refreshWindow.emit('online');
+await new Promise((resolve) => setImmediate(resolve));
+assert.deepEqual(refreshQueue.value, ['online update'], 'online recovery refreshes a confirmed resource');
+refreshQueue.dispose();
+assert.equal(refreshWindow.listenerCount(), 0, 'dispose removes online and focus listeners');
+assert.equal(refreshDocument.listenerCount(), 0, 'dispose removes visibility listeners');
+
+let backgroundReadFails = false;
+const quietRefreshQueue = new PendingSyncQueue({
+  storage: storage(), storageKey: 'quiet-refresh',
+  load: async () => {
+    if (backgroundReadFails) throw new Error('temporary read outage');
+    return ['server value'];
+  },
+  save: async () => ['server value'], isBackendEmpty: (value) => value.length === 0,
+  onlineTarget: null, visibilityTarget: null,
+});
+await quietRefreshQueue.hydrate();
+backgroundReadFails = true;
+await assert.rejects(() => quietRefreshQueue.refresh(), /temporary read outage/);
+assert.equal(quietRefreshQueue.status, 'saved', 'a background read failure does not present as a failed user save');
+
+const checklistSource = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../client/src/components/BugChecklist.jsx', import.meta.url), 'utf8'));
+assert.match(checklistSource, /enabled:\s*open/, 'the closed checklist does not create a polling queue');
+
+console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'pending precedence', 'confirmed legacy migration', 'response confirmation', 'external refresh', 'pending protection', 'focus, visibility and online refresh', 'quiet background read failures', 'closed checklist lifecycle'] }));
