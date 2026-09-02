@@ -1371,6 +1371,12 @@ button:active {
   box-shadow: 0 24px 70px rgba(23, 59, 102, .18), 0 2px 8px rgba(23, 59, 102, .06) !important;
 }
 .lm-welcome-banner { background: linear-gradient(135deg, #102C4D, #173B66 56%, #0F6F75) !important; }
+.lm-welcome-copy { color: #f8fafc !important; }
+.lm-welcome-copy .lm-welcome-title {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+.lm-welcome-copy p { color: rgba(248, 250, 252, .84) !important; }
 .lm-brand-name { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; }
 .lm-tabbar {
   border-bottom: 1px solid color-mix(in srgb, var(--c-border) 84%, transparent) !important;
