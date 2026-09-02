@@ -1385,6 +1385,10 @@ button:active {
   background: #173B66 !important;
   box-shadow: 0 6px 18px rgba(23, 59, 102, .22) !important;
 }
+.lm-tabbar .lm-topbar-today.is-active span,
+.lm-tabbar .lm-topbar-schedule.is-active span {
+  color: #fff !important;
+}
 .lm-sidebar {
   border-right-color: var(--c-border) !important;
   background: color-mix(in srgb, var(--c-surface) 94%, #F0F4F8) !important;
