@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" color="#173B66" role="img" aria-labelledby="title desc">
+  <title id="title">LehrerMaps monochrome logo mark</title>
+  <desc id="desc">Three folded map panels connected by a learning route.</desc>
+  <path fill="currentColor" d="M74 116 208 168v250L74 366z"/>
+  <path fill="currentColor" d="m214 168 84-52v250l-84 52z"/>
+  <path fill="currentColor" d="m304 116 134 52v250l-134-52z"/>
+  <path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="22" d="M128 276c42-54 83-54 128 0s86 54 128 0"/>
+  <circle cx="128" cy="276" r="19" fill="#fff"/>
+  <circle cx="256" cy="276" r="24" fill="currentColor" stroke="#fff" stroke-width="11"/>
+  <circle cx="384" cy="276" r="19" fill="#fff"/>
+</svg>

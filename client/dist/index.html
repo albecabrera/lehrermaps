@@ -3,17 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#F8F9FB" />
+    <meta name="theme-color" content="#F7F8FA" />
     <script>
       (function(){
         var dark=localStorage.getItem('lm_theme')==='dark';
         document.documentElement.setAttribute('data-theme',dark?'dark':'light');
-        document.documentElement.style.background=dark?'#0D1117':'#F8F9FB';
-        document.documentElement.style.color=dark?'#ECF0FA':'#111827';
+        document.documentElement.style.background=dark?'#12161C':'#F7F8FA';
+        document.documentElement.style.color=dark?'#F3F6F9':'#18212B';
         document.documentElement.classList.add('lm-no-transition');
         // theme-color schon beim ersten Paint passend setzen (Standalone-Statusleiste)
         var tc=document.querySelector('meta[name="theme-color"]');
-        if(tc) tc.setAttribute('content',dark?'#0D1117':'#F8F9FB');
+        if(tc) tc.setAttribute('content',dark?'#12161C':'#F7F8FA');
       })();
     </script>
     <meta name="description" content="LehrerMaps – Unterrichtsmaterial-Verwaltung" />
@@ -27,10 +27,13 @@
     <meta name="apple-mobile-web-app-title" content="LehrerMaps" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" />
     <title>LehrerMaps</title>
-    <script type="module" crossorigin src="/assets/index-MVsf7qM6.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DSlndwNz.css">
+    <script type="module" crossorigin src="/assets/index-CbS6Wvqb.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-D87Uzt0D.js">
+    <link rel="modulepreload" crossorigin href="/assets/editor-vendor-DMV4Tnf3.js">
+    <link rel="modulepreload" crossorigin href="/assets/react-vendor-Ww_cp0yP.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-Czwfa0yX.css">
   </head>
   <body>
     <div id="root"></div>
