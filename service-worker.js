@@ -1,14 +1,16 @@
-const CACHE_VERSION = 'lehrermaps-v15';
+const CACHE_VERSION = 'lehrermaps-v16';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/lehrermaps_icon.svg',
-  '/brand/lehrermaps-mark.svg',
+  '/assets/icons/favicon.svg',
+  '/assets/icons/favicon-16.png',
+  '/assets/icons/favicon-32.png',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',
-  '/assets/icons/icon-maskable.svg',
+  '/assets/icons/icon-maskable-512.png',
   '/assets/icons/apple-touch-icon.png',
+  '/assets/icons/safari-pinned-tab.svg',
 ];
 
 async function cacheAppShell() {
