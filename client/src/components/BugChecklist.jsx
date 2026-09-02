@@ -42,7 +42,7 @@ export default function BugChecklist({ open, onClose, t }) {
     saveDelay: 500,
     readLegacy: () => { const items = getLegacyItems(); return items.length ? items : undefined; },
     clearLegacy: () => window.localStorage.removeItem(STORAGE_KEY),
-    refreshInterval: 7_500,
+    refreshInterval: 2_000,
   });
   const hydrated = sync.hydrated;
   const inputRefs = useRef(new Map());

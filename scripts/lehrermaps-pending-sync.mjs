@@ -10,8 +10,10 @@ function storage() {
 
 function scheduler() {
   const jobs = [];
+  const delays = [];
   return {
-    schedule: (callback) => { jobs.push(callback); return jobs.length - 1; },
+    delays,
+    schedule: (callback, delay) => { jobs.push(callback); delays.push(delay); return jobs.length - 1; },
     cancel: () => {},
     async runNext() { const job = jobs.shift(); if (job) { job(); await new Promise((resolve) => setImmediate(resolve)); } },
   };
@@ -113,11 +115,12 @@ let sharedValue = ['first device'];
 const refreshQueue = new PendingSyncQueue({
   storage: refreshLocal, storageKey: 'pending', load: async () => sharedValue,
   save: async (value) => { sharedValue = value; return value; },
-  isBackendEmpty: (value) => value.length === 0, refreshInterval: 7_500,
+  isBackendEmpty: (value) => value.length === 0, refreshInterval: 2_000,
   schedule: refreshClock.schedule, cancel: refreshClock.cancel,
   onlineTarget: refreshWindow, visibilityTarget: refreshDocument,
 });
 await refreshQueue.hydrate();
+assert.equal(refreshClock.delays.at(-1), 2_000, 'active resources poll every two seconds');
 sharedValue = ['second device'];
 await refreshClock.runNext();
 assert.deepEqual(refreshQueue.value, ['second device'], 'a confirmed resource refreshes external backend changes');

@@ -44,7 +44,7 @@ export default function OneNoteRichEditor({ pageId, activeTab, mode = 'onenote' 
       try { localStorage.removeItem(legacyKey); } catch {}
     },
     saveDelay: 600,
-    refreshInterval: 7_500,
+    refreshInterval: 2_000,
   });
 
   const editor = useEditor({
