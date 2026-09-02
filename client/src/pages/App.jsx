@@ -64,7 +64,10 @@ export default function App({ onLogout }) {
   const [newFolderGroup, setNewFolderGroup] = useState(null);
   const [renamingFolder, setRenamingFolder] = useState(null);
   const [renamingFile, setRenamingFile] = useState(null);
-  const [folderTab, setFolderTab] = useState('files');
+  // Jahresplanung is the only folder section exposed in the folder header.
+  // Keep the internal tab state for compatibility with existing deep links and
+  // keyboard/drop handlers, but default every folder navigation to planning.
+  const [folderTab, setFolderTab] = useState('annual');
   const [filesView, setFilesView] = useState('list');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [oneNoteSearchOpen, setOneNoteSearchOpen] = useState(false);
@@ -383,7 +386,7 @@ export default function App({ onLogout }) {
     setActiveFile2(null);
     setActiveLink(null);
     setQuery('');
-    setFolderTab('files');
+    setFolderTab('annual');
     const color = SUBJECTS.find((s) => s.id === folder.subject)?.color;
     setFolderOpenTick((v) => v + 1);
     if (sourceRect && contentPaneRef.current) {
@@ -421,7 +424,7 @@ export default function App({ onLogout }) {
       setActiveLink(null);
       if (target?.type === 'link' && target.id) setPendingLinkId(target.id);
       setQuery('');
-      setFolderTab('files');
+      setFolderTab('annual');
       setFolderOpenTick((v) => v + 1);
     }
     setGlobalSearchOpen(false);
@@ -757,7 +760,7 @@ export default function App({ onLogout }) {
         minHeight: 56, overflowX: 'auto', overflowY: 'visible',
       }}>
         <button className="lm-app-brand" type="button" onClick={() => { setViewMode('home'); setActivePageId(null); closeFolderView(); }} aria-label="Zur Startseite">
-          <BrandMark size={28} />
+          <BrandMark size={isMobile ? 30 : 28} label={!isMobile} />
         </button>
         {isMobile && (
           <div className="lm-mobile-header-actions">
@@ -1343,13 +1346,9 @@ export default function App({ onLogout }) {
                   </div>
                 )}
 
-                {/* Tab switcher */}
+                {/* Jahresplanung is the only folder section exposed here. */}
                 <div style={{ display: 'flex', gap: 0, marginTop: 12, borderBottom: '1px solid var(--c-border)' }}>
-                  {[
-                    { key: 'annual', label: t('annual.tab') },
-                    { key: 'files', label: t('notes.files_tab') },
-                    { key: 'notes', label: t('notes.tab') },
-                  ].map(({ key, label }) => {
+                  {[{ key: 'annual', label: t('annual.tab') }].map(({ key, label }) => {
                     const on = folderTab === key;
                     return (
                       <button
