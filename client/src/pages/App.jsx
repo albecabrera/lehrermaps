@@ -16,7 +16,7 @@ import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
 import { useRecentFiles } from '../hooks/useRecentFiles';
-import { downloadFolderZip, downloadFilesZip, getLessonSessions, viewFile, previewFile } from '../lib/api';
+import { downloadFolderZip, downloadFilesZip, getLessonSessions, viewFile } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
@@ -25,6 +25,13 @@ import FolderGallery from '../components/FolderGallery';
 import FolderIcon from '../components/FolderIcon';
 import { useTheme } from '../contexts/ThemeContext';
 import BrandMark from '../components/BrandMark';
+
+const KLASURPLAN_DOCUMENTS = [
+  { key: 'first', label: '1. Quartal', filename: 'Klausurplan_8_9-10_2026-27 1. Quartal.docx' },
+  { key: 'second', label: '2. Quartal', filename: 'Klausurplan_8-9-10_2026-27 2_Quartal.docx' },
+];
+
+const normalizeFileName = (name) => String(name || '').normalize('NFKC').trim().toLocaleLowerCase();
 import { useLang } from '../contexts/LangContext';
 import { useNotebook } from '../contexts/NotebookContext';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -92,14 +99,29 @@ export default function App({ onLogout }) {
   const [startNewLessonPlanning, setStartNewLessonPlanning] = useState(false);
   const [teachingSessionId, setTeachingSessionId] = useState(null);
   const [printReadyFolder, setPrintReadyFolder] = useState(null);
+  const [klasurplanOpen, setKlasurplanOpen] = useState(false);
   const printReadyCreationRef = useRef(false);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
+  const isSystemFolder = activeFolder?.subject === 'system';
+  const showFileRepository = isSystemFolder;
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
+  const { files: klasurplanFiles, loading: klasurplanFilesLoading } = useFiles(printReadyFolder?.id);
   const { links, add: addLink, remove: removeLink } = useLinks(activeFolder?.id);
   const { trackFile, trackLink } = useRecentFiles();
+
+  const klasurplanDocuments = KLASURPLAN_DOCUMENTS.map((document) => ({
+    ...document,
+    file: klasurplanFiles.find((file) => normalizeFileName(file.original_name) === normalizeFileName(document.filename)) || null,
+  }));
+
+  const openKlasurplanDocument = (file) => {
+    if (!file) return;
+    window.open(viewFile(file.id), '_blank', 'noopener,noreferrer');
+    setKlasurplanOpen(false);
+  };
 
   useEffect(() => {
     const existing = folders.find((folder) => folder.subject === 'system' && folder.name === 'Druckfertig');
@@ -277,7 +299,7 @@ export default function App({ onLogout }) {
       if (isSpaceKey) {
         e.preventDefault();
         e.stopPropagation();
-        if (activeFolder && folderTab === 'files' && files.length) {
+        if (activeFolder && showFileRepository && files.length) {
           const targetFile = files.find((f) => f.id === kbdMarkedFileId) || hoveredFile || activeFile || files[0] || null;
           if (!targetFile) return;
           setActiveLink(null);
@@ -306,7 +328,7 @@ export default function App({ onLogout }) {
         return;
       }
 
-      if (isTyping || folderTab !== 'files' || !activeFolder || !files.length) return;
+      if (isTyping || !showFileRepository || !activeFolder || !files.length) return;
       if (e.key === 'Delete' && activeFile) {
         e.preventDefault();
         handleDeleteFile(activeFile);
@@ -323,7 +345,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeFolder, files, folderTab, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen]);
+  }, [activeFile, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -407,12 +429,6 @@ export default function App({ onLogout }) {
     }
     setViewMode('subjects');
     onFolderSelect(printReadyFolder, sourceRect);
-  };
-
-  const openPrintReadyFile = (file) => {
-    const ext = file.original_name?.split('.').pop()?.toLowerCase();
-    const convertible = new Set(['doc', 'docx', 'odt', 'rtf', 'ppt', 'pptx', 'odp', 'xls', 'xlsx', 'ods']);
-    window.open(convertible.has(ext) ? previewFile(file.id) : viewFile(file.id), '_blank', 'noopener,noreferrer');
   };
 
   const handleGlobalNavigate = (targetSubject, folderId, target = null) => {
@@ -765,6 +781,17 @@ export default function App({ onLogout }) {
         {isMobile && (
           <div className="lm-mobile-header-actions">
             <button
+              className="lm-mobile-header-action lm-mobile-klasurplan-trigger"
+              type="button"
+              onClick={() => setKlasurplanOpen((open) => !open)}
+              aria-expanded={klasurplanOpen}
+              aria-controls="lm-klasurplan-menu"
+              title="Klasurplan"
+              aria-label="Klasurplan"
+            >
+              <span aria-hidden="true">▤</span>
+            </button>
+            <button
               className="lm-spring lm-mobile-menu-trigger"
               onClick={() => setSidebarDrawerOpen(true)}
               title={t('sidebar.expand')}
@@ -783,7 +810,28 @@ export default function App({ onLogout }) {
             </button>
           </div>
         )}
+        {isMobile && klasurplanOpen && (
+          <div id="lm-klasurplan-menu" className="lm-mobile-klasurplan-menu" role="menu" aria-label="Klasurplan">
+            <strong>Klasurplan</strong>
+            {klasurplanDocuments.map(({ key, label, filename, file }) => (
+              <button key={key} type="button" role="menuitem" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
+                <span>{label}</span>
+                <small>{file ? 'Öffnen' : 'Nicht verfügbar'}</small>
+              </button>
+            ))}
+            {klasurplanFilesLoading && <small className="lm-klasurplan-loading">Dokumente werden geladen …</small>}
+          </div>
+        )}
         {!isMobile && <>
+        <div className="lm-topbar-klasurplan" aria-label="Klasurplan">
+          <span className="lm-topbar-klasurplan-label">Klasurplan</span>
+          {klasurplanDocuments.map(({ key, label, filename, file }) => (
+            <button key={key} type="button" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
+              <span aria-hidden="true">▤</span>{file ? label : `${label} (Nicht verfügbar)`}
+            </button>
+          ))}
+          {klasurplanFilesLoading && <span className="lm-klasurplan-loading">…</span>}
+        </div>
         <button
           className="lm-spring lm-topbar-calendar"
           onClick={() => setSchoolCalendarOpen(true)}
@@ -1197,17 +1245,17 @@ export default function App({ onLogout }) {
               setGlobalSearchOpen(true);
             }
           }}
-          onDragOver={(e) => { if (!activeFolder || folderTab !== 'files') return; e.preventDefault(); setDropOver(true); }}
-          onDragEnter={(e) => { if (!activeFolder || folderTab !== 'files') return; e.preventDefault(); setDropOver(true); }}
+          onDragOver={(e) => { if (!activeFolder || !showFileRepository) return; e.preventDefault(); setDropOver(true); }}
+          onDragEnter={(e) => { if (!activeFolder || !showFileRepository) return; e.preventDefault(); setDropOver(true); }}
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDropOver(false); }}
           onDrop={async (e) => {
             e.preventDefault();
             setDropOver(false);
-            if (!activeFolder || folderTab !== 'files' || !e.dataTransfer.files.length) return;
+            if (!activeFolder || !showFileRepository || !e.dataTransfer.files.length) return;
             await handleDirectDropUpload(e.dataTransfer.files);
           }}
         >
-          {(dropOver || dropUploading) && activeFolder && folderTab === 'files' && (
+          {(dropOver || dropUploading) && activeFolder && showFileRepository && (
             <div style={{
               position: 'absolute', inset: 0, zIndex: 50,
               background: `${accent}14`,
@@ -1347,8 +1395,8 @@ export default function App({ onLogout }) {
                 )}
 
                 {/* Jahresplanung is the only folder section exposed here. */}
-                <div style={{ display: 'flex', gap: 0, marginTop: 12, borderBottom: '1px solid var(--c-border)' }}>
-                  {[{ key: 'annual', label: t('annual.tab') }].map(({ key, label }) => {
+                {(isSystemFolder || folderTab !== 'notes') && <div style={{ display: 'flex', gap: 0, marginTop: 12, borderBottom: '1px solid var(--c-border)' }}>
+                  {!isSystemFolder && [{ key: 'annual', label: t('annual.tab') }].map(({ key, label }) => {
                     const on = folderTab === key;
                     return (
                       <button
@@ -1366,7 +1414,7 @@ export default function App({ onLogout }) {
                       >{label}</button>
                     );
                   })}
-                  {folderTab === 'files' && (
+                  {showFileRepository && (
                     <div style={{ marginLeft: 'auto', alignSelf: 'center', paddingRight: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
                       {!isMobile && (
                         <button
@@ -1401,12 +1449,12 @@ export default function App({ onLogout }) {
                       </div>
                     </div>
                   )}
-                </div>
+                </div>}
               </div>
 
               {/* Tab content */}
               <div style={{ flex: 1, minHeight: 0, overflow: folderTab === 'notes' ? 'hidden' : 'auto' }}>
-                {folderTab === 'files' ? (
+                {showFileRepository ? (
                   <div style={{ padding: '12px 20px' }}>
                     {/* Unterordner direkt im Inhalt — Struktur bleibt ohne Sidebar greifbar */}
                     {childFolders.length > 0 && (
@@ -1496,7 +1544,6 @@ export default function App({ onLogout }) {
                           if (from && to) setPreviewHero({ from, to, accent, phase: 'start' });
                         }}
                         onFileSecondarySelect={(f) => { setActiveFile2(f); trackFile(f, activeFolder?.id, subjectId); }}
-                        onFileDoubleClick={activeFolder.subject === 'system' ? openPrintReadyFile : undefined}
                         onLinkSelect={(l) => { setActiveLink(l); setActiveFile(null); trackLink(l, activeFolder?.id, subjectId); }}
                         accent={accent}
                         query={query}
