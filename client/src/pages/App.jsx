@@ -803,6 +803,7 @@ export default function App({ onLogout }) {
               aria-label="Klasurplan"
             >
               <span aria-hidden="true">▤</span>
+              <span>Klasurplan</span>
             </button>
             <button
               className="lm-spring lm-mobile-menu-trigger"

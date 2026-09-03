@@ -1377,22 +1377,32 @@ button:active {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    min-height: 42px;
-    padding: 7px 9px;
+    min-height: 52px;
+    padding: 9px 12px;
     border: 1px solid var(--c-border-soft);
     border-radius: 8px;
     background: var(--c-surface-2);
     color: var(--c-text-2);
     font: inherit;
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 700;
     text-align: left;
     cursor: pointer;
   }
-  .lm-mobile-klasurplan-menu button small { color: var(--c-text-3); font-size: 10px; font-weight: 600; }
+  .lm-mobile-klasurplan-menu button small { color: var(--c-text-2); font-size: 12px; font-weight: 700; }
   .lm-mobile-klasurplan-menu button:disabled { cursor: not-allowed; opacity: .6; }
   .lm-mobile-klasurplan-menu button:hover:not(:disabled) { border-color: var(--c-focus); background: var(--c-hover); }
-  .lm-mobile-klasurplan-trigger { order: -1; }
+  .lm-mobile-klasurplan-trigger {
+    order: -1;
+    width: auto !important;
+    min-width: 96px;
+    padding: 0 12px !important;
+    gap: 6px;
+    color: var(--c-text);
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
   .lm-mobile-menu-trigger,
   .lm-mobile-header-action {
     width: 42px !important;
