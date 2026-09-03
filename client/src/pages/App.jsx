@@ -55,6 +55,7 @@ export default function App({ onLogout }) {
   const { t } = useLang();
   const { activePageId, setActivePageId } = useNotebook();
   const isMobile = useIsMobile();
+  const isPhone = useIsMobile(600);
   const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [schoolCalendarOpen, setSchoolCalendarOpen] = useState(false);
@@ -100,6 +101,7 @@ export default function App({ onLogout }) {
   const [teachingSessionId, setTeachingSessionId] = useState(null);
   const [printReadyFolder, setPrintReadyFolder] = useState(null);
   const [klasurplanOpen, setKlasurplanOpen] = useState(false);
+  const [klasurplanViewerFile, setKlasurplanViewerFile] = useState(null);
   const printReadyCreationRef = useRef(false);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
@@ -119,6 +121,11 @@ export default function App({ onLogout }) {
 
   const openKlasurplanDocument = (file) => {
     if (!file) return;
+    if (!isPhone) {
+      setKlasurplanViewerFile(file);
+      setKlasurplanOpen(false);
+      return;
+    }
     setViewMode('subjects');
     setActivePageId(null);
     setActiveFolder(printReadyFolder);
@@ -277,6 +284,11 @@ export default function App({ onLogout }) {
         document.exitFullscreen();
         return;
       }
+      if (e.key === 'Escape' && klasurplanViewerFile) {
+        e.preventDefault();
+        setKlasurplanViewerFile(null);
+        return;
+      }
       if (e.key === 'Escape' && (activeFile || activeLink)) {
         e.preventDefault();
         setActiveFile(null);
@@ -358,7 +370,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen]);
+  }, [activeFile, activeLink, klasurplanViewerFile, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -743,7 +755,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen;
+  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen || !!klasurplanViewerFile;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
   const sidebarProps = {
@@ -1678,6 +1690,25 @@ export default function App({ onLogout }) {
             </div>
             </>}
           </div>
+        )}
+
+        {/* Laptop/tablet: Klausurplan opens in a centered in-app dialog. */}
+        {!isPhone && !focusMode && klasurplanViewerFile && createPortal(
+          <div className="lm-klasurplan-viewer-backdrop" role="presentation">
+            <section
+              className="lm-klasurplan-viewer-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-label={klasurplanViewerFile.original_name}
+            >
+              <FilePreview
+                file={klasurplanViewerFile}
+                accent={accent}
+                onClose={() => setKlasurplanViewerFile(null)}
+              />
+            </section>
+          </div>,
+          document.body
         )}
 
         {/* Mobile: Vorschau als Vollbild-Overlay statt Seitenspalte —
