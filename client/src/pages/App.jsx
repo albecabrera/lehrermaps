@@ -100,6 +100,7 @@ export default function App({ onLogout }) {
   const [teachingSessionId, setTeachingSessionId] = useState(null);
   const [printReadyFolder, setPrintReadyFolder] = useState(null);
   const [klasurplanOpen, setKlasurplanOpen] = useState(false);
+  const [klasurplanViewerFile, setKlasurplanViewerFile] = useState(null);
   const printReadyCreationRef = useRef(false);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
@@ -119,7 +120,7 @@ export default function App({ onLogout }) {
 
   const openKlasurplanDocument = (file) => {
     if (!file) return;
-    window.open(viewFile(file.id), '_blank', 'noopener,noreferrer');
+    setKlasurplanViewerFile(file);
     setKlasurplanOpen(false);
   };
 
@@ -271,6 +272,11 @@ export default function App({ onLogout }) {
         document.exitFullscreen();
         return;
       }
+      if (e.key === 'Escape' && klasurplanViewerFile) {
+        e.preventDefault();
+        setKlasurplanViewerFile(null);
+        return;
+      }
       if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
@@ -345,7 +351,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen]);
+  }, [activeFile, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, klasurplanViewerFile]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -1706,6 +1712,52 @@ export default function App({ onLogout }) {
                 onClose={() => { setActiveFile(null); setActiveFile2(null); }}
               />
             )}
+          </div>,
+          document.body
+        )}
+        {klasurplanViewerFile && createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={klasurplanViewerFile.original_name}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 1240,
+              background: 'var(--c-bg)', display: 'flex', flexDirection: 'column',
+              animation: 'lmSlideUp .18s cubic-bezier(.4,.7,.3,1)',
+            }}
+          >
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left))',
+              borderBottom: '1px solid var(--c-border)', flexShrink: 0,
+            }}>
+              <button
+                type="button"
+                onClick={() => setKlasurplanViewerFile(null)}
+                aria-label="Zurück"
+                title="Zurück (Escape)"
+                style={{
+                  width: 36, height: 36, border: 'none', borderRadius: 8,
+                  background: 'transparent', color: 'var(--c-text)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                  <path d="M11.5 3.5 7 9l4.5 5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <strong style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13 }}>
+                {klasurplanViewerFile.original_name}
+              </strong>
+              <span style={{ marginLeft: 'auto', color: 'var(--c-text-3)', fontSize: 11, whiteSpace: 'nowrap' }}>{isMobile ? 'Escape' : 'Escape zum Schließen'}</span>
+            </div>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <FilePreview
+                file={klasurplanViewerFile}
+                accent={accent}
+                onClose={() => setKlasurplanViewerFile(null)}
+              />
+            </div>
           </div>,
           document.body
         )}
