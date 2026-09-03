@@ -1426,6 +1426,14 @@ button:active {
     background: rgba(220, 38, 38, .07) !important;
     color: #dc2626;
   }
+  /* Keep the labelled Klasurplan trigger wide enough after the shared
+     42px action sizing rule above. */
+  .lm-mobile-header-actions .lm-mobile-klasurplan-trigger {
+    width: 112px !important;
+    min-width: 112px !important;
+    padding-inline: 12px !important;
+    justify-content: center;
+  }
   .lm-home-view { padding-top: 32px; padding-bottom: calc(32px + var(--safe-area-bottom)); }
   .lm-home-intro { margin-bottom: 38px; }
   .lm-home-action-grid { grid-template-columns: 1fr; }
