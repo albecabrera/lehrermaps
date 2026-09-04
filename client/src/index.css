@@ -205,8 +205,9 @@ html, body, #root {
 /* Authenticated primary navigation: one centered, tactile control row. Utility
    actions (search, theme and upload) stay pinned at the trailing edge. */
 @media (min-width: 861px) {
-  .lm-tabbar { justify-content: center; padding-inline: 22px !important; }
-  .lm-tabbar > .lm-app-brand { order: 1; margin-right: 4px; }
+  .lm-tabbar { justify-content: flex-start; padding-inline: 22px !important; }
+  .lm-tabbar > .lm-app-brand { order: 0; margin-right: 4px; }
+  .lm-tabbar > .lm-topbar-klasurplan { order: 1; }
   .lm-tabbar > .lm-topbar-today { order: 2; }
   .lm-tabbar > .lm-topbar-checklist { order: 3; }
   .lm-tabbar > .lm-topbar-schedule { order: 4; }
