@@ -206,19 +206,9 @@ html, body, #root {
    actions (search, theme and upload) stay pinned at the trailing edge. */
 @media (min-width: 1101px) {
   .lm-tabbar { justify-content: flex-start; padding-inline: 22px !important; }
-  .lm-tabbar > .lm-app-brand { order: 0; margin-right: 4px; }
-  .lm-tabbar > .lm-topbar-klasurplan { order: 1; }
-  .lm-tabbar > .lm-topbar-today { order: 2; }
-  .lm-tabbar > .lm-topbar-checklist { order: 3; }
-  .lm-tabbar > .lm-topbar-schedule { order: 4; }
-  .lm-tabbar > .lm-topbar-exams { order: 5; }
-  .lm-tabbar > .lm-topbar-calendar { order: 6; }
-  .lm-tabbar > .lm-topbar-notion { order: 7; }
-  .lm-tabbar > .lm-topbar-miro { order: 8; }
-  .lm-tabbar > .lm-topbar-logout { order: 9; margin-left: 4px !important; }
-  .lm-tabbar > .lm-topbar-lessons { display: none !important; }
-  .lm-tabbar > .lm-topbar-spacer { display: none !important; }
-  .lm-tabbar > .lm-topbar-tools { position: absolute; right: 22px; bottom: 8px; }
+  .lm-tabbar > .lm-app-brand { margin-right: 4px; }
+  .lm-topbar-lessons,
+  .lm-topbar-spacer { display: none !important; }
 }
 .lm-tabbar .lm-topbar-today,
 .lm-tabbar .lm-topbar-checklist,
@@ -1321,9 +1311,9 @@ button:active {
 .lm-desktop-klasurplan-menu button:hover:not(:disabled) { background: var(--c-hover); }
 .lm-desktop-klasurplan-menu button:disabled { color: var(--c-text-3); cursor: not-allowed; }
 .lm-desktop-klasurplan-menu small { color: var(--c-text-3); font-size: 11px; font-weight: 700; }
-.lm-desktop-header-actions { display: inline-flex; align-items: center; gap: 4px; }
-.lm-desktop-header-actions .lm-topbar-calendar,
-.lm-desktop-header-actions .lm-topbar-logout {
+.lm-desktop-trailing-group { display: inline-flex; align-items: center; gap: 4px; }
+.lm-desktop-trailing-group .lm-topbar-calendar,
+.lm-desktop-trailing-group .lm-topbar-logout {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1339,33 +1329,40 @@ button:active {
   font-weight: 650;
   cursor: pointer;
 }
-.lm-desktop-header-actions .lm-topbar-calendar:hover { border-color: var(--c-border); background: var(--c-hover); }
-.lm-desktop-header-actions .lm-topbar-logout { border-color: rgba(220, 38, 38, .22); background: rgba(220, 38, 38, .07); color: #dc2626; }
+.lm-desktop-trailing-group .lm-topbar-calendar:hover { border-color: var(--c-border); background: var(--c-hover); }
+.lm-desktop-trailing-group .lm-topbar-logout { border-color: rgba(220, 38, 38, .22); background: rgba(220, 38, 38, .07); color: #dc2626; }
 @media (min-width: 1101px) {
   .lm-tabbar {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center !important;
     min-height: 64px !important;
     padding: 8px 20px !important;
     overflow: visible !important;
   }
-  .lm-tabbar .lm-app-brand { margin-right: auto; }
+  .lm-tabbar .lm-app-brand { grid-column: 1; margin-right: 0; }
   .lm-desktop-primary-nav {
-    position: absolute;
-    left: 50%;
+    grid-column: 2;
+    justify-self: center;
     display: flex;
     align-items: center;
-    transform: translateX(-50%);
+    min-width: 0;
     white-space: nowrap;
   }
-  .lm-desktop-header-actions { margin-left: auto; }
+  .lm-desktop-trailing-group {
+    grid-column: 3;
+    justify-self: end;
+    flex-shrink: 0;
+  }
   .lm-tabbar .lm-topbar-tools { margin-left: 6px; padding-bottom: 0 !important; }
 }
 @media (min-width: 1101px) and (max-width: 1280px) {
   .lm-tabbar .lm-app-brand .lm-brand-name,
-  .lm-desktop-header-actions .lm-topbar-calendar-label,
-  .lm-desktop-header-actions .lm-topbar-logout-label,
+  .lm-desktop-trailing-group .lm-topbar-calendar-label,
+  .lm-desktop-trailing-group .lm-topbar-logout-label,
   .lm-desktop-primary-nav .lm-topbar-notion,
-  .lm-desktop-primary-nav .lm-topbar-miro { display: none; }
+  .lm-desktop-primary-nav .lm-topbar-miro,
+  .lm-desktop-primary-nav .lm-topbar-lessons { display: none !important; }
 }
 .lm-klasurplan-viewer-backdrop {
   position: fixed;
@@ -1393,7 +1390,6 @@ button:active {
 .lm-klasurplan-viewer-dialog > #lm-file-preview-root { border-left: 0; }
 @media (min-width: 1101px) {
   .lm-tabbar { padding-inline: 28px !important; }
-  .lm-tabbar > .lm-topbar-tools { right: 28px; bottom: 10px; }
 }
 
 .lm-home-view {

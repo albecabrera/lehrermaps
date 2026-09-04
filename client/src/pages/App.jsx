@@ -1026,7 +1026,7 @@ export default function App({ onLogout }) {
         </a>
         </nav>}
 
-        {!isMobile && <div className="lm-desktop-header-actions">
+        {!isMobile && <div className="lm-desktop-trailing-group">
           <button
             className="lm-spring lm-topbar-calendar"
             onClick={() => setSchoolCalendarOpen(true)}
@@ -1038,10 +1038,10 @@ export default function App({ onLogout }) {
           <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout">
             <span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span>
           </button>
-        </div>}
 
-        {/* Right controls — mobil ersetzt durch Bottom-Nav + Mehr-Sheet */}
-        {!isMobile && <div className="lm-topbar-tools" style={{ paddingBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
+
+          {/* Right controls — mobile is replaced by Bottom-Nav + More sheet */}
+          <div className="lm-topbar-tools" style={{ paddingBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
           <button
             className="lm-spring"
             onClick={() => setFocusMode((v) => !v)}
@@ -1133,6 +1133,7 @@ export default function App({ onLogout }) {
             {t('app.upload')}
           </button>
 
+          </div>
         </div>}
       </header>
 
