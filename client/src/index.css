@@ -1215,6 +1215,7 @@ button:active {
   margin-bottom: 10px !important;
   border-radius: 10px !important;
 }
+.lm-tabbar .lm-topbar-checklist { min-width: var(--touch-target); }
 .lm-tabbar .lm-topbar-tools > button {
   min-height: var(--touch-target) !important;
   border-radius: 10px !important;
@@ -1276,6 +1277,7 @@ button:active {
   cursor: pointer;
   transition: background .16s ease, border-color .16s ease, box-shadow .16s ease;
 }
+.lm-topbar-klasurplan .lm-klasurplan-toggle { min-height: var(--touch-target); }
 .lm-klasurplan-toggle:hover,
 .lm-klasurplan-toggle[aria-expanded="true"] {
   border-color: color-mix(in srgb, var(--c-focus) 45%, var(--c-border));

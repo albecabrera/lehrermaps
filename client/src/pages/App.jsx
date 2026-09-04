@@ -305,6 +305,11 @@ export default function App({ onLogout }) {
         setActiveLink(null);
         return;
       }
+      if (e.key === 'Escape' && isMobile && !focusMode && sidebarDrawerOpen) {
+        e.preventDefault();
+        setSidebarDrawerOpen(false);
+        return;
+      }
       if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
@@ -379,7 +384,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, klasurplanOpen]);
+  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, klasurplanOpen, isMobile, focusMode, sidebarDrawerOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -1212,31 +1217,6 @@ export default function App({ onLogout }) {
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         />}
 
-        {/* Mobile: Sidebar als Drawer statt fester Spalte — 260px+Vorschau
-            passen nicht auf ein Telefon, also Overlay mit Backdrop. */}
-        {!focusMode && isMobile && sidebarDrawerOpen && createPortal(
-          <>
-            <div
-              onClick={() => setSidebarDrawerOpen(false)}
-              style={{ position: 'fixed', inset: 0, zIndex: 1220, background: 'var(--c-overlay)', backdropFilter: 'blur(4px)', animation: 'lmFadeIn .15s ease-out' }}
-            />
-            <div className="lm-drawer" style={{
-              position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 1221,
-              width: 'min(84vw, 300px)', boxShadow: 'var(--c-shadow-modal)',
-              display: 'flex', alignItems: 'stretch',
-              animation: 'lmSlideInLeft .22s cubic-bezier(.4,.7,.3,1)',
-            }}>
-              <Sidebar
-                {...sidebarProps}
-                width={280}
-                onSubjectSelect={(id) => { onSubjectChange(id); setSidebarDrawerOpen(false); }}
-                onFolderSelect={(folder, rect) => { onFolderSelect(folder, rect); setSidebarDrawerOpen(false); }}
-              />
-            </div>
-          </>,
-          document.body
-        )}
-
         <div
           ref={contentPaneRef}
           id="main-content"
@@ -1776,6 +1756,31 @@ export default function App({ onLogout }) {
         />
       )}
       </FocusMode>
+
+      {/* Keep the mobile drawer independent of the active content view so it
+          remains available from Home as well as subject content. */}
+      {!focusMode && isMobile && sidebarDrawerOpen && createPortal(
+        <>
+          <div
+            onClick={() => setSidebarDrawerOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 1220, background: 'var(--c-overlay)', backdropFilter: 'blur(4px)', animation: 'lmFadeIn .15s ease-out' }}
+          />
+          <div className="lm-drawer" style={{
+            position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 1221,
+            width: 'min(84vw, 300px)', boxShadow: 'var(--c-shadow-modal)',
+            display: 'flex', alignItems: 'stretch',
+            animation: 'lmSlideInLeft .22s cubic-bezier(.4,.7,.3,1)',
+          }}>
+            <Sidebar
+              {...sidebarProps}
+              width={280}
+              onSubjectSelect={(id) => { onSubjectChange(id); setSidebarDrawerOpen(false); }}
+              onFolderSelect={(folder, rect) => { onFolderSelect(folder, rect); setSidebarDrawerOpen(false); }}
+            />
+          </div>
+        </>,
+        document.body
+      )}
 
       {/* Mobile Bottom-Navigation — Daumen-Zone. Flex-Kind, verdeckt nie Inhalt. */}
       {isMobile && !focusMode && (

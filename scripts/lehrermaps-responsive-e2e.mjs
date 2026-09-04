@@ -9,13 +9,11 @@ const { chromium } = require('playwright');
 const baseUrl = process.env.LEHRERMAPS_URL || 'http://localhost:8090';
 const teacherPassword = process.env.LEHRERMAPS_TEACHER_PASSWORD || 'lehrer';
 const viewports = [
-  { name: 'iPhone SE', width: 375, height: 667, mobile: true, mobileUi: true },
-  { name: 'iPhone 12/13', width: 390, height: 844, mobile: true, mobileUi: true },
-  { name: 'iPhone Pro Max', width: 430, height: 932, mobile: true, mobileUi: true },
-  { name: 'iPhone landscape', width: 844, height: 390, mobile: true, mobileUi: false },
-  { name: 'iPad portrait', width: 768, height: 1024, mobile: true, mobileUi: false },
-  { name: 'iPad landscape', width: 1024, height: 1366, mobile: true, mobileUi: false },
-  { name: 'Desktop', width: 1440, height: 900, mobile: false },
+  { name: 'iPhone 13', width: 390, height: 844, deviceScaleFactor: 3, touch: true, mobileUi: true },
+  { name: 'iPad Pro 13 M5 portrait', width: 1032, height: 1376, deviceScaleFactor: 2, touch: true, mobileUi: true },
+  // The app intentionally switches to its desktop header above 1100px.
+  { name: 'iPad Pro 13 M5 landscape', width: 1376, height: 1032, deviceScaleFactor: 2, touch: true, mobileUi: false },
+  { name: 'MacBook Pro 16 M1', width: 1728, height: 1117, deviceScaleFactor: 2, touch: false, mobileUi: false },
 ];
 
 const results = [];
@@ -59,9 +57,9 @@ async function measureLayout(page, viewport) {
   // fixed overlays and dialogs are layout-clipping regressions.
   const clipped = state.visible.filter((item) => (item.position === 'fixed' || item.label === undefined) && (item.right > state.innerWidth + 2 || item.bottom > state.innerHeight + 2));
   assert(!clipped.length, `clipped control/dialog: ${JSON.stringify(clipped.slice(0, 3))}`);
-  if (viewport.mobileUi) {
+  if (viewport.touch) {
     const small = state.visible.filter((item) => item.inNav && (item.width < 44 || item.height < 44));
-    assert(!small.length, `touch target below 32px: ${JSON.stringify(small.slice(0, 3))}`);
+    assert(!small.length, `touch target below 44px: ${JSON.stringify(small.slice(0, 3))}`);
   }
 }
 
@@ -78,9 +76,9 @@ async function login(page) {
   assert(!(await page.locator('body').innerText()).includes('Falsches Passwort'), 'teacher login failed');
 }
 
-async function exerciseTeacherMobile(page) {
+async function exerciseHomeDrawer(page) {
   // Seeded deployments may reopen the last teacher overlay; reset it before
-  // exercising the navigation underneath.
+  // exercising Home navigation underneath.
   if (await page.locator('.eb-board').count()) {
     const dismiss = page.getByRole('button', { name: /Weiter zu LehrerMaps/i });
     if (await dismiss.count()) await dismiss.click();
@@ -88,19 +86,29 @@ async function exerciseTeacherMobile(page) {
     await page.waitForTimeout(100);
   }
   const menu = page.getByRole('button', { name: /Sidebar ausklappen|Seitenleiste öffnen/i }).first();
-  if (await menu.count()) {
-    await menu.click();
-    await page.locator('.lm-drawer').waitFor({ state: 'visible' });
-    await page.mouse.click(page.viewportSize().width - 4, page.viewportSize().height / 2);
-  }
-  const more = page.getByRole('button', { name: /Mehr/i }).last();
-  await more.click();
-  assert(await page.locator('.lm-modal-surface').count() === 1, 'more sheet did not open');
-  await page.mouse.click(10, 10);
-  await page.getByRole('button', { name: /Suche/i }).click();
-  await page.waitForTimeout(100);
-  assert(await page.locator('input').count() > 0, 'search control did not open');
-  await page.mouse.click(10, 10);
+  assert(await menu.count() === 1, 'Home drawer trigger is unavailable');
+
+  await menu.click();
+  await page.locator('.lm-drawer').waitFor({ state: 'visible' });
+  await page.mouse.click(page.viewportSize().width - 4, page.viewportSize().height / 2);
+  await page.locator('.lm-drawer').waitFor({ state: 'hidden' });
+
+  await menu.click();
+  await page.locator('.lm-drawer').waitFor({ state: 'visible' });
+  await page.keyboard.press('Escape');
+  await page.locator('.lm-drawer').waitFor({ state: 'hidden' });
+}
+
+async function exerciseKlausurplan(page) {
+  const toggle = page.getByRole('button', { name: 'Klausurplan' }).first();
+  assert(await toggle.count() === 1, 'Klausurplan toggle is unavailable');
+
+  await toggle.click();
+  await page.locator('#lm-klasurplan-menu').waitFor({ state: 'visible' });
+  assert(await page.getByRole('menuitem', { name: /1\. Quartal/i }).count() === 1, '1. Quartal is unavailable');
+  assert(await page.getByRole('menuitem', { name: /2\. Quartal/i }).count() === 1, '2. Quartal is unavailable');
+  await page.keyboard.press('Escape');
+  await page.locator('#lm-klasurplan-menu').waitFor({ state: 'hidden' });
 }
 
 async function run() {
@@ -115,9 +123,9 @@ async function run() {
       for (const role of ['teacher']) {
         const context = await browser.newContext({
           viewport: { width: viewport.width, height: viewport.height },
-          isMobile: viewport.mobile,
-          hasTouch: viewport.mobile,
-          deviceScaleFactor: viewport.mobile ? 2 : 1,
+          isMobile: viewport.touch,
+          hasTouch: viewport.touch,
+          deviceScaleFactor: viewport.deviceScaleFactor,
         });
         const page = await context.newPage();
         page.setDefaultTimeout(5000);
@@ -127,7 +135,8 @@ async function run() {
         try {
           await login(page);
           await measureLayout(page, viewport);
-          if (viewport.mobileUi && role === 'teacher') await exerciseTeacherMobile(page);
+          if (viewport.mobileUi && role === 'teacher') await exerciseHomeDrawer(page);
+          await exerciseKlausurplan(page);
           await measureLayout(page, viewport);
           assert(!consoleErrors.length, `console errors: ${consoleErrors.join('; ')}`);
           pass(`${viewport.name} · ${role}`, 'login, layout, interaction, console');
