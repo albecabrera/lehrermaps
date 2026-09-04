@@ -771,6 +771,7 @@ export default function App({ onLogout }) {
     : null;
 
   const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen || isKlasurplanActiveFile;
+  const hasDepthModalOpen = hasModalOpen && !isKlasurplanActiveFile;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
   const sidebarProps = {
@@ -807,7 +808,7 @@ export default function App({ onLogout }) {
       fontFeatureSettings: '"ss01", "cv11"',
     }}>
       <a className="lm-skip-link" href="#main-content">Zum Hauptinhalt springen</a>
-      <div className={hasModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
+      <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Tab bar */}
       <header className={`lm-tabbar${isKlasurplanHeaderLayerActive ? ' lm-klasurplan-header-layer' : ''}`} aria-label="Hauptnavigation" style={{
         display: 'flex', alignItems: 'flex-end', padding: '8px 16px 0',
@@ -1832,7 +1833,7 @@ export default function App({ onLogout }) {
         onSave={handleAddLink}
         accent={accent}
       />
-      {hasModalOpen && <div className="lm-depth-overlay" />}
+      {hasDepthModalOpen && <div className="lm-depth-overlay" />}
       {schoolCalendarOpen && <SchoolCalendarPdf onClose={() => setSchoolCalendarOpen(false)} />}
       <BugChecklist open={bugChecklistOpen} onClose={() => setBugChecklistOpen(false)} t={t} />
       {folderZoom && (
