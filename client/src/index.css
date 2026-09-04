@@ -97,8 +97,8 @@ html, body, #root {
   .lm-breadcrumb-button {
     display: inline-flex;
     align-items: center;
-    min-width: var(--touch-target);
-    min-height: var(--touch-target);
+    min-width: calc(var(--touch-target) + 1px);
+    min-height: calc(var(--touch-target) + 1px);
   }
 }
 
