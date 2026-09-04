@@ -93,6 +93,15 @@ html, body, #root {
   transition: background-color .16s ease, color .16s ease;
 }
 
+@media (pointer: coarse) {
+  .lm-breadcrumb-button {
+    display: inline-flex;
+    align-items: center;
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+  }
+}
+
 /* Tablet reading mode: explicit component sizing is used instead of browser
    zoom so the visual upgrade also works in tablet browsers without zoom support. */
 @media (min-width: 600px) and (pointer: coarse) {

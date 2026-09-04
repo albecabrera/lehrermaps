@@ -15,6 +15,7 @@ export default function Breadcrumb({ items, accent = '#E8472A' }) {
           <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
             {clickable ? (
               <button
+                className="lm-breadcrumb-button"
                 onClick={item.onClick}
                 style={{
                   appearance: 'none', border: 'none', background: 'transparent',
