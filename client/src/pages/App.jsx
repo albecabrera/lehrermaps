@@ -123,6 +123,7 @@ export default function App({ onLogout }) {
     && String(activeFolder?.id) === String(printReadyFolder?.id)
     && klasurplanDocuments.some(({ file }) => String(file?.id) === String(activeFile.id))
   );
+  const isKlasurplanHeaderLayerActive = !isPhone && (klasurplanOpen || isKlasurplanActiveFile);
 
   const openKlasurplanDocument = (file) => {
     if (!file) return;
@@ -808,7 +809,7 @@ export default function App({ onLogout }) {
       <a className="lm-skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <div className={hasModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Tab bar */}
-      <header className="lm-tabbar" aria-label="Hauptnavigation" style={{
+      <header className={`lm-tabbar${isKlasurplanHeaderLayerActive ? ' lm-klasurplan-header-layer' : ''}`} aria-label="Hauptnavigation" style={{
         display: 'flex', alignItems: 'flex-end', padding: '8px 16px 0',
         background: 'var(--c-tab-bg)', borderBottom: '1px solid var(--c-border)',
         position: 'relative', flexShrink: 0, gap: 2,

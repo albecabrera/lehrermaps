@@ -109,6 +109,23 @@ async function exerciseKlausurplan(page) {
   assert(await page.getByRole('menuitem', { name: /2\. Quartal/i }).count() === 1, '2. Quartal is unavailable');
   await page.keyboard.press('Escape');
   await page.locator('#lm-klasurplan-menu').waitFor({ state: 'hidden' });
+
+  // Phone previews intentionally cover the header. On larger screens, selecting
+  // a second quarter must remain possible while the first preview is open.
+  if (page.viewportSize().width <= 600) return;
+  await toggle.click();
+  const firstQuarter = page.getByRole('menuitem', { name: /1\. Quartal/i });
+  const secondQuarter = page.getByRole('menuitem', { name: /2\. Quartal/i });
+  if (await firstQuarter.isDisabled() || await secondQuarter.isDisabled()) return;
+
+  await firstQuarter.click();
+  await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'visible' });
+  await toggle.click();
+  await page.locator('#lm-klasurplan-menu').waitFor({ state: 'visible' });
+  await secondQuarter.click();
+  await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'visible' });
+  await page.keyboard.press('Escape');
+  await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'hidden' });
 }
 
 async function run() {
