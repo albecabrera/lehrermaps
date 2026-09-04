@@ -101,7 +101,6 @@ export default function App({ onLogout }) {
   const [teachingSessionId, setTeachingSessionId] = useState(null);
   const [printReadyFolder, setPrintReadyFolder] = useState(null);
   const [klasurplanOpen, setKlasurplanOpen] = useState(false);
-  const [klasurplanViewerFile, setKlasurplanViewerFile] = useState(null);
   const printReadyCreationRef = useRef(false);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
@@ -118,14 +117,14 @@ export default function App({ onLogout }) {
     ...document,
     file: klasurplanFiles.find((file) => normalizeFileName(file.original_name) === normalizeFileName(document.filename)) || null,
   }));
+  const isKlasurplanActiveFile = Boolean(
+    activeFile
+    && String(activeFolder?.id) === String(printReadyFolder?.id)
+    && klasurplanDocuments.some(({ file }) => String(file?.id) === String(activeFile.id))
+  );
 
   const openKlasurplanDocument = (file) => {
     if (!file) return;
-    if (!isPhone) {
-      setKlasurplanViewerFile(file);
-      setKlasurplanOpen(false);
-      return;
-    }
     setViewMode('subjects');
     setActivePageId(null);
     setActiveFolder(printReadyFolder);
@@ -284,11 +283,6 @@ export default function App({ onLogout }) {
         document.exitFullscreen();
         return;
       }
-      if (e.key === 'Escape' && klasurplanViewerFile) {
-        e.preventDefault();
-        setKlasurplanViewerFile(null);
-        return;
-      }
       if (e.key === 'Escape' && (activeFile || activeLink)) {
         e.preventDefault();
         setActiveFile(null);
@@ -370,7 +364,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeLink, klasurplanViewerFile, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen]);
+  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -755,7 +749,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen || !!klasurplanViewerFile;
+  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen || isKlasurplanActiveFile;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
   const sidebarProps = {
@@ -1625,7 +1619,7 @@ export default function App({ onLogout }) {
         </div>
 
         {/* Preview panel — resizable, optional split (Desktop) */}
-        {activeFolder && !focusMode && !isMobile && (
+        {activeFolder && !focusMode && !isMobile && !isKlasurplanActiveFile && (
           <div
             id="lm-file-preview-pane"
             aria-hidden={previewCollapsed}
@@ -1693,18 +1687,18 @@ export default function App({ onLogout }) {
         )}
 
         {/* Laptop/tablet: Klausurplan opens in a centered in-app dialog. */}
-        {!isPhone && !focusMode && klasurplanViewerFile && createPortal(
+        {!isPhone && !focusMode && isKlasurplanActiveFile && createPortal(
           <div className="lm-klasurplan-viewer-backdrop" role="presentation">
             <section
               className="lm-klasurplan-viewer-dialog"
               role="dialog"
               aria-modal="true"
-              aria-label={klasurplanViewerFile.original_name}
+              aria-label={activeFile.original_name}
             >
               <FilePreview
-                file={klasurplanViewerFile}
+                file={activeFile}
                 accent={accent}
-                onClose={() => setKlasurplanViewerFile(null)}
+                onClose={() => { setActiveFile(null); setActiveFile2(null); }}
               />
             </section>
           </div>,
@@ -1713,7 +1707,7 @@ export default function App({ onLogout }) {
 
         {/* Mobile: Vorschau als Vollbild-Overlay statt Seitenspalte —
             geöffnete Datei/Link verdeckt den Ordnerinhalt, Zurück schließt sie. */}
-        {isMobile && !focusMode && (activeFile || activeLink) && createPortal(
+        {isMobile && !focusMode && (isPhone || !isKlasurplanActiveFile) && (activeFile || activeLink) && createPortal(
           <div style={{
             position: 'fixed', inset: 0, zIndex: 1230,
             background: 'var(--c-bg)', display: 'flex', flexDirection: 'column',
