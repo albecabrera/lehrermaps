@@ -1376,9 +1376,15 @@ button:active {
   -webkit-backdrop-filter: blur(7px);
   animation: lmFadeIn .14s ease-out;
 }
-/* Only the Klausurplan header needs to remain interactive above its own viewer. */
-.lm-tabbar.lm-klasurplan-header-layer {
+.lm-floating-klasurplan-switcher {
+  position: fixed;
+  top: 16px;
+  right: clamp(16px, 3vw, 40px);
   z-index: 1260;
+}
+.lm-floating-klasurplan-switcher .lm-desktop-klasurplan-menu {
+  left: auto;
+  right: 0;
 }
 .lm-klasurplan-viewer-dialog {
   width: min(980px, 100%);

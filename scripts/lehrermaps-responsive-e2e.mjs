@@ -119,11 +119,18 @@ async function exerciseKlausurplan(page) {
   if (await firstQuarter.isDisabled() || await secondQuarter.isDisabled()) return;
 
   await firstQuarter.click();
-  await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'visible' });
-  await toggle.click();
-  await page.locator('#lm-klasurplan-menu').waitFor({ state: 'visible' });
-  await secondQuarter.click();
-  await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'visible' });
+  const preview = page.locator('.lm-klasurplan-viewer-dialog');
+  await preview.waitFor({ state: 'visible' });
+
+  const floatingSwitcher = page.locator('.lm-floating-klasurplan-switcher');
+  await floatingSwitcher.waitFor({ state: 'visible' });
+  const floatingToggle = floatingSwitcher.getByRole('button', { name: 'Klausurplan' });
+  await floatingToggle.click();
+  const floatingMenu = floatingSwitcher.locator('#lm-floating-klasurplan-menu');
+  await floatingMenu.waitFor({ state: 'visible' });
+  await floatingMenu.getByRole('menuitem', { name: /2\. Quartal/i }).click();
+  await preview.waitFor({ state: 'visible' });
+  assert((await preview.getAttribute('aria-label'))?.includes('2_Quartal'), 'Floating switcher did not open the 2. Quartal preview');
   await page.keyboard.press('Escape');
   await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'hidden' });
 }

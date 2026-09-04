@@ -103,6 +103,7 @@ export default function App({ onLogout }) {
   const [klasurplanOpen, setKlasurplanOpen] = useState(false);
   const printReadyCreationRef = useRef(false);
   const klasurplanMenuRef = useRef(null);
+  const floatingKlasurplanMenuRef = useRef(null);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
@@ -123,7 +124,6 @@ export default function App({ onLogout }) {
     && String(activeFolder?.id) === String(printReadyFolder?.id)
     && klasurplanDocuments.some(({ file }) => String(file?.id) === String(activeFile.id))
   );
-  const isKlasurplanHeaderLayerActive = !isPhone && (klasurplanOpen || isKlasurplanActiveFile);
 
   const openKlasurplanDocument = (file) => {
     if (!file) return;
@@ -140,11 +140,25 @@ export default function App({ onLogout }) {
   useEffect(() => {
     if (!klasurplanOpen) return undefined;
     const closeOnOutsidePointer = (event) => {
-      if (!klasurplanMenuRef.current?.contains(event.target)) setKlasurplanOpen(false);
+      const clickedKlasurplanControl = klasurplanMenuRef.current?.contains(event.target)
+        || floatingKlasurplanMenuRef.current?.contains(event.target);
+      if (!clickedKlasurplanControl) setKlasurplanOpen(false);
     };
     document.addEventListener('pointerdown', closeOnOutsidePointer);
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
   }, [klasurplanOpen]);
+
+  const renderKlasurplanMenuItems = () => (
+    <>
+      {klasurplanDocuments.map(({ key, label, filename, file }) => (
+        <button key={key} type="button" role="menuitem" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
+          <span>{label}</span>
+          <small>{file ? 'Öffnen' : 'Nicht verfügbar'}</small>
+        </button>
+      ))}
+      {klasurplanFilesLoading && <small className="lm-klasurplan-loading">Dokumente werden geladen …</small>}
+    </>
+  );
 
   useEffect(() => {
     const existing = folders.find((folder) => folder.subject === 'system' && folder.name === 'Druckfertig');
@@ -810,7 +824,7 @@ export default function App({ onLogout }) {
       <a className="lm-skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Tab bar */}
-      <header className={`lm-tabbar${isKlasurplanHeaderLayerActive ? ' lm-klasurplan-header-layer' : ''}`} aria-label="Hauptnavigation" style={{
+      <header className="lm-tabbar" aria-label="Hauptnavigation" style={{
         display: 'flex', alignItems: 'flex-end', padding: '8px 16px 0',
         background: 'var(--c-tab-bg)', borderBottom: '1px solid var(--c-border)',
         position: 'relative', flexShrink: 0, gap: 2,
@@ -1680,6 +1694,29 @@ export default function App({ onLogout }) {
             </div>
             </>}
           </div>
+        )}
+
+        {/* The app shell is a fixed stacking context, so this control must be a body portal. */}
+        {!isPhone && !focusMode && isKlasurplanActiveFile && createPortal(
+          <div ref={floatingKlasurplanMenuRef} className="lm-floating-klasurplan-switcher">
+            <button
+              className="lm-klasurplan-toggle"
+              type="button"
+              onClick={() => setKlasurplanOpen((open) => !open)}
+              aria-expanded={klasurplanOpen}
+              aria-controls="lm-floating-klasurplan-menu"
+            >
+              <span aria-hidden="true">▤</span>
+              <span>Klausurplan</span>
+              <span className="lm-klasurplan-chevron" aria-hidden="true">⌄</span>
+            </button>
+            {klasurplanOpen && (
+              <div id="lm-floating-klasurplan-menu" className="lm-desktop-klasurplan-menu" role="menu" aria-label="Klausurplan">
+                {renderKlasurplanMenuItems()}
+              </div>
+            )}
+          </div>,
+          document.body
         )}
 
         {/* Laptop/tablet: Klausurplan opens in a centered in-app dialog. */}
