@@ -54,7 +54,7 @@ export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { t } = useLang();
   const { activePageId, setActivePageId } = useNotebook();
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(1100);
   const isPhone = useIsMobile(600);
   const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
@@ -102,6 +102,7 @@ export default function App({ onLogout }) {
   const [printReadyFolder, setPrintReadyFolder] = useState(null);
   const [klasurplanOpen, setKlasurplanOpen] = useState(false);
   const printReadyCreationRef = useRef(false);
+  const klasurplanMenuRef = useRef(null);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
   const accent = subject.color;
@@ -134,6 +135,15 @@ export default function App({ onLogout }) {
     setFolderTab('files');
     setKlasurplanOpen(false);
   };
+
+  useEffect(() => {
+    if (!klasurplanOpen) return undefined;
+    const closeOnOutsidePointer = (event) => {
+      if (!klasurplanMenuRef.current?.contains(event.target)) setKlasurplanOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
+  }, [klasurplanOpen]);
 
   useEffect(() => {
     const existing = folders.find((folder) => folder.subject === 'system' && folder.name === 'Druckfertig');
@@ -283,6 +293,11 @@ export default function App({ onLogout }) {
         document.exitFullscreen();
         return;
       }
+      if (e.key === 'Escape' && klasurplanOpen) {
+        e.preventDefault();
+        setKlasurplanOpen(false);
+        return;
+      }
       if (e.key === 'Escape' && (activeFile || activeLink)) {
         e.preventDefault();
         setActiveFile(null);
@@ -364,7 +379,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen]);
+  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, klasurplanOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -798,6 +813,7 @@ export default function App({ onLogout }) {
           <BrandMark size={isMobile ? 30 : 28} label={!isMobile} />
         </button>
         {isMobile && (
+          <div ref={klasurplanMenuRef} className="lm-mobile-klasurplan-control">
           <div className="lm-mobile-header-actions">
             <button
               className="lm-mobile-header-action lm-mobile-klasurplan-trigger"
@@ -805,11 +821,11 @@ export default function App({ onLogout }) {
               onClick={() => setKlasurplanOpen((open) => !open)}
               aria-expanded={klasurplanOpen}
               aria-controls="lm-klasurplan-menu"
-              title="Klasurplan"
-              aria-label="Klasurplan"
+              title="Klausurplan"
+              aria-label="Klausurplan"
             >
               <span aria-hidden="true">▤</span>
-              <span>Klasurplan</span>
+              <span>Klausurplan</span>
             </button>
             <button
               className="lm-spring lm-mobile-menu-trigger"
@@ -829,10 +845,9 @@ export default function App({ onLogout }) {
               <span aria-hidden="true">↪</span>
             </button>
           </div>
-        )}
-        {isMobile && klasurplanOpen && (
-          <div id="lm-klasurplan-menu" className="lm-mobile-klasurplan-menu" role="menu" aria-label="Klasurplan">
-            <strong>Klasurplan</strong>
+        {klasurplanOpen && (
+          <div id="lm-klasurplan-menu" className="lm-mobile-klasurplan-menu" role="menu" aria-label="Klausurplan">
+            <strong>Klausurplan</strong>
             {klasurplanDocuments.map(({ key, label, filename, file }) => (
               <button key={key} type="button" role="menuitem" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
                 <span>{label}</span>
@@ -842,48 +857,34 @@ export default function App({ onLogout }) {
             {klasurplanFilesLoading && <small className="lm-klasurplan-loading">Dokumente werden geladen …</small>}
           </div>
         )}
-        {!isMobile && <>
-        <div className="lm-topbar-klasurplan" aria-label="Klasurplan">
-          <span className="lm-topbar-klasurplan-label">Klasurplan</span>
-          {klasurplanDocuments.map(({ key, label, filename, file }) => (
-            <button key={key} type="button" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
-              <span aria-hidden="true">▤</span>{file ? label : `${label} (Nicht verfügbar)`}
-            </button>
-          ))}
-          {klasurplanFilesLoading && <span className="lm-klasurplan-loading">…</span>}
-        </div>
-        <button
-          className="lm-spring lm-topbar-calendar"
-          onClick={() => setSchoolCalendarOpen(true)}
-          title="Terminplan Schuljahr 2026/27"
-          aria-label="Terminplan Schuljahr 2026/27"
-          style={{
-            appearance: 'none', border: 'none', font: 'inherit',
-            padding: '10px 12px 12px', cursor: 'pointer',
-            background: 'transparent', borderRadius: '10px 10px 0 0',
-            display: 'flex', alignItems: 'center', gap: 6,
-            color: 'var(--c-text-2)', flexShrink: 0,
-          }}
-        >
-          <span aria-hidden="true">🗓</span><span className="lm-topbar-calendar-label" style={{ fontSize: 12 }}>Terminplan</span>
-        </button>
-        <button
-          className="lm-global-logout lm-topbar-logout"
-          type="button"
-          onClick={onLogout}
-          aria-label="Logout"
-          style={{
-            flexShrink: 0, height: 34, margin: '0 0 10px 2px', padding: '0 12px',
-            border: '1px solid #dc262655', borderRadius: 8, background: '#dc262612',
-            color: '#dc2626', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-          }}
-        >
-          <span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span>
-        </button>
-        </>}
+          </div>
+        )}
         {/* Mobil wandern Stundenplan/Termine/Notion/Miro in Bottom-Nav + Mehr-Sheet */}
-        {!isMobile && <>
+        {!isMobile && <nav className="lm-desktop-primary-nav" aria-label="Primäre Navigation">
+        <div ref={klasurplanMenuRef} className="lm-topbar-klasurplan">
+          <button
+            className="lm-klasurplan-toggle"
+            type="button"
+            onClick={() => setKlasurplanOpen((open) => !open)}
+            aria-expanded={klasurplanOpen}
+            aria-controls="lm-klasurplan-menu"
+          >
+            <span aria-hidden="true">▤</span>
+            <span>Klausurplan</span>
+            <span className="lm-klasurplan-chevron" aria-hidden="true">⌄</span>
+          </button>
+          {klasurplanOpen && (
+            <div id="lm-klasurplan-menu" className="lm-desktop-klasurplan-menu" role="menu" aria-label="Klausurplan">
+              {klasurplanDocuments.map(({ key, label, filename, file }) => (
+                <button key={key} type="button" role="menuitem" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
+                  <span>{label}</span>
+                  <small>{file ? 'Öffnen' : 'Nicht verfügbar'}</small>
+                </button>
+              ))}
+              {klasurplanFilesLoading && <small className="lm-klasurplan-loading">Dokumente werden geladen …</small>}
+            </div>
+          )}
+        </div>
         {/* Heute / Startseite */}
         <button
           className={`lm-spring lm-topbar-today${viewMode === 'today' ? ' is-active' : ''}`}
@@ -1018,9 +1019,21 @@ export default function App({ onLogout }) {
             Miro
           </span>
         </a>
-        </>}
+        </nav>}
 
-        <div className="lm-topbar-spacer" style={{ flex: 1 }} />
+        {!isMobile && <div className="lm-desktop-header-actions">
+          <button
+            className="lm-spring lm-topbar-calendar"
+            onClick={() => setSchoolCalendarOpen(true)}
+            title="Terminplan Schuljahr 2026/27"
+            aria-label="Terminplan Schuljahr 2026/27"
+          >
+            <span aria-hidden="true">🗓</span><span className="lm-topbar-calendar-label">Terminplan</span>
+          </button>
+          <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout">
+            <span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span>
+          </button>
+        </div>}
 
         {/* Right controls — mobil ersetzt durch Bottom-Nav + Mehr-Sheet */}
         {!isMobile && <div className="lm-topbar-tools" style={{ paddingBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
