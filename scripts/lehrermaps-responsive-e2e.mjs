@@ -135,6 +135,20 @@ async function exerciseKlausurplan(page) {
   await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'hidden' });
 }
 
+async function exerciseOneNote(page, viewport) {
+  if (viewport.mobileUi) {
+    await page.getByRole('button', { name: /Mehr/i }).click();
+    await page.getByRole('button', { name: 'OneNote' }).waitFor({ state: 'visible' });
+    return;
+  }
+
+  const oneNote = page.locator('a.lm-topbar-onenote');
+  assert(await oneNote.count() === 1, 'OneNote desktop link is unavailable');
+  assert(await oneNote.getAttribute('href') === 'https://onedrive.live.com/personal/d4acb07aa3091664/_layouts/15/Doc.aspx?sourcedoc={a3091664-b07a-20ac-80d4-3f0200000000}&action=edit&wd=target%281.%20El%20desaf%C3%ADo%20de%20la%20pobreza%20infantil.one%7C6d614f90-05d1-4475-8443-f0fa2781b5ee%2F2024.11.05%7Ccffc2055-e788-1e45-ae5c-52cef29d8d5e%2F%29&wdorigin=NavigationUrl', 'OneNote link URL changed');
+  assert(await oneNote.getAttribute('target') === '_blank', 'OneNote link must open in a new tab');
+  assert(await oneNote.getAttribute('rel') === 'noopener noreferrer', 'OneNote link must be protected with rel=noopener noreferrer');
+}
+
 async function run() {
   let browser;
   try {
@@ -161,6 +175,7 @@ async function run() {
           await measureLayout(page, viewport);
           if (viewport.mobileUi && role === 'teacher') await exerciseHomeDrawer(page);
           await exerciseKlausurplan(page);
+          await exerciseOneNote(page, viewport);
           await measureLayout(page, viewport);
           assert(!consoleErrors.length, `console errors: ${consoleErrors.join('; ')}`);
           pass(`${viewport.name} · ${role}`, 'login, layout, interaction, console');
