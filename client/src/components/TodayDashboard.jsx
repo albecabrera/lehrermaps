@@ -22,28 +22,30 @@ export default function TodayDashboard({
   subject, folders = [], onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
 }) {
   const date = todayKey();
-  const [tasks, setTasks, tasksSync] = usePendingSync({
+  const [tasks, setTasks, tasksSync, retryTasksSync] = usePendingSync({
     storageKey: 'lm_pending_today_tasks', initialValue: [],
     load: () => getTodayDashboard(date).then((dashboard) => Array.isArray(dashboard.tasks) ? dashboard.tasks : []),
     save: saveTodayDashboardTasks, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
     confirm: (response, value) => JSON.stringify(response?.tasks) === JSON.stringify(value),
+    saveDelay: 150,
     readLegacy: readLegacyTasks, clearLegacy: () => localStorage.removeItem(LEGACY_TASKS_KEY),
-    refreshInterval: 2_000,
+    refreshInterval: 1_000,
   });
-  const [note, setNote, noteSync] = usePendingSync({
+  const [note, setNote, noteSync, retryNoteSync] = usePendingSync({
     storageKey: `lm_pending_today_note_${date}`, initialValue: '',
     load: () => getTodayDashboard(date).then((dashboard) => typeof dashboard.note === 'string' ? dashboard.note : ''),
     save: (value) => saveTodayDashboardNote(date, value), isBackendEmpty: (value) => value === '', isValid: (value) => typeof value === 'string',
     confirm: (response, value) => response?.date === date && response?.content === value,
-    saveDelay: 400,
+    saveDelay: 150,
     readLegacy: () => readLegacyNote(date), clearLegacy: () => localStorage.removeItem(LEGACY_NOTE_PREFIX + date),
-    refreshInterval: 2_000,
+    refreshInterval: 1_000,
   });
   const [taskText, setTaskText] = useState('');
   const loaded = tasksSync.hydrated && noteSync.hydrated;
   const saveStatus = tasksSync.status === 'error' || noteSync.status === 'error'
     ? 'error'
     : (tasksSync.status === 'pending' || noteSync.status === 'pending' ? 'pending' : 'saved');
+  const rejectedSave = tasksSync.errorKind === 'rejected' || noteSync.errorKind === 'rejected';
   const favorites = folders.filter((folder) => folder.is_favorite).slice(0, 4);
 
   const addTask = () => {
@@ -124,7 +126,7 @@ export default function TodayDashboard({
             <textarea value={note} disabled={!loaded} onChange={(e) => saveNote(e.target.value)} placeholder="Was ist heute wichtig?" rows={6} style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', border: '1px solid var(--c-border)', borderRadius: 8, padding: 10, background: 'var(--c-bg)', color: 'var(--c-text)', fontFamily: 'inherit', fontSize: 12, lineHeight: 1.5 }} />
             <div style={{ marginTop: 7, color: saveStatus === 'error' ? 'var(--c-danger-text)' : 'var(--c-text-3)', fontSize: 10 }}>
               {saveStatus === 'error'
-                ? 'Nicht in der Datenbank gespeichert. Bitte prüfe die Verbindung und versuche es erneut.'
+                ? <><span>{rejectedSave ? 'Die Eingabe konnte nicht gespeichert werden. Bitte prüfe sie und versuche es erneut.' : 'Nicht in der Datenbank gespeichert. Bitte prüfe die Verbindung und versuche es erneut.'}</span> <button type="button" onClick={() => { retryTasksSync(); retryNoteSync(); }} style={{ marginLeft: 5, border: 0, padding: 0, background: 'transparent', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Erneut versuchen</button></>
                 : (saveStatus === 'pending' ? 'Wird gespeichert…' : 'In deinem Konto gespeichert.')}
             </div>
           </section>

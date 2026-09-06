@@ -97,6 +97,41 @@ const pendingQueue = new PendingSyncQueue({ storage: pendingLocal, storageKey: '
 await pendingQueue.hydrate();
 assert.deepEqual(pendingQueue.value, ['local edit'], 'pending local edits take precedence over server hydration');
 
+const legacyShapeLocal = storage();
+legacyShapeLocal.setItem('legacy-shape', JSON.stringify({ value: [{ id: 'legacy', text: 'keep this text', completed: false, createdAt: 'old-client' }] }));
+let normalizedSave;
+const legacyShapeQueue = new PendingSyncQueue({
+  storage: legacyShapeLocal, storageKey: 'legacy-shape', load: async () => [],
+  save: async (value) => { normalizedSave = value; return { items: value }; },
+  confirm: (response, value) => JSON.stringify(response.items) === JSON.stringify(value),
+  normalizeValue: (value) => Array.isArray(value) ? value
+    .filter((item) => item && typeof item.id === 'string' && typeof item.text === 'string' && typeof item.completed === 'boolean')
+    .map(({ id, text, completed }) => ({ id, text, completed })) : [],
+  isBackendEmpty: (value) => value.length === 0, onlineTarget: null,
+});
+await legacyShapeQueue.hydrate();
+await legacyShapeQueue.flush();
+assert.deepEqual(normalizedSave, [{ id: 'legacy', text: 'keep this text', completed: false }], 'legacy fields are removed before a pending save reaches the backend');
+
+const absentLegacyQueue = new PendingSyncQueue({
+  storage: storage(), storageKey: 'absent-legacy', load: async () => [], save: async () => {},
+  normalizeValue: () => [], isBackendEmpty: (value) => value.length === 0, onlineTarget: null,
+});
+await absentLegacyQueue.hydrate();
+assert.equal(absentLegacyQueue.status, 'saved', 'an absent legacy value never becomes an empty pending migration');
+
+const rejectedLocal = storage();
+const rejectedQueue = new PendingSyncQueue({
+  storage: rejectedLocal, storageKey: 'rejected', load: async () => [],
+  save: async () => { const error = new Error('invalid payload'); error.response = { status: 400 }; throw error; },
+  isBackendEmpty: (value) => value.length === 0, onlineTarget: null,
+});
+await rejectedQueue.hydrate();
+rejectedQueue.set(['invalid']);
+await rejectedQueue.flush();
+assert.equal(rejectedQueue.status, 'error', 'a rejected save stops automatic network retries');
+assert.equal(rejectedQueue.errorKind, 'rejected', 'a validation rejection is distinguished from a connection outage');
+
 let legacyCleared = false;
 const migrationLocal = storage();
 const migrationQueue = new PendingSyncQueue({ storage: migrationLocal, storageKey: 'pending', load: async () => [], save: async () => {}, isBackendEmpty: (value) => value.length === 0, readLegacy: () => ['legacy'], clearLegacy: () => { legacyCleared = true; }, onlineTarget: null });
@@ -183,4 +218,4 @@ assert.equal(quietRefreshQueue.status, 'saved', 'a background read failure does 
 const checklistSource = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../client/src/components/BugChecklist.jsx', import.meta.url), 'utf8'));
 assert.match(checklistSource, /enabled:\s*open/, 'the closed checklist does not create a polling queue');
 
-console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'pending precedence', 'confirmed legacy migration', 'response confirmation', 'bounded retry status', 'external refresh', 'pending protection', 'focus, visibility and online refresh', 'quiet background read failures', 'closed checklist lifecycle'] }));
+console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'pending precedence', 'legacy checklist normalization', 'absent legacy protection', 'validation error classification', 'confirmed legacy migration', 'response confirmation', 'bounded retry status', 'external refresh', 'pending protection', 'focus, visibility and online refresh', 'quiet background read failures', 'closed checklist lifecycle'] }));

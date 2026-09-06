@@ -82,6 +82,7 @@ export const translations = {
     'bug_checklist.sync_pending': 'Wird gespeichert…',
     'bug_checklist.retry': 'Erneut versuchen',
     'bug_checklist.sync_error': 'Verbindung zum Server unterbrochen. Deine Änderungen bleiben auf diesem Gerät erhalten. Bitte prüfe die Verbindung und versuche es erneut.',
+    'bug_checklist.sync_rejected': 'Die Checkliste enthält ungültige lokale Daten. Deine gültigen Änderungen bleiben erhalten. Bitte versuche es erneut.',
     'folders.overview_hint': '{{n}} Ordner — Einen auswählen oder neu erstellen.',
 
     // Sidebar

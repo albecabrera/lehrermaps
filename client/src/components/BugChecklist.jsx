@@ -6,6 +6,20 @@ import { usePendingSync } from '../lib/pendingSync';
 
 const STORAGE_KEY = 'lehrermaps-bug-checklist';
 
+function normalizeChecklistItems(value) {
+  if (!Array.isArray(value)) return [];
+  const ids = new Set();
+  const items = [];
+  for (const item of value) {
+    const id = typeof item?.id === 'string' ? item.id.trim() : '';
+    if (!id || id.length > 128 || ids.has(id) || typeof item?.text !== 'string' || typeof item?.completed !== 'boolean') continue;
+    ids.add(id);
+    items.push({ id, text: item.text.slice(0, 1000), completed: item.completed });
+    if (items.length === 100) break;
+  }
+  return items;
+}
+
 const createItem = () => ({
   id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
   text: '',
@@ -16,7 +30,7 @@ function getLegacyItems() {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     const parsed = saved ? JSON.parse(saved) : [];
-    return Array.isArray(parsed) ? parsed.filter((item) => item && typeof item.id === 'string' && typeof item.text === 'string' && typeof item.completed === 'boolean') : [];
+    return normalizeChecklistItems(parsed);
   } catch {
     return [];
   }
@@ -36,8 +50,9 @@ export default function BugChecklist({ open, onClose, t }) {
   const [items, setItems, sync, retrySync] = usePendingSync({
     storageKey: `${STORAGE_KEY}:pending`, initialValue: [],
     enabled: open,
-    load: () => getBugChecklist().then((response) => Array.isArray(response?.items) ? response.items : []),
+    load: () => getBugChecklist().then((response) => response?.items),
     save: saveBugChecklist, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
+    normalizeValue: normalizeChecklistItems,
     confirm: (response, value) => JSON.stringify(response?.items) === JSON.stringify(value),
     saveDelay: 150,
     readLegacy: () => { const items = getLegacyItems(); return items.length ? items : undefined; },
@@ -108,7 +123,7 @@ export default function BugChecklist({ open, onClose, t }) {
             </div>
           ))}
         </div>
-        <footer className="lm-checklist-footer"><button className="lm-checklist-add" type="button" disabled={!hydrated} onClick={() => addItem()}><span aria-hidden="true">+</span> {t('bug_checklist.add')}</button><span>{sync.status === 'error' ? <span className="lm-checklist-sync-error" role="status">{t('bug_checklist.sync_error')} <button type="button" onClick={retrySync} style={{ marginLeft: 6, border: 0, background: 'transparent', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>{t('bug_checklist.retry')}</button></span> : (sync.status === 'pending' ? t('bug_checklist.sync_pending') : t('bug_checklist.sync_saved'))}</span></footer>
+        <footer className="lm-checklist-footer"><button className="lm-checklist-add" type="button" disabled={!hydrated} onClick={() => addItem()}><span aria-hidden="true">+</span> {t('bug_checklist.add')}</button><span>{sync.status === 'error' ? <span className="lm-checklist-sync-error" role="status">{t(sync.errorKind === 'rejected' ? 'bug_checklist.sync_rejected' : 'bug_checklist.sync_error')} <button type="button" onClick={retrySync} style={{ marginLeft: 6, border: 0, background: 'transparent', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>{t('bug_checklist.retry')}</button></span> : (sync.status === 'pending' ? t('bug_checklist.sync_pending') : t('bug_checklist.sync_saved'))}</span></footer>
       </section>
     </div>,
     document.body,

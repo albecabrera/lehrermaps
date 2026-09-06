@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 
 const DEFAULT_RETRY_DELAYS = [250, 500, 1_000, 2_000, 4_000];
 
+function defaultRetryableError(error) {
+  const status = error?.response?.status;
+  return !Number.isInteger(status) || status >= 500;
+}
+
 function readPending(storage, key) {
   try {
     const value = storage?.getItem(key);
@@ -30,7 +35,7 @@ function clearPending(storage, key) {
  * newer local change.
  */
 export class PendingSyncQueue {
-  constructor({ storage = globalThis.localStorage, storageKey, load, save, confirm = () => true, isBackendEmpty, isValid = () => true, createPending = (value) => ({ value }), shouldUsePending = () => true, getLoadedValue = (value) => value, readLegacy, clearLegacy, saveDelay = 0, retryDelays = DEFAULT_RETRY_DELAYS, refreshInterval = 0, schedule = setTimeout, cancel = clearTimeout, onlineTarget = globalThis.window, visibilityTarget = globalThis.document }) {
+  constructor({ storage = globalThis.localStorage, storageKey, load, save, confirm = () => true, isBackendEmpty, isValid = () => true, normalizeValue = (value) => value, isRetryableError = defaultRetryableError, createPending = (value) => ({ value }), shouldUsePending = () => true, getLoadedValue = (value) => value, readLegacy, clearLegacy, saveDelay = 0, retryDelays = DEFAULT_RETRY_DELAYS, refreshInterval = 0, schedule = (...args) => globalThis.setTimeout(...args), cancel = (timer) => globalThis.clearTimeout(timer), onlineTarget = globalThis.window, visibilityTarget = globalThis.document }) {
     this.storage = storage;
     this.storageKey = storageKey;
     this.load = load;
@@ -38,6 +43,8 @@ export class PendingSyncQueue {
     this.confirm = confirm;
     this.isBackendEmpty = isBackendEmpty;
     this.isValid = isValid;
+    this.normalizeValue = normalizeValue;
+    this.isRetryableError = isRetryableError;
     this.createPending = createPending;
     this.shouldUsePending = shouldUsePending;
     this.getLoadedValue = getLoadedValue;
@@ -50,6 +57,7 @@ export class PendingSyncQueue {
     this.listeners = new Set();
     this.value = undefined;
     this.status = 'saved';
+    this.errorKind = null;
     this.hydrated = false;
     this.version = 0;
     this.sending = false;
@@ -73,7 +81,7 @@ export class PendingSyncQueue {
   }
 
   snapshot() {
-    return { value: this.value, status: this.status, hydrated: this.hydrated };
+    return { value: this.value, status: this.status, errorKind: this.errorKind, hydrated: this.hydrated };
   }
 
   subscribe(listener) {
@@ -90,18 +98,25 @@ export class PendingSyncQueue {
     if (this.loading) return this.snapshot();
     this.loading = true;
     try {
-      const backendValue = await this.load();
+      const backendValue = this.normalizeValue(await this.load());
       this.loadFailed = false;
       const storedPending = readPending(this.storage, this.storageKey);
-      const pending = storedPending && this.isValid(storedPending.value) ? storedPending : null;
+      const pendingValue = storedPending && this.normalizeValue(storedPending.value);
+      const pending = pendingValue !== null && pendingValue !== undefined && this.isValid(pendingValue)
+        ? { ...storedPending, value: pendingValue }
+        : null;
       const usePending = pending && this.shouldUsePending(pending, backendValue);
       if (storedPending && !usePending) clearPending(this.storage, this.storageKey);
-      const legacyValue = !usePending && this.isBackendEmpty(backendValue) ? this.readLegacy?.() : undefined;
+      const rawLegacyValue = !usePending && this.isBackendEmpty(backendValue) ? this.readLegacy?.() : undefined;
+      const legacyValue = rawLegacyValue === undefined || rawLegacyValue === null
+        ? rawLegacyValue
+        : this.normalizeValue(rawLegacyValue);
       const shouldMigrateLegacy = !usePending && legacyValue !== undefined && legacyValue !== null;
       this.value = usePending ? pending.value : (shouldMigrateLegacy ? legacyValue : this.getLoadedValue(backendValue));
       this.hydrated = true;
       if (usePending || shouldMigrateLegacy) {
         this.status = 'pending';
+        this.errorKind = null;
         this.legacyPending = shouldMigrateLegacy;
         writePending(this.storage, this.storageKey, usePending ? pending : this.createPending(this.value));
         this.scheduleFlush(0);
@@ -114,12 +129,14 @@ export class PendingSyncQueue {
       if (pending) {
         this.value = pending.value;
         this.status = 'error';
+        this.errorKind = 'network';
         this.hydrated = true;
         this.notify();
         this.scheduleRetry();
         return this.snapshot();
       }
       this.status = 'error';
+      this.errorKind = 'network';
       this.hydrated = true;
       this.notify();
       throw error;
@@ -145,11 +162,12 @@ export class PendingSyncQueue {
     if (this.loading || this.sending || !this.hydrated || this.visibilityTarget?.hidden) return this.snapshot();
     this.loading = true;
     try {
-      const backendValue = await this.load();
+      const backendValue = this.normalizeValue(await this.load());
       this.loadFailed = false;
       if (!this.hasPendingEdit()) {
         this.value = this.getLoadedValue(backendValue);
         this.status = 'saved';
+        this.errorKind = null;
         this.notify();
       }
       return this.snapshot();
@@ -168,17 +186,27 @@ export class PendingSyncQueue {
 
   set(value) {
     if (!this.hydrated) return;
-    this.value = value;
+    // A queued save must never prevent a newer user edit from starting its
+    // own attempt. Version checks below keep the newest snapshot authoritative
+    // and schedule it again after an older request resolves.
+    this.sending = false;
+    this.value = this.normalizeValue(value);
     this.version += 1;
     this.status = 'pending';
+    this.errorKind = null;
     this.retryCount = 0;
     writePending(this.storage, this.storageKey, this.createPending(value));
     this.notify();
-    this.scheduleFlush(this.saveDelay);
+    this.scheduleFlush(this.saveDelay, { replace: true });
   }
 
-  scheduleFlush(delay) {
-    if (this.sending || this.timer !== null) return;
+  scheduleFlush(delay, { replace = false } = {}) {
+    if (this.sending) return;
+    if (this.timer !== null) {
+      if (!replace) return;
+      this.cancel(this.timer);
+      this.timer = null;
+    }
     this.timer = this.schedule(() => {
       this.timer = null;
       this.flush();
@@ -197,7 +225,7 @@ export class PendingSyncQueue {
     if (this.sending || !this.hydrated || !readPending(this.storage, this.storageKey)) return;
     this.sending = true;
     const version = this.version;
-    const value = this.value;
+    const value = this.normalizeValue(this.value);
     let failed = false;
     let retryDelay;
     try {
@@ -209,19 +237,22 @@ export class PendingSyncQueue {
         if (this.legacyPending) this.clearLegacy?.();
         this.legacyPending = false;
         this.status = 'saved';
+        this.errorKind = null;
         this.notify();
       }
-    } catch {
+    } catch (error) {
       failed = true;
       // A transient transport failure is not yet a failed save: keep the
       // edit visibly pending while the bounded retry queue is still active.
       // Only expose the error state after every automatic retry was used.
-      retryDelay = this.retryDelays[this.retryCount];
+      retryDelay = this.isRetryableError(error) ? this.retryDelays[this.retryCount] : undefined;
       if (retryDelay === undefined) {
         this.status = 'error';
+        this.errorKind = this.isRetryableError(error) ? 'network' : 'rejected';
       } else {
         this.retryCount += 1;
         this.status = 'pending';
+        this.errorKind = null;
       }
       this.notify();
     } finally {
@@ -234,6 +265,7 @@ export class PendingSyncQueue {
   retryNow() {
     if (this.loadFailed) {
       this.status = 'pending';
+      this.errorKind = null;
       this.notify();
       this.hydrate().catch(() => {});
       return;
@@ -248,6 +280,7 @@ export class PendingSyncQueue {
     }
     this.retryCount = 0;
     this.status = 'pending';
+    this.errorKind = null;
     this.notify();
     this.scheduleFlush(0);
   }
@@ -266,12 +299,12 @@ export function usePendingSync(options) {
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const queueRef = useRef(null);
-  const [state, setState] = useState({ value: options.initialValue, status: 'saved', hydrated: false });
+  const [state, setState] = useState({ value: options.initialValue, status: 'saved', errorKind: null, hydrated: false });
 
   useEffect(() => {
     if (optionsRef.current.enabled === false) {
       queueRef.current = null;
-      setState({ value: optionsRef.current.initialValue, status: 'saved', hydrated: false });
+      setState({ value: optionsRef.current.initialValue, status: 'saved', errorKind: null, hydrated: false });
       return undefined;
     }
     const queue = new PendingSyncQueue(optionsRef.current);
