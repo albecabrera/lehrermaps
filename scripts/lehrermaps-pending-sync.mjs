@@ -70,10 +70,26 @@ const retryQueue = new PendingSyncQueue({
 await retryQueue.hydrate();
 retryQueue.set(['retry']);
 await retryClock.runNext();
-assert.equal(retryQueue.status, 'error', 'a failed save remains visible as an error');
+assert.equal(retryQueue.status, 'pending', 'a transient failed save remains visibly pending while retries continue');
 assert.ok(retryLocal.getItem('pending'), 'a failed save remains pending');
 await retryClock.runNext();
 assert.equal(retryQueue.status, 'saved', 'the bounded retry confirms the pending save');
+
+const exhaustedLocal = storage();
+const exhaustedClock = scheduler();
+const exhaustedQueue = new PendingSyncQueue({
+  storage: exhaustedLocal, storageKey: 'exhausted', load: async () => [],
+  save: async () => { throw new Error('offline'); },
+  isBackendEmpty: (value) => value.length === 0, retryDelays: [0],
+  schedule: exhaustedClock.schedule, cancel: exhaustedClock.cancel, onlineTarget: null,
+});
+await exhaustedQueue.hydrate();
+exhaustedQueue.set(['retry later']);
+await exhaustedClock.runNext();
+assert.equal(exhaustedQueue.status, 'pending', 'the first failure schedules an automatic retry');
+await exhaustedClock.runNext();
+assert.equal(exhaustedQueue.status, 'error', 'an error is shown only after automatic retries are exhausted');
+assert.ok(exhaustedLocal.getItem('exhausted'), 'an exhausted retry keeps the edit available for manual retry');
 
 const pendingLocal = storage();
 pendingLocal.setItem('pending', JSON.stringify({ value: ['local edit'] }));
@@ -167,4 +183,4 @@ assert.equal(quietRefreshQueue.status, 'saved', 'a background read failure does 
 const checklistSource = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../client/src/components/BugChecklist.jsx', import.meta.url), 'utf8'));
 assert.match(checklistSource, /enabled:\s*open/, 'the closed checklist does not create a polling queue');
 
-console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'pending precedence', 'confirmed legacy migration', 'response confirmation', 'external refresh', 'pending protection', 'focus, visibility and online refresh', 'quiet background read failures', 'closed checklist lifecycle'] }));
+console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'pending precedence', 'confirmed legacy migration', 'response confirmation', 'bounded retry status', 'external refresh', 'pending protection', 'focus, visibility and online refresh', 'quiet background read failures', 'closed checklist lifecycle'] }));

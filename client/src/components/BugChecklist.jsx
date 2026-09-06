@@ -39,10 +39,10 @@ export default function BugChecklist({ open, onClose, t }) {
     load: () => getBugChecklist().then((response) => Array.isArray(response?.items) ? response.items : []),
     save: saveBugChecklist, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
     confirm: (response, value) => JSON.stringify(response?.items) === JSON.stringify(value),
-    saveDelay: 500,
+    saveDelay: 150,
     readLegacy: () => { const items = getLegacyItems(); return items.length ? items : undefined; },
     clearLegacy: () => window.localStorage.removeItem(STORAGE_KEY),
-    refreshInterval: 2_000,
+    refreshInterval: 1_000,
   });
   const hydrated = sync.hydrated;
   const inputRefs = useRef(new Map());

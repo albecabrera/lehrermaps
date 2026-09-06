@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const DEFAULT_RETRY_DELAYS = [500, 1_000, 2_000, 4_000];
+const DEFAULT_RETRY_DELAYS = [250, 500, 1_000, 2_000, 4_000];
 
 function readPending(storage, key) {
   try {
@@ -187,9 +187,10 @@ export class PendingSyncQueue {
 
   scheduleRetry() {
     const delay = this.retryDelays[this.retryCount];
-    if (delay === undefined) return;
+    if (delay === undefined) return false;
     this.retryCount += 1;
     this.scheduleFlush(delay);
+    return true;
   }
 
   async flush() {
@@ -198,6 +199,7 @@ export class PendingSyncQueue {
     const version = this.version;
     const value = this.value;
     let failed = false;
+    let retryDelay;
     try {
       const response = await this.save(value);
       if (!this.confirm(response, value)) throw new Error('Server did not confirm the saved value');
@@ -211,12 +213,21 @@ export class PendingSyncQueue {
       }
     } catch {
       failed = true;
-      this.status = 'error';
+      // A transient transport failure is not yet a failed save: keep the
+      // edit visibly pending while the bounded retry queue is still active.
+      // Only expose the error state after every automatic retry was used.
+      retryDelay = this.retryDelays[this.retryCount];
+      if (retryDelay === undefined) {
+        this.status = 'error';
+      } else {
+        this.retryCount += 1;
+        this.status = 'pending';
+      }
       this.notify();
     } finally {
       this.sending = false;
-      if (failed) this.scheduleRetry();
-      else if (readPending(this.storage, this.storageKey)) this.scheduleFlush(0);
+      if (failed && retryDelay !== undefined) this.scheduleFlush(retryDelay);
+      else if (!failed && readPending(this.storage, this.storageKey)) this.scheduleFlush(0);
     }
   }
 
