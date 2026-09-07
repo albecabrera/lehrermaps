@@ -36,15 +36,29 @@ function normalizeTasks(value) {
   return tasks;
 }
 
+function pendingTaskIsNewer(pending, backendTasks, dashboard) {
+  if (JSON.stringify(pending.value) === JSON.stringify(backendTasks)) return false;
+  const pendingAt = Number(pending.updatedAt);
+  const storedAt = typeof dashboard?.tasksUpdatedAt === 'string'
+    ? Date.parse(`${dashboard.tasksUpdatedAt.replace(' ', 'T')}Z`)
+    : NaN;
+  // A legacy pending record has no reliable ordering information. SQLite is
+  // the shared source of truth unless that record is the only available data.
+  if (!Number.isFinite(pendingAt)) return backendTasks.length === 0;
+  return !Number.isFinite(storedAt) || pendingAt > storedAt;
+}
+
 export default function TodayDashboard({
   subject, folders = [], onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
 }) {
   const date = todayKey();
   const [tasks, setTasks, tasksSync, retryTasksSync] = usePendingSync({
     storageKey: 'lm_pending_today_tasks', initialValue: [],
-    load: () => getTodayDashboard(date).then((dashboard) => Array.isArray(dashboard.tasks) ? dashboard.tasks : []),
+    load: () => getTodayDashboard(date),
     save: saveTodayDashboardTasks, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
-    normalizeValue: normalizeTasks,
+    normalizeValue: (dashboard) => normalizeTasks(dashboard?.tasks),
+    createPending: (value) => ({ value, updatedAt: Date.now() }),
+    shouldUsePending: pendingTaskIsNewer,
     confirm: (response, value) => JSON.stringify(response?.tasks) === JSON.stringify(value),
     saveDelay: 150,
     readLegacy: readLegacyTasks, clearLegacy: () => localStorage.removeItem(LEGACY_TASKS_KEY),

@@ -40,7 +40,7 @@ router.get('/today-dashboard', async (req, res) => {
   const noteDate = validDate(req.query.date) ? req.query.date : today();
   try {
     const [taskRows] = await pool.execute(
-      'SELECT tasks_json FROM today_dashboard_tasks WHERE user_id = ?',
+      'SELECT tasks_json, updated_at FROM today_dashboard_tasks WHERE user_id = ?',
       [getUserId(req)]
     );
     const [noteRows] = await pool.execute(
@@ -49,7 +49,7 @@ router.get('/today-dashboard', async (req, res) => {
     );
     let tasks = [];
     try { tasks = normalizeTasks(JSON.parse(taskRows[0]?.tasks_json || '[]')) || []; } catch {}
-    res.json({ tasks, note: noteRows[0]?.content || '', date: noteDate });
+    res.json({ tasks, tasksUpdatedAt: taskRows[0]?.updated_at || null, note: noteRows[0]?.content || '', date: noteDate });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -64,7 +64,8 @@ router.put('/today-dashboard/tasks', async (req, res) => {
        ON CONFLICT(user_id) DO UPDATE SET tasks_json = excluded.tasks_json, updated_at = CURRENT_TIMESTAMP`,
       [getUserId(req), JSON.stringify(tasks)]
     );
-    res.json({ tasks });
+    const [rows] = await pool.execute('SELECT updated_at FROM today_dashboard_tasks WHERE user_id = ?', [getUserId(req)]);
+    res.json({ tasks, updatedAt: rows[0]?.updated_at || null });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

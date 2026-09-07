@@ -98,14 +98,15 @@ export class PendingSyncQueue {
     if (this.loading) return this.snapshot();
     this.loading = true;
     try {
-      const backendValue = this.normalizeValue(await this.load());
+      const loadedBackendValue = await this.load();
+      const backendValue = this.normalizeValue(loadedBackendValue);
       this.loadFailed = false;
       const storedPending = readPending(this.storage, this.storageKey);
       const pendingValue = storedPending && this.normalizeValue(storedPending.value);
       const pending = pendingValue !== null && pendingValue !== undefined && this.isValid(pendingValue)
         ? { ...storedPending, value: pendingValue }
         : null;
-      const usePending = pending && this.shouldUsePending(pending, backendValue);
+      const usePending = pending && this.shouldUsePending(pending, backendValue, loadedBackendValue);
       if (storedPending && !usePending) clearPending(this.storage, this.storageKey);
       const rawLegacyValue = !usePending && this.isBackendEmpty(backendValue) ? this.readLegacy?.() : undefined;
       const legacyValue = rawLegacyValue === undefined || rawLegacyValue === null

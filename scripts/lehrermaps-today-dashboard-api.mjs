@@ -55,7 +55,7 @@ try {
   assert.ok(token, 'teacher login returns a token');
 
   const date = '2026-08-29';
-  assert.deepEqual(await request(`/api/today-dashboard?date=${date}`, { token }), { tasks: [], note: '', date });
+  assert.deepEqual(await request(`/api/today-dashboard?date=${date}`, { token }), { tasks: [], tasksUpdatedAt: null, note: '', date });
   const invalidGet = await request('/api/today-dashboard?date=2026-02-30', { token });
   assert.match(invalidGet.date, /^\d{4}-\d{2}-\d{2}$/);
   assert.notEqual(invalidGet.date, '2026-02-30');
@@ -63,16 +63,20 @@ try {
   await request('/api/today-dashboard/note', { token, method: 'PUT', expected: 400, body: { date: '2026-02-30', content: 'invalid calendar date' } });
 
   const tasks = [{ id: 'task-1', text: 'Persisted task', done: false }];
-  await request('/api/today-dashboard/tasks', { token, method: 'PUT', body: { tasks } });
+  const savedTasks = await request('/api/today-dashboard/tasks', { token, method: 'PUT', body: { tasks } });
+  assert.deepEqual(savedTasks.tasks, tasks);
+  assert.equal(typeof savedTasks.updatedAt, 'string', 'task save returns the persisted timestamp');
   await request('/api/today-dashboard/note', { token, method: 'PUT', body: { date, content: 'Persisted note' } });
-  assert.deepEqual(await request(`/api/today-dashboard?date=${date}`, { token }), { tasks, note: 'Persisted note', date });
+  const loaded = await request(`/api/today-dashboard?date=${date}`, { token });
+  assert.deepEqual({ tasks: loaded.tasks, note: loaded.note, date: loaded.date }, { tasks, note: 'Persisted note', date });
+  assert.equal(typeof loaded.tasksUpdatedAt, 'string', 'dashboard returns the task persistence timestamp');
 
   const nextTasks = [{ ...tasks[0], done: true }];
   await request('/api/today-dashboard/tasks', { token, method: 'PUT', body: { tasks: nextTasks } });
   await request('/api/today-dashboard/note', { token, method: 'PUT', body: { date, content: '' } });
-  assert.deepEqual(await request(`/api/today-dashboard?date=${date}`, { token }), { tasks: nextTasks, note: '', date });
-  assert.deepEqual(await request('/api/today-dashboard/tasks', { token, method: 'PUT', body: { tasks: [] } }), { tasks: [] });
-  assert.deepEqual(await request(`/api/today-dashboard?date=${date}`, { token }), { tasks: [], note: '', date });
+  assert.deepEqual((await request(`/api/today-dashboard?date=${date}`, { token })).tasks, nextTasks);
+  assert.deepEqual((await request('/api/today-dashboard/tasks', { token, method: 'PUT', body: { tasks: [] } })).tasks, []);
+  assert.deepEqual((await request(`/api/today-dashboard?date=${date}`, { token })).tasks, []);
   console.log(JSON.stringify({ status: 'PASS', checks: ['authentication', 'GET by date', 'strict validation', 'task and note upserts', 'explicit clears', 'isolated SQLite'] }));
 } catch (error) {
   console.error(JSON.stringify({ status: 'FAIL', error: error.message }));
