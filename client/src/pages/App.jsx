@@ -25,6 +25,7 @@ import FolderGallery from '../components/FolderGallery';
 import FolderIcon from '../components/FolderIcon';
 import { useTheme } from '../contexts/ThemeContext';
 import BrandMark from '../components/BrandMark';
+import { ONE_NOTE_APP_URL } from '../lib/externalApps';
 
 const KLASURPLAN_DOCUMENTS = [
   { key: 'first', label: '1. Quartal', filename: 'Klausurplan_8_9-10_2026-27 1. Quartal.docx' },
@@ -1014,10 +1015,10 @@ export default function App({ onLogout }) {
 
         {/* OneNote */}
         <a
-          href="https://onedrive.live.com/personal/d4acb07aa3091664/_layouts/15/Doc.aspx?sourcedoc={a3091664-b07a-20ac-80d4-3f0200000000}&action=edit&wd=target%281.%20El%20desaf%C3%ADo%20de%20la%20pobreza%20infantil.one%7C6d614f90-05d1-4475-8443-f0fa2781b5ee%2F2024.11.05%7Ccffc2055-e788-1e45-ae5c-52cef29d8d5e%2F%29&wdorigin=NavigationUrl"
-          target="_blank"
-          rel="noopener noreferrer"
+          href={ONE_NOTE_APP_URL}
           className="lm-spring lm-topbar-onenote"
+          aria-label="OneNote in der installierten App öffnen"
+          title="In OneNote-App öffnen"
           style={{
             appearance: 'none', textDecoration: 'none', font: 'inherit',
             padding: '10px 16px 12px', cursor: 'pointer',
