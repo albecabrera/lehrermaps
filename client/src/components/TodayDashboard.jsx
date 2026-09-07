@@ -39,8 +39,11 @@ function normalizeTasks(value) {
 function pendingTaskIsNewer(pending, backendTasks, dashboard) {
   if (JSON.stringify(pending.value) === JSON.stringify(backendTasks)) return false;
   const pendingAt = Number(pending.updatedAt);
-  const storedAt = typeof dashboard?.tasksUpdatedAt === 'string'
-    ? Date.parse(`${dashboard.tasksUpdatedAt.replace(' ', 'T')}Z`)
+  const storedTimestamp = typeof dashboard?.tasksUpdatedAt === 'string'
+    ? dashboard.tasksUpdatedAt.replace(' ', 'T')
+    : '';
+  const storedAt = storedTimestamp
+    ? Date.parse(storedTimestamp.endsWith('Z') ? storedTimestamp : `${storedTimestamp}Z`)
     : NaN;
   // A legacy pending record has no reliable ordering information. SQLite is
   // the shared source of truth unless that record is the only available data.
@@ -56,7 +59,10 @@ export default function TodayDashboard({
     storageKey: 'lm_pending_today_tasks', initialValue: [],
     load: () => getTodayDashboard(date),
     save: saveTodayDashboardTasks, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
-    normalizeValue: (dashboard) => normalizeTasks(dashboard?.tasks),
+    // Pending values are already task arrays, while API reads are dashboard
+    // objects. Normalise both shapes; treating a local array as a dashboard
+    // silently turned every newly typed task into an empty list.
+    normalizeValue: (value) => normalizeTasks(Array.isArray(value) ? value : value?.tasks),
     createPending: (value) => ({ value, updatedAt: Date.now() }),
     shouldUsePending: pendingTaskIsNewer,
     confirm: (response, value) => JSON.stringify(response?.tasks) === JSON.stringify(value),
