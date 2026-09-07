@@ -11,8 +11,30 @@ function todayKey() {
 }
 
 const readLegacyTasks = () => {
-  try { const tasks = JSON.parse(localStorage.getItem(LEGACY_TASKS_KEY) || '[]'); return Array.isArray(tasks) && tasks.length ? tasks : undefined; } catch { return undefined; }
+  try {
+    const tasks = normalizeTasks(JSON.parse(localStorage.getItem(LEGACY_TASKS_KEY) || '[]'));
+    return tasks.length ? tasks : undefined;
+  } catch { return undefined; }
 };
+
+// Keep legacy and pending client data in the exact API shape. The checklist
+// already does this; without it an old numeric task id could be accepted by
+// SQLite but returned as a string, making confirmation look like a network
+// failure even after a successful save.
+function normalizeTasks(value) {
+  if (!Array.isArray(value)) return [];
+  const ids = new Set();
+  const tasks = [];
+  for (const task of value) {
+    const id = String(task?.id ?? '').trim();
+    const text = typeof task?.text === 'string' ? task.text.trim() : '';
+    if (!id || id.length > 100 || !text || ids.has(id) || typeof task?.done !== 'boolean') continue;
+    ids.add(id);
+    tasks.push({ id, text: text.slice(0, 500), done: task.done });
+    if (tasks.length === 20) break;
+  }
+  return tasks;
+}
 
 export default function TodayDashboard({
   subject, folders = [], onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
@@ -22,6 +44,7 @@ export default function TodayDashboard({
     storageKey: 'lm_pending_today_tasks', initialValue: [],
     load: () => getTodayDashboard(date).then((dashboard) => Array.isArray(dashboard.tasks) ? dashboard.tasks : []),
     save: saveTodayDashboardTasks, isBackendEmpty: (value) => value.length === 0, isValid: Array.isArray,
+    normalizeValue: normalizeTasks,
     confirm: (response, value) => JSON.stringify(response?.tasks) === JSON.stringify(value),
     saveDelay: 150,
     readLegacy: readLegacyTasks, clearLegacy: () => localStorage.removeItem(LEGACY_TASKS_KEY),

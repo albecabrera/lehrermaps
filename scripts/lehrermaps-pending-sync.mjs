@@ -247,4 +247,8 @@ assert.equal(quietRefreshQueue.status, 'saved', 'a background read failure does 
 const checklistSource = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../client/src/components/BugChecklist.jsx', import.meta.url), 'utf8'));
 assert.match(checklistSource, /enabled:\s*open/, 'the closed checklist does not create a polling queue');
 
-console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'serial writes', 'pending precedence', 'legacy checklist normalization', 'absent legacy protection', 'validation error classification', 'confirmed legacy migration', 'response confirmation', 'bounded retry status', 'external refresh', 'pending protection', 'focus, visibility and online refresh', 'quiet background read failures', 'closed checklist lifecycle'] }));
+const todayDashboardSource = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../client/src/components/TodayDashboard.jsx', import.meta.url), 'utf8'));
+assert.match(todayDashboardSource, /function normalizeTasks\(value\)/, 'today tasks normalize legacy data before syncing');
+assert.match(todayDashboardSource, /normalizeValue:\s*normalizeTasks/, 'today tasks use the API-shape normalizer for pending saves');
+
+console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'serial writes', 'pending precedence', 'legacy checklist normalization', 'today task normalization', 'absent legacy protection', 'validation error classification', 'confirmed legacy migration', 'response confirmation', 'bounded retry status', 'external refresh', 'pending protection', 'focus, visibility and online refresh', 'quiet background read failures', 'closed checklist lifecycle'] }));
