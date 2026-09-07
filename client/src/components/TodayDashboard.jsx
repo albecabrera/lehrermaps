@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { getTodayDashboard, saveTodayDashboardNote, saveTodayDashboardTasks } from '../lib/api';
+import { getTodayDashboard, saveTodayDashboardTasks } from '../lib/api';
 import { usePendingSync } from '../lib/pendingSync';
 
 const LEGACY_TASKS_KEY = 'lm_today_tasks';
-const LEGACY_NOTE_PREFIX = 'lm_today_note_';
 
 function todayKey() {
   const now = new Date();
@@ -13,9 +12,6 @@ function todayKey() {
 
 const readLegacyTasks = () => {
   try { const tasks = JSON.parse(localStorage.getItem(LEGACY_TASKS_KEY) || '[]'); return Array.isArray(tasks) && tasks.length ? tasks : undefined; } catch { return undefined; }
-};
-const readLegacyNote = (date) => {
-  try { const note = localStorage.getItem(LEGACY_NOTE_PREFIX + date); return note ? note : undefined; } catch { return undefined; }
 };
 
 export default function TodayDashboard({
@@ -31,21 +27,9 @@ export default function TodayDashboard({
     readLegacy: readLegacyTasks, clearLegacy: () => localStorage.removeItem(LEGACY_TASKS_KEY),
     refreshInterval: 1_000,
   });
-  const [note, setNote, noteSync, retryNoteSync] = usePendingSync({
-    storageKey: `lm_pending_today_note_${date}`, initialValue: '',
-    load: () => getTodayDashboard(date).then((dashboard) => typeof dashboard.note === 'string' ? dashboard.note : ''),
-    save: (value) => saveTodayDashboardNote(date, value), isBackendEmpty: (value) => value === '', isValid: (value) => typeof value === 'string',
-    confirm: (response, value) => response?.date === date && response?.content === value,
-    saveDelay: 150,
-    readLegacy: () => readLegacyNote(date), clearLegacy: () => localStorage.removeItem(LEGACY_NOTE_PREFIX + date),
-    refreshInterval: 1_000,
-  });
   const [taskText, setTaskText] = useState('');
-  const loaded = tasksSync.hydrated && noteSync.hydrated;
-  const saveStatus = tasksSync.status === 'error' || noteSync.status === 'error'
-    ? 'error'
-    : (tasksSync.status === 'pending' || noteSync.status === 'pending' ? 'pending' : 'saved');
-  const rejectedSave = tasksSync.errorKind === 'rejected' || noteSync.errorKind === 'rejected';
+  const loaded = tasksSync.hydrated;
+  const saveStatus = tasksSync.status;
   const favorites = folders.filter((folder) => folder.is_favorite).slice(0, 4);
 
   const addTask = () => {
@@ -53,10 +37,6 @@ export default function TodayDashboard({
     if (!text) return;
     setTasks([{ id: `${Date.now()}`, text, done: false }, ...tasks].slice(0, 20));
     setTaskText('');
-  };
-
-  const saveNote = (value) => {
-    setNote(value);
   };
 
   const cardStyle = {
@@ -119,14 +99,9 @@ export default function TodayDashboard({
                 </div>
               ))}
             </div>
-          </section>
-
-          <section style={cardStyle} aria-busy={!loaded}>
-            <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Tagesnotiz</h2>
-            <textarea value={note} disabled={!loaded} onChange={(e) => saveNote(e.target.value)} placeholder="Was ist heute wichtig?" rows={6} style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', border: '1px solid var(--c-border)', borderRadius: 8, padding: 10, background: 'var(--c-bg)', color: 'var(--c-text)', fontFamily: 'inherit', fontSize: 12, lineHeight: 1.5 }} />
-            <div style={{ marginTop: 7, color: saveStatus === 'error' ? 'var(--c-danger-text)' : 'var(--c-text-3)', fontSize: 10 }}>
+            <div style={{ marginTop: 9, color: saveStatus === 'error' ? 'var(--c-danger-text)' : 'var(--c-text-3)', fontSize: 10 }}>
               {saveStatus === 'error'
-                ? <><span>{rejectedSave ? 'Die Eingabe konnte nicht gespeichert werden. Bitte prüfe sie und versuche es erneut.' : 'Nicht in der Datenbank gespeichert. Bitte prüfe die Verbindung und versuche es erneut.'}</span> <button type="button" onClick={() => { retryTasksSync(); retryNoteSync(); }} style={{ marginLeft: 5, border: 0, padding: 0, background: 'transparent', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Erneut versuchen</button></>
+                ? <><span>{tasksSync.errorKind === 'rejected' ? 'Die Aufgaben konnten nicht gespeichert werden. Bitte prüfe sie und versuche es erneut.' : 'Nicht in der Datenbank gespeichert. Bitte prüfe die Verbindung und versuche es erneut.'}</span> <button type="button" onClick={retryTasksSync} style={{ marginLeft: 5, border: 0, padding: 0, background: 'transparent', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Erneut versuchen</button></>
                 : (saveStatus === 'pending' ? 'Wird gespeichert…' : 'In deinem Konto gespeichert.')}
             </div>
           </section>

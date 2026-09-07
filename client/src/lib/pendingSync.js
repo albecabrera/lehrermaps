@@ -195,7 +195,7 @@ export class PendingSyncQueue {
     this.status = 'pending';
     this.errorKind = null;
     this.retryCount = 0;
-    writePending(this.storage, this.storageKey, this.createPending(value));
+    writePending(this.storage, this.storageKey, this.createPending(this.value));
     this.notify();
     this.scheduleFlush(this.saveDelay, { replace: true });
   }
