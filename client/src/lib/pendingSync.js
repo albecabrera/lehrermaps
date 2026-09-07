@@ -186,10 +186,9 @@ export class PendingSyncQueue {
 
   set(value) {
     if (!this.hydrated) return;
-    // A queued save must never prevent a newer user edit from starting its
-    // own attempt. Version checks below keep the newest snapshot authoritative
-    // and schedule it again after an older request resolves.
-    this.sending = false;
+    // Keep the active request as the single writer. New edits are versioned
+    // and sent immediately after it finishes; clearing this flag here would
+    // start concurrent SQLite writes and intermittently return a 500 error.
     this.value = this.normalizeValue(value);
     this.version += 1;
     this.status = 'pending';
@@ -222,11 +221,7 @@ export class PendingSyncQueue {
   }
 
   async flush() {
-    if (!this.hydrated || !readPending(this.storage, this.storageKey)) return;
-    // A previous transport can occasionally be abandoned by a browser while
-    // retaining its in-memory flag. Never let that stale flag strand a local
-    // edit indefinitely: the versioned queue will send the latest snapshot.
-    if (this.sending) this.sending = false;
+    if (this.sending || !this.hydrated || !readPending(this.storage, this.storageKey)) return;
     this.sending = true;
     const version = this.version;
     const value = this.normalizeValue(this.value);

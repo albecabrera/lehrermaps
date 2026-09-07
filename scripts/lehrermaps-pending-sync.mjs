@@ -59,6 +59,35 @@ await new Promise((resolve) => setImmediate(resolve));
 await clock.runNext();
 assert.deepEqual(backend, ['newest'], 'queued writes preserve last-save-wins');
 
+const serialLocal = storage();
+const serialClock = scheduler();
+let concurrentSaves = 0;
+let peakConcurrentSaves = 0;
+let releaseSerialSave;
+const serialSave = new Promise((resolve) => { releaseSerialSave = resolve; });
+const serialQueue = new PendingSyncQueue({
+  storage: serialLocal, storageKey: 'serial', load: async () => [],
+  save: async (value) => {
+    concurrentSaves += 1;
+    peakConcurrentSaves = Math.max(peakConcurrentSaves, concurrentSaves);
+    await serialSave;
+    concurrentSaves -= 1;
+    return value;
+  },
+  isBackendEmpty: (value) => value.length === 0,
+  schedule: serialClock.schedule, cancel: serialClock.cancel, onlineTarget: null,
+});
+await serialQueue.hydrate();
+serialQueue.set(['first']);
+await serialClock.runNext();
+serialQueue.set(['newest']);
+await serialClock.runNext();
+assert.equal(peakConcurrentSaves, 1, 'a new edit never starts a second save while one is in flight');
+releaseSerialSave();
+await new Promise((resolve) => setImmediate(resolve));
+await serialClock.runNext();
+assert.equal(peakConcurrentSaves, 1, 'the queued latest edit is sent serially after the first request');
+
 let retryAttempts = 0;
 const retryLocal = storage();
 const retryClock = scheduler();
@@ -218,4 +247,4 @@ assert.equal(quietRefreshQueue.status, 'saved', 'a background read failure does 
 const checklistSource = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../client/src/components/BugChecklist.jsx', import.meta.url), 'utf8'));
 assert.match(checklistSource, /enabled:\s*open/, 'the closed checklist does not create a polling queue');
 
-console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'pending precedence', 'legacy checklist normalization', 'absent legacy protection', 'validation error classification', 'confirmed legacy migration', 'response confirmation', 'bounded retry status', 'external refresh', 'pending protection', 'focus, visibility and online refresh', 'quiet background read failures', 'closed checklist lifecycle'] }));
+console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'serial writes', 'pending precedence', 'legacy checklist normalization', 'absent legacy protection', 'validation error classification', 'confirmed legacy migration', 'response confirmation', 'bounded retry status', 'external refresh', 'pending protection', 'focus, visibility and online refresh', 'quiet background read failures', 'closed checklist lifecycle'] }));
