@@ -118,6 +118,11 @@ export async function initSchema() {
   // Nullable columns do not participate in SQLite composite uniqueness. Remove
   // legacy duplicate associations before adding the two correct partial indexes.
   database.exec(`
+    -- These tables are keyed by user_id (and note_date), not by an id column.
+    -- Older releases accidentally installed the generic id-based trigger here,
+    -- turning every subsequent task/note update into "no such column: id".
+    DROP TRIGGER IF EXISTS today_dashboard_tasks_touch_updated_at;
+    DROP TRIGGER IF EXISTS today_dashboard_notes_touch_updated_at;
     DELETE FROM annual_plan_materials
     WHERE id NOT IN (
       SELECT MIN(id) FROM annual_plan_materials

@@ -6,12 +6,23 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
 const root = path.resolve(import.meta.dirname, '..');
 const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'lehrermaps-today-dashboard-'));
 const databasePath = path.join(tempDirectory, 'dashboard.sqlite');
 const port = String(32000 + Math.floor(Math.random() * 1000));
 const apiBaseUrl = `http://127.0.0.1:${port}`;
+// Reproduce the broken trigger created by an older release. initSchema must
+// remove it before the first update, otherwise SQLite raises "no such column: id".
+const legacyDatabase = new DatabaseSync(databasePath);
+legacyDatabase.exec(`
+  CREATE TABLE today_dashboard_tasks (user_id INTEGER PRIMARY KEY, tasks_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+  CREATE TABLE today_dashboard_notes (user_id INTEGER NOT NULL, note_date TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, note_date));
+  CREATE TRIGGER today_dashboard_tasks_touch_updated_at AFTER UPDATE ON today_dashboard_tasks FOR EACH ROW BEGIN UPDATE today_dashboard_tasks SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;
+  CREATE TRIGGER today_dashboard_notes_touch_updated_at AFTER UPDATE ON today_dashboard_notes FOR EACH ROW BEGIN UPDATE today_dashboard_notes SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;
+`);
+legacyDatabase.close();
 const server = spawn(process.execPath, ['index.js'], {
   cwd: path.join(root, 'server'),
   env: {
