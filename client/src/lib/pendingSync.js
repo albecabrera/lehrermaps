@@ -222,7 +222,11 @@ export class PendingSyncQueue {
   }
 
   async flush() {
-    if (this.sending || !this.hydrated || !readPending(this.storage, this.storageKey)) return;
+    if (!this.hydrated || !readPending(this.storage, this.storageKey)) return;
+    // A previous transport can occasionally be abandoned by a browser while
+    // retaining its in-memory flag. Never let that stale flag strand a local
+    // edit indefinitely: the versioned queue will send the latest snapshot.
+    if (this.sending) this.sending = false;
     this.sending = true;
     const version = this.version;
     const value = this.normalizeValue(this.value);
@@ -242,6 +246,7 @@ export class PendingSyncQueue {
       }
     } catch (error) {
       failed = true;
+      console.warn('[LehrerMaps sync] save failed', { storageKey: this.storageKey, status: error?.response?.status, message: error?.message });
       // A transient transport failure is not yet a failed save: keep the
       // edit visibly pending while the bounded retry queue is still active.
       // Only expose the error state after every automatic retry was used.
