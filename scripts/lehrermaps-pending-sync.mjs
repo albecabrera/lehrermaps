@@ -137,6 +137,20 @@ const datedPendingQueue = new PendingSyncQueue({
 await datedPendingQueue.hydrate();
 assert.deepEqual(datedPendingQueue.value, ['server value'], 'an older pending edit cannot overwrite newer shared data');
 
+const stalePendingLocal = storage();
+stalePendingLocal.setItem('stale', JSON.stringify({ value: ['old local edit'], updatedAt: 100 }));
+const stalePendingQueue = new PendingSyncQueue({
+  storage: stalePendingLocal, storageKey: 'stale', load: async () => ({ value: ['old local edit'], updatedAt: 100 }),
+  save: async () => {}, normalizeValue: (response) => response.value,
+  shouldUsePending: (pending, _value, response) => pending.updatedAt > response.updatedAt,
+  isBackendEmpty: (value) => value.length === 0, onlineTarget: null,
+});
+await stalePendingQueue.hydrate();
+stalePendingQueue.load = async () => ({ value: ['new second-device edit'], updatedAt: 200 });
+await stalePendingQueue.refresh();
+assert.deepEqual(stalePendingQueue.value, ['new second-device edit'], 'a live refresh replaces stale pending data from another device');
+assert.equal(stalePendingLocal.getItem('stale'), null, 'a stale pending edit is cleared after shared data wins');
+
 const legacyShapeLocal = storage();
 legacyShapeLocal.setItem('legacy-shape', JSON.stringify({ value: [{ id: 'legacy', text: 'keep this text', completed: false, createdAt: 'old-client' }] }));
 let normalizedSave;

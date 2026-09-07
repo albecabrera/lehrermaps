@@ -163,9 +163,20 @@ export class PendingSyncQueue {
     if (this.loading || this.sending || !this.hydrated || this.visibilityTarget?.hidden) return this.snapshot();
     this.loading = true;
     try {
-      const backendValue = this.normalizeValue(await this.load());
+      const loadedBackendValue = await this.load();
+      const backendValue = this.normalizeValue(loadedBackendValue);
       this.loadFailed = false;
-      if (!this.hasPendingEdit()) {
+      const storedPending = readPending(this.storage, this.storageKey);
+      const pendingValue = storedPending && this.normalizeValue(storedPending.value);
+      const pending = pendingValue !== null && pendingValue !== undefined && this.isValid(pendingValue)
+        ? { ...storedPending, value: pendingValue }
+        : null;
+      // A pending edit from an older client used to block every remote refresh
+      // forever. Re-evaluate it on each poll so a newer SQLite update from a
+      // second device wins immediately instead of requiring a page reload.
+      const usePending = pending && this.shouldUsePending(pending, backendValue, loadedBackendValue);
+      if (storedPending && !usePending) clearPending(this.storage, this.storageKey);
+      if (!usePending) {
         this.value = this.getLoadedValue(backendValue);
         this.status = 'saved';
         this.errorKind = null;

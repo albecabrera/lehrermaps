@@ -61,7 +61,7 @@ router.put('/today-dashboard/tasks', async (req, res) => {
   try {
     await pool.execute(
       `INSERT INTO today_dashboard_tasks (user_id, tasks_json) VALUES (?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET tasks_json = excluded.tasks_json, updated_at = CURRENT_TIMESTAMP`,
+       ON CONFLICT(user_id) DO UPDATE SET tasks_json = excluded.tasks_json, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`,
       [getUserId(req), JSON.stringify(tasks)]
     );
     const [rows] = await pool.execute('SELECT updated_at FROM today_dashboard_tasks WHERE user_id = ?', [getUserId(req)]);
