@@ -124,13 +124,12 @@ async function exerciseKlausurplan(page) {
 
   const floatingSwitcher = page.locator('.lm-floating-klasurplan-switcher');
   await floatingSwitcher.waitFor({ state: 'visible' });
-  const floatingToggle = floatingSwitcher.getByRole('button', { name: 'Klausurplan' });
-  await floatingToggle.click();
-  const floatingMenu = floatingSwitcher.locator('#lm-floating-klasurplan-menu');
-  await floatingMenu.waitFor({ state: 'visible' });
-  await floatingMenu.getByRole('menuitem', { name: /2\. Quartal/i }).click();
+  const floatingSecondQuarter = floatingSwitcher.getByRole('button', { name: /2\. Quartal/i });
+  assert(await floatingSecondQuarter.isVisible(), '2. Quartal must remain visible above the first preview');
+  await floatingSecondQuarter.click();
   await preview.waitFor({ state: 'visible' });
   assert((await preview.getAttribute('aria-label'))?.includes('2_Quartal'), 'Floating switcher did not open the 2. Quartal preview');
+  assert(await floatingSecondQuarter.getAttribute('aria-pressed') === 'true', '2. Quartal must remain the visible active switch');
   await page.keyboard.press('Escape');
   await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'hidden' });
 }

@@ -149,18 +149,6 @@ export default function App({ onLogout }) {
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
   }, [klasurplanOpen]);
 
-  const renderKlasurplanMenuItems = () => (
-    <>
-      {klasurplanDocuments.map(({ key, label, filename, file }) => (
-        <button key={key} type="button" role="menuitem" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
-          <span>{label}</span>
-          <small>{file ? 'Öffnen' : 'Nicht verfügbar'}</small>
-        </button>
-      ))}
-      {klasurplanFilesLoading && <small className="lm-klasurplan-loading">Dokumente werden geladen …</small>}
-    </>
-  );
-
   useEffect(() => {
     const existing = folders.find((folder) => folder.subject === 'system' && folder.name === 'Druckfertig');
     if (existing) { setPrintReadyFolder(existing); return; }
@@ -1724,23 +1712,20 @@ export default function App({ onLogout }) {
 
         {/* The app shell is a fixed stacking context, so this control must be a body portal. */}
         {!isPhone && !focusMode && isKlasurplanActiveFile && createPortal(
-          <div ref={floatingKlasurplanMenuRef} className="lm-floating-klasurplan-switcher">
-            <button
-              className="lm-klasurplan-toggle"
-              type="button"
-              onClick={() => setKlasurplanOpen((open) => !open)}
-              aria-expanded={klasurplanOpen}
-              aria-controls="lm-floating-klasurplan-menu"
-            >
-              <span aria-hidden="true">▤</span>
-              <span>Klausurplan</span>
-              <span className="lm-klasurplan-chevron" aria-hidden="true">⌄</span>
-            </button>
-            {klasurplanOpen && (
-              <div id="lm-floating-klasurplan-menu" className="lm-desktop-klasurplan-menu" role="menu" aria-label="Klausurplan">
-                {renderKlasurplanMenuItems()}
-              </div>
-            )}
+          <div ref={floatingKlasurplanMenuRef} className="lm-floating-klasurplan-switcher" role="toolbar" aria-label="Klausurplan wechseln">
+            <span className="lm-floating-klasurplan-title" aria-hidden="true">▤ Klausurplan</span>
+            {klasurplanDocuments.map(({ key, label, filename, file }) => (
+              <button
+                key={key}
+                type="button"
+                disabled={!file}
+                aria-pressed={String(file?.id) === String(activeFile.id)}
+                onClick={() => openKlasurplanDocument(file)}
+                title={file ? `${label}: ${filename}` : `${filename} ist noch nicht hochgeladen`}
+              >
+                {label}
+              </button>
+            ))}
           </div>,
           document.body
         )}
