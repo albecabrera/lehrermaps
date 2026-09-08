@@ -124,11 +124,24 @@ async function exerciseKlausurplan(page) {
 
   const floatingSwitcher = page.locator('.lm-floating-klasurplan-switcher');
   await floatingSwitcher.waitFor({ state: 'visible' });
-  const floatingSecondQuarter = floatingSwitcher.getByRole('button', { name: /2\. Quartal/i });
-  assert(await floatingSecondQuarter.isVisible(), '2. Quartal must remain visible above the first preview');
-  await floatingSecondQuarter.click();
+  // The original header menu must also sit above the document portal. This is
+  // the exact regression: select 1. Quartal, then use the header to select 2.
+  const portalHeaderToggle = page.locator('.lm-header-klasurplan-portal').getByRole('button', { name: 'Klausurplan' });
+  await portalHeaderToggle.click();
+  const headerMenu = page.locator('#lm-header-klasurplan-menu');
+  await headerMenu.waitFor({ state: 'visible' });
+  const headerSecondQuarter = headerMenu.getByRole('menuitem', { name: /2\. Quartal/i });
+  assert(await headerSecondQuarter.isVisible(), '2. Quartal must remain visible in the header menu above the first preview');
+  const headerSecondQuarterIsTopmost = await headerSecondQuarter.evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    const topmost = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return topmost === button || button.contains(topmost);
+  });
+  assert(headerSecondQuarterIsTopmost, 'the document preview must not cover the 2. Quartal header action');
+  await headerSecondQuarter.click();
   await preview.waitFor({ state: 'visible' });
   assert((await preview.getAttribute('aria-label'))?.includes('2_Quartal'), 'Floating switcher did not open the 2. Quartal preview');
+  const floatingSecondQuarter = floatingSwitcher.getByRole('button', { name: /2\. Quartal/i });
   assert(await floatingSecondQuarter.getAttribute('aria-pressed') === 'true', '2. Quartal must remain the visible active switch');
   await page.keyboard.press('Escape');
   await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'hidden' });

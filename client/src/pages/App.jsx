@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useRef, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Sidebar from '../components/Sidebar';
 import BulkMoveModal from '../components/BulkMoveModal';
@@ -102,8 +102,11 @@ export default function App({ onLogout }) {
   const [teachingSessionId, setTeachingSessionId] = useState(null);
   const [printReadyFolder, setPrintReadyFolder] = useState(null);
   const [klasurplanOpen, setKlasurplanOpen] = useState(false);
+  const [klasurplanTriggerRect, setKlasurplanTriggerRect] = useState(null);
   const printReadyCreationRef = useRef(false);
   const klasurplanMenuRef = useRef(null);
+  const klasurplanTriggerRef = useRef(null);
+  const klasurplanPortalRef = useRef(null);
   const floatingKlasurplanMenuRef = useRef(null);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId);
@@ -142,12 +145,31 @@ export default function App({ onLogout }) {
     if (!klasurplanOpen) return undefined;
     const closeOnOutsidePointer = (event) => {
       const clickedKlasurplanControl = klasurplanMenuRef.current?.contains(event.target)
+        || klasurplanPortalRef.current?.contains(event.target)
         || floatingKlasurplanMenuRef.current?.contains(event.target);
       if (!clickedKlasurplanControl) setKlasurplanOpen(false);
     };
     document.addEventListener('pointerdown', closeOnOutsidePointer);
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
   }, [klasurplanOpen]);
+
+  useLayoutEffect(() => {
+    if (!isKlasurplanActiveFile) {
+      setKlasurplanTriggerRect(null);
+      return undefined;
+    }
+    const updateRect = () => {
+      const rect = klasurplanTriggerRef.current?.getBoundingClientRect();
+      if (rect) setKlasurplanTriggerRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height, bottom: rect.bottom });
+    };
+    updateRect();
+    window.addEventListener('resize', updateRect);
+    window.addEventListener('scroll', updateRect, true);
+    return () => {
+      window.removeEventListener('resize', updateRect);
+      window.removeEventListener('scroll', updateRect, true);
+    };
+  }, [isKlasurplanActiveFile, isMobile]);
 
   useEffect(() => {
     const existing = folders.find((folder) => folder.subject === 'system' && folder.name === 'Druckfertig');
@@ -823,10 +845,11 @@ export default function App({ onLogout }) {
           <BrandMark size={isMobile ? 30 : 28} label={!isMobile} />
         </button>
         {isMobile && (
-          <div ref={klasurplanMenuRef} className="lm-mobile-klasurplan-control">
+          <div ref={klasurplanMenuRef} className={`lm-mobile-klasurplan-control${isKlasurplanActiveFile ? ' is-portalized' : ''}`}>
           <div className="lm-mobile-header-actions">
             <button
               className="lm-mobile-header-action lm-mobile-klasurplan-trigger"
+              ref={klasurplanTriggerRef}
               type="button"
               onClick={() => setKlasurplanOpen((open) => !open)}
               aria-expanded={klasurplanOpen}
@@ -855,7 +878,7 @@ export default function App({ onLogout }) {
               <span aria-hidden="true">↪</span>
             </button>
           </div>
-        {klasurplanOpen && (
+        {klasurplanOpen && !isKlasurplanActiveFile && (
           <div id="lm-klasurplan-menu" className="lm-mobile-klasurplan-menu" role="menu" aria-label="Klausurplan">
             <strong>Klausurplan</strong>
             {klasurplanDocuments.map(({ key, label, filename, file }) => (
@@ -871,9 +894,10 @@ export default function App({ onLogout }) {
         )}
         {/* Mobil wandern Stundenplan/Termine/Notion/Miro in Bottom-Nav + Mehr-Sheet */}
         {!isMobile && <nav className="lm-desktop-primary-nav" aria-label="Primäre Navigation">
-        <div ref={klasurplanMenuRef} className="lm-topbar-klasurplan">
+        <div ref={klasurplanMenuRef} className={`lm-topbar-klasurplan${isKlasurplanActiveFile ? ' is-portalized' : ''}`}>
           <button
             className="lm-klasurplan-toggle"
+            ref={klasurplanTriggerRef}
             type="button"
             onClick={() => setKlasurplanOpen((open) => !open)}
             aria-expanded={klasurplanOpen}
@@ -883,7 +907,7 @@ export default function App({ onLogout }) {
             <span>Klausurplan</span>
             <span className="lm-klasurplan-chevron" aria-hidden="true">⌄</span>
           </button>
-          {klasurplanOpen && (
+          {klasurplanOpen && !isKlasurplanActiveFile && (
             <div id="lm-klasurplan-menu" className="lm-desktop-klasurplan-menu" role="menu" aria-label="Klausurplan">
               {klasurplanDocuments.map(({ key, label, filename, file }) => (
                 <button key={key} type="button" role="menuitem" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
@@ -1726,6 +1750,49 @@ export default function App({ onLogout }) {
                 {label}
               </button>
             ))}
+          </div>,
+          document.body
+        )}
+
+        {/* The app header sits below the document portal. Mirror the original
+            Klausurplan trigger in a body portal while a preview is open, so
+            its dropdown remains at the header position and above the preview. */}
+        {!focusMode && isKlasurplanActiveFile && klasurplanTriggerRect && createPortal(
+          <div
+            ref={klasurplanPortalRef}
+            className="lm-header-klasurplan-portal"
+            style={{ top: klasurplanTriggerRect.top, left: klasurplanTriggerRect.left, width: klasurplanTriggerRect.width, height: klasurplanTriggerRect.height }}
+          >
+            <button
+              className={isMobile ? 'lm-mobile-header-action lm-mobile-klasurplan-trigger' : 'lm-klasurplan-toggle'}
+              type="button"
+              onClick={() => setKlasurplanOpen((open) => !open)}
+              aria-expanded={klasurplanOpen}
+              aria-controls="lm-header-klasurplan-menu"
+              aria-label="Klausurplan"
+            >
+              <span aria-hidden="true">▤</span>
+              <span>Klausurplan</span>
+              {!isMobile && <span className="lm-klasurplan-chevron" aria-hidden="true">⌄</span>}
+            </button>
+            {klasurplanOpen && (
+              <div
+                id="lm-header-klasurplan-menu"
+                className={`lm-header-klasurplan-menu ${isMobile ? 'lm-mobile-klasurplan-menu' : 'lm-desktop-klasurplan-menu'}`}
+                role="menu"
+                aria-label="Klausurplan"
+                style={{ top: klasurplanTriggerRect.bottom + 7, left: isMobile ? Math.max(12, Math.min(klasurplanTriggerRect.left, window.innerWidth - 312)) : klasurplanTriggerRect.left }}
+              >
+                {isMobile && <strong>Klausurplan</strong>}
+                {klasurplanDocuments.map(({ key, label, filename, file }) => (
+                  <button key={key} type="button" role="menuitem" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
+                    <span>{label}</span>
+                    <small>{file ? 'Öffnen' : 'Nicht verfügbar'}</small>
+                  </button>
+                ))}
+                {klasurplanFilesLoading && <small className="lm-klasurplan-loading">Dokumente werden geladen …</small>}
+              </div>
+            )}
           </div>,
           document.body
         )}
