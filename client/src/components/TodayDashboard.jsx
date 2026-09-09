@@ -108,11 +108,11 @@ export default function TodayDashboard({ onOpenSchedule, onOpenSearch }) {
         <div className="lm-today-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
           {[
             ['Arbeitsbereich', 'Bereit', '#0F766E'],
-            ['Heute', new Date().getDate(), '#E8472A'],
+            ['Heute', new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()), '#E8472A'],
             ['Aufgaben offen', tasks.filter((task) => !task.done).length, '#2563EB'],
           ].map(([label, value, color]) => (
             <div key={label} style={{ ...cardStyle, padding: '14px 16px' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color }}>{value}</div>
+              <div style={{ fontSize: label === 'Heute' ? 17 : 24, fontWeight: 800, color, whiteSpace: 'nowrap' }}>{value}</div>
               <div style={{ marginTop: 3, fontSize: 11, color: 'var(--c-text-3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
             </div>
           ))}
