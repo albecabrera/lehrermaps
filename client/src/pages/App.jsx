@@ -117,6 +117,12 @@ export default function App({ onLogout }) {
   const accent = subject.color;
   const isSystemFolder = activeFolder?.subject === 'system';
   const showFileRepository = isSystemFolder;
+  const mobileHeaderTitle = {
+    today: 'Heute',
+    schedule: 'Stundenplan',
+    appointments: 'Termine',
+    klausurplan: 'Klausurplan',
+  }[viewMode] || activeFolder?.name || 'Arbeitsbereich';
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
   const { files: klasurplanFiles, loading: klasurplanFilesLoading } = useFiles(printReadyFolder?.id);
@@ -836,6 +842,12 @@ export default function App({ onLogout }) {
         <button className="lm-app-brand" type="button" onClick={() => { setViewMode('today'); setActivePageId(null); closeFolderView(); }} aria-label="Zu Heute">
           <BrandMark size={isMobile ? 30 : 28} label={!isMobile} />
         </button>
+        {isMobile && (
+          <div className="lm-mobile-header-context" aria-live="polite">
+            <span>Lehrermaps</span>
+            <strong>{mobileHeaderTitle}</strong>
+          </div>
+        )}
         <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
           {[
             ['today', '⌂', 'Heute', () => setViewMode('today')],
@@ -873,7 +885,7 @@ export default function App({ onLogout }) {
         onMouseLeave={() => setParallax({ x: 0, y: 0 })}
       >
         {viewMode === 'today' ? (
-          <TodayDashboard onOpenSchedule={() => setViewMode('schedule')} onOpenSearch={() => setGlobalSearchOpen(true)} />
+          <TodayDashboard onOpenSchedule={() => setViewMode('schedule')} />
         ) : viewMode === 'klausurplan' ? (
           <KlausurplanWorkspace />
         ) : viewMode === 'appointments' ? (

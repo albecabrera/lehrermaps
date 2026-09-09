@@ -1,5 +1,5 @@
 /** Main authenticated landing page: the app's navigation hub. */
-export default function HomeDashboard({ subjects = [], folders = [], onOpenSubject, onOpenSchedule, onOpenExams }) {
+export default function HomeDashboard({ subjects = [], folders = [], onOpenSubject }) {
   const countFor = (subjectId) => folders.filter((folder) => folder.subject === subjectId).length;
   return (
     <main className="lm-home-view">
@@ -28,19 +28,6 @@ export default function HomeDashboard({ subjects = [], folders = [], onOpenSubje
                 <span className="lm-home-subject-meta">{countFor(subject.id)} Ordner</span>
               </button>
             ))}
-          </div>
-        </section>
-
-        <section className="lm-home-section lm-home-quick-section" aria-labelledby="home-actions-title">
-          <div className="lm-home-section-heading">
-            <div>
-              <p className="lm-home-kicker">Direktzugriff</p>
-              <h2 id="home-actions-title">Schnellzugriff</h2>
-            </div>
-          </div>
-          <div className="lm-home-action-grid">
-            <button type="button" className="lm-home-action-card" onClick={onOpenSchedule}><span className="lm-home-action-icon" aria-hidden="true">📅</span><span><strong>Stundenplan</strong><small>Deine Woche im Überblick</small></span><b aria-hidden="true">→</b></button>
-            <button type="button" className="lm-home-action-card" onClick={onOpenExams}><span className="lm-home-action-icon" aria-hidden="true">🗓</span><span><strong>Termine</strong><small>Prüfungen und wichtige Daten</small></span><b aria-hidden="true">→</b></button>
           </div>
         </section>
       </div>

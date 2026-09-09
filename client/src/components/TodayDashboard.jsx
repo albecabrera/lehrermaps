@@ -51,7 +51,7 @@ function pendingTaskIsNewer(pending, backendTasks, dashboard) {
   return !Number.isFinite(storedAt) || pendingAt > storedAt;
 }
 
-export default function TodayDashboard({ onOpenSchedule, onOpenSearch }) {
+export default function TodayDashboard({ onOpenSchedule }) {
   const date = todayKey();
   const [tasks, setTasks, tasksSync, retryTasksSync] = usePendingSync({
     storageKey: 'lm_pending_today_tasks', initialValue: [],
@@ -134,13 +134,6 @@ export default function TodayDashboard({ onOpenSchedule, onOpenSearch }) {
             </div>
           </section>
 
-          <section className="lm-editorial-card">
-            <h2>Schnellzugriff</h2>
-            <div className="lm-today-quick-actions">
-              <button onClick={onOpenSearch} className="lm-button lm-button-secondary">⌕ Suche</button>
-              <button onClick={onOpenSchedule} className="lm-button lm-button-secondary">📅 Stundenplan</button>
-            </div>
-          </section>
         </div>
       </div>
     </div>

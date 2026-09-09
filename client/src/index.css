@@ -974,7 +974,6 @@ button:active {
   .lm-today-content { grid-template-columns: minmax(0, 1fr) !important; gap: 10px !important; }
   .lm-today-content > section { padding: 14px !important; }
   .lm-today-content section > div:first-child { flex-wrap: wrap; }
-  .lm-today-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
 @media (max-width: 860px) {
   .lm-schedule-view { padding: 18px max(14px, var(--safe-area-right)) calc(24px + var(--safe-area-bottom)) max(14px, var(--safe-area-left)) !important; }
@@ -1527,24 +1526,16 @@ button:active {
 .lm-home-subject-card:hover .lm-home-subject-arrow { color: var(--subject-color); transform: translate(2px, -2px); }
 .lm-home-subject-name { margin-top: auto; font-size: 18px; font-weight: 800; letter-spacing: -.025em; }
 .lm-home-subject-meta { margin-top: 4px; color: var(--c-text-3); font-size: 12px; font-weight: 600; }
-.lm-home-action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.lm-home-action-card { min-height: 86px; display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 13px; padding: 14px 16px; border: 1px solid var(--c-border); border-radius: 14px; background: color-mix(in srgb, var(--c-surface) 80%, var(--c-surface-2)); color: var(--c-text); cursor: pointer; font: inherit; text-align: left; transition: border-color .16s ease, background .16s ease, transform .16s ease, box-shadow .16s ease; }
-.lm-home-action-card:hover { border-color: var(--c-text-3); background: var(--c-surface); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
-.lm-home-action-card:focus-visible { outline: 3px solid color-mix(in srgb, var(--c-focus) 42%, transparent); outline-offset: 3px; }
-.lm-home-action-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: var(--c-hover); font-size: 19px; }
-.lm-home-action-card strong, .lm-home-action-card small { display: block; }
-.lm-home-action-card strong { font-size: 14px; }
-.lm-home-action-card small { margin-top: 3px; color: var(--c-text-3); font-size: 12px; }
-.lm-home-action-card b { color: var(--c-text-3); font-size: 18px; font-weight: 500; }
 [data-theme="dark"] .lm-app-shell { background: radial-gradient(ellipse 80% 42% at 50% -16%, rgba(180, 146, 94, .09), transparent 72%), var(--c-bg) !important; }
 [data-theme="dark"] .lm-tabbar { background: var(--c-tab-bg) !important; }
 [data-theme="dark"] .lm-home-subject-card { box-shadow: inset 0 1px 0 rgba(255,255,255,.025); }
 @media (max-width: 1100px) {
   .lm-tabbar {
+    display: flex !important;
     min-height: 64px !important;
     align-items: center !important;
     gap: 6px !important;
-    padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)) !important;
+    padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)) !important;
     overflow: visible !important;
   }
   .lm-tabbar .lm-app-brand {
@@ -1558,12 +1549,32 @@ button:active {
     background: color-mix(in srgb, var(--c-surface) 88%, transparent);
     box-shadow: 0 4px 14px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255,255,255,.42);
   }
-  .lm-mobile-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-left: auto;
-    flex-shrink: 0;
+  .lm-mobile-header-context {
+    display: grid;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-left: 4px;
+    color: var(--c-text);
+    line-height: 1.15;
+  }
+  .lm-mobile-header-context span {
+    overflow: hidden;
+    color: var(--c-text-3);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .lm-mobile-header-context strong {
+    overflow: hidden;
+    font-family: var(--font-editorial);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -.02em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .lm-mobile-klasurplan-menu {
     position: absolute;
@@ -1651,7 +1662,6 @@ button:active {
 @media (max-width: 860px) {
   .lm-home-view { padding-top: 32px; padding-bottom: calc(32px + var(--safe-area-bottom)); }
   .lm-home-intro { margin-bottom: 38px; }
-  .lm-home-action-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
   .lm-home-subject-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1693,13 +1703,11 @@ button:active {
   background: radial-gradient(ellipse 70% 40% at 80% -8%, rgba(15, 158, 154, .07), transparent 70%);
 }
 .lm-home-subject-card,
-.lm-home-action-card,
 .lm-folder-card {
   border-color: var(--c-border) !important;
   box-shadow: 0 1px 2px rgba(23, 59, 102, .04) !important;
 }
 .lm-home-subject-card:hover,
-.lm-home-action-card:hover,
 .lm-folder-card:hover {
   border-color: color-mix(in srgb, #0F9E9A 40%, var(--c-border)) !important;
   box-shadow: 0 14px 30px rgba(23, 59, 102, .12) !important;
@@ -2160,7 +2168,6 @@ textarea:focus {
 .lm-today-task > span.is-done { color: var(--c-text-3); text-decoration: line-through; }
 .lm-today-save-status { margin-top: 10px; color: var(--c-text-3); font-size: 11px; }
 .lm-today-save-status.is-error { color: var(--c-danger-text); }
-.lm-today-quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 .lm-schedule-view,
 .lm-klausurplan-workspace {
@@ -2258,7 +2265,6 @@ textarea:focus {
 @media (max-width: 760px) {
   .lm-today-stats { grid-template-columns: 1fr !important; }
   .lm-today-content { grid-template-columns: 1fr !important; }
-  .lm-today-quick-actions { grid-template-columns: 1fr !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   html:focus-within { scroll-behavior: auto; }
