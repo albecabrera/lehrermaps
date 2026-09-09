@@ -1,13 +1,12 @@
 /**
- * Shared LehrerMaps logo asset. The editable production SVG is the single
- * source of truth for every in-app rendering.
+ * Shared LehrerMaps PWA icon used by the browser and installed home-screen app.
  */
 export default function BrandMark({ size = 40, label = true, dark = false }) {
   return (
     <span className="lm-brand" aria-label={label ? 'LehrerMaps' : undefined} role={label ? 'img' : undefined}>
       <span className="lm-brand-mark" style={{ width: size, height: size }} aria-hidden="true">
         <img
-          src="/brand/lehrermaps-mark.svg"
+          src="/assets/icons/lehrermaps-v2-icon-192.png"
           alt=""
           width={size}
           height={size}
