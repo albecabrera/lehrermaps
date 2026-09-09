@@ -43,7 +43,8 @@ import TeachingMode from '../components/TeachingMode';
 import LessonDashboard from '../components/LessonDashboard';
 import SchoolCalendarPdf from '../components/SchoolCalendarPdf';
 import HomeDashboard from '../components/HomeDashboard';
-import BugChecklist, { BugChecklistIcon } from '../components/BugChecklist';
+import BugChecklist from '../components/BugChecklist';
+import KlausurplanWorkspace from '../components/KlausurplanWorkspace';
 
 // Opened views are split into on-demand chunks without changing their layout.
 const Schedule = lazy(() => import('../components/Schedule'));
@@ -64,7 +65,7 @@ export default function App({ onLogout }) {
   const [schoolCalendarOpen, setSchoolCalendarOpen] = useState(false);
   const [bugChecklistOpen, setBugChecklistOpen] = useState(false);
 
-  const [subjectId, setSubjectId] = useState('spanisch');
+  const [subjectId, setSubjectId] = useState('workspace');
   const [activeFolder, setActiveFolder] = useState(null);
   const [activeFile, setActiveFile] = useState(null);
   const [query, setQuery] = useState('');
@@ -87,7 +88,7 @@ export default function App({ onLogout }) {
   const [toast, setToast] = useState(null);
   const [pendingDeleteIds, setPendingDeleteIds] = useState(new Set());
   const deleteTimersRef = useRef(new Map());
-  const [viewMode, setViewMode] = useState('home');
+  const [viewMode, setViewMode] = useState('today');
   const [examBoardOpen, setExamBoardOpen] = useState(false);
   const [dropOver, setDropOver] = useState(false);
   const [dropFiles, setDropFiles] = useState(null);
@@ -111,7 +112,7 @@ export default function App({ onLogout }) {
   const klasurplanPortalRef = useRef(null);
   const floatingKlasurplanMenuRef = useRef(null);
 
-  const subject = SUBJECTS.find((s) => s.id === subjectId);
+  const subject = SUBJECTS.find((s) => s.id === subjectId) || { id: 'workspace', name: 'Arbeitsbereich', short: 'LM', color: '#0F766E', colorSoft: '#DDF5EE', colorDark: '#0B5C52', groups: [] };
   const accent = subject.color;
   const isSystemFolder = activeFolder?.subject === 'system';
   const showFileRepository = isSystemFolder;
@@ -173,15 +174,9 @@ export default function App({ onLogout }) {
     };
   }, [isKlasurplanActiveFile, isMobile]);
 
-  useEffect(() => {
-    const existing = folders.find((folder) => folder.subject === 'system' && folder.name === 'Druckfertig');
-    if (existing) { setPrintReadyFolder(existing); return; }
-    if (foldersLoading || printReadyCreationRef.current) return;
-    printReadyCreationRef.current = true;
-    addFolder('system', 'Druckfertig', 'Druckfertig')
-      .then(setPrintReadyFolder)
-      .catch(() => setToast({ type: 'error', msg: 'Druckfertig konnte nicht eingerichtet werden.' }));
-  }, [folders, foldersLoading, addFolder]);
+
+  // Archived repositories are intentionally not recreated by the workspace UI.
+
 
   useEffect(() => {
     if (!activeFolder?.id) { setFolderLessonSessions([]); return undefined; }
@@ -836,361 +831,24 @@ export default function App({ onLogout }) {
     }}>
       <a className="lm-skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
-      {/* Tab bar */}
-      <header className="lm-tabbar" aria-label="Hauptnavigation" style={{
-        display: 'flex', alignItems: 'flex-end', padding: '8px 16px 0',
-        background: 'var(--c-tab-bg)', borderBottom: '1px solid var(--c-border)',
-        position: 'relative', flexShrink: 0, gap: 2,
-        minHeight: 56, overflowX: 'auto', overflowY: 'visible',
-      }}>
-        <button className="lm-app-brand" type="button" onClick={() => { setViewMode('home'); setActivePageId(null); closeFolderView(); }} aria-label="Zur Startseite">
-          <BrandMark size={isMobile ? 30 : 28} label={!isMobile} />
-        </button>
-        {isMobile && (
-          <div ref={klasurplanMenuRef} className={`lm-mobile-klasurplan-control${isKlasurplanActiveFile ? ' is-portalized' : ''}`}>
-          <div className="lm-mobile-header-actions">
-            <button
-              className="lm-mobile-header-action lm-mobile-klasurplan-trigger"
-              ref={klasurplanTriggerRef}
-              type="button"
-              onClick={() => setKlasurplanOpen((open) => !open)}
-              aria-expanded={klasurplanOpen}
-              aria-controls="lm-klasurplan-menu"
-              title="Klausurplan"
-              aria-label="Klausurplan"
-            >
-              <span aria-hidden="true">▤</span>
-              <span>Klausurplan</span>
-            </button>
-            <button
-              className="lm-spring lm-mobile-menu-trigger"
-              onClick={() => setSidebarDrawerOpen(true)}
-              title={t('sidebar.expand')}
-              aria-label={t('sidebar.expand')}
-              type="button"
-            >
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                <path d="M1.5 4h12M1.5 7.5h12M1.5 11h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </button>
-            <button className="lm-mobile-header-action" type="button" onClick={() => setSchoolCalendarOpen(true)} title="Terminplan Schuljahr 2026/27" aria-label="Terminplan Schuljahr 2026/27">
-              <span aria-hidden="true">🗓</span>
-            </button>
-            <button className="lm-mobile-header-action is-danger" type="button" onClick={onLogout} title="Logout" aria-label="Logout">
-              <span aria-hidden="true">↪</span>
-            </button>
-          </div>
-        {klasurplanOpen && !isKlasurplanActiveFile && (
-          <div id="lm-klasurplan-menu" className="lm-mobile-klasurplan-menu" role="menu" aria-label="Klausurplan">
-            <strong>Klausurplan</strong>
-            {klasurplanDocuments.map(({ key, label, filename, file }) => (
-              <button key={key} type="button" role="menuitem" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
-                <span>{label}</span>
-                <small>{file ? 'Öffnen' : 'Nicht verfügbar'}</small>
-              </button>
-            ))}
-            {klasurplanFilesLoading && <small className="lm-klasurplan-loading">Dokumente werden geladen …</small>}
-          </div>
-        )}
-          </div>
-        )}
-        {/* Mobil wandern Stundenplan/Termine/Notion/Miro in Bottom-Nav + Mehr-Sheet */}
-        {!isMobile && <nav className="lm-desktop-primary-nav" aria-label="Primäre Navigation">
-        <div ref={klasurplanMenuRef} className={`lm-topbar-klasurplan${isKlasurplanActiveFile ? ' is-portalized' : ''}`}>
-          <button
-            className="lm-klasurplan-toggle"
-            ref={klasurplanTriggerRef}
-            type="button"
-            onClick={() => setKlasurplanOpen((open) => !open)}
-            aria-expanded={klasurplanOpen}
-            aria-controls="lm-klasurplan-menu"
-          >
-            <span aria-hidden="true">▤</span>
-            <span>Klausurplan</span>
-            <span className="lm-klasurplan-chevron" aria-hidden="true">⌄</span>
-          </button>
-          {klasurplanOpen && !isKlasurplanActiveFile && (
-            <div id="lm-klasurplan-menu" className="lm-desktop-klasurplan-menu" role="menu" aria-label="Klausurplan">
-              {klasurplanDocuments.map(({ key, label, filename, file }) => (
-                <button key={key} type="button" role="menuitem" disabled={!file} onClick={() => openKlasurplanDocument(file)} title={file ? filename : `${filename} ist noch nicht hochgeladen`}>
-                  <span>{label}</span>
-                  <small>{file ? 'Öffnen' : 'Nicht verfügbar'}</small>
-                </button>
-              ))}
-              {klasurplanFilesLoading && <small className="lm-klasurplan-loading">Dokumente werden geladen …</small>}
-            </div>
-          )}
-        </div>
-        {/* Heute / Startseite */}
-        <button
-          className={`lm-spring lm-topbar-today${viewMode === 'today' ? ' is-active' : ''}`}
-          onClick={() => { setViewMode('today'); setActivePageId(null); closeFolderView(); }}
-          style={{
-            appearance: 'none', border: 'none', font: 'inherit',
-            padding: '10px 16px 12px', cursor: 'pointer',
-            background: viewMode === 'today' ? 'var(--c-surface)' : 'transparent',
-            borderRadius: '10px 10px 0 0', marginBottom: viewMode === 'today' ? -1 : 0,
-            display: 'flex', alignItems: 'center', gap: 8,
-            borderLeft: viewMode === 'today' ? '1px solid var(--c-border)' : '1px solid transparent',
-            borderRight: viewMode === 'today' ? '1px solid var(--c-border)' : '1px solid transparent',
-          }}
-        >
-          <span style={{ fontSize: 13 }}>⌂</span>
-          <span style={{ fontSize: 13, fontWeight: viewMode === 'today' ? 600 : 500, color: viewMode === 'today' ? 'var(--c-text)' : 'var(--c-text-2)' }}>Heute</span>
-        </button>
-        <button className="lm-spring lm-topbar-lessons" onClick={() => { setViewMode('lessons'); setActivePageId(null); closeFolderView(); }} style={{ appearance: 'none', border: 'none', font: 'inherit', padding: '10px 16px 12px', cursor: 'pointer', background: viewMode === 'lessons' ? 'var(--c-surface)' : 'transparent', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', gap: 8, color: viewMode === 'lessons' ? accent : 'var(--c-text-2)' }} aria-label="Lehrerhilfe">✦ <span style={{ fontSize: 13, fontWeight: viewMode === 'lessons' ? 600 : 500 }}>Lehrerhilfe</span></button>
-        <button className="lm-spring lm-topbar-checklist" type="button" onClick={() => setBugChecklistOpen(true)} aria-label={t('bug_checklist.open')} title={t('bug_checklist.open')} style={{ appearance: 'none', border: 'none', font: 'inherit', width: 38, height: 38, padding: 0, marginBottom: 8, cursor: 'pointer', background: 'transparent', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--c-text-2)' }}>
-          <BugChecklistIcon size={17} />
-        </button>
-        {/* Stundenplan toggle */}
-        <button
-          className={`lm-spring lm-topbar-schedule${viewMode === 'schedule' ? ' is-active' : ''}`}
-          onClick={() => setViewMode((m) => m === 'schedule' ? 'subjects' : 'schedule')}
-          style={{
-            appearance: 'none', border: 'none', font: 'inherit',
-            padding: '10px 16px 12px', cursor: 'pointer',
-            background: viewMode === 'schedule' ? 'var(--c-surface)' : 'transparent',
-            borderRadius: '10px 10px 0 0',
-            marginBottom: viewMode === 'schedule' ? -1 : 0,
-            display: 'flex', alignItems: 'center', gap: 8,
-            borderLeft: viewMode === 'schedule' ? '1px solid var(--c-border)' : '1px solid transparent',
-            borderRight: viewMode === 'schedule' ? '1px solid var(--c-border)' : '1px solid transparent',
-            transition: 'background .12s',
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ color: viewMode === 'schedule' ? '#0EA5E9' : 'var(--c-text-3)' }}>
-            <rect x="1" y="3" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
-            <path d="M1 6h12M5 1v3M9 1v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-          </svg>
-          <span style={{
-            fontSize: 13, fontWeight: viewMode === 'schedule' ? 600 : 500,
-            color: viewMode === 'schedule' ? 'var(--c-text)' : 'var(--c-text-2)',
-            letterSpacing: -0.1,
-          }}>{t('schedule.title')}</span>
-        </button>
-
-        {/* Termine (ExamBoard) toggle */}
-        <button
-          className="lm-spring lm-topbar-exams"
-          onClick={() => setExamBoardOpen(true)}
-          style={{
-            appearance: 'none', border: 'none', font: 'inherit',
-            padding: '10px 16px 12px', cursor: 'pointer',
-            background: 'transparent',
-            borderRadius: '10px 10px 0 0',
-            display: 'flex', alignItems: 'center', gap: 8,
-            borderLeft: '1px solid transparent',
-            borderRight: '1px solid transparent',
-            transition: 'background .12s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-        >
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ color: 'var(--c-text-3)' }}>
-            <rect x="1" y="3" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
-            <path d="M1 6h12M5 1v3M9 1v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-            <path d="M4 9h2M8 9h2" stroke="#E8472A" strokeWidth="1.3" strokeLinecap="round"/>
-          </svg>
-          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--c-text-2)', letterSpacing: -0.1 }}>
-            Termine
-          </span>
-        </button>
-
-        {/* Notion */}
-        <a
-          href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="lm-spring lm-topbar-notion"
-          style={{
-            appearance: 'none', textDecoration: 'none', font: 'inherit',
-            padding: '10px 16px 12px', cursor: 'pointer',
-            background: 'transparent',
-            borderRadius: '10px 10px 0 0',
-            display: 'flex', alignItems: 'center', gap: 8,
-            borderLeft: '1px solid transparent',
-            borderRight: '1px solid transparent',
-            transition: 'background .12s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-        >
-          <img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" />
-          {/*
-            <path d="M6.6 7.3C10.5 10.4 11.9 10.2 19.4 9.7L85.3 5.9c1.4 0 0.2-1.4-0.3-1.6L73.9 0.2C71.7-0.3 69.3 0.2 66.5 0.7L3.2 5.1C1.1 5.4 0.6 6.5 1.4 7.3L6.6 7.3z" fill="currentColor"/>
-            <path d="M11.9 18.7v60.5c0 3.3 1.6 4.5 5.3 4.3l73.4-4.3c3.7-0.2 4.6-2.4 4.6-5.2V13.8c0-2.8-1.1-4.3-3.5-4.1l-76.3 4.5c-2.6 0.2-3.5 1.6-3.5 4.5z" fill="currentColor" opacity="0.1"/>
-            <path d="M11.9 18.7v60.5c0 3.3 1.6 4.5 5.3 4.3l73.4-4.3c3.7-0.2 4.6-2.4 4.6-5.2V13.8c0-2.8-1.1-4.3-3.5-4.1l-76.3 4.5c-2.6 0.2-3.5 1.6-3.5 4.5z" stroke="currentColor" strokeWidth="4"/>
-            <path d="M64.1 17.5l-20.2 1.2c-2.4 0.1-3 0.2-3.8 1.7-0.8 1.4-0.5 2.9 0.5 3.8l2.3 1.8v30.7l-3.1 1.9c-2.8 1.7-4 2.4-4 4.3 0 2.1 1.6 3.4 4.3 3.2L62 64.4c2.7-0.2 3.6-1.8 3.6-3.8v-2l-3.5 0.2V32.1l4.2 15.3c1.2 4.3 2.8 6.1 5.8 5.9 3-0.2 5-2.5 5-8.4V19.6c0-1.8-1.2-2.5-3.2-2.4l-2.6 0.2c-2 0.1-3.2 1.2-3.2 3v24.2l-3.5-12.8c-0.9-3.2-2.2-4.8-4.6-4.6-2.4 0.1-3.6 1.9-3.6 5.7v29.5L54.4 62v-29l-3 0.2V19.7c0-1.3 0.8-2.1 2.2-2.2h10.5z" fill="currentColor"/>
-          */}
-          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--c-text-2)', letterSpacing: -0.1 }}>
-            Notion
-          </span>
-        </a>
-
-        {/* OneNote */}
-        <a
-          href={ONE_NOTE_APP_URL}
-          className="lm-spring lm-topbar-onenote"
-          aria-label="OneNote in der installierten App öffnen"
-          title="In OneNote-App öffnen"
-          style={{
-            appearance: 'none', textDecoration: 'none', font: 'inherit',
-            padding: '10px 16px 12px', cursor: 'pointer',
-            background: 'transparent',
-            borderRadius: '10px 10px 0 0',
-            display: 'flex', alignItems: 'center', gap: 8,
-            borderLeft: '1px solid transparent',
-            borderRight: '1px solid transparent',
-            transition: 'background .12s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-        >
-          <span className="lm-onenote-glyph" aria-hidden="true">N</span>
-          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--c-text-2)', letterSpacing: -0.1 }}>
-            OneNote
-          </span>
-        </a>
-
-        {/* Miro */}
-        <a
-          href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="lm-spring lm-topbar-miro"
-          style={{
-            appearance: 'none', textDecoration: 'none', font: 'inherit',
-            padding: '10px 16px 12px', cursor: 'pointer',
-            background: 'transparent',
-            borderRadius: '10px 10px 0 0',
-            display: 'flex', alignItems: 'center', gap: 8,
-            borderLeft: '1px solid transparent',
-            borderRight: '1px solid transparent',
-            transition: 'background .12s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--c-hover)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-        >
-          <img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" />
-          {/*
-            <rect width="48" height="48" rx="10" fill="#FFD02F"/>
-            <path d="M32.8 8h-5.6l5.4 8.8-6.3-8.8H21l5.4 8.8-6.3-8.8h-5.3l9.6 16-9.6 16h5.3l6.3-8.8L21 40h5.3l6.3-8.8L27.2 40h5.6l8-16-8-16z" fill="#050038"/>
-          */}
-          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--c-text-2)', letterSpacing: -0.1 }}>
-            Miro
-          </span>
-        </a>
-        </nav>}
-
-        {!isMobile && <div className="lm-desktop-trailing-group">
-          <button
-            className="lm-spring lm-topbar-calendar"
-            onClick={() => setSchoolCalendarOpen(true)}
-            title="Terminplan Schuljahr 2026/27"
-            aria-label="Terminplan Schuljahr 2026/27"
-          >
-            <span aria-hidden="true">🗓</span><span className="lm-topbar-calendar-label">Terminplan</span>
-          </button>
-          <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout">
-            <span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span>
-          </button>
-
-
-          {/* Right controls — mobile is replaced by Bottom-Nav + More sheet */}
-          <div className="lm-topbar-tools" style={{ paddingBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button
-            className="lm-spring"
-            onClick={() => setFocusMode((v) => !v)}
-            title={focusMode ? 'Exit Focus (ESC)' : 'Focus mode'}
-            style={{
-              height: 30, padding: '0 10px', border: '0.5px solid var(--c-border)', borderRadius: 7,
-              background: focusMode ? `${accent}20` : 'var(--c-hover)', color: focusMode ? accent : 'var(--c-text-2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              transition: 'background .12s', fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
-            }}
-          >
-            {focusMode ? 'Focus ON' : 'Focus'}
-          </button>
-          {/* Global search button */}
-          <button
-            className="lm-spring"
-            onClick={() => setGlobalSearchOpen(true)}
-            onMouseDown={(e) => triggerHapticAt(e.clientX, e.clientY, accent)}
-            title="Suche (⌘P)"
-            aria-label="Suche"
-            style={{
-              width: 30, height: 30, padding: 0, border: '0.5px solid var(--c-border)', borderRadius: 7,
-              background: 'var(--c-hover)', color: 'var(--c-text-2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              transition: 'background .12s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-border)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
-          >
-            <svg width="12" height="12" viewBox="0 0 13 13" fill="none">
-              <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.4"/>
-              <path d="M8.5 8.5l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-            </svg>
-          </button>
-
-          {/* Theme toggle */}
-          <button
-            className="lm-spring"
-            onClick={toggleTheme}
-            title={isDark ? t('app.theme_light') : t('app.theme_dark')}
-            aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}
-            style={{
-              width: 30, height: 30, border: '1px solid var(--c-border)', borderRadius: 7,
-              background: 'transparent', cursor: 'pointer', color: 'var(--c-text-2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'background .12s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            {isDark ? (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <circle cx="7" cy="7" r="3" stroke="currentColor" strokeWidth="1.4"/>
-                <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10.01 10.01l1.06 1.06M2.93 11.07l1.06-1.06M10.01 3.99l1.06-1.06" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-              </svg>
-            ) : (
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <path d="M11.5 8.5A5 5 0 0 1 4.5 1.5a5 5 0 1 0 7 7z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-          </button>
-
-          {/* Upload */}
-          <button
-            className="lm-spring"
-            onClick={() => setUploadOpen(true)}
-            disabled={!activeFolder}
-            style={{
-              height: 30, padding: '0 14px', border: 'none', borderRadius: 7,
-              background: activeFolder ? accent : 'var(--c-border)',
-              color: activeFolder ? '#fff' : 'var(--c-text-3)',
-              fontSize: 12, fontWeight: 600, cursor: activeFolder ? 'pointer' : 'not-allowed',
-              display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: activeFolder ? `0 2px 6px ${accent}40` : 'none',
-              transition: 'background .15s, transform .1s',
-              fontFamily: 'inherit',
-            }}
-            onMouseDown={(e) => {
-              if (!activeFolder) return;
-              triggerHapticAt(e.clientX, e.clientY, accent);
-              e.currentTarget.style.transform = 'scale(0.97)';
-            }}
-            onMouseUp={(e) => e.currentTarget.style.transform = ''}
-            onMouseLeave={(e) => e.currentTarget.style.transform = ''}
-          >
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-              <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-            </svg>
-            {t('app.upload')}
-          </button>
-
-          </div>
-        </div>}
+      {/* Workspace navigation */}
+      <header className="lm-tabbar" aria-label="Hauptnavigation" style={{ display: 'flex', alignItems: 'center', padding: '8px 16px', background: 'var(--c-tab-bg)', borderBottom: '1px solid var(--c-border)', flexShrink: 0, gap: 4, minHeight: 56, overflowX: 'auto' }}>
+        <button className="lm-app-brand" type="button" onClick={() => { setViewMode('today'); setActivePageId(null); closeFolderView(); }} aria-label="Zu Heute"><BrandMark size={isMobile ? 30 : 28} label={!isMobile} /></button>
+        <nav className="lm-desktop-primary-nav" aria-label="Primäre Navigation" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+          {[
+            ['today', 'Heute', () => setViewMode('today')],
+            ['schedule', 'Stundenplan', () => setViewMode('schedule')],
+            ['appointments', 'Termine', () => setViewMode('appointments')],
+            ['klausurplan', 'Klausurplan', () => setViewMode('klausurplan')],
+            ['focus', 'Focus', () => setFocusMode((value) => !value)],
+            ['bugs', 'Bugs', () => setBugChecklistOpen(true)],
+          ].map(([id, label, onClick]) => <button key={id} type="button" onClick={onClick} className="lm-spring" style={{ appearance: 'none', border: '1px solid transparent', borderRadius: 8, padding: '8px 10px', background: (id === 'focus' ? focusMode : viewMode === id) ? 'var(--c-surface)' : 'transparent', color: (id === 'focus' ? focusMode : viewMode === id) ? 'var(--c-text)' : 'var(--c-text-2)', font: '600 13px inherit', cursor: 'pointer' }}>{label}</button>)}
+          <a href={ONE_NOTE_APP_URL} className="lm-spring" style={{ textDecoration: 'none', padding: '8px 10px', color: 'var(--c-text-2)', font: '600 13px inherit' }}>OneNote</a>
+          <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring" style={{ textDecoration: 'none', padding: '8px 10px', color: 'var(--c-text-2)', font: '600 13px inherit' }}>Notion</a>
+          <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring" style={{ textDecoration: 'none', padding: '8px 10px', color: 'var(--c-text-2)', font: '600 13px inherit' }}>Miro</a>
+        </nav>
+        <button className="lm-spring" onClick={toggleTheme} title={isDark ? t('app.theme_light') : t('app.theme_dark')} aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')} style={{ width: 32, height: 32, border: '1px solid var(--c-border)', borderRadius: 8, background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer' }}>{isDark ? '☀' : '◐'}</button>
+        <button className="lm-global-logout" type="button" onClick={onLogout} aria-label="Logout" style={{ border: 0, background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer', font: '600 13px inherit' }}>Logout</button>
       </header>
 
       {/* Body */}
@@ -1205,30 +863,12 @@ export default function App({ onLogout }) {
         }}
         onMouseLeave={() => setParallax({ x: 0, y: 0 })}
       >
-        {viewMode === 'home' ? (
-          <HomeDashboard
-            subjects={SUBJECTS}
-            folders={folders}
-            onOpenSubject={(id) => onSubjectChange(id)}
-            onOpenSchedule={() => setViewMode('schedule')}
-            onOpenExams={() => setExamBoardOpen(true)}
-          />
-        ) : viewMode === 'today' ? (
-          <div style={{ display: 'flex', flex: 1, minWidth: 0 }}>
-            {!focusMode && !isMobile && <>
-              <Sidebar {...sidebarProps} width={sidebarWidth} onFolderSelect={onFolderSelect} />
-              <div onMouseDown={onSidebarResizeMouseDown} style={{ width: 4, flexShrink: 0, cursor: 'col-resize', background: 'transparent' }} />
-            </>}
-            <TodayDashboard
-              subject={subject}
-              folders={subjectFolders}
-              onOpenSubjects={() => { setViewMode('subjects'); if (isMobile) setSidebarDrawerOpen(true); }}
-              onOpenSchedule={() => setViewMode('schedule')}
-              onOpenSearch={() => setGlobalSearchOpen(true)}
-            onOpenNotes={() => { setViewMode('subjects'); setActiveFolder(subjectRootFolders[0] || null); setFolderTab('notes'); }}
-              onUpload={() => activeFolder ? setUploadOpen(true) : setToast({ type: 'warning', msg: 'Bitte zuerst einen Ordner auswählen.' })}
-            />
-          </div>
+        {viewMode === 'today' ? (
+          <TodayDashboard onOpenSchedule={() => setViewMode('schedule')} onOpenSearch={() => setGlobalSearchOpen(true)} />
+        ) : viewMode === 'klausurplan' ? (
+          <KlausurplanWorkspace />
+        ) : viewMode === 'appointments' ? (
+          <ExamBoard onDismiss={() => setViewMode('today')} />
         ) : viewMode === 'schedule' ? (
           <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
             <Schedule
@@ -1906,9 +1546,9 @@ export default function App({ onLogout }) {
       {isMobile && !focusMode && (
         <MobileBottomNav
           accent={accent}
-          active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'home'}
+          active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'today'}
           items={[
-            { id: 'home', label: 'Startseite', icon: navIcons.subjects, onClick: () => { setViewMode('home'); setActivePageId(null); closeFolderView(); } },
+            { id: 'today', label: 'Heute', icon: navIcons.subjects, onClick: () => { setViewMode('today'); setActivePageId(null); closeFolderView(); } },
             { id: 'search', label: t('mobile.search'), icon: navIcons.search, onClick: () => setGlobalSearchOpen(true) },
             { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => setViewMode('schedule') },
             { id: 'more', label: t('mobile.more'), icon: navIcons.more, onClick: () => setMoreSheetOpen(true) },

@@ -51,9 +51,7 @@ function pendingTaskIsNewer(pending, backendTasks, dashboard) {
   return !Number.isFinite(storedAt) || pendingAt > storedAt;
 }
 
-export default function TodayDashboard({
-  subject, folders = [], onOpenSubjects, onOpenSchedule, onOpenSearch, onOpenNotes, onUpload,
-}) {
+export default function TodayDashboard({ onOpenSchedule, onOpenSearch }) {
   const date = todayKey();
   const [tasks, setTasks, tasksSync, retryTasksSync] = usePendingSync({
     storageKey: 'lm_pending_today_tasks', initialValue: [],
@@ -73,7 +71,6 @@ export default function TodayDashboard({
   const [taskText, setTaskText] = useState('');
   const loaded = tasksSync.hydrated;
   const saveStatus = tasksSync.status;
-  const favorites = folders.filter((folder) => folder.is_favorite).slice(0, 4);
 
   const addTask = () => {
     const text = taskText.trim();
@@ -100,19 +97,18 @@ export default function TodayDashboard({
             <div style={{ color: 'var(--c-text-3)', fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' }}>Heute</div>
             <h1 style={{ margin: '5px 0 4px', fontSize: 28, letterSpacing: -0.8 }}>Dein Unterrichtsstart</h1>
             <div style={{ color: 'var(--c-text-2)', fontSize: 13 }}>
-              {new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })} · {subject.name}
+              {new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button onClick={onOpenSubjects} style={actionStyle}>📚 Fächer anzeigen</button>
             <button onClick={onOpenSchedule} style={actionStyle}>📅 Stundenplan</button>
           </div>
         </div>
 
         <div className="lm-today-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
           {[
-            ['Fächerordner', folders.length, subject.color],
-            ['Favoriten', favorites.length, '#E8472A'],
+            ['Arbeitsbereich', 'Bereit', '#0F766E'],
+            ['Heute', new Date().getDate(), '#E8472A'],
             ['Aufgaben offen', tasks.filter((task) => !task.done).length, '#2563EB'],
           ].map(([label, value, color]) => (
             <div key={label} style={{ ...cardStyle, padding: '14px 16px' }}>
@@ -126,7 +122,6 @@ export default function TodayDashboard({
           <section style={cardStyle} aria-busy={!loaded}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <h2 style={{ margin: 0, fontSize: 15 }}>Meine Aufgaben</h2>
-              <button onClick={onOpenNotes} style={{ ...actionStyle, height: 28, padding: '0 9px', fontSize: 11 }}>Notizen öffnen</button>
             </div>
             <div style={{ display: 'flex', gap: 7, marginBottom: 12 }}>
               <input value={taskText} disabled={!loaded} onChange={(e) => setTaskText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder="Neue Aufgabe…" style={{ flex: 1, minWidth: 0, height: 34, border: '1px solid var(--c-border)', borderRadius: 8, padding: '0 10px', background: 'var(--c-bg)', color: 'var(--c-text)', fontFamily: 'inherit', fontSize: 12 }} />
@@ -152,9 +147,8 @@ export default function TodayDashboard({
           <section style={cardStyle}>
             <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Schnellzugriff</h2>
             <div className="lm-today-quick-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
-              <button onClick={onOpenSearch} style={actionStyle}>⌕ Material suchen</button>
-              <button onClick={onUpload} style={actionStyle}>↑ Hochladen</button>
-              <button onClick={onOpenNotes} style={actionStyle}>✎ Notizen</button>
+              <button onClick={onOpenSearch} style={actionStyle}>⌕ Suche</button>
+              <button onClick={onOpenSchedule} style={actionStyle}>📅 Stundenplan</button>
             </div>
           </section>
         </div>

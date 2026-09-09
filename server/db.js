@@ -70,7 +70,7 @@ pool.getConnection = async () => new Connection();
 pool.end = () => database.close();
 
 const schema = [
-  `CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, subject TEXT NOT NULL, group_name TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, notes TEXT, is_favorite INTEGER NOT NULL DEFAULT 0, due_at TEXT, parent_id INTEGER REFERENCES folders(id) ON DELETE CASCADE, color TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, subject TEXT NOT NULL, group_name TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, notes TEXT, is_favorite INTEGER NOT NULL DEFAULT 0, due_at TEXT, parent_id INTEGER REFERENCES folders(id) ON DELETE CASCADE, color TEXT, is_archived INTEGER NOT NULL DEFAULT 0, is_internal INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, folder_id INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE, original_name TEXT NOT NULL, stored_name TEXT NOT NULL, mime_type TEXT, size_bytes INTEGER, uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, timer_minutes INTEGER, is_shared INTEGER NOT NULL DEFAULT 0, due_at TEXT, is_public INTEGER NOT NULL DEFAULT 0, public_token TEXT, material_role TEXT NOT NULL DEFAULT 'other', version_group_id TEXT, version_number INTEGER NOT NULL DEFAULT 1, is_current_version INTEGER NOT NULL DEFAULT 1)`,
   `CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, folder_id INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE, title TEXT NOT NULL, url TEXT NOT NULL, is_shared INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS file_edit_copies (id INTEGER PRIMARY KEY, file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE, copy_name TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
@@ -98,8 +98,36 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS lesson_phase_elements (id INTEGER PRIMARY KEY, canvas_id INTEGER NOT NULL REFERENCES lesson_phase_canvases(id) ON DELETE CASCADE, type TEXT NOT NULL, content_json TEXT, position_json TEXT, style_json TEXT, visibility TEXT NOT NULL DEFAULT 'private', layer INTEGER NOT NULL DEFAULT 0, is_live_annotation INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`
 ];
 
+function parseScheduleJson(data) {
+  try { return JSON.parse(data || '{}'); } catch { try { return JSON.parse(String(data).replaceAll('\\"', '"')); } catch { return {}; } }
+}
+
 export async function initSchema() {
   for (const statement of schema) database.exec(statement);
+  // Workspace redesign migration: legacy subject folders remain recoverable but
+  // never participate in the active workspace. The exam-plan store is internal
+  // so it is available only through the Klausurplan surface.
+  const folderColumns = database.prepare('PRAGMA table_info(folders)').all();
+  if (!folderColumns.some((column) => column.name === 'is_archived')) {
+    database.exec('ALTER TABLE folders ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0');
+  }
+  if (!folderColumns.some((column) => column.name === 'is_internal')) {
+    database.exec('ALTER TABLE folders ADD COLUMN is_internal INTEGER NOT NULL DEFAULT 0');
+  }
+  const [examStoreRows] = await pool.execute("SELECT id FROM folders WHERE subject = 'klausurplan' AND is_internal = 1 LIMIT 1");
+  let examStoreId = examStoreRows[0]?.id;
+  if (!examStoreId) {
+    const [created] = await pool.execute("INSERT INTO folders (subject, group_name, name, is_internal) VALUES ('klausurplan', 'Klausurplan', 'Klausurplan', 1)");
+    examStoreId = created.insertId;
+  }
+  // Move only actual exam-plan documents. Other legacy content remains intact
+  // in its archived folder and can be restored later without data loss.
+  await pool.execute(`UPDATE files SET folder_id = ? WHERE folder_id IN (
+    SELECT id FROM folders WHERE subject = 'system' AND name = 'Druckfertig'
+  ) AND (lower(original_name) LIKE '%klausurplan%' OR lower(original_name) LIKE '%quartal%')`, [examStoreId]);
+  await pool.execute("UPDATE folders SET is_archived = 1 WHERE subject IN ('spanisch', 'informatik', 'sport', 'klasse', 'system')");
+  await pool.execute("UPDATE folders SET is_archived = 0, is_internal = 1 WHERE id = ?", [examStoreId]);
+
   const scheduleColumns = database.prepare('PRAGMA table_info(schedule)').all();
   if (!scheduleColumns.some((column) => column.name === 'user_id')) {
     database.exec('ALTER TABLE schedule ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1');
@@ -135,6 +163,7 @@ export async function initSchema() {
       SELECT MAX(id) FROM schedule GROUP BY user_id
     );
     CREATE INDEX IF NOT EXISTS folders_subject_group_parent_order ON folders(subject, group_name, parent_id, sort_order);
+    CREATE INDEX IF NOT EXISTS folders_active_visibility ON folders(is_archived, is_internal, subject);
     CREATE INDEX IF NOT EXISTS files_folder_current_uploaded ON files(folder_id, is_current_version, uploaded_at);
     CREATE INDEX IF NOT EXISTS files_public_token ON files(public_token, is_public);
     CREATE INDEX IF NOT EXISTS files_version_group_number ON files(version_group_id, version_number);
@@ -171,7 +200,6 @@ export async function initSchema() {
   await pool.execute("UPDATE folders SET group_name = 'Q1' WHERE subject = 'sport' AND group_name IN ('Klasse 12', 'sp-q1')");
   // Keep the Informatik 6 hierarchy stable: 6d and 6f belong below the
   // Klasse-6 main folder, while the obsolete 6e folder must stay deleted.
-  await pool.execute("DELETE FROM folders WHERE subject = 'informatik' AND (name IN ('6e', 'Klasse 6e Informatik') OR group_name = 'Klasse 6e Informatik')");
   const [klasse6Folders] = await pool.execute("SELECT id FROM folders WHERE subject = 'informatik' AND name = 'Klasse 6' AND parent_id IS NULL LIMIT 1");
   let klasse6Id = klasse6Folders[0]?.id;
   if (!klasse6Id) {
@@ -186,8 +214,24 @@ export async function initSchema() {
   await pool.execute('UPDATE links SET is_shared = 0 WHERE is_shared != 0');
   const bookLinks = [[['Klasse 6'], 'click & teach – Buch Informatik Klasse 6', 'https://www.click-and-teach.de/Player/id/1280/page/21'], [['WP 7', 'WP 8', 'WP 9', 'WP 10'], 'click & teach – Buch Informatik', 'https://www.click-and-teach.de/Player/id/1259/page/10']];
   for (const [groups, title, url] of bookLinks) for (const group of groups) await pool.execute('INSERT OR IGNORE INTO links (folder_id, title, url) SELECT f.id, ?, ? FROM folders f WHERE f.subject = \'informatik\' AND f.group_name = ? AND f.parent_id IS NULL AND NOT EXISTS (SELECT 1 FROM links l WHERE l.folder_id = f.id AND l.url = ?)', [title, url, group, url]);
+  // Legacy setup above can run on a fresh database; archive its compatibility folders as well.
+  await pool.execute("UPDATE folders SET is_archived = 1 WHERE subject IN ('spanisch', 'informatik', 'sport', 'klasse', 'system')");
+  await pool.execute("UPDATE folders SET is_archived = 0, is_internal = 1 WHERE id = ?", [examStoreId]);
   const [rows] = await pool.execute('SELECT COUNT(*) AS c FROM schedule WHERE user_id = 1');
   if (Number(rows[0].c) === 0) await pool.execute("INSERT INTO schedule (user_id, data) VALUES (1, '{}')");
+
+  // Subject-linked timetable cells point at archived teaching repositories.
+  // Retain only neutral appointments in the new timetable.
+  const legacyScheduleIds = new Set(['klassenstunde', 'elsa', 'inf6', 'inf7', 'es9', 'esq1', 'sportq1', 'sport5d']);
+  const legacySubjects = new Set(['klasse', 'informatik', 'spanisch', 'sport']);
+  const [scheduleForMigration] = await pool.execute('SELECT id, data FROM schedule');
+  for (const schedule of scheduleForMigration) {
+    const parsed = parseScheduleJson(schedule.data);
+    const clean = Object.fromEntries(Object.entries(parsed).filter(([key, value]) => (
+      key.startsWith('break-') || !(legacyScheduleIds.has(value?.id) || legacySubjects.has(value?.subjectId))
+    )));
+    if (JSON.stringify(clean) !== JSON.stringify(parsed)) await pool.execute('UPDATE schedule SET data = ? WHERE id = ?', [JSON.stringify(clean), schedule.id]);
+  }
 
   // Repair timetable JSON from the legacy recovery import, which escaped each
   // quote before saving it and therefore made the record invalid JSON.

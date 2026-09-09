@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getExams, createExam, deleteExam, updateExam } from '../lib/api';
 
-const FAECHER = ['Spanisch', 'Informatik', 'Sport', 'Klassenleitung'];
+const FAECHER = ['Prüfung', 'Konferenz', 'Organisation', 'Sonstiges'];
 const TERMIN_TITEL = [
   'Lehrerkonferenz',
   'Teamsitzung',
@@ -442,8 +442,8 @@ function ExamForm({ initial, onSave, onClose }) {
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
             <SelectField label="Klasse *" value={form.class_name} onChange={set('class_name')}
               options={KLASSEN} placeholder="Klasse wählen…" allowCustom/>
-            <SelectField label="Fach" value={form.subject} onChange={set('subject')}
-              options={FAECHER} placeholder="Fach wählen oder eingeben…" allowCustom/>
+            <SelectField label="Kategorie" value={form.subject} onChange={set('subject')}
+              options={FAECHER} placeholder="Kategorie wählen oder eingeben…" allowCustom/>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
             <Field label="Datum *" type="date" value={form.exam_date} onChange={set('exam_date')}/>

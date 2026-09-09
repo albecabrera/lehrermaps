@@ -26,6 +26,14 @@ const FOLDER_WITH_COUNT = `
   GROUP BY f.id
 `;
 
+router.get('/klausurplan', async (req, res) => {
+  try {
+    const [rows] = await pool.execute("SELECT * FROM folders WHERE subject = 'klausurplan' AND is_internal = 1 AND is_archived = 0 LIMIT 1");
+    if (!rows.length) return res.status(404).json({ error: 'Klausurplan-Speicher nicht gefunden' });
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.execute(`
@@ -33,6 +41,7 @@ router.get('/', async (req, res) => {
         (SELECT fi2.id FROM files fi2 WHERE fi2.folder_id = f.id AND fi2.mime_type LIKE 'image/%' ORDER BY fi2.uploaded_at DESC LIMIT 1) AS thumbnail_file_id
       FROM folders f
       LEFT JOIN files fi ON fi.folder_id = f.id
+      WHERE f.is_archived = 0 AND f.is_internal = 0
       GROUP BY f.id
       ORDER BY f.subject, f.group_name, f.parent_id, f.sort_order, f.name
     `);
@@ -50,7 +59,7 @@ router.post('/', teacherOnly, async (req, res) => {
   const pid = parent_id ? Number(parent_id) : null;
   try {
     if (pid) {
-      const [check] = await pool.execute('SELECT id FROM folders WHERE id = ?', [pid]);
+      const [check] = await pool.execute('SELECT id FROM folders WHERE id = ? AND is_archived = 0 AND is_internal = 0', [pid]);
       if (!check.length) return res.status(400).json({ error: 'Überordner nicht gefunden' });
     }
     const [result] = await pool.execute(

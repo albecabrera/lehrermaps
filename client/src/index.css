@@ -1888,3 +1888,22 @@ button[aria-pressed="true"] {
     contain-intrinsic-size: auto 560px;
   }
 }
+
+.lm-klausurplan-workspace { flex: 1; min-width: 0; overflow: auto; padding: clamp(20px, 4vw, 48px); }
+.lm-klausurplan-workspace > header, .lm-klausurplan-workspace > section { max-width: 1120px; margin: 0 auto 28px; }
+.lm-klausurplan-workspace > header > p { margin: 0 0 6px; color: #0f766e; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; }
+.lm-klausurplan-workspace h1 { margin: 0; font-size: clamp(25px, 4vw, 34px); letter-spacing: -.9px; }
+.lm-klausurplan-workspace > header > span { display:block; margin-top: 8px; color: var(--c-text-2); font-size: 14px; }
+.lm-klausurplan-section-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.lm-klausurplan-section-heading h2 { margin:0; font-size:16px; }
+.lm-klausurplan-section-heading small { color:var(--c-text-3); }
+.lm-klausurplan-document-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; }
+.lm-klausurplan-document { display:flex; align-items:center; gap:11px; min-height:80px; padding:14px; border:1px solid var(--c-border); border-radius:12px; background:var(--c-surface); }
+.lm-klausurplan-document > span { color:#0f766e; font-size:22px; }
+.lm-klausurplan-document > div { min-width:0; flex:1; display:grid; gap:4px; }
+.lm-klausurplan-document strong { font-size:13px; }
+.lm-klausurplan-document small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--c-text-3); font-size:11px; }
+.lm-klausurplan-document a, .lm-klausurplan-document button { border:0; border-radius:7px; padding:7px 9px; background:#0f766e; color:#fff; font:700 11px inherit; text-decoration:none; white-space:nowrap; }
+.lm-klausurplan-document button:disabled { background:var(--c-border); color:var(--c-text-3); }
+.lm-klausurplan-school-calendar iframe { width:100%; min-height:620px; border:1px solid var(--c-border); border-radius:12px; background:#fff; }
+@media (max-width: 600px) { .lm-klausurplan-school-calendar iframe { min-height:460px; } }

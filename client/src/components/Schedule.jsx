@@ -11,20 +11,18 @@ const DAYS_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi'];
 const PERIODS = 6;
 
 const STUNDENPLAN_SUBJECTS = [
-  { id: 'klassenstunde', label: 'Klassenstunde', color: '#9333EA', subjectId: 'klasse' },
-  { id: 'elsa',          label: 'ELSA',          color: '#0891B2', subjectId: 'klasse' },
-  { id: 'inf6',          label: 'Informatik 6',  color: '#2563EB', subjectId: 'informatik' },
-  { id: 'inf7',          label: 'Informatik 7',  color: '#1E40AF', subjectId: 'informatik' },
-  { id: 'es9',           label: 'Spanisch 9',    color: '#E8472A', subjectId: 'spanisch' },
-  { id: 'esq1',          label: 'Spanisch Q1',   color: '#B83220', subjectId: 'spanisch' },
-  { id: 'sportq1',       label: 'Sport Q1',      color: '#16A34A', subjectId: 'sport' },
-  { id: 'sport5d',       label: 'Sport 5d',      color: '#15803D', subjectId: 'sport' },
-  { id: 'vertretung',    label: 'Vertretung',    color: '#F59E0B' },
-  { id: 'pausenaufsicht',label: 'Pausenaufsicht',color: '#64748B' },
-  { id: 'mittagspause',  label: 'Mittagspause',  color: '#D97706' },
-  { id: 'zertifikatskurs', label: 'Zertifikatskurs', color: '#7C3AED' },
-  { id: 'frei',            label: 'Frei',             color: '#94A3B8' },
+  { id: 'unterricht', label: 'Unterricht', color: '#2563EB' },
+  { id: 'besprechung', label: 'Besprechung', color: '#7C3AED' },
+  { id: 'vertretung', label: 'Vertretung', color: '#F59E0B' },
+  { id: 'pausenaufsicht', label: 'Pausenaufsicht', color: '#64748B' },
+  { id: 'mittagspause', label: 'Mittagspause', color: '#D97706' },
+  { id: 'fortbildung', label: 'Fortbildung', color: '#0F766E' },
+  { id: 'frei', label: 'Frei', color: '#94A3B8' },
 ];
+
+const LEGACY_SUBJECT_IDS = new Set(['klassenstunde', 'elsa', 'inf6', 'inf7', 'es9', 'esq1', 'sportq1', 'sport5d']);
+const LEGACY_FOLDER_SUBJECTS = new Set(['klasse', 'informatik', 'spanisch', 'sport']);
+
 
 function storageKey() {
   try {
@@ -45,6 +43,7 @@ function hydrateSchedule(raw) {
   const next = {};
   for (const [key, value] of Object.entries(raw)) {
     if (!value || typeof value !== 'object') continue;
+    if (LEGACY_SUBJECT_IDS.has(value.id) || LEGACY_FOLDER_SUBJECTS.has(value.subjectId)) continue;
     if (key.startsWith('break-')) {
       next[key] = value;
       continue;
@@ -464,16 +463,7 @@ function ScheduleCell({
 // Timetable entries are free-form text, so navigation is intentionally based
 // on the normalized class/subject + room combination rather than a fragile
 // preset id. This also covers entries imported from older schedules.
-const SCHEDULE_FOLDER_ROUTES = [
-  { match: /10\s*bdf/, subjectId: 'spanisch', folderName: 'Klasse 10' },
-  { match: /13\s*s(?:1|\b).*g2.*d\s*-?105/, subjectId: 'spanisch', folderName: 'Klasse 13 S' },
-  { match: /6\s*d.*sp.*th\s*1/, subjectId: 'sport', folderName: 'Sport 6d' },
-  { match: /8\s*abcdef/, subjectId: 'informatik', folderName: 'WP8' },
-  { match: /6\s*d.*if.*j\s*-?105/, subjectId: 'informatik', folderName: '6d' },
-  { match: /13.*sp.*g1.*th\s*3/, subjectId: 'sport', folderName: 'Klasse 13 SP' },
-  { match: /6\s*f.*if.*j\s*-?105/, subjectId: 'informatik', folderName: '6f' },
-  { match: /6\s*d.*ks.*f\s*103/, subjectId: 'klasse', folderName: '6d KS' },
-];
+const SCHEDULE_FOLDER_ROUTES = [];
 
 function normalizeScheduleText(value) {
   return String(value || '')
@@ -484,7 +474,7 @@ function normalizeScheduleText(value) {
 }
 
 function getScheduleNavigationTarget(cell, folders) {
-  if (!cell) return null;
+  if (!cell || LEGACY_FOLDER_SUBJECTS.has(cell.subjectId)) return null;
   const text = normalizeScheduleText(`${cell.label || ''} ${cell.location || ''}`);
   const route = SCHEDULE_FOLDER_ROUTES.find(({ match }) => match.test(text));
   if (route) {
@@ -652,7 +642,7 @@ function SubjectPicker({ rect, cell, onSaveCell, onClear, onClose }) {
                 autoFocus
                 value={label}
                 onChange={(event) => setLabel(event.target.value)}
-                placeholder="z. B. Informatik 6"
+                placeholder="z. B. Unterricht 6"
                 style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, height: 34, padding: '0 9px', border: '1px solid var(--c-border)', borderRadius: 7, background: 'var(--c-input-bg)', color: 'var(--c-text)', font: 'inherit', fontSize: 12 }}
               />
             </label>

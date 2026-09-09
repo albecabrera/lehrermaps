@@ -36,6 +36,9 @@ export const login = (password) =>
 export const getFolders = (signal) =>
   api.get('/folders', { signal }).then((r) => r.data);
 
+export const getKlausurplanFolder = () =>
+  api.get('/folders/klausurplan').then((r) => r.data);
+
 export const createFolder = (data) =>
   api.post('/folders', data).then((r) => r.data);
 

@@ -83,7 +83,10 @@ function safeOriginalName(name = 'material') {
 }
 
 async function getFileById(id) {
-  const [rows] = await pool.execute('SELECT * FROM files WHERE id = ?', [id]);
+  const [rows] = await pool.execute(
+    'SELECT fi.* FROM files fi JOIN folders fo ON fo.id = fi.folder_id WHERE fi.id = ? AND fo.is_archived = 0',
+    [id]
+  );
   return rows[0] || null;
 }
 
@@ -315,7 +318,7 @@ router.get('/search', async (req, res) => {
                fo.id AS folder_id, fo.name AS folder_name, fo.subject, fo.group_name
         FROM files fi
         JOIN folders fo ON fo.id = fi.folder_id
-        WHERE ${fileWhere}
+        WHERE fo.is_archived = 0 AND fo.is_internal = 0 AND ${fileWhere}
         ORDER BY fi.uploaded_at DESC
         LIMIT ? OFFSET ?
       `, [...fileParams, FILE_LIMIT + 1, fileOffset]),
@@ -324,7 +327,7 @@ router.get('/search', async (req, res) => {
           id, name, subject, group_name, is_favorite,
           CASE WHEN ${normalizedSql3('notes')} LIKE ? THEN 1 ELSE 0 END AS notes_match
         FROM folders
-        WHERE ${folderWhere}
+        WHERE is_archived = 0 AND is_internal = 0 AND ${folderWhere}
         ORDER BY notes_match DESC, name
         LIMIT ? OFFSET ?
       `, [`%${norm}%`, ...folderParams, FOLDER_LIMIT + 1, folderOffset]),
@@ -333,13 +336,13 @@ router.get('/search', async (req, res) => {
                fo.id AS folder_id, fo.name AS folder_name, fo.subject, fo.group_name
         FROM links li
         JOIN folders fo ON fo.id = li.folder_id
-        WHERE ${linkWhere}
+        WHERE fo.is_archived = 0 AND fo.is_internal = 0 AND ${linkWhere}
         ORDER BY li.created_at DESC
         LIMIT ? OFFSET ?
       `, [...linkParams, LINK_LIMIT + 1, linkOffset]),
-      pool.execute(`SELECT COUNT(*) AS totalFiles FROM files fi JOIN folders fo ON fo.id = fi.folder_id WHERE ${fileWhere}`, fileParams),
-      pool.execute(`SELECT COUNT(*) AS totalFolders FROM folders WHERE ${folderWhere}`, folderParams),
-      pool.execute(`SELECT COUNT(*) AS totalLinks FROM links li JOIN folders fo ON fo.id = li.folder_id WHERE ${linkWhere}`, linkParams),
+      pool.execute(`SELECT COUNT(*) AS totalFiles FROM files fi JOIN folders fo ON fo.id = fi.folder_id WHERE fo.is_archived = 0 AND fo.is_internal = 0 AND ${fileWhere}`, fileParams),
+      pool.execute(`SELECT COUNT(*) AS totalFolders FROM folders WHERE is_archived = 0 AND is_internal = 0 AND ${folderWhere}`, folderParams),
+      pool.execute(`SELECT COUNT(*) AS totalLinks FROM links li JOIN folders fo ON fo.id = li.folder_id WHERE fo.is_archived = 0 AND fo.is_internal = 0 AND ${linkWhere}`, linkParams),
     ]);
     const hasMoreFiles = files.length > FILE_LIMIT;
     const hasMoreFolders = folders.length > FOLDER_LIMIT;
@@ -362,7 +365,7 @@ router.get('/search', async (req, res) => {
 
 router.get('/:folder_id', async (req, res) => {
   try {
-    const query = 'SELECT * FROM files WHERE folder_id = ? AND is_current_version = 1 ORDER BY uploaded_at DESC';
+    const query = 'SELECT fi.* FROM files fi JOIN folders fo ON fo.id = fi.folder_id WHERE fi.folder_id = ? AND fo.is_archived = 0 AND fi.is_current_version = 1 ORDER BY fi.uploaded_at DESC';
     const [rows] = await pool.execute(query, [req.params.folder_id]);
 
     const parseLeadingNumber = (name = '') => {
@@ -397,7 +400,7 @@ router.post('/upload', teacherOnly, upload.single('file'), async (req, res) => {
   if (!folder_id) { await rm(req.file.path, { force: true }); return res.status(400).json({ error: 'folder_id fehlt' }); }
 
   try {
-    const [folders] = await pool.execute('SELECT id, subject, name FROM folders WHERE id = ?', [folder_id]);
+    const [folders] = await pool.execute('SELECT id, subject, name FROM folders WHERE id = ? AND is_archived = 0', [folder_id]);
     if (!folders.length) { await rm(req.file.path, { force: true }); return res.status(404).json({ error: 'Zielordner nicht gefunden' }); }
     const printReady = folders[0].subject === 'system' && folders[0].name === 'Druckfertig';
     const originalName = printReady ? safeFileName(req.file.originalname) : req.file.originalname;
