@@ -51,7 +51,7 @@ function pendingTaskIsNewer(pending, backendTasks, dashboard) {
   return !Number.isFinite(storedAt) || pendingAt > storedAt;
 }
 
-export default function TodayDashboard({ onOpenSchedule }) {
+export default function TodayDashboard() {
   const date = todayKey();
   const [tasks, setTasks, tasksSync, retryTasksSync] = usePendingSync({
     storageKey: 'lm_pending_today_tasks', initialValue: [],
@@ -89,9 +89,6 @@ export default function TodayDashboard({ onOpenSchedule }) {
             <div className="lm-today-date">
               {new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </div>
-          </div>
-          <div className="lm-today-header-actions">
-            <button onClick={onOpenSchedule} className="lm-button lm-button-secondary">📅 Stundenplan</button>
           </div>
         </header>
 

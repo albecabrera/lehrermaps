@@ -885,7 +885,7 @@ export default function App({ onLogout }) {
         onMouseLeave={() => setParallax({ x: 0, y: 0 })}
       >
         {viewMode === 'today' ? (
-          <TodayDashboard onOpenSchedule={() => setViewMode('schedule')} />
+          <TodayDashboard />
         ) : viewMode === 'klausurplan' ? (
           <KlausurplanWorkspace />
         ) : viewMode === 'appointments' ? (
