@@ -52,7 +52,6 @@ const ExamBoard = lazy(() => import('../components/ExamBoard'));
 const NotesEditor = lazy(() => import('../components/NotesEditor'));
 const AnnualPlanning = lazy(() => import('../components/AnnualPlanning'));
 const PageCanvas = lazy(() => import('../components/Canvas/PageCanvas'));
-const FocusMode = lazy(() => import('../components/FocusMode'));
 
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -232,7 +231,6 @@ export default function App({ onLogout }) {
   const [hapticPulse, setHapticPulse] = useState(null);
   const [backSwipe, setBackSwipe] = useState({ active: false, x: 0 });
   const [heroQrLink, setHeroQrLink] = useState(null);
-  const [focusMode, setFocusMode] = useState(false);
 
   const [previewWidth, setPreviewWidth] = useState(320);
   const [previewCollapsed, setPreviewCollapsed] = useState(false);
@@ -328,7 +326,7 @@ export default function App({ onLogout }) {
         setActiveLink(null);
         return;
       }
-      if (e.key === 'Escape' && isMobile && !focusMode && sidebarDrawerOpen) {
+      if (e.key === 'Escape' && isMobile && sidebarDrawerOpen) {
         e.preventDefault();
         setSidebarDrawerOpen(false);
         return;
@@ -407,7 +405,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, klasurplanOpen, isMobile, focusMode, sidebarDrawerOpen]);
+  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, klasurplanOpen, isMobile, sidebarDrawerOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -842,10 +840,9 @@ export default function App({ onLogout }) {
             ['schedule', '▦', 'Stundenplan', () => setViewMode('schedule')],
             ['appointments', '◷', 'Termine', () => setViewMode('appointments')],
             ['klausurplan', '▤', 'Klausurplan', () => setViewMode('klausurplan')],
-            ['focus', '◉', 'Focus', () => setFocusMode((value) => !value)],
             ['bugs', '⌁', 'Bugs', () => setBugChecklistOpen(true)],
           ].map(([id, icon, label, onClick]) => {
-            const active = id === 'focus' ? focusMode : viewMode === id;
+            const active = viewMode === id;
             return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
           })}
           <a href={ONE_NOTE_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-onenote" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen"><span className="lm-onenote-glyph" aria-hidden="true">N</span><span>OneNote</span></a>
@@ -862,7 +859,6 @@ export default function App({ onLogout }) {
       </header>
 
       {/* Body */}
-      <FocusMode active={focusMode} onExit={() => setFocusMode(false)}>
       <div
         style={{ flex: 1, minHeight: 0, display: 'flex' }}
         onMouseMove={(e) => {
@@ -902,7 +898,7 @@ export default function App({ onLogout }) {
         ) : viewMode === 'lessons' ? (
           <LessonDashboard sessions={lessonSessions} folders={folders} accent={accent} onOpen={(folder) => { setActiveFolder(folder); setSubjectId(folder.subject); setTeachingMode(true); }} />
         ) : <>
-        {!focusMode && !isMobile && <div style={{
+        {!isMobile && <div style={{
           display: 'flex', flexShrink: 0, minHeight: 0, height: '100%',
           transform: `translate3d(${parallax.x * -4}px, ${parallax.y * -2}px, 0)`,
           transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
@@ -913,7 +909,7 @@ export default function App({ onLogout }) {
             onFolderSelect={onFolderSelect}
           />
         </div>}
-        {!focusMode && !isMobile && <div
+        {!isMobile && <div
           onMouseDown={onSidebarResizeMouseDown}
           style={{
             width: 4, flexShrink: 0, cursor: 'col-resize',
@@ -1319,7 +1315,7 @@ export default function App({ onLogout }) {
         </div>
 
         {/* Preview panel — resizable, optional split (Desktop) */}
-        {activeFolder && !focusMode && !isMobile && !isKlasurplanActiveFile && (
+        {activeFolder && !isMobile && !isKlasurplanActiveFile && (
           <div
             id="lm-file-preview-pane"
             aria-hidden={previewCollapsed}
@@ -1387,7 +1383,7 @@ export default function App({ onLogout }) {
         )}
 
         {/* The app shell is a fixed stacking context, so this control must be a body portal. */}
-        {!isPhone && !focusMode && isKlasurplanActiveFile && createPortal(
+        {!isPhone && isKlasurplanActiveFile && createPortal(
           <div ref={floatingKlasurplanMenuRef} className="lm-floating-klasurplan-switcher" role="toolbar" aria-label="Klausurplan wechseln">
             <span className="lm-floating-klasurplan-title" aria-hidden="true">▤ Klausurplan</span>
             {klasurplanDocuments.map(({ key, label, filename, file }) => (
@@ -1409,7 +1405,7 @@ export default function App({ onLogout }) {
         {/* The app header sits below the document portal. Mirror the original
             Klausurplan trigger in a body portal while a preview is open, so
             its dropdown remains at the header position and above the preview. */}
-        {!focusMode && isKlasurplanActiveFile && klasurplanTriggerRect && createPortal(
+        {isKlasurplanActiveFile && klasurplanTriggerRect && createPortal(
           <div
             ref={klasurplanPortalRef}
             className="lm-header-klasurplan-portal"
@@ -1450,7 +1446,7 @@ export default function App({ onLogout }) {
         )}
 
         {/* Laptop/tablet: Klausurplan opens in a centered in-app dialog. */}
-        {!isPhone && !focusMode && isKlasurplanActiveFile && createPortal(
+        {!isPhone && isKlasurplanActiveFile && createPortal(
           <div className="lm-klasurplan-viewer-backdrop" role="presentation">
             <section
               className="lm-klasurplan-viewer-dialog"
@@ -1470,7 +1466,7 @@ export default function App({ onLogout }) {
 
         {/* Mobile: Vorschau als Vollbild-Overlay statt Seitenspalte —
             geöffnete Datei/Link verdeckt den Ordnerinhalt, Zurück schließt sie. */}
-        {isMobile && !focusMode && (isPhone || !isKlasurplanActiveFile) && (activeFile || activeLink) && createPortal(
+        {isMobile && (isPhone || !isKlasurplanActiveFile) && (activeFile || activeLink) && createPortal(
           <div style={{
             position: 'fixed', inset: 0, zIndex: 1230,
             background: 'var(--c-bg)', display: 'flex', flexDirection: 'column',
@@ -1525,11 +1521,10 @@ export default function App({ onLogout }) {
           onClose={() => { setTeachingMode(false); setStartNewLessonPlanning(false); setTeachingSessionId(null); }}
         />
       )}
-      </FocusMode>
 
       {/* Keep the mobile drawer independent of the active content view so it
           remains available from Home as well as subject content. */}
-      {!focusMode && isMobile && sidebarDrawerOpen && createPortal(
+      {isMobile && sidebarDrawerOpen && createPortal(
         <>
           <div
             onClick={() => setSidebarDrawerOpen(false)}
@@ -1553,7 +1548,7 @@ export default function App({ onLogout }) {
       )}
 
       {/* Mobile Bottom-Navigation — Daumen-Zone. Flex-Kind, verdeckt nie Inhalt. */}
-      {isMobile && !focusMode && (
+      {isMobile && (
         <MobileBottomNav
           accent={accent}
           active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'today'}
