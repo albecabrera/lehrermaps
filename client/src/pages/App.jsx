@@ -43,7 +43,7 @@ import TeachingMode from '../components/TeachingMode';
 import LessonDashboard from '../components/LessonDashboard';
 import SchoolCalendarPdf from '../components/SchoolCalendarPdf';
 import HomeDashboard from '../components/HomeDashboard';
-import BugChecklist from '../components/BugChecklist';
+import BugChecklist, { BugChecklistIcon } from '../components/BugChecklist';
 import KlausurplanWorkspace from '../components/KlausurplanWorkspace';
 
 // Opened views are split into on-demand chunks without changing their layout.
@@ -840,7 +840,7 @@ export default function App({ onLogout }) {
             ['schedule', '▦', 'Stundenplan', () => setViewMode('schedule')],
             ['appointments', '◷', 'Termine', () => setViewMode('appointments')],
             ['klausurplan', '▤', 'Klausurplan', () => setViewMode('klausurplan')],
-            ['bugs', '⌁', 'Bugs', () => setBugChecklistOpen(true)],
+            ['bugs', <BugChecklistIcon key="bug-icon" size={16} />, 'Bugs', () => setBugChecklistOpen(true)],
           ].map(([id, icon, label, onClick]) => {
             const active = viewMode === id;
             return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
