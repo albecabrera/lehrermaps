@@ -45,6 +45,7 @@ import SchoolCalendarPdf from '../components/SchoolCalendarPdf';
 import HomeDashboard from '../components/HomeDashboard';
 import BugChecklist, { BugChecklistIcon } from '../components/BugChecklist';
 import KlausurplanWorkspace from '../components/KlausurplanWorkspace';
+import ClassroomTimer from '../components/ClassroomTimer';
 
 // Opened views are split into on-demand chunks without changing their layout.
 const Schedule = lazy(() => import('../components/Schedule'));
@@ -63,6 +64,7 @@ export default function App({ onLogout }) {
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [schoolCalendarOpen, setSchoolCalendarOpen] = useState(false);
   const [bugChecklistOpen, setBugChecklistOpen] = useState(false);
+  const [classroomTimerOpen, setClassroomTimerOpen] = useState(false);
 
   const [subjectId, setSubjectId] = useState('workspace');
   const [activeFolder, setActiveFolder] = useState(null);
@@ -331,7 +333,7 @@ export default function App({ onLogout }) {
         setSidebarDrawerOpen(false);
         return;
       }
-      if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen) return;
+      if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen || classroomTimerOpen) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setGlobalSearchOpen(true);
@@ -405,7 +407,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, klasurplanOpen, isMobile, sidebarDrawerOpen]);
+  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, classroomTimerOpen, klasurplanOpen, isMobile, sidebarDrawerOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -790,7 +792,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen || isKlasurplanActiveFile;
+  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen || classroomTimerOpen || isKlasurplanActiveFile;
   const hasDepthModalOpen = hasModalOpen && !isKlasurplanActiveFile;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
@@ -851,6 +853,7 @@ export default function App({ onLogout }) {
         </nav>
         <div className="lm-desktop-trailing-group">
           <div className="lm-topbar-tools">
+            <button className="lm-spring lm-workspace-tool lm-classroom-timer-trigger" type="button" onClick={() => setClassroomTimerOpen(true)} title="Klassenzeit" aria-label="Klassenzeit öffnen">◷</button>
             <button className="lm-spring lm-workspace-tool" onClick={() => setGlobalSearchOpen(true)} title="Suche (⌘P)" aria-label="Suche">⌕</button>
             <button className="lm-spring lm-workspace-tool" onClick={toggleTheme} title={isDark ? t('app.theme_light') : t('app.theme_dark')} aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}>{isDark ? '☀' : '◐'}</button>
           </div>
@@ -1574,6 +1577,7 @@ export default function App({ onLogout }) {
         onUpload={() => setUploadOpen(true)}
         uploadDisabled={!activeFolder}
         onBugChecklist={() => setBugChecklistOpen(true)}
+        onClassroomTimer={() => setClassroomTimerOpen(true)}
         onLogout={onLogout}
         showTeacherLinks
       />
@@ -1598,6 +1602,7 @@ export default function App({ onLogout }) {
       {hasDepthModalOpen && <div className="lm-depth-overlay" />}
       {schoolCalendarOpen && <SchoolCalendarPdf onClose={() => setSchoolCalendarOpen(false)} />}
       <BugChecklist open={bugChecklistOpen} onClose={() => setBugChecklistOpen(false)} t={t} />
+      <ClassroomTimer open={classroomTimerOpen} onClose={() => setClassroomTimerOpen(false)} />
       {folderZoom && (
         <div
           style={{

@@ -77,7 +77,7 @@ export function MobileBottomNav({ accent, items, active }) {
 export function MobileMoreSheet({
   open, onClose, t, accent,
   isDark, toggleTheme,
-  onExams, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onLogout,
+  onExams, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onLogout,
   showTeacherLinks = false,
 }) {
   useEscapeKey(open, onClose);
@@ -103,7 +103,7 @@ export function MobileMoreSheet({
   );
 
   const divider = <div style={{ height: 1, background: 'var(--c-border)', margin: '8px 6px' }} />;
-  const hasActions = onExams || onUpload || onWorksheet || onBugChecklist;
+  const hasActions = onExams || onUpload || onWorksheet || onBugChecklist || onClassroomTimer;
 
   return createPortal(
     <div
@@ -149,6 +149,9 @@ export function MobileMoreSheet({
           ),
         })}
         {onWorksheet && row('✦ Arbeitsblatt', onWorksheet)}
+        {onClassroomTimer && row('Klassenzeit', onClassroomTimer, {
+          icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.8" stroke="currentColor" strokeWidth="1.4"/><path d="M8 4.8V8l2.3 1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
+        })}
         {onBugChecklist && row(t('bug_checklist.title'), onBugChecklist, { icon: <BugChecklistIcon /> })}
 
         {hasActions && divider}

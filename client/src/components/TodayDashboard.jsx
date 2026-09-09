@@ -79,76 +79,66 @@ export default function TodayDashboard({ onOpenSchedule, onOpenSearch }) {
     setTaskText('');
   };
 
-  const cardStyle = {
-    background: 'var(--c-surface)', border: '1px solid var(--c-border)',
-    borderRadius: 14, padding: 18, minWidth: 0,
-  };
-  const actionStyle = {
-    height: 34, padding: '0 12px', border: '1px solid var(--c-border)',
-    borderRadius: 8, background: 'var(--c-surface-2)', color: 'var(--c-text-2)',
-    cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
-  };
-
   return (
-    <div className="lm-today-view" style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: '28px clamp(18px, 4vw, 48px) 40px' }}>
-      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 22, flexWrap: 'wrap' }}>
+    <div className="lm-today-view">
+      <div className="lm-today-shell">
+        <header className="lm-today-header">
           <div>
-            <div style={{ color: 'var(--c-text-3)', fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' }}>Heute</div>
-            <h1 style={{ margin: '5px 0 4px', fontSize: 28, letterSpacing: -0.8 }}>Dein Unterrichtsstart</h1>
-            <div style={{ color: 'var(--c-text-2)', fontSize: 13 }}>
+            <div className="lm-eyebrow">Heute</div>
+            <h1>Dein Unterrichtsstart</h1>
+            <div className="lm-today-date">
               {new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button onClick={onOpenSchedule} style={actionStyle}>📅 Stundenplan</button>
+          <div className="lm-today-header-actions">
+            <button onClick={onOpenSchedule} className="lm-button lm-button-secondary">📅 Stundenplan</button>
           </div>
-        </div>
+        </header>
 
-        <div className="lm-today-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
+        <div className="lm-today-stats">
           {[
             ['Arbeitsbereich', 'Bereit', '#0F766E'],
             ['Heute', new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()), '#E8472A'],
             ['Aufgaben offen', tasks.filter((task) => !task.done).length, '#2563EB'],
           ].map(([label, value, color]) => (
-            <div key={label} style={{ ...cardStyle, padding: '14px 16px' }}>
-              <div style={{ fontSize: label === 'Heute' ? 17 : 24, fontWeight: 800, color, whiteSpace: 'nowrap' }}>{value}</div>
-              <div style={{ marginTop: 3, fontSize: 11, color: 'var(--c-text-3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
+            <div key={label} className="lm-today-stat lm-stagger-in" style={{ '--stat-color': color }}>
+              <div className={label === 'Heute' ? 'lm-today-stat-value is-date' : 'lm-today-stat-value'}>{value}</div>
+              <div className="lm-today-stat-label">{label}</div>
             </div>
           ))}
         </div>
 
-        <div className="lm-today-content" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(280px, .8fr)', gap: 14, alignItems: 'start' }}>
-          <section style={cardStyle} aria-busy={!loaded}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h2 style={{ margin: 0, fontSize: 15 }}>Meine Aufgaben</h2>
+        <div className="lm-today-content">
+          <section className="lm-editorial-card" aria-busy={!loaded}>
+            <div className="lm-today-section-header">
+              <h2>Meine Aufgaben</h2>
             </div>
-            <div style={{ display: 'flex', gap: 7, marginBottom: 12 }}>
-              <input value={taskText} disabled={!loaded} onChange={(e) => setTaskText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder="Neue Aufgabe…" style={{ flex: 1, minWidth: 0, height: 34, border: '1px solid var(--c-border)', borderRadius: 8, padding: '0 10px', background: 'var(--c-bg)', color: 'var(--c-text)', fontFamily: 'inherit', fontSize: 12 }} />
-              <button disabled={!loaded} onClick={addTask} style={{ ...actionStyle, background: 'var(--c-text)', color: 'var(--c-surface)' }}>+</button>
+            <div className="lm-today-task-entry">
+              <input value={taskText} disabled={!loaded} onChange={(e) => setTaskText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder="Neue Aufgabe…" />
+              <button disabled={!loaded} onClick={addTask} className="lm-button lm-button-primary" aria-label="Aufgabe hinzufügen">+</button>
             </div>
-            {tasks.length === 0 && <div style={{ padding: '18px 0', color: 'var(--c-text-3)', fontSize: 12 }}>Noch keine Aufgaben. Alles bereit. 🎉</div>}
-            <div style={{ display: 'grid', gap: 6 }}>
+            {tasks.length === 0 && <div className="lm-today-empty">Noch keine Aufgaben. Alles bereit. 🎉</div>}
+            <div className="lm-today-task-list">
               {tasks.map((task) => (
-                <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 0', borderBottom: '1px solid var(--c-border)' }}>
+                <div key={task.id} className="lm-today-task">
                   <input type="checkbox" disabled={!loaded} checked={task.done} onChange={() => setTasks(tasks.map((item) => item.id === task.id ? { ...item, done: !item.done } : item))} />
-                  <span style={{ flex: 1, fontSize: 13, color: task.done ? 'var(--c-text-3)' : 'var(--c-text)', textDecoration: task.done ? 'line-through' : 'none' }}>{task.text}</span>
-                  <button disabled={!loaded} onClick={() => setTasks(tasks.filter((item) => item.id !== task.id))} aria-label="Aufgabe löschen" style={{ border: 0, background: 'transparent', color: 'var(--c-text-3)', cursor: 'pointer' }}>×</button>
+                  <span className={task.done ? 'is-done' : undefined}>{task.text}</span>
+                  <button disabled={!loaded} onClick={() => setTasks(tasks.filter((item) => item.id !== task.id))} aria-label="Aufgabe löschen" className="lm-icon-button">×</button>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 9, color: saveStatus === 'error' ? 'var(--c-danger-text)' : 'var(--c-text-3)', fontSize: 10 }}>
+            <div className={saveStatus === 'error' ? 'lm-today-save-status is-error' : 'lm-today-save-status'}>
               {saveStatus === 'error'
-                ? <><span>{tasksSync.errorKind === 'rejected' ? 'Die Aufgaben konnten nicht gespeichert werden. Bitte prüfe sie und versuche es erneut.' : 'Nicht in der Datenbank gespeichert. Bitte prüfe die Verbindung und versuche es erneut.'}</span> <button type="button" onClick={retryTasksSync} style={{ marginLeft: 5, border: 0, padding: 0, background: 'transparent', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Erneut versuchen</button></>
+                ? <><span>{tasksSync.errorKind === 'rejected' ? 'Die Aufgaben konnten nicht gespeichert werden. Bitte prüfe sie und versuche es erneut.' : 'Nicht in der Datenbank gespeichert. Bitte prüfe die Verbindung und versuche es erneut.'}</span> <button type="button" onClick={retryTasksSync} className="lm-text-button">Erneut versuchen</button></>
                 : (saveStatus === 'pending' ? 'Wird gespeichert…' : 'In deinem Konto gespeichert.')}
             </div>
           </section>
 
-          <section style={cardStyle}>
-            <h2 style={{ margin: '0 0 10px', fontSize: 15 }}>Schnellzugriff</h2>
-            <div className="lm-today-quick-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
-              <button onClick={onOpenSearch} style={actionStyle}>⌕ Suche</button>
-              <button onClick={onOpenSchedule} style={actionStyle}>📅 Stundenplan</button>
+          <section className="lm-editorial-card">
+            <h2>Schnellzugriff</h2>
+            <div className="lm-today-quick-actions">
+              <button onClick={onOpenSearch} className="lm-button lm-button-secondary">⌕ Suche</button>
+              <button onClick={onOpenSchedule} className="lm-button lm-button-secondary">📅 Stundenplan</button>
             </div>
           </section>
         </div>

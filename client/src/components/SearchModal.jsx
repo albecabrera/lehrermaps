@@ -47,27 +47,27 @@ export default function SearchModal({ open, onClose }) {
   if (!open) return null;
 
   return createPortal(
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 4200, background: 'var(--c-overlay)', backdropFilter: 'blur(10px)', display: 'grid', placeItems: 'start center', paddingTop: 70 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: 700, maxWidth: '94vw', maxHeight: '74vh', overflow: 'hidden', background: 'var(--c-surface)', border: '1px solid var(--c-border)', borderRadius: 14, boxShadow: '0 20px 44px rgba(0,0,0,.24)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: 12, borderBottom: '1px solid var(--c-border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div onClick={onClose} className="lm-dialog-backdrop lm-search-backdrop">
+      <div onClick={(e) => e.stopPropagation()} className="lm-modal-surface lm-search-dialog">
+        <div className="lm-search-header">
           <input
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Notizbücher, Seiten, Blöcke durchsuchen…"
-            style={{ flex: 1, border: '1px solid var(--c-border)', background: 'var(--c-bg)', color: 'var(--c-text)', borderRadius: 8, padding: '9px 11px', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
+            className="lm-search-input"
           />
-          <kbd style={{ fontSize: 11, color: 'var(--c-text-3)', border: '1px solid var(--c-border)', borderRadius: 6, padding: '3px 6px' }}>Esc</kbd>
+          <kbd className="lm-key-hint">Esc</kbd>
         </div>
 
-        <div style={{ overflow: 'auto', padding: 10 }}>
-          {loading && <div style={{ fontSize: 12, color: 'var(--c-text-3)', padding: 8 }}>Suche…</div>}
-          {!loading && !groups.length && q.trim() && <div style={{ fontSize: 12, color: 'var(--c-text-3)', padding: 8 }}>Keine Ergebnisse</div>}
+        <div className="lm-search-results">
+          {loading && <div className="lm-search-empty">Suche…</div>}
+          {!loading && !groups.length && q.trim() && <div className="lm-search-empty">Keine Ergebnisse</div>}
 
           {groups.map((g) => (
-            <div key={g.notebook_id} style={{ marginBottom: 12, border: '1px solid var(--c-border)', borderRadius: 10 }}>
-              <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--c-border)', fontSize: 12, fontWeight: 700 }}>{g.notebook_title}</div>
-              <div style={{ display: 'grid' }}>
+            <div key={g.notebook_id} className="lm-search-group">
+              <div className="lm-search-group-title">{g.notebook_title}</div>
+              <div className="lm-search-group-results">
                 {g.results.map((r, i) => (
                   <button
                     key={`${r.page_id}-${i}`}
@@ -77,10 +77,10 @@ export default function SearchModal({ open, onClose }) {
                       setActivePageId(r.page_id);
                       onClose?.();
                     }}
-                    style={{ border: 'none', borderTop: i ? '1px solid var(--c-border)' : 'none', background: 'transparent', color: 'var(--c-text)', textAlign: 'left', cursor: 'pointer', padding: '8px 10px', fontFamily: 'inherit' }}
+                    className="lm-search-result"
                   >
-                    <div style={{ fontSize: 12, fontWeight: 600 }}>{r.page_title}</div>
-                    <div style={{ fontSize: 11, color: 'var(--c-text-3)' }}>{r.section_title} · {r.snippet || '—'}</div>
+                    <div className="lm-search-result-title">{r.page_title}</div>
+                    <div className="lm-search-result-meta">{r.section_title} · {r.snippet || '—'}</div>
                   </button>
                 ))}
               </div>

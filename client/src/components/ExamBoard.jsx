@@ -23,73 +23,6 @@ const KLASSEN = [
   'Q1','Q2',
 ];
 
-// ── CSS animations ────────────────────────────────────────────────────────────
-const ANIM_STYLES = `
-  @keyframes eb-boardIn   { from{opacity:0;transform:scale(.98)} to{opacity:1;transform:scale(1)} }
-  @keyframes eb-cardIn    { from{opacity:0;transform:translateY(24px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-  @keyframes eb-pulse     { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.15)} }
-  @keyframes eb-shimmer   { 0%{background-position:-200% center} 100%{background-position:200% center} }
-  @keyframes eb-spin      { to{transform:rotate(360deg)} }
-  @keyframes eb-glow      { 0%,100%{box-shadow:0 0 8px var(--eb-col)} 50%{box-shadow:0 0 20px var(--eb-col)} }
-
-  .eb-board   { animation: eb-boardIn .3s cubic-bezier(.22,1,.36,1) both }
-  .eb-card    {
-    animation: eb-cardIn .4s cubic-bezier(.22,1,.36,1) both;
-    transition: transform .28s cubic-bezier(.22,1.3,.36,1), box-shadow .28s ease, border-color .2s ease;
-    will-change: transform;
-  }
-  .eb-card:hover { transform: translateY(-8px) scale(1.015) !important; }
-
-  .eb-btn-primary {
-    transition: transform .18s cubic-bezier(.22,1.3,.36,1), box-shadow .18s ease, opacity .15s;
-  }
-  .eb-btn-primary:hover  { transform: translateY(-2px) scale(1.04); }
-  .eb-btn-primary:active { transform: scale(.96) !important; }
-
-  .eb-btn-ghost {
-    transition: background .14s, transform .14s cubic-bezier(.22,1.3,.36,1);
-  }
-  .eb-btn-ghost:hover  { transform: translateY(-1px); }
-  .eb-btn-ghost:active { transform: scale(.97); }
-
-  .eb-icon-btn {
-    transition: background .1s, color .1s, transform .14s cubic-bezier(.22,1.3,.36,1);
-  }
-  .eb-icon-btn:hover  { transform: scale(1.18); }
-  .eb-icon-btn:active { transform: scale(.9); }
-
-  .eb-pulse-dot { animation: eb-pulse 1.6s ease-in-out infinite; }
-  .eb-shimmer {
-    background: linear-gradient(90deg,
-      var(--eb-pc) 0%, var(--eb-pc) 40%,
-      rgba(255,255,255,.45) 60%, var(--eb-pc) 80%);
-    background-size: 250% auto;
-    animation: eb-shimmer 2.2s linear infinite;
-  }
-  .eb-card-actions {
-    opacity: 0; transition: opacity .18s;
-  }
-  .eb-card:hover .eb-card-actions { opacity: 1; }
-
-  /* Grid background — light mode only */
-  :root .eb-grid-bg {
-    background:
-      radial-gradient(ellipse 60% 40% at 8% 12%, rgba(232,71,42,.07) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 45% at 92% 88%, rgba(99,102,241,.07) 0%, transparent 60%),
-      radial-gradient(ellipse 40% 50% at 50% 50%, rgba(234,179,8,.04) 0%, transparent 70%),
-      linear-gradient(160deg, #fdf6f4 0%, #f5f7ff 55%, #faf4ff 100%);
-  }
-  [data-theme="dark"] .eb-grid-bg { background: var(--c-bg); }
-
-  .eb-card:hover {
-    box-shadow:
-      0 16px 48px rgba(0,0,0,.14),
-      0 0 32px var(--eb-col-glow),
-      0 0 0 1px var(--eb-col-border) !important;
-    border-color: var(--eb-col-border) !important;
-  }
-`;
-
 // ── helpers ───────────────────────────────────────────────────────────────────
 function toDate(s) {
   if (!s) return '';
@@ -522,7 +455,6 @@ export default function ExamBoard({ onDismiss }) {
 
   return (
     <>
-      <style>{ANIM_STYLES}</style>
       <div className="eb-board" style={{
         position:'fixed', inset:0, zIndex:10000,
         background:'var(--c-bg)',
@@ -736,7 +668,7 @@ function ExpandedCardOverlay({ exam, col, onClose, onDelete, onEdit }) {
               Countdown
             </span>
             <span
-              className={col.urgent ? 'eb-pulse' : undefined}
+              className={col.urgent ? 'eb-pulse eb-pulse-dot' : undefined}
               style={{ fontSize: 38, fontWeight: 900, color: col.color, fontFamily: '"DM Mono",monospace', lineHeight: 1 }}
             >
               {fmtCountdown(exam.exam_date, exam.exam_time)}

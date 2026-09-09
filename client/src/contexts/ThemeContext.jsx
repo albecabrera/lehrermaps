@@ -8,9 +8,9 @@ export function ThemeProvider({ children }) {
   useLayoutEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     localStorage.setItem('lm_theme', isDark ? 'dark' : 'light');
-    // Standalone-/Browser-Statusleiste synchron zum Theme halten
+    // Keep standalone and browser chrome aligned with the editorial shell.
     const tc = document.querySelector('meta[name="theme-color"]');
-    if (tc) tc.setAttribute('content', isDark ? '#0D1117' : '#F8F9FB');
+    if (tc) tc.setAttribute('content', isDark ? '#071827' : '#EEF3F6');
     // Remove no-transition guard once theme is applied
     document.documentElement.classList.remove('lm-no-transition');
   }, [isDark]);

@@ -62,27 +62,14 @@ export default function LoginPanel({ onLogin }) {
   const back = () => { setStep('select'); setPassword(''); setError(''); };
 
   const isTeacher = true;
-  const accent = '#173B66';
-
   return (
-    <div className="lm-login-stable lm-login-shell" style={{
-      minHeight: '100vh', background: 'var(--c-bg)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif',
-      // paddingTop 64 statt 24: garantiert Abstand zu den fixed
-      // Sprach-/Theme-Buttons (top:16, Höhe 32) — Flexbox respektiert
-      // padding als Mindestabstand auch wenn justifyContent:center bei
-      // langem Inhalt (kurze Bildschirme) wirkungslos wird.
-      padding: '64px 24px 40px',
-      position: 'relative',
-    }}>
+    <div className="lm-login-stable lm-login-shell">
 
       <div className="lm-login-topbrand"><BrandMark size={36} /></div>
 
       {/* Top-right controls */}
-      <div style={{ position: 'fixed', top: 16, right: 16, display: 'flex', gap: 8 }}>
-        <button onClick={toggleTheme} style={topBtnStyle}>
+      <div className="lm-login-controls">
+        <button onClick={toggleTheme} className="lm-icon-button" aria-label={isDark ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'}>
           {isDark
             ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
             : <svg width="12" height="12" viewBox="0 0 13 13" fill="none"><path d="M11.5 8.5A5 5 0 0 1 4.5 1.5a5 5 0 1 0 7 7z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
@@ -119,20 +106,13 @@ export default function LoginPanel({ onLogin }) {
             </div>
           </WelcomeBanner>
 
-          <div style={{ fontSize: 10, color: 'var(--c-text-3)', marginTop: 36 }}>
+          <div className="lm-login-footer">
             {t('login.footer')}
           </div>
         </div>
       ) : (
         /* ── Password form ── */
-        <div className="lm-modal-surface" style={{
-          width: '100%', maxWidth: 340,
-          background: 'var(--c-surface)', borderRadius: 20,
-          border: '1px solid var(--c-border-soft)',
-          boxShadow: 'var(--c-shadow-modal)',
-          padding: '28px 28px 32px',
-          animation: 'lmSlideUp .2s cubic-bezier(.4,.7,.3,1)',
-        }}>
+        <div className="lm-modal-surface lm-login-password-card">
           <button
             onClick={back}
             style={{
@@ -184,21 +164,7 @@ export default function LoginPanel({ onLogin }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('login.placeholder')}
-                style={{
-                  appearance: 'none',
-                  border: `1px solid ${error ? '#DC2626' : 'var(--c-border)'}`,
-                  borderRadius: 10, background: 'var(--c-input-bg)', color: 'var(--c-text)',
-                  padding: '11px 13px', fontSize: 14, fontFamily: 'inherit', outline: 'none',
-                  transition: 'border-color .15s, box-shadow .15s',
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = accent;
-                  e.target.style.boxShadow = `0 0 0 3px ${accent}22`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = error ? '#DC2626' : 'var(--c-border)';
-                  e.target.style.boxShadow = 'none';
-                }}
+                className={error ? 'lm-login-password-input is-error' : 'lm-login-password-input'}
               />
             </label>
 
@@ -212,18 +178,7 @@ export default function LoginPanel({ onLogin }) {
             <button
               type="submit"
               disabled={loading || !password}
-              style={{
-                height: 44, border: 'none', borderRadius: 10,
-                background: accent, color: '#fff',
-                fontSize: 14, fontWeight: 600,
-                cursor: loading ? 'wait' : 'pointer',
-                fontFamily: 'inherit', marginTop: 4,
-                opacity: loading || !password ? 0.65 : 1,
-                boxShadow: `0 3px 14px ${accent}40`,
-                transition: 'transform .1s, opacity .15s',
-              }}
-              onMouseDown={(e) => { if (!loading && password) e.currentTarget.style.transform = 'scale(0.98)'; }}
-              onMouseUp={(e) => { e.currentTarget.style.transform = ''; }}
+              className="lm-button lm-button-primary lm-login-submit"
             >
               {loading ? t('login.loading') : t('login.button')}
             </button>
@@ -366,12 +321,3 @@ function TeacherAvatar({ avatar, onChange, fileRef, hovered, setHovered, size = 
     </div>
   );
 }
-
-const topBtnStyle = {
-  width: 32, height: 32,
-  border: '1px solid var(--c-border)', borderRadius: 8,
-  background: 'var(--c-surface)', cursor: 'pointer',
-  color: 'var(--c-text-2)', fontSize: 11, fontWeight: 600,
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  fontFamily: '"DM Sans", -apple-system, sans-serif',
-};
