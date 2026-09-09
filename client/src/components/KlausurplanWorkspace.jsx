@@ -1,5 +1,7 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
-import { getKlausurplanFolder, getFiles, viewFile } from '../lib/api';
+import { getKlausurplanFolder, getFiles } from '../lib/api';
+import FilePreview from './FilePreview';
 
 const DOCUMENTS = [
   { label: '1. Quartal', filename: 'Klausurplan_8_9-10_2026-27 1. Quartal.docx' },
@@ -13,6 +15,7 @@ const normalize = (value) => String(value || '').normalize('NFKC').trim().toLoca
 export default function KlausurplanWorkspace() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +46,7 @@ export default function KlausurplanWorkspace() {
               <article key={document.filename} className="lm-klausurplan-document">
                 <span aria-hidden="true">▤</span>
                 <div><strong>{document.label}</strong><small>{file ? file.original_name : 'Noch nicht verfügbar'}</small></div>
-                {file ? <a href={viewFile(file.id)} target="_blank" rel="noreferrer">Öffnen</a> : <button type="button" disabled>Nicht verfügbar</button>}
+                {file ? <button type="button" onClick={() => setSelectedFile(file)}>Öffnen</button> : <button type="button" disabled>Nicht verfügbar</button>}
               </article>
             );
           })}
@@ -53,6 +56,14 @@ export default function KlausurplanWorkspace() {
         <div className="lm-klausurplan-section-heading"><h2 id="school-calendar-title">Schulischer Terminplan</h2></div>
         <iframe src="/terminplan-schuljahr-2026-27.pdf#view=FitH" title="Terminplan Schuljahr 2026/27" />
       </section>
+      {selectedFile && createPortal(
+        <div className="lm-klausurplan-preview-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedFile(null); }}>
+          <section className="lm-klausurplan-preview-dialog" role="dialog" aria-modal="true" aria-label={`Klausurplan: ${selectedFile.original_name}`}>
+            <FilePreview file={selectedFile} accent="#0F766E" onClose={() => setSelectedFile(null)} />
+          </section>
+        </div>,
+        document.body
+      )}
     </main>
   );
 }
