@@ -831,24 +831,34 @@ export default function App({ onLogout }) {
     }}>
       <a className="lm-skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
-      {/* Workspace navigation */}
-      <header className="lm-tabbar" aria-label="Hauptnavigation" style={{ display: 'flex', alignItems: 'center', padding: '8px 16px', background: 'var(--c-tab-bg)', borderBottom: '1px solid var(--c-border)', flexShrink: 0, gap: 4, minHeight: 56, overflowX: 'auto' }}>
-        <button className="lm-app-brand" type="button" onClick={() => { setViewMode('today'); setActivePageId(null); closeFolderView(); }} aria-label="Zu Heute"><BrandMark size={isMobile ? 30 : 28} label={!isMobile} /></button>
-        <nav className="lm-desktop-primary-nav" aria-label="Primäre Navigation" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+      {/* Workspace navigation — preserves the original visual language without restoring archived subject navigation. */}
+      <header className="lm-tabbar" aria-label="Hauptnavigation">
+        <button className="lm-app-brand" type="button" onClick={() => { setViewMode('today'); setActivePageId(null); closeFolderView(); }} aria-label="Zu Heute">
+          <BrandMark size={isMobile ? 30 : 28} label={!isMobile} />
+        </button>
+        <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
           {[
-            ['today', 'Heute', () => setViewMode('today')],
-            ['schedule', 'Stundenplan', () => setViewMode('schedule')],
-            ['appointments', 'Termine', () => setViewMode('appointments')],
-            ['klausurplan', 'Klausurplan', () => setViewMode('klausurplan')],
-            ['focus', 'Focus', () => setFocusMode((value) => !value)],
-            ['bugs', 'Bugs', () => setBugChecklistOpen(true)],
-          ].map(([id, label, onClick]) => <button key={id} type="button" onClick={onClick} className="lm-spring" style={{ appearance: 'none', border: '1px solid transparent', borderRadius: 8, padding: '8px 10px', background: (id === 'focus' ? focusMode : viewMode === id) ? 'var(--c-surface)' : 'transparent', color: (id === 'focus' ? focusMode : viewMode === id) ? 'var(--c-text)' : 'var(--c-text-2)', font: '600 13px inherit', cursor: 'pointer' }}>{label}</button>)}
-          <a href={ONE_NOTE_APP_URL} className="lm-spring" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen" style={{ textDecoration: 'none', padding: '8px 10px', color: 'var(--c-text-2)', font: '600 13px inherit', display: 'flex', alignItems: 'center', gap: 7 }}><span className="lm-onenote-glyph" aria-hidden="true">N</span>OneNote</a>
-          <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring" style={{ textDecoration: 'none', padding: '8px 10px', color: 'var(--c-text-2)', font: '600 13px inherit', display: 'flex', alignItems: 'center', gap: 7 }}><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" />Notion</a>
-          <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring" style={{ textDecoration: 'none', padding: '8px 10px', color: 'var(--c-text-2)', font: '600 13px inherit', display: 'flex', alignItems: 'center', gap: 7 }}><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" />Miro</a>
+            ['today', '⌂', 'Heute', () => setViewMode('today')],
+            ['schedule', '▦', 'Stundenplan', () => setViewMode('schedule')],
+            ['appointments', '◷', 'Termine', () => setViewMode('appointments')],
+            ['klausurplan', '▤', 'Klausurplan', () => setViewMode('klausurplan')],
+            ['focus', '◉', 'Focus', () => setFocusMode((value) => !value)],
+            ['bugs', '⌁', 'Bugs', () => setBugChecklistOpen(true)],
+          ].map(([id, icon, label, onClick]) => {
+            const active = id === 'focus' ? focusMode : viewMode === id;
+            return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
+          })}
+          <a href={ONE_NOTE_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-onenote" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen"><span className="lm-onenote-glyph" aria-hidden="true">N</span><span>OneNote</span></a>
+          <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-notion"><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Notion</span></a>
+          <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-miro"><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Miro</span></a>
         </nav>
-        <button className="lm-spring" onClick={toggleTheme} title={isDark ? t('app.theme_light') : t('app.theme_dark')} aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')} style={{ width: 32, height: 32, border: '1px solid var(--c-border)', borderRadius: 8, background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer' }}>{isDark ? '☀' : '◐'}</button>
-        <button className="lm-global-logout" type="button" onClick={onLogout} aria-label="Logout" style={{ border: 0, background: 'transparent', color: 'var(--c-text-2)', cursor: 'pointer', font: '600 13px inherit' }}>Logout</button>
+        <div className="lm-desktop-trailing-group">
+          <div className="lm-topbar-tools">
+            <button className="lm-spring lm-workspace-tool" onClick={() => setGlobalSearchOpen(true)} title="Suche (⌘P)" aria-label="Suche">⌕</button>
+            <button className="lm-spring lm-workspace-tool" onClick={toggleTheme} title={isDark ? t('app.theme_light') : t('app.theme_dark')} aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}>{isDark ? '☀' : '◐'}</button>
+          </div>
+          <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout"><span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span></button>
+        </div>
       </header>
 
       {/* Body */}
