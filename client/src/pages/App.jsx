@@ -837,9 +837,9 @@ export default function App({ onLogout }) {
         <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
           {[
             ['today', '⌂', 'Heute', () => setViewMode('today')],
-            ['schedule', '▦', 'Stundenplan', () => setViewMode('schedule')],
-            ['appointments', '◷', 'Termine', () => setViewMode('appointments')],
-            ['klausurplan', '▤', 'Klausurplan', () => setViewMode('klausurplan')],
+            ['schedule', <svg key="schedule-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3M5 9h2M9 9h2M5 11.5h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Stundenplan', () => setViewMode('schedule')],
+            ['appointments', <svg key="appointments-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/><circle cx="10.5" cy="10" r="1" fill="currentColor"/></svg>, 'Termine', () => setViewMode('appointments')],
+            ['klausurplan', <svg key="exam-plan-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2.5h6l2 2V13.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M10 2.5v2h2M6 7h4M6 9.5h4M6 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Klausurplan', () => setViewMode('klausurplan')],
             ['bugs', <BugChecklistIcon key="bug-icon" size={16} />, 'Bugs', () => setBugChecklistOpen(true)],
           ].map(([id, icon, label, onClick]) => {
             const active = viewMode === id;
