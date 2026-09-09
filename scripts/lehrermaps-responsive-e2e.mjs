@@ -19,6 +19,9 @@ const viewports = [
 const results = [];
 const pass = (name, detail = '') => results.push({ name, status: 'PASS', detail });
 const fail = (name, error) => results.push({ name, status: 'FAIL', detail: error.message });
+const klausurplanItem = (menu, label) => menu.getByRole('menuitem', {
+  name: new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+(Öffnen|Nicht verfügbar)$`),
+});
 
 export function browserLaunchOptions(environment = process.env) {
   return environment.CHROME_PATH
@@ -99,14 +102,17 @@ async function exerciseHomeDrawer(page) {
   await page.locator('.lm-drawer').waitFor({ state: 'hidden' });
 }
 
-async function exerciseKlausurplan(page) {
+async function exerciseKlausurplan(page, viewport) {
   const toggle = page.getByRole('button', { name: 'Klausurplan' }).first();
   assert(await toggle.count() === 1, 'Klausurplan toggle is unavailable');
 
   await toggle.click();
-  await page.locator('#lm-klasurplan-menu').waitFor({ state: 'visible' });
-  assert(await page.getByRole('menuitem', { name: /1\. Quartal/i }).count() === 1, '1. Quartal is unavailable');
-  assert(await page.getByRole('menuitem', { name: /2\. Quartal/i }).count() === 1, '2. Quartal is unavailable');
+  const initialMenu = page.locator('#lm-klasurplan-menu');
+  await initialMenu.waitFor({ state: 'visible' });
+  for (const label of ['1. Quartal', '2. Quartal', 'Q2 · 1. Quartal', 'Q2 · 2. Quartal']) {
+    assert(await klausurplanItem(initialMenu, label).count() === 1, `${label} is unavailable`);
+  }
+  await measureLayout(page, viewport);
   await page.keyboard.press('Escape');
   await page.locator('#lm-klasurplan-menu').waitFor({ state: 'hidden' });
 
@@ -114,8 +120,8 @@ async function exerciseKlausurplan(page) {
   // a second quarter must remain possible while the first preview is open.
   if (page.viewportSize().width <= 600) return;
   await toggle.click();
-  const firstQuarter = page.getByRole('menuitem', { name: /1\. Quartal/i });
-  const secondQuarter = page.getByRole('menuitem', { name: /2\. Quartal/i });
+  const firstQuarter = klausurplanItem(page.locator('#lm-klasurplan-menu'), '1. Quartal');
+  const secondQuarter = klausurplanItem(page.locator('#lm-klasurplan-menu'), '2. Quartal');
   if (await firstQuarter.isDisabled() || await secondQuarter.isDisabled()) return;
 
   await firstQuarter.click();
@@ -130,8 +136,12 @@ async function exerciseKlausurplan(page) {
   await portalHeaderToggle.click();
   const headerMenu = page.locator('#lm-header-klasurplan-menu');
   await headerMenu.waitFor({ state: 'visible' });
-  const headerSecondQuarter = headerMenu.getByRole('menuitem', { name: /2\. Quartal/i });
+  const headerSecondQuarter = klausurplanItem(headerMenu, '2. Quartal');
   assert(await headerSecondQuarter.isVisible(), '2. Quartal must remain visible in the header menu above the first preview');
+  for (const label of ['1. Quartal', '2. Quartal', 'Q2 · 1. Quartal', 'Q2 · 2. Quartal']) {
+    assert(await klausurplanItem(headerMenu, label).count() === 1, `${label} is unavailable in the overlay menu`);
+  }
+  await measureLayout(page, viewport);
   const headerSecondQuarterIsTopmost = await headerSecondQuarter.evaluate((button) => {
     const rect = button.getBoundingClientRect();
     const topmost = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
@@ -141,7 +151,7 @@ async function exerciseKlausurplan(page) {
   await headerSecondQuarter.click();
   await preview.waitFor({ state: 'visible' });
   assert((await preview.getAttribute('aria-label'))?.includes('2_Quartal'), 'Floating switcher did not open the 2. Quartal preview');
-  const floatingSecondQuarter = floatingSwitcher.getByRole('button', { name: /2\. Quartal/i });
+  const floatingSecondQuarter = floatingSwitcher.getByRole('button', { name: /^2\. Quartal$/ });
   assert(await floatingSecondQuarter.getAttribute('aria-pressed') === 'true', '2. Quartal must remain the visible active switch');
   await page.keyboard.press('Escape');
   await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'hidden' });
@@ -185,7 +195,7 @@ async function run() {
           await login(page);
           await measureLayout(page, viewport);
           if (viewport.mobileUi && role === 'teacher') await exerciseHomeDrawer(page);
-          await exerciseKlausurplan(page);
+          await exerciseKlausurplan(page, viewport);
           await exerciseOneNote(page, viewport);
           await measureLayout(page, viewport);
           assert(!consoleErrors.length, `console errors: ${consoleErrors.join('; ')}`);

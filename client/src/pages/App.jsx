@@ -30,6 +30,8 @@ import { ONE_NOTE_APP_URL } from '../lib/externalApps';
 const KLASURPLAN_DOCUMENTS = [
   { key: 'first', label: '1. Quartal', filename: 'Klausurplan_8_9-10_2026-27 1. Quartal.docx' },
   { key: 'second', label: '2. Quartal', filename: 'Klausurplan_8-9-10_2026-27 2_Quartal.docx' },
+  { key: 'q2-first', label: 'Q2 · 1. Quartal', filename: 'Q2-1.-Quartal.docx' },
+  { key: 'q2-second', label: 'Q2 · 2. Quartal', filename: 'Q2-2.-Quartal.docx' },
 ];
 
 const normalizeFileName = (name) => String(name || '').normalize('NFKC').trim().toLocaleLowerCase();

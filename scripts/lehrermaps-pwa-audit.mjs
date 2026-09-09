@@ -55,6 +55,26 @@ await check('manifest', async () => {
   pass('manifest', `${manifest.icons.length} icons`);
 });
 
+await check('LehrerMaps app icons', async () => {
+  const pageResponse = await get('/index.html');
+  if (!pageResponse.ok) throw new Error(`index.html -> HTTP ${pageResponse.status}`);
+  const html = await pageResponse.text();
+  for (const expected of [
+    'href="/favicon.ico"',
+    'href="/assets/icons/lehrermaps-favicon-32.png"',
+    'href="/assets/icons/lehrermaps-apple-touch-icon.png"',
+    'rel="apple-touch-icon-precomposed"',
+  ]) {
+    if (!html.includes(expected)) throw new Error(`missing ${expected}`);
+  }
+  for (const icon of ['/favicon.ico', '/assets/icons/lehrermaps-favicon-32.png', '/assets/icons/lehrermaps-apple-touch-icon.png']) {
+    const iconResponse = await get(icon);
+    if (!iconResponse.ok) throw new Error(`${icon} -> HTTP ${iconResponse.status}`);
+    requireContentType(iconResponse, /^image\//i, icon);
+  }
+  pass('LehrerMaps app icons', 'browser, iOS and PWA icon links');
+});
+
 await check('service worker', async () => {
   const response = await get('/service-worker.js');
   if (!response.ok) throw new Error(`HTTP ${response.status}`);

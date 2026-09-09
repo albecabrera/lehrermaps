@@ -1345,7 +1345,7 @@ button:active {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  min-height: 38px;
+  min-height: 44px;
   padding: 8px 10px;
   border: 0;
   border-radius: 8px;
@@ -1454,7 +1454,7 @@ button:active {
   white-space: nowrap;
 }
 .lm-floating-klasurplan-switcher button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 10px;
   border: 1px solid var(--c-border-soft);
   border-radius: 8px;
