@@ -865,7 +865,7 @@ export default function App({ onLogout }) {
         </nav>
         <div className="lm-desktop-trailing-group">
           <div className="lm-topbar-tools">
-            <button className="lm-spring lm-workspace-tool lm-classroom-timer-trigger" type="button" onClick={() => setClassroomTimerOpen(true)} title="Klassenzeit" aria-label="Klassenzeit öffnen">◷</button>
+            <button className="lm-spring lm-workspace-tool lm-classroom-timer-trigger" type="button" onClick={() => setClassroomTimerOpen(true)} title="Klassenzeit" aria-label="Klassenzeit öffnen"><span className="lm-classroom-timer-trigger-icon" aria-hidden="true">◷</span><span className="lm-classroom-timer-trigger-label">Timer</span></button>
             <button className="lm-spring lm-workspace-tool" onClick={() => setGlobalSearchOpen(true)} title="Suche (⌘P)" aria-label="Suche">⌕</button>
             <button className="lm-spring lm-workspace-tool" onClick={toggleTheme} title={isDark ? t('app.theme_light') : t('app.theme_dark')} aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}>{isDark ? '☀' : '◐'}</button>
           </div>
