@@ -499,6 +499,34 @@ html, body, #root {
 .lm-classroom-timer:fullscreen .lm-classroom-timer-display { color: #fff; text-shadow: 0 10px 42px rgba(0,0,0,.28); }
 .lm-classroom-timer:fullscreen .lm-classroom-timer-mode { border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.09); }
 .lm-classroom-timer:fullscreen .lm-classroom-timer-mode button, .lm-classroom-timer:fullscreen .lm-classroom-timer-icon-button, .lm-classroom-timer:fullscreen .lm-classroom-timer-controls button:not(.lm-classroom-timer-primary), .lm-classroom-timer:fullscreen .lm-classroom-timer-apply { color: #fff; border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.08); }
+[data-theme="dark"] .lm-classroom-timer {
+  border-color: rgba(157, 205, 219, .28);
+  background: linear-gradient(135deg, #16354b, #0b2235);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, .56), inset 0 1px 0 rgba(255,255,255,.08);
+}
+[data-theme="dark"] .lm-classroom-timer-header,
+[data-theme="dark"] .lm-classroom-timer-footer { border-color: rgba(157, 205, 219, .18); }
+[data-theme="dark"] .lm-classroom-timer h2 { color: #f4f8fa; }
+[data-theme="dark"] .lm-classroom-timer-kicker { color: #78e0d8; }
+[data-theme="dark"] .lm-classroom-timer-status { color: #c6dfe5; }
+[data-theme="dark"] .lm-classroom-timer-display { color: #f4f8fa; text-shadow: 0 8px 28px rgba(0,0,0,.34); }
+[data-theme="dark"] .lm-classroom-timer-display.is-urgent { color: #ffaaa3; }
+[data-theme="dark"] .lm-classroom-timer-mode { border-color: rgba(157, 205, 219, .25); background: #0a1c2b; }
+[data-theme="dark"] .lm-classroom-timer-mode button { color: #c6dfe5; }
+[data-theme="dark"] .lm-classroom-timer-mode button.is-active { background: #24516a; color: #fff; box-shadow: 0 3px 12px rgba(0,0,0,.32); }
+[data-theme="dark"] .lm-classroom-timer-icon-button,
+[data-theme="dark"] .lm-classroom-timer-controls button,
+[data-theme="dark"] .lm-classroom-timer-apply,
+[data-theme="dark"] .lm-classroom-timer-editor input { border-color: rgba(157, 205, 219, .3); background: #17384e; color: #f4f8fa; }
+[data-theme="dark"] .lm-classroom-timer-controls .lm-classroom-timer-primary { border-color: #137e7a; background: #137e7a; color: #fff; }
+[data-theme="dark"] .lm-classroom-timer-editor label,
+[data-theme="dark"] .lm-classroom-timer-notice { color: #c6dfe5; }
+[data-theme="dark"] .lm-classroom-timer-footer { color: #b6cfd7; }
+[data-theme="dark"] .lm-classroom-timer-icon-button:focus-visible,
+[data-theme="dark"] .lm-classroom-timer-mode button:focus-visible,
+[data-theme="dark"] .lm-classroom-timer-controls button:focus-visible,
+[data-theme="dark"] .lm-classroom-timer-apply:focus-visible,
+[data-theme="dark"] .lm-classroom-timer-editor input:focus-visible { outline-color: #78e0d8; }
 @media (max-width: 560px) { .lm-classroom-timer-backdrop { align-items: end; padding: 0; } .lm-classroom-timer { min-height: min(720px, 92dvh); border-radius: 22px 22px 0 0; } .lm-classroom-timer-display { font-size: clamp(50px, 16vw, 82px); } .lm-classroom-timer-editor { gap: 7px; } .lm-classroom-timer-editor input { width: 68px; } .lm-classroom-timer-apply { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .lm-classroom-timer-backdrop, .lm-classroom-timer { animation: none; } .lm-classroom-timer *, .lm-classroom-timer *::before, .lm-classroom-timer *::after { transition-duration: .01ms !important; } }
 
