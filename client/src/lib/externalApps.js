@@ -4,4 +4,4 @@ export const ONE_NOTE_WEB_URL = 'https://onedrive.live.com/personal/d4acb07aa309
 // OneNote client instead of loading the notebook in the browser.
 export const ONE_NOTE_APP_URL = `onenote:${ONE_NOTE_WEB_URL}`;
 
-export const WEB_UNTIS_URL = 'https://webuntis.com/?hint=school_not_found';
+export const WEB_UNTIS_URL = 'https://esg.webuntis.com/WebUntis/?school=esg#/basic/login';
