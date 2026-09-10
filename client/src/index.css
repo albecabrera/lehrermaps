@@ -377,12 +377,10 @@ html, body, #root {
   font-family: inherit;
 }
 .lm-idoceo-glyph {
-  background: #e2673a;
-  font-family: inherit;
-  font-size: 9px;
-  letter-spacing: -.04em;
+  object-fit: cover;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(8, 65, 145, .22);
 }
-[data-theme="dark"] .lm-idoceo-glyph { background: #ef845e; color: #1f1512; }
 .lm-mobile-more-idoceo { min-height: var(--touch-target); }
 .lm-mobile-more-idoceo:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
 .lm-schedule-close { display: none; }

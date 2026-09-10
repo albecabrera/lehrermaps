@@ -77,16 +77,17 @@ export function MobileBottomNav({ accent, items, active }) {
 export function MobileMoreSheet({
   open, onClose, t, accent,
   isDark, toggleTheme,
-  onExams, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onUntis, onLogout,
+  onExams, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onIdoceo, onUntis, onLogout,
   showTeacherLinks = false,
 }) {
   useEscapeKey(open, onClose);
   if (!open) return null;
 
-  const row = (label, onClick, { disabled = false, danger = false, icon = null } = {}) => (
+  const row = (label, onClick, { disabled = false, danger = false, icon = null, className = '' } = {}) => (
     <button
       onClick={() => { if (disabled) return; onClick(); onClose(); }}
       disabled={disabled}
+      className={className}
       style={{
         width: '100%', minHeight: 46, border: 'none', borderRadius: 10,
         background: 'transparent', textAlign: 'left', fontFamily: 'inherit',
@@ -166,6 +167,10 @@ export function MobileMoreSheet({
             })}
             {row('OneNote', () => { window.location.href = ONE_NOTE_APP_URL; }, {
               icon: <span className="lm-onenote-glyph" aria-hidden="true">N</span>,
+            })}
+            {onIdoceo && row('iDoceo', onIdoceo, {
+              className: 'lm-mobile-more-idoceo',
+              icon: <img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" />,
             })}
             {onUntis && row('WebUntis', onUntis, {
               icon: <span className="lm-webuntis-glyph" aria-hidden="true">W</span>,
