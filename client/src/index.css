@@ -2256,9 +2256,21 @@ textarea:focus {
 .lm-today-task-entry .lm-button { width: var(--touch-target); padding: 0; font-size: 20px; }
 .lm-today-empty { padding: 20px 0; color: var(--c-text-3); font-size: 13px; }
 .lm-today-task-list { display: grid; }
-.lm-today-task { display: flex; align-items: center; gap: 10px; min-height: 48px; border-bottom: 1px solid var(--c-border-soft); }
-.lm-today-task > span { flex: 1; font-size: 13px; }
+.lm-today-task { display: flex; align-items: center; gap: 8px; min-height: 52px; border-bottom: 1px solid var(--c-border-soft); }
+.lm-today-task > input[type="checkbox"] { width: var(--touch-target); height: var(--touch-target); margin: 0; accent-color: var(--c-turquoise); cursor: pointer; }
+.lm-today-task > span { flex: 1; min-width: 0; padding: 12px 4px; color: var(--c-text); font-size: 13px; line-height: 1.4; cursor: text; }
 .lm-today-task > span.is-done { color: var(--c-text-3); text-decoration: line-through; }
+.lm-today-task.is-editing { align-items: flex-start; padding: 8px 0; }
+.lm-today-task.is-editing > input[type="checkbox"] { margin-top: 2px; }
+.lm-today-task-editor { flex: 1; min-width: 0; display: grid; gap: 8px; }
+.lm-today-task-editor input { width: 100%; min-height: var(--touch-target); padding: 0 12px; font-size: 13px; }
+.lm-today-task-editor-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.lm-today-task-editor-actions .lm-button { min-height: var(--touch-target); }
+.lm-task-edit-button { font-size: 18px; }
+.lm-today-task > span:focus-visible,
+.lm-today-task > input[type="checkbox"]:focus-visible,
+.lm-today-task-editor input:focus-visible,
+.lm-today-task-editor .lm-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--c-focus) 42%, transparent); outline-offset: 2px; }
 .lm-today-save-status { margin-top: 10px; color: var(--c-text-3); font-size: 11px; }
 .lm-today-save-status.is-error { color: var(--c-danger-text); }
 

@@ -273,8 +273,9 @@ const checklistSource = await import('node:fs/promises').then(({ readFile }) => 
 assert.match(checklistSource, /enabled:\s*open/, 'the closed checklist does not create a polling queue');
 
 const todayDashboardSource = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../client/src/components/TodayDashboard.jsx', import.meta.url), 'utf8'));
-assert.match(todayDashboardSource, /function normalizeTasks\(value\)/, 'today tasks normalize legacy data before syncing');
-assert.match(todayDashboardSource, /normalizeValue:\s*\(value\) => normalizeTasks\(Array\.isArray\(value\) \? value : value\?\.tasks\)/, 'today tasks preserve both pending arrays and API dashboard responses');
+const todayTasksSource = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../client/src/lib/todayTasks.js', import.meta.url), 'utf8'));
+assert.match(todayTasksSource, /export function normalizeTodayTasks\(value\)/, 'today tasks normalize legacy data before syncing');
+assert.match(todayDashboardSource, /normalizeValue:\s*\(value\) => orderTasksByCompletion\(Array\.isArray\(value\) \? value : value\?\.tasks\)/, 'today tasks preserve both pending arrays and API dashboard responses');
 assert.match(todayDashboardSource, /shouldUsePending:\s*pendingTaskIsNewer/, 'today tasks keep newer shared SQLite data over stale pending edits');
 
 console.log(JSON.stringify({ status: 'PASS', checks: ['pending retention', 'last-save-wins', 'serial writes', 'pending precedence', 'legacy checklist normalization', 'today task normalization', 'absent legacy protection', 'validation error classification', 'confirmed legacy migration', 'response confirmation', 'bounded retry status', 'external refresh', 'pending protection', 'focus, visibility and online refresh', 'quiet background read failures', 'closed checklist lifecycle'] }));
