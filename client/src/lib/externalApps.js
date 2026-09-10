@@ -3,3 +3,5 @@ export const ONE_NOTE_WEB_URL = 'https://onedrive.live.com/personal/d4acb07aa309
 // The OneNote URI scheme asks the operating system to open the installed
 // OneNote client instead of loading the notebook in the browser.
 export const ONE_NOTE_APP_URL = `onenote:${ONE_NOTE_WEB_URL}`;
+
+export const WEB_UNTIS_URL = 'https://webuntis.com/?hint=school_not_found';

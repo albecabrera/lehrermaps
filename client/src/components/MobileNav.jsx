@@ -77,7 +77,7 @@ export function MobileBottomNav({ accent, items, active }) {
 export function MobileMoreSheet({
   open, onClose, t, accent,
   isDark, toggleTheme,
-  onExams, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onLogout,
+  onExams, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onUntis, onLogout,
   showTeacherLinks = false,
 }) {
   useEscapeKey(open, onClose);
@@ -166,6 +166,9 @@ export function MobileMoreSheet({
             })}
             {row('OneNote', () => { window.location.href = ONE_NOTE_APP_URL; }, {
               icon: <span className="lm-onenote-glyph" aria-hidden="true">N</span>,
+            })}
+            {onUntis && row('WebUntis', onUntis, {
+              icon: <span className="lm-webuntis-glyph" aria-hidden="true">W</span>,
             })}
             {divider}
           </>
