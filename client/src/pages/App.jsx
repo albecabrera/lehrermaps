@@ -25,7 +25,7 @@ import FolderGallery from '../components/FolderGallery';
 import FolderIcon from '../components/FolderIcon';
 import { useTheme } from '../contexts/ThemeContext';
 import BrandMark from '../components/BrandMark';
-import { ONE_NOTE_APP_URL, WEB_UNTIS_URL } from '../lib/externalApps';
+import { IDOCEO_APP_URL, ONE_NOTE_APP_URL, WEB_UNTIS_URL } from '../lib/externalApps';
 
 const KLASURPLAN_DOCUMENTS = [
   { key: 'first', label: '1. Quartal', filename: 'Klausurplan_8_9-10_2026-27 1. Quartal.docx' },
@@ -848,6 +848,11 @@ export default function App({ onLogout }) {
             <strong>{mobileHeaderTitle}</strong>
           </div>
         )}
+        {isMobile && (
+          <a href={IDOCEO_APP_URL} className="lm-mobile-header-idoceo" aria-label="iDoceo in der installierten App öffnen" title="iDoceo öffnen">
+            <span className="lm-idoceo-glyph" aria-hidden="true">iD</span>
+          </a>
+        )}
         <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
           {[
             ['today', '⌂', 'Heute', () => setViewMode('today')],
@@ -860,6 +865,7 @@ export default function App({ onLogout }) {
             return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
           })}
           <a href={ONE_NOTE_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-onenote" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen"><span className="lm-onenote-glyph" aria-hidden="true">N</span><span>OneNote</span></a>
+          <a href={IDOCEO_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-idoceo" aria-label="iDoceo in der installierten App öffnen" title="In iDoceo-App öffnen"><span className="lm-idoceo-glyph" aria-hidden="true">iD</span><span>iDoceo</span></a>
           <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-notion"><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Notion</span></a>
           <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-miro"><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Miro</span></a>
           <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen"><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span>WebUntis</span></a>
@@ -1591,6 +1597,7 @@ export default function App({ onLogout }) {
         uploadDisabled={!activeFolder}
         onBugChecklist={() => setBugChecklistOpen(true)}
         onClassroomTimer={() => setClassroomTimerOpen(true)}
+        onIdoceo={() => { window.location.href = IDOCEO_APP_URL; }}
         onUntis={() => window.open(WEB_UNTIS_URL, '_blank', 'noopener,noreferrer')}
         onLogout={onLogout}
         showTeacherLinks

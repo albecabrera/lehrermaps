@@ -235,6 +235,7 @@ html, body, #root {
 .lm-tabbar .lm-topbar-notion,
 .lm-tabbar .lm-topbar-miro,
 .lm-tabbar .lm-topbar-onenote,
+.lm-tabbar .lm-topbar-idoceo,
 .lm-tabbar .lm-topbar-webuntis {
   min-height: 38px;
   margin-bottom: 8px !important;
@@ -253,6 +254,7 @@ html, body, #root {
 .lm-tabbar .lm-topbar-notion:hover,
 .lm-tabbar .lm-topbar-miro:hover,
 .lm-tabbar .lm-topbar-onenote:hover,
+.lm-tabbar .lm-topbar-idoceo:hover,
 .lm-tabbar .lm-topbar-webuntis:hover {
   border-color: var(--c-focus) !important;
   background: var(--c-hover) !important;
@@ -267,6 +269,7 @@ html, body, #root {
 .lm-tabbar .lm-topbar-notion:focus-visible,
 .lm-tabbar .lm-topbar-miro:focus-visible,
 .lm-tabbar .lm-topbar-onenote:focus-visible,
+.lm-tabbar .lm-topbar-idoceo:focus-visible,
 .lm-tabbar .lm-topbar-webuntis:focus-visible,
 .lm-tabbar .lm-topbar-logout:focus-visible,
 .lm-tabbar .lm-app-brand:focus-visible {
@@ -349,11 +352,13 @@ html, body, #root {
 [data-theme="dark"] .lm-tabbar .lm-topbar-notion,
 [data-theme="dark"] .lm-tabbar .lm-topbar-miro,
 [data-theme="dark"] .lm-tabbar .lm-topbar-onenote,
+[data-theme="dark"] .lm-tabbar .lm-topbar-idoceo,
 [data-theme="dark"] .lm-tabbar .lm-topbar-webuntis {
   box-shadow: 0 1px 2px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
 }
 .lm-onenote-glyph,
-.lm-webuntis-glyph {
+.lm-webuntis-glyph,
+.lm-idoceo-glyph {
   display: inline-grid;
   place-items: center;
   width: 18px;
@@ -371,6 +376,15 @@ html, body, #root {
   background: #0672ce;
   font-family: inherit;
 }
+.lm-idoceo-glyph {
+  background: #e2673a;
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: -.04em;
+}
+[data-theme="dark"] .lm-idoceo-glyph { background: #ef845e; color: #1f1512; }
+.lm-mobile-more-idoceo { min-height: var(--touch-target); }
+.lm-mobile-more-idoceo:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
 .lm-schedule-close { display: none; }
 .lm-login-content { width: 100%; display: block; }
 .lm-welcome-shell { margin-inline: auto; }
@@ -1189,6 +1203,7 @@ button:active {
 .lm-tabbar .lm-topbar-notion,
 .lm-tabbar .lm-topbar-miro,
 .lm-tabbar .lm-topbar-onenote,
+.lm-tabbar .lm-topbar-idoceo,
 .lm-tabbar .lm-topbar-webuntis {
   min-height: var(--touch-target);
   margin-bottom: 10px !important;
@@ -1205,6 +1220,7 @@ button:active {
 .lm-tabbar .lm-topbar-notion:hover,
 .lm-tabbar .lm-topbar-miro:hover,
 .lm-tabbar .lm-topbar-onenote:hover,
+.lm-tabbar .lm-topbar-idoceo:hover,
 .lm-tabbar .lm-topbar-webuntis:hover {
   border-color: var(--c-border) !important;
   background: var(--c-surface) !important;
@@ -1399,11 +1415,13 @@ button:active {
   .lm-desktop-primary-nav .lm-topbar-notion,
   .lm-desktop-primary-nav .lm-topbar-miro,
   .lm-desktop-primary-nav .lm-topbar-onenote,
+  .lm-desktop-primary-nav .lm-topbar-idoceo,
   .lm-desktop-primary-nav .lm-topbar-webuntis,
   .lm-desktop-primary-nav .lm-topbar-lessons { display: none !important; }
 }
 @media (max-width: 1100px) {
   .lm-onenote-glyph,
+  .lm-idoceo-glyph,
   .lm-webuntis-glyph { width: 19px; height: 19px; flex-basis: 19px; }
 }
 .lm-klasurplan-viewer-backdrop {
@@ -1589,6 +1607,21 @@ button:active {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .lm-mobile-header-idoceo {
+    display: inline-grid;
+    flex: 0 0 var(--touch-target);
+    width: var(--touch-target);
+    height: var(--touch-target);
+    place-items: center;
+    margin-left: auto;
+    border: 1px solid color-mix(in srgb, var(--c-orange) 42%, var(--c-border));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--c-orange) 13%, var(--c-surface));
+    text-decoration: none;
+    transition: transform .16s var(--ease-out), box-shadow .16s ease, border-color .16s ease;
+  }
+  .lm-mobile-header-idoceo:hover { border-color: var(--c-orange); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+  .lm-mobile-header-idoceo:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
   .lm-mobile-klasurplan-menu {
     position: absolute;
     z-index: 30;
