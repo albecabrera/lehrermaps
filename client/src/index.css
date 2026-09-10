@@ -1605,21 +1605,55 @@ button:active {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .lm-mobile-header-idoceo {
+  /* Direct mobile app launcher strip: labels remain available to assistive
+     technology, while compact icons keep the header usable on narrow screens. */
+  .lm-mobile-header-apps {
+    display: flex;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: calc(100vw - 66px);
+    gap: 4px;
+    margin-left: auto;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .lm-mobile-header-apps::-webkit-scrollbar { display: none; }
+  .lm-mobile-header-app {
     display: inline-grid;
     flex: 0 0 var(--touch-target);
     width: var(--touch-target);
     height: var(--touch-target);
     place-items: center;
-    margin-left: auto;
-    border: 1px solid color-mix(in srgb, var(--c-orange) 42%, var(--c-border));
+    border: 1px solid var(--c-border-soft);
     border-radius: 12px;
-    background: color-mix(in srgb, var(--c-orange) 13%, var(--c-surface));
+    background: color-mix(in srgb, var(--c-surface) 88%, transparent);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255,255,255,.42);
+    color: var(--c-text-2);
     text-decoration: none;
-    transition: transform .16s var(--ease-out), box-shadow .16s ease, border-color .16s ease;
+    transition: transform .16s var(--ease-out), box-shadow .16s ease, border-color .16s ease, background .16s ease;
   }
-  .lm-mobile-header-idoceo:hover { border-color: var(--c-orange); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
-  .lm-mobile-header-idoceo:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+  .lm-mobile-header-app:hover {
+    border-color: var(--c-focus);
+    background: var(--c-hover);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+  }
+  .lm-mobile-header-app:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+  .lm-mobile-header-app .lm-topbar-brand-icon { width: 20px; height: 20px; object-fit: contain; }
+  .lm-mobile-header-app .lm-idoceo-glyph { width: 21px; height: 21px; }
+  .lm-mobile-header-app-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  [data-theme="dark"] .lm-mobile-header-app {
+    border-color: color-mix(in srgb, var(--c-border) 82%, white);
+    background: color-mix(in srgb, var(--c-surface) 92%, white 3%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  [data-theme="dark"] .lm-mobile-header-app:hover { background: var(--c-hover); }
+  @media (max-width: 400px) {
+    .lm-mobile-header-context { display: none; }
+    .lm-mobile-header-apps { max-width: calc(100vw - 66px); }
+  }
   .lm-mobile-klasurplan-menu {
     position: absolute;
     z-index: 30;

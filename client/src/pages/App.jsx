@@ -849,9 +849,23 @@ export default function App({ onLogout }) {
           </div>
         )}
         {isMobile && (
-          <a href={IDOCEO_APP_URL} className="lm-mobile-header-idoceo" aria-label="iDoceo in der installierten App öffnen" title="iDoceo öffnen">
-            <img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" />
-          </a>
+          <nav className="lm-mobile-header-apps" aria-label="Direkte App-Links">
+            <a href={ONE_NOTE_APP_URL} className="lm-mobile-header-app lm-mobile-header-app--onenote" aria-label="OneNote in der installierten App öffnen" title="OneNote öffnen">
+              <span className="lm-onenote-glyph" aria-hidden="true">N</span><span className="lm-mobile-header-app-label">OneNote</span>
+            </a>
+            <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen">
+              <img src="/assets/icons/miro.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /><span className="lm-mobile-header-app-label">Miro</span>
+            </a>
+            <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--notion" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen">
+              <img src="/assets/icons/notion.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /><span className="lm-mobile-header-app-label">Notion</span>
+            </a>
+            <a href={IDOCEO_APP_URL} className="lm-mobile-header-app lm-mobile-header-app--idoceo" aria-label="iDoceo in der installierten App öffnen" title="iDoceo öffnen">
+              <img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span className="lm-mobile-header-app-label">iDoceo</span>
+            </a>
+            <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen">
+              <span className="lm-webuntis-glyph" aria-hidden="true">W</span><span className="lm-mobile-header-app-label">WebUntis</span>
+            </a>
+          </nav>
         )}
         <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
           {[
