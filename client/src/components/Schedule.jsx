@@ -4,6 +4,7 @@ import { useLang } from '../contexts/LangContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useIsMobile } from '../hooks/useIsMobile';
 import api from '../lib/api';
+import { SCHEDULE_META_KEY, getScheduleSettings, withScheduleSettings } from '../lib/schedule';
 
 const STORAGE_KEY = 'lm_schedule';
 const DAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
@@ -44,6 +45,10 @@ function hydrateSchedule(raw) {
   for (const [key, value] of Object.entries(raw)) {
     if (!value || typeof value !== 'object') continue;
     if (LEGACY_SUBJECT_IDS.has(value.id) || LEGACY_FOLDER_SUBJECTS.has(value.subjectId)) continue;
+    if (key === SCHEDULE_META_KEY) {
+      next[key] = value;
+      continue;
+    }
     if (key.startsWith('break-')) {
       next[key] = value;
       continue;
@@ -56,6 +61,8 @@ function hydrateSchedule(raw) {
         label: value.label || preset.label,
         color: value.color || preset.color,
         ...(preset.subjectId ? { subjectId: value.subjectId || preset.subjectId } : {}),
+        ...(value.location || value.room ? { location: value.location || value.room } : {}),
+        ...(value.folderId ? { folderId: value.folderId } : {}),
       };
       continue;
     }
@@ -91,16 +98,19 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
     api.put('/schedule', next).catch(() => {});
   }, []);
 
-  const saveCell = useCallback(({ label, location }) => {
+  const saveCell = useCallback(({ label, location, folderId }) => {
     if (!picker) return;
     const key = `${picker.day}-${picker.period}`;
     const current = schedule[key];
     if (!label.trim()) return;
-    persist({ ...schedule, [key]: {
+    const nextCell = {
       ...(current || { id: `custom-${Date.now()}`, color: '#2563EB' }),
       label: label.trim(),
       location: location.trim(),
-    } });
+    };
+    if (folderId) nextCell.folderId = folderId;
+    else delete nextCell.folderId;
+    persist({ ...schedule, [key]: nextCell });
     setPicker(null);
   }, [picker, schedule, persist]);
 
@@ -259,6 +269,8 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
         </button>
       </div>
 
+      <ScheduleTimeSettings schedule={schedule} onSave={(periods) => persist(withScheduleSettings(schedule, periods))} />
+
       <div className="lm-schedule-grid-wrap">
       <div className="lm-schedule-grid" style={{
         display: 'grid',
@@ -327,6 +339,7 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
         <SubjectPicker
           rect={picker.rect}
           cell={schedule[`${picker.day}-${picker.period}`]}
+          folders={folders}
           onSaveCell={saveCell}
           onClear={() => unlink(picker.day, picker.period)}
           onClose={() => setPicker(null)}
@@ -342,6 +355,44 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
         />
       )}
     </div>
+  );
+}
+
+function ScheduleTimeSettings({ schedule, onSave }) {
+  const schedulePeriods = getScheduleSettings(schedule).periods;
+  const emptyPeriods = () => Array.from({ length: PERIODS }, () => ({ start: '', end: '' }));
+  const [open, setOpen] = useState(false);
+  const [periods, setPeriods] = useState(() => schedulePeriods.length ? schedulePeriods : emptyPeriods());
+  const [invalid, setInvalid] = useState(false);
+  const configured = getScheduleSettings(schedule).configured;
+  const openEditor = () => {
+    if (!open) {
+      // Take a fresh snapshot only when opening. A server response can arrive
+      // after mount, while an open form must never overwrite active typing.
+      setPeriods(schedulePeriods.length ? schedulePeriods : emptyPeriods());
+      setInvalid(false);
+    }
+    setOpen(!open);
+  };
+  const save = (event) => {
+    event.preventDefault();
+    if (!getScheduleSettings(withScheduleSettings(schedule, periods)).configured) {
+      setInvalid(true);
+      return;
+    }
+    onSave(periods);
+    setOpen(false);
+  };
+  return (
+    <section className="lm-schedule-times" aria-label="Stundenzeiten">
+      <div><strong>Stundenzeiten</strong><span>{configured ? 'Für das Heute-Cockpit eingerichtet' : 'Bitte einrichten, damit Heute reale Unterrichtszeiten zeigen kann.'}</span></div>
+      <button type="button" className="lm-schedule-times-toggle" onClick={openEditor} aria-expanded={open}>{open ? 'Schließen' : configured ? 'Zeiten bearbeiten' : 'Zeiten einrichten'}</button>
+      {open && <form className="lm-schedule-times-form" onSubmit={save}>
+        {periods.map((period, index) => <label key={index}>Block {index + 1}<span><input aria-label={`Block ${index + 1} Beginn`} type="time" value={period.start} onChange={(e) => { setInvalid(false); setPeriods(periods.map((item, i) => i === index ? { ...item, start: e.target.value } : item)); }} required /><input aria-label={`Block ${index + 1} Ende`} type="time" value={period.end} onChange={(e) => { setInvalid(false); setPeriods(periods.map((item, i) => i === index ? { ...item, end: e.target.value } : item)); }} required /></span></label>)}
+        {invalid && <p className="lm-schedule-times-error" role="alert">Jeder Block braucht eine gültige Zeit und muss nach dem vorherigen Block beginnen.</p>}
+        <button type="submit" className="lm-button lm-button-primary">Zeiten speichern</button>
+      </form>}
+    </section>
   );
 }
 
@@ -399,8 +450,8 @@ function ScheduleCell({
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={handleClick}
     >
+      <button type="button" className="lm-schedule-cell-main" onClick={handleClick} aria-label={cell ? `${cell.label}${canNav ? ` – ${t('schedule.navigate')}` : ' bearbeiten'}` : 'Stundenplanfeld bearbeiten'}>
       {cell ? (
         <div style={{
           minHeight: 56,
@@ -430,26 +481,25 @@ function ScheduleCell({
           fontSize: 18, color: 'var(--c-text-3)',
         }}>+</div>
       )}
-      {cell && hovered && (
+      </button>
+      {cell && (
         <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 3 }}>
-          {canNav && (
-            <button
+          <button
               onClick={(e) => { e.stopPropagation(); onEdit(ref.current); }}
               title={t('schedule.pick_folder')}
               aria-label={t('schedule.pick_folder')}
               style={{
-                width: 18, height: 18, border: 'none', borderRadius: 4,
+                width: 44, height: 44, border: 'none', borderRadius: 4,
                 background: 'rgba(0,0,0,0.25)', color: '#fff', cursor: 'pointer',
                 fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >✎</button>
-          )}
           <button
             onClick={(e) => { e.stopPropagation(); onUnlink(); }}
             title={t('schedule.unlink')}
             aria-label={t('schedule.unlink')}
             style={{
-              width: 18, height: 18, border: 'none', borderRadius: 4,
+              width: 44, height: 44, border: 'none', borderRadius: 4,
               background: 'rgba(0,0,0,0.25)', color: '#fff', cursor: 'pointer',
               fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
@@ -475,6 +525,10 @@ function normalizeScheduleText(value) {
 
 function getScheduleNavigationTarget(cell, folders) {
   if (!cell || LEGACY_FOLDER_SUBJECTS.has(cell.subjectId)) return null;
+  if (cell.folderId) {
+    const folder = folders.find((candidate) => String(candidate.id) === String(cell.folderId));
+    if (folder) return { subjectId: folder.subject, folderId: folder.id };
+  }
   const text = normalizeScheduleText(`${cell.label || ''} ${cell.location || ''}`);
   const route = SCHEDULE_FOLDER_ROUTES.find(({ match }) => match.test(text));
   if (route) {
@@ -590,10 +644,11 @@ function SupervisionPicker({ rect, entry, onSave, onClear, onClose }) {
   );
 }
 
-function SubjectPicker({ rect, cell, onSaveCell, onClear, onClose }) {
+function SubjectPicker({ rect, cell, folders = [], onSaveCell, onClear, onClose }) {
   useEscapeKey(true, onClose);
   const [label, setLabel] = useState(cell?.label || '');
   const [location, setLocation] = useState(cell?.location || '');
+  const [folderId, setFolderId] = useState(cell?.folderId ? String(cell.folderId) : '');
   const PICKER_W = 220;
   const PICKER_MAX_H = Math.min(360, window.innerHeight - 80);
   const vw = window.innerWidth;
@@ -635,7 +690,7 @@ function SubjectPicker({ rect, cell, onSaveCell, onClear, onClose }) {
           fontFamily: '"DM Sans", -apple-system, sans-serif',
         }}
       >
-        <form onSubmit={(event) => { event.preventDefault(); onSaveCell({ label, location }); }} style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <form onSubmit={(event) => { event.preventDefault(); onSaveCell({ label, location, folderId: folderId || null }); }} style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-text-2)' }}>
               Klasse oder Gruppe
               <input
@@ -654,6 +709,13 @@ function SubjectPicker({ rect, cell, onSaveCell, onClear, onClose }) {
                 placeholder="z. B. S10, S9-2, J004"
                 style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, height: 34, padding: '0 9px', border: '1px solid var(--c-border)', borderRadius: 7, background: 'var(--c-input-bg)', color: 'var(--c-text)', font: 'inherit', fontSize: 12 }}
               />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-text-2)' }}>
+              Materialordner
+              <select value={folderId} onChange={(event) => setFolderId(event.target.value)} style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, height: 34, padding: '0 9px', border: '1px solid var(--c-border)', borderRadius: 7, background: 'var(--c-input-bg)', color: 'var(--c-text)', font: 'inherit', fontSize: 12 }}>
+                <option value="">Kein Ordner verknüpft</option>
+                {folders.map((folder) => <option key={folder.id} value={String(folder.id)}>{folder.name}</option>)}
+              </select>
             </label>
             <button type="submit" style={{ width: '100%', padding: '8px 10px', border: 0, borderRadius: 8, background: 'var(--c-text)', color: 'var(--c-surface)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700 }}>
               Speichern

@@ -490,6 +490,21 @@ export default function App({ onLogout }) {
     }
   };
 
+  const openScheduleTarget = (target) => {
+    if (!target) return;
+    const folderId = typeof target === 'object' ? target.folderId : target;
+    if (folderId) {
+      const folder = folders.find((candidate) => String(candidate.id) === String(folderId));
+      if (folder) {
+        setSubjectId(folder.subject);
+        onFolderSelect(folder);
+        setViewMode('subjects');
+        return;
+      }
+    }
+    if (typeof target === 'object' && target.subjectId) onSubjectChange(target.subjectId);
+  };
+
   const openPrintReady = (sourceRect = null) => {
     if (!printReadyFolder) {
       setToast({ type: 'warning', msg: 'Druckfertig wird gerade eingerichtet.' });
@@ -906,7 +921,7 @@ export default function App({ onLogout }) {
         onMouseLeave={() => setParallax({ x: 0, y: 0 })}
       >
         {viewMode === 'today' ? (
-          <TodayDashboard />
+          <TodayDashboard onOpenSchedule={() => setViewMode('schedule')} onOpenMaterials={openScheduleTarget} onOpenTimer={() => setClassroomTimerOpen(true)} />
         ) : viewMode === 'klausurplan' ? (
           <KlausurplanWorkspace />
         ) : viewMode === 'appointments' ? (
@@ -915,20 +930,8 @@ export default function App({ onLogout }) {
           <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
             <Schedule
               folders={folders}
-              onClose={() => setViewMode('home')}
-              onNavigate={(target) => {
-                if (!target) return;
-                if (target.folderId) {
-                  const folder = folders.find((candidate) => candidate.id === target.folderId);
-                  if (folder) {
-                    setSubjectId(folder.subject);
-                    onFolderSelect(folder);
-                    setViewMode('subjects');
-                    return;
-                  }
-                }
-                onSubjectChange(target.subjectId || target);
-              }}
+              onClose={() => setViewMode('today')}
+              onNavigate={openScheduleTarget}
             />
           </div>
         ) : viewMode === 'lessons' ? (
