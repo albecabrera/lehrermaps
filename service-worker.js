@@ -1,15 +1,25 @@
-const CACHE_VERSION = 'lehrermaps-v52';
+const CACHE_VERSION = 'lehrermaps-v54';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.ico',
+  '/favicon-v2.ico',
+  '/apple-touch-icon.png',
+  '/apple-touch-icon-180x180.png',
+  '/assets/icons/lehrermaps-mark.svg',
   '/assets/icons/lehrermaps-favicon-16.png',
   '/assets/icons/lehrermaps-favicon-32.png',
   '/assets/icons/lehrermaps-icon-192.png',
   '/assets/icons/lehrermaps-icon-512.png',
   '/assets/icons/lehrermaps-icon-maskable-512.png',
   '/assets/icons/lehrermaps-apple-touch-icon.png',
+  '/assets/icons/lehrermaps-v2-favicon-16.png',
+  '/assets/icons/lehrermaps-v2-favicon-32.png',
+  '/assets/icons/lehrermaps-v2-icon-192.png',
+  '/assets/icons/lehrermaps-v2-icon-512.png',
+  '/assets/icons/lehrermaps-v2-icon-maskable-512.png',
+  '/assets/icons/lehrermaps-v2-apple-touch-icon.png',
   '/assets/icons/safari-pinned-tab.svg',
 ];
 

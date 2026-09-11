@@ -1,12 +1,10 @@
-/**
- * Shared LehrerMaps PWA icon used by the browser and installed home-screen app.
- */
+/** Shared LehrerMaps map-and-book mark. */
 export default function BrandMark({ size = 40, label = true, dark = false }) {
   return (
     <span className="lm-brand" aria-label={label ? 'LehrerMaps' : undefined} role={label ? 'img' : undefined}>
       <span className="lm-brand-mark" style={{ width: size, height: size }} aria-hidden="true">
         <img
-          src="/assets/icons/lehrermaps-v2-icon-192.png"
+          src="/assets/icons/lehrermaps-mark.svg"
           alt=""
           width={size}
           height={size}
