@@ -2447,4 +2447,13 @@ textarea:focus {
 @media (prefers-reduced-motion: reduce) { .lm-today-lesson-card, .lm-today-lesson-card::after { transition: none !important; animation: none !important; } }
 .lm-schedule-cell-main { position: absolute; inset: 0; width: 100%; min-height: 56px; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; text-align: inherit; }
 .lm-schedule-cell-main:focus-visible { outline: 3px solid #2563eb; outline-offset: -3px; }
+.lm-schedule-cell.is-editing { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-focus) 26%, transparent), var(--shadow-sm); }
+.lm-schedule-cell-add { position: absolute; inset: 0; display: grid; place-items: center; color: var(--c-text-3); font-size: 18px; opacity: 0; transition: opacity .12s ease; }
+.lm-schedule-cell:hover .lm-schedule-cell-add,
+.lm-schedule-cell:focus-within .lm-schedule-cell-add { opacity: .6; }
+.lm-schedule-cell-navigation-hint { margin-top: 2px; color: var(--c-turquoise); font-size: 9px; opacity: .85; }
+.lm-schedule-cell-edit-actions { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; z-index: 1; }
+.lm-schedule-cell-edit-button { width: var(--touch-target); height: var(--touch-target); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; background: color-mix(in srgb, var(--c-navy-deep) 80%, transparent); color: #fff; cursor: pointer; font: 700 16px/1 inherit; }
+.lm-schedule-cell-edit-button:hover { background: var(--c-navy); }
+.lm-schedule-cell-edit-button:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
 .lm-schedule-times-error { grid-column: 1 / -1; margin: 0; color: var(--c-danger-text); font-size: 12px; font-weight: 700; }

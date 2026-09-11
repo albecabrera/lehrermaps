@@ -4,7 +4,7 @@ import { useLang } from '../contexts/LangContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useIsMobile } from '../hooks/useIsMobile';
 import api from '../lib/api';
-import { SCHEDULE_META_KEY, getScheduleSettings, withScheduleSettings } from '../lib/schedule';
+import { BREAKS, SCHEDULE_META_KEY, getScheduleSettings, withScheduleSettings } from '../lib/schedule';
 
 const STORAGE_KEY = 'lm_schedule';
 const DAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
@@ -76,6 +76,7 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
   const [schedule, setSchedule] = useState(() => hydrateSchedule(loadCache()));
   const [picker, setPicker] = useState(null); // { day, period, rect }
   const [supervisionPicker, setSupervisionPicker] = useState(null); // { breakKey, day, rect }
+  const [editAnnouncement, setEditAnnouncement] = useState('');
   const [dragOverKey, setDragOverKey] = useState(null);
   const isMobile = useIsMobile(860);
 
@@ -269,7 +270,7 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
         </button>
       </div>
 
-      <ScheduleTimeSettings schedule={schedule} onSave={(periods) => persist(withScheduleSettings(schedule, periods))} />
+      <ScheduleTimeSettings schedule={schedule} onSave={(periods, breaks) => persist(withScheduleSettings(schedule, periods, breaks))} />
 
       <div className="lm-schedule-grid-wrap">
       <div className="lm-schedule-grid" style={{
@@ -308,6 +309,7 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
                   period={p}
                   cell={cell}
                   onEdit={(el) => openPicker(d, p, el)}
+                  onEditStateChange={setEditAnnouncement}
                   onUnlink={() => unlink(d, p)}
                   onNavigate={onNavigate}
                   folders={folders}
@@ -334,6 +336,7 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
         ))}
       </div>
       </div>
+      <div className="lm-visually-hidden" aria-live="polite" aria-atomic="true">{editAnnouncement}</div>
 
       {picker && (
         <SubjectPicker
@@ -359,37 +362,47 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
 }
 
 function ScheduleTimeSettings({ schedule, onSave }) {
-  const schedulePeriods = getScheduleSettings(schedule).periods;
+  const settings = getScheduleSettings(schedule);
+  const schedulePeriods = settings.periods;
+  const scheduleBreaks = settings.breaks;
   const emptyPeriods = () => Array.from({ length: PERIODS }, () => ({ start: '', end: '' }));
+  const emptyBreaks = () => BREAKS.map((breakInfo) => ({ ...breakInfo, start: '', end: '' }));
   const [open, setOpen] = useState(false);
   const [periods, setPeriods] = useState(() => schedulePeriods.length ? schedulePeriods : emptyPeriods());
+  const [breaks, setBreaks] = useState(() => scheduleBreaks.length ? scheduleBreaks : emptyBreaks());
   const [invalid, setInvalid] = useState(false);
-  const configured = getScheduleSettings(schedule).configured;
+  const configured = settings.configured;
   const openEditor = () => {
     if (!open) {
       // Take a fresh snapshot only when opening. A server response can arrive
       // after mount, while an open form must never overwrite active typing.
       setPeriods(schedulePeriods.length ? schedulePeriods : emptyPeriods());
+      setBreaks(scheduleBreaks.length ? scheduleBreaks : emptyBreaks());
       setInvalid(false);
     }
     setOpen(!open);
   };
   const save = (event) => {
     event.preventDefault();
-    if (!getScheduleSettings(withScheduleSettings(schedule, periods)).configured) {
+    if (!getScheduleSettings(withScheduleSettings(schedule, periods, breaks)).configured) {
       setInvalid(true);
       return;
     }
-    onSave(periods);
+    onSave(periods, breaks);
     setOpen(false);
   };
   return (
     <section className="lm-schedule-times" aria-label="Stundenzeiten">
-      <div><strong>Stundenzeiten</strong><span>{configured ? 'Für das Heute-Cockpit eingerichtet' : 'Bitte einrichten, damit Heute reale Unterrichtszeiten zeigen kann.'}</span></div>
+      <div><strong>Stunden- und Pausenzeiten</strong><span>{configured ? 'Für das Heute-Cockpit eingerichtet' : 'Bitte Zeiten einrichten, damit Heute reale Unterrichts- und Pausenzeiten zeigen kann.'}</span></div>
       <button type="button" className="lm-schedule-times-toggle" onClick={openEditor} aria-expanded={open}>{open ? 'Schließen' : configured ? 'Zeiten bearbeiten' : 'Zeiten einrichten'}</button>
       {open && <form className="lm-schedule-times-form" onSubmit={save}>
-        {periods.map((period, index) => <label key={index}>Block {index + 1}<span><input aria-label={`Block ${index + 1} Beginn`} type="time" value={period.start} onChange={(e) => { setInvalid(false); setPeriods(periods.map((item, i) => i === index ? { ...item, start: e.target.value } : item)); }} required /><input aria-label={`Block ${index + 1} Ende`} type="time" value={period.end} onChange={(e) => { setInvalid(false); setPeriods(periods.map((item, i) => i === index ? { ...item, end: e.target.value } : item)); }} required /></span></label>)}
-        {invalid && <p className="lm-schedule-times-error" role="alert">Jeder Block braucht eine gültige Zeit und muss nach dem vorherigen Block beginnen.</p>}
+        {periods.flatMap((period, index) => {
+          const fields = [<label key={`period-${index}`}>Block {index + 1}<span><input aria-label={`Block ${index + 1} Beginn`} type="time" value={period.start} onChange={(e) => { setInvalid(false); setPeriods(periods.map((item, i) => i === index ? { ...item, start: e.target.value } : item)); }} required /><input aria-label={`Block ${index + 1} Ende`} type="time" value={period.end} onChange={(e) => { setInvalid(false); setPeriods(periods.map((item, i) => i === index ? { ...item, end: e.target.value } : item)); }} required /></span></label>];
+          const breakIndex = index === 1 ? 0 : index === 3 ? 1 : null;
+          if (breakIndex !== null) { const breakInfo = breaks[breakIndex]; fields.push(<label key={`break-${breakInfo.key}`}>{breakInfo.label}<span><input aria-label={`${breakInfo.label} Beginn`} type="time" value={breakInfo.start} onChange={(e) => { setInvalid(false); setBreaks(breaks.map((item, i) => i === breakIndex ? { ...item, start: e.target.value } : item)); }} required /><input aria-label={`${breakInfo.label} Ende`} type="time" value={breakInfo.end} onChange={(e) => { setInvalid(false); setBreaks(breaks.map((item, i) => i === breakIndex ? { ...item, end: e.target.value } : item)); }} required /></span></label>); }
+          return fields;
+        })}
+        {invalid && <p className="lm-schedule-times-error" role="alert">Jeder Block und jede Pause braucht eine gültige Zeit und muss nach dem vorherigen Eintrag beginnen.</p>}
         <button type="submit" className="lm-button lm-button-primary">Zeiten speichern</button>
       </form>}
     </section>
@@ -398,28 +411,85 @@ function ScheduleTimeSettings({ schedule, onSave }) {
 
 function ScheduleCell({
   day, period, cell, onEdit, onUnlink, onNavigate,
-  folders,
+  folders, onEditStateChange,
   dragOver, onDragOver, onDragLeave, onDrop,
 }) {
   const { t } = useLang();
   const [hovered, setHovered] = useState(false);
+  const [editing, setEditing] = useState(false);
   const ref = useRef(null);
+  const mainButtonRef = useRef(null);
+  const firstEditControlRef = useRef(null);
+  const navigationTimer = useRef(null);
+  const longPressTimer = useRef(null);
+  const suppressClick = useRef(false);
+  const focusAfterModeChange = useRef(null);
   const navigationTarget = getScheduleNavigationTarget(cell, folders);
   const canNav = navigationTarget && onNavigate;
 
+  useEffect(() => () => {
+    window.clearTimeout(navigationTimer.current);
+    window.clearTimeout(longPressTimer.current);
+  }, []);
+  useEffect(() => {
+    if (editing && focusAfterModeChange.current === 'edit') firstEditControlRef.current?.focus();
+    if (!editing && focusAfterModeChange.current === 'view') mainButtonRef.current?.focus();
+    focusAfterModeChange.current = null;
+  }, [editing]);
+
+  const beginEditing = () => {
+    window.clearTimeout(navigationTimer.current);
+    navigationTimer.current = null;
+    focusAfterModeChange.current = 'edit';
+    setEditing(true);
+    onEditStateChange?.(`Bearbeiten geöffnet für ${cell.label}.`);
+  };
+  const endEditing = () => {
+    window.clearTimeout(navigationTimer.current);
+    navigationTimer.current = null;
+    focusAfterModeChange.current = 'view';
+    setEditing(false);
+    onEditStateChange?.(`Bearbeiten beendet für ${cell.label}.`);
+  };
   const handleClick = () => {
+    if (suppressClick.current) { suppressClick.current = false; return; }
+    if (!cell) { onEdit(ref.current); return; }
     if (canNav) {
-      onNavigate(navigationTarget);
-    } else {
-      onEdit(ref.current);
+      window.clearTimeout(navigationTimer.current);
+      navigationTimer.current = window.setTimeout(() => onNavigate(navigationTarget), 260);
     }
   };
+  const handleKeyDown = (event) => {
+    if ((event.key === 'Enter' || event.key === ' ') && cell) {
+      event.preventDefault();
+      beginEditing();
+    }
+  };
+  const startLongPress = (event) => {
+    if (!cell || event.pointerType !== 'touch') return;
+    longPressTimer.current = window.setTimeout(() => {
+      suppressClick.current = true;
+      beginEditing();
+    }, 550);
+  };
+  const stopLongPress = () => window.clearTimeout(longPressTimer.current);
+
+  const cellContent = cell ? (
+    <div style={{ minHeight: 56, padding: '8px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, maxWidth: '100%' }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: cell.color, flexShrink: 0 }} />
+        <div className="lm-schedule-cell-label" style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cell.label}</div>
+      </div>
+      {cell.location && <div className="lm-schedule-cell-location">📍 {cell.location}</div>}
+      {canNav && hovered && !editing && <div className="lm-schedule-cell-navigation-hint">→ {t('schedule.navigate')}</div>}
+    </div>
+  ) : <div className="lm-schedule-cell-add" aria-hidden="true">+</div>;
 
   return (
     <div
-      className="lm-schedule-cell"
+      className={`lm-schedule-cell${editing ? ' is-editing' : ''}`}
       ref={ref}
-      draggable={!!cell}
+      draggable={!!cell && !editing}
       onDragStart={(e) => {
         if (!cell) return;
         const payload = JSON.stringify({
@@ -436,6 +506,11 @@ function ScheduleCell({
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
+      onDoubleClick={(event) => { if (cell) { event.preventDefault(); event.stopPropagation(); beginEditing(); } }}
+      onPointerDown={startLongPress}
+      onPointerUp={stopLongPress}
+      onPointerCancel={stopLongPress}
+      onPointerLeave={stopLongPress}
       style={{
         minHeight: 56, borderRadius: 8,
         border: dragOver
@@ -444,66 +519,29 @@ function ScheduleCell({
         background: dragOver
           ? (cell ? `${cell.color}20` : 'rgba(14,165,233,0.08)')
           : (cell ? `${cell.color}12` : 'var(--c-surface)'),
-        cursor: cell ? 'grab' : 'pointer', position: 'relative',
+        cursor: cell && !editing ? 'grab' : 'pointer', position: 'relative',
         transition: 'background .1s, border-color .1s',
         overflow: 'hidden',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <button type="button" className="lm-schedule-cell-main" onClick={handleClick} aria-label={cell ? `${cell.label}${canNav ? ` – ${t('schedule.navigate')}` : ' bearbeiten'}` : 'Stundenplanfeld bearbeiten'}>
-      {cell ? (
-        <div style={{
-          minHeight: 56,
-          padding: '8px 10px',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          textAlign: 'center',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, maxWidth: '100%' }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: cell.color, flexShrink: 0 }} />
-            <div className="lm-schedule-cell-label" style={{
-              fontSize: 11, fontWeight: 600, color: 'var(--c-text)',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>{cell.label}</div>
-          </div>
-          {cell.location && <div className="lm-schedule-cell-location">📍 {cell.location}</div>}
-          {canNav && hovered && (
-            <div style={{ fontSize: 9, color: cell.color, marginTop: 2, opacity: 0.8 }}>→ {t('schedule.navigate')}</div>
-          )}
-        </div>
-      ) : (
-        <div style={{
-          position: 'absolute', inset: 0, display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          opacity: hovered ? 0.6 : 0,
-          transition: 'opacity .12s',
-          fontSize: 18, color: 'var(--c-text-3)',
-        }}>+</div>
-      )}
-      </button>
-      {cell && (
-        <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 3 }}>
+      {!editing ? <button ref={mainButtonRef} type="button" className="lm-schedule-cell-main" onClick={handleClick} onKeyDown={handleKeyDown} aria-label={cell ? `${cell.label}${canNav ? ` – einmal klicken für ${t('schedule.navigate')}` : ''}. Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten.` : 'Stundenplanfeld bearbeiten'} title={cell ? 'Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten' : 'Stundenplanfeld bearbeiten'}>{cellContent}</button> : cellContent}
+      {cell && editing && (
+        <div className="lm-schedule-cell-edit-actions">
           <button
-              onClick={(e) => { e.stopPropagation(); onEdit(ref.current); }}
+              ref={firstEditControlRef} type="button" onClick={(e) => { e.stopPropagation(); onEdit(ref.current); }}
               title={t('schedule.pick_folder')}
               aria-label={t('schedule.pick_folder')}
-              style={{
-                width: 44, height: 44, border: 'none', borderRadius: 4,
-                background: 'rgba(0,0,0,0.25)', color: '#fff', cursor: 'pointer',
-                fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
+              className="lm-schedule-cell-edit-button"
             >✎</button>
           <button
-            onClick={(e) => { e.stopPropagation(); onUnlink(); }}
+            type="button" onClick={(e) => { e.stopPropagation(); onUnlink(); setEditing(false); onEditStateChange?.(`Feld ${cell.label} geleert.`); }}
             title={t('schedule.unlink')}
             aria-label={t('schedule.unlink')}
-            style={{
-              width: 44, height: 44, border: 'none', borderRadius: 4,
-              background: 'rgba(0,0,0,0.25)', color: '#fff', cursor: 'pointer',
-              fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
+            className="lm-schedule-cell-edit-button"
           >×</button>
+          <button type="button" onClick={endEditing} className="lm-schedule-cell-edit-button" aria-label="Bearbeiten beenden" title="Bearbeiten beenden">✓</button>
         </div>
       )}
     </div>
@@ -572,20 +610,36 @@ function BreakRow({ breakKey, label, value, onEditDay }) {
 function BreakDayCell({ entry, onEdit }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
+  const longPressTimer = useRef(null);
+  const suppressClick = useRef(false);
   // Older schedules persisted a boolean. Treat it as the original default name
   // until the user edits it, then persist the richer object shape.
   const details = entry && typeof entry === 'object' ? entry : {};
   const active = !!entry;
   const label = details.label || 'Aufsicht';
   const location = details.location || details.room || '';
+  useEffect(() => () => window.clearTimeout(longPressTimer.current), []);
+  const beginEditing = () => onEdit(ref.current);
+  const startLongPress = (event) => {
+    if (!active || event.pointerType !== 'touch') return;
+    longPressTimer.current = window.setTimeout(() => { suppressClick.current = true; beginEditing(); }, 550);
+  };
+  const stopLongPress = () => window.clearTimeout(longPressTimer.current);
   return (
     <button
       ref={ref}
       type="button"
-      onClick={() => onEdit(ref.current)}
+      onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!active) beginEditing(); }}
+      onDoubleClick={(event) => { if (active) { event.preventDefault(); beginEditing(); } }}
+      onKeyDown={(event) => { if (active && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); beginEditing(); } }}
+      onPointerDown={startLongPress}
+      onPointerUp={stopLongPress}
+      onPointerCancel={stopLongPress}
+      onPointerLeave={stopLongPress}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      aria-label={active ? `${label} bearbeiten` : 'Aufsicht hinzufügen'}
+      aria-label={active ? `${label}. Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten.` : 'Aufsicht hinzufügen'}
+      title={active ? 'Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten' : 'Aufsicht hinzufügen'}
       style={{
         minHeight: 76, borderRadius: 6, cursor: 'pointer',
         border: `1px solid ${active ? AUFSICHT_COLOR + '66' : hovered ? AUFSICHT_COLOR + '33' : 'var(--c-border)'}`,
