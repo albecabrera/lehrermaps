@@ -3,6 +3,7 @@ import api, { getTodayDashboard, saveTodayDashboardTasks } from '../lib/api';
 import { usePendingSync } from '../lib/pendingSync';
 import { getCockpitLesson, remainingMinutes } from '../lib/schedule';
 import { normalizeTodayTasks, orderTasksByCompletion, toggleTodayTask, updateTodayTaskText } from '../lib/todayTasks';
+import { getTodayGreeting } from '../lib/todayGreeting';
 
 const LEGACY_TASKS_KEY = 'lm_today_tasks';
 
@@ -22,12 +23,6 @@ function pendingTaskIsNewer(pending, backendTasks, dashboard) {
   const timestamp = typeof dashboard?.tasksUpdatedAt === 'string' ? dashboard.tasksUpdatedAt.replace(' ', 'T') : '';
   const storedAt = timestamp ? Date.parse(timestamp.endsWith('Z') ? timestamp : `${timestamp}Z`) : NaN;
   return Number.isFinite(pendingAt) ? (!Number.isFinite(storedAt) || pendingAt > storedAt) : backendTasks.length === 0;
-}
-
-function greeting(hour) {
-  if (hour < 12) return 'Guten Morgen';
-  if (hour < 18) return 'Guten Tag';
-  return 'Guten Abend';
 }
 
 export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpenTimer }) {
@@ -105,7 +100,7 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
     <div className="lm-today-view">
       <div className="lm-today-shell">
         <header className="lm-today-header">
-          <div><div className="lm-eyebrow">HEUTE · BETRIEBSZENTRALE</div><h1>{greeting(now.getHours())}.</h1><div className="lm-today-date">{now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div></div>
+          <div><div className="lm-eyebrow">HEUTE · BETRIEBSZENTRALE</div><h1>{getTodayGreeting(now)}</h1><div className="lm-today-date">{now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div></div>
           <button type="button" className="lm-button lm-today-header-action" onClick={onOpenSchedule}>Stundenplan öffnen</button>
         </header>
 
@@ -125,7 +120,7 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
             {lesson && <><div className="lm-lesson-details"><span>{lesson.time}</span>{lesson.location && <span>Raum {lesson.location}</span>}{lessonState.kind === 'current' && <span>Noch {remainingMinutes(lesson, now)} Min.</span>}</div><div className="lm-lesson-actions">{!lesson.isBreak && <button type="button" className="lm-button lm-button-primary" disabled={!lesson.folderId} onClick={() => onOpenMaterials?.(lesson.folderId)}>{lesson.folderId ? 'Materialien öffnen' : 'Kein Materialordner verknüpft'}</button>}<button type="button" className="lm-button" onClick={onOpenSchedule}>Stundenplan</button><button type="button" className="lm-button" onClick={onOpenTimer}>Timer öffnen</button></div>{lesson.isBreak ? <p className="lm-today-muted">Pausenaufsicht im Blick.</p> : (!lesson.folderId && <p className="lm-today-muted">Verknüpfe einen Materialordner direkt in der passenden Stundenplanzelle.</p>)}</>}
           </section>
 
-          <section className="lm-editorial-card lm-today-tasks" aria-busy={!loaded}>
+          <section id="tasks" className="lm-editorial-card lm-today-tasks" aria-busy={!loaded}>
             <div className="lm-today-section-header"><div><div className="lm-eyebrow">FOKUS</div><h2>Meine Aufgaben</h2></div><span className="lm-task-count">{openTasks}</span></div>
             <div className="lm-today-task-entry"><input value={taskText} disabled={!loaded} onChange={(e) => setTaskText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder="Neue Aufgabe…" aria-label="Neue Aufgabe" /><button disabled={!loaded} onClick={addTask} className="lm-button lm-button-primary" aria-label="Aufgabe hinzufügen">+</button></div>
             {tasks.length === 0 && <div className="lm-today-empty">Noch keine Aufgaben. Alles bereit.</div>}

@@ -2275,7 +2275,9 @@ textarea:focus {
 [data-theme="dark"] .lm-today-stat:nth-child(3) { --stat-text-color: #78a9ff; }
 .lm-today-stat-value.is-date { font-size: 17px; }
 .lm-today-stat-label { margin-top: 3px; color: var(--c-text-3); font-size: 11px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
-.lm-today-content { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 14px; align-items: start; }
+.lm-today-content { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 14px; align-items: stretch; }
+.lm-today-content > .lm-today-lesson-card,
+.lm-today-content > .lm-today-tasks { height: 100%; }
 .lm-editorial-card { min-width: 0; padding: 20px; }
 .lm-editorial-card h2 { margin: 0 0 12px; font: 600 20px/1.2 var(--font-editorial); letter-spacing: -.02em; }
 .lm-today-section-header { display: flex; align-items: center; justify-content: space-between; }
