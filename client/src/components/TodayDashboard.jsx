@@ -3,6 +3,7 @@ import api, { getTodayDashboard, saveTodayDashboardTasks } from '../lib/api';
 import { usePendingSync } from '../lib/pendingSync';
 import { getCockpitLesson, remainingMinutes } from '../lib/schedule';
 import { normalizeTodayTasks, orderTasksByCompletion, toggleTodayTask, updateTodayTaskText } from '../lib/todayTasks';
+import { scheduleOneNoteTarget } from '../lib/externalApps';
 import { getTodayGreeting } from '../lib/todayGreeting';
 
 const LEGACY_TASKS_KEY = 'lm_today_tasks';
@@ -25,7 +26,7 @@ function pendingTaskIsNewer(pending, backendTasks, dashboard) {
   return Number.isFinite(pendingAt) ? (!Number.isFinite(storedAt) || pendingAt > storedAt) : backendTasks.length === 0;
 }
 
-export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpenTimer }) {
+export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpenTimer, onOpenOneNote }) {
   const date = todayKey();
   const [now, setNow] = useState(() => new Date());
   const [schedule, setSchedule] = useState(null);
@@ -55,6 +56,7 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
   const lessonState = schedule ? getCockpitLesson(schedule, now) : null;
   const lesson = lessonState?.lesson;
   const openTasks = tasks.filter((task) => !task.done).length;
+  const lessonOneNoteTarget = lesson && !lesson.folderId ? scheduleOneNoteTarget(lesson.label) : null;
   const addTask = () => {
     const text = taskText.trim();
     if (!text) return;
@@ -117,7 +119,7 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
             {lessonState?.kind === 'no-time-config' && <div className="lm-today-state"><strong>Unterrichts- und Pausenzeiten fehlen noch.</strong><span>Lege die Block- und Pausenzeiten im Stundenplan fest. Erst dann zeigt dieses Cockpit echte aktuelle und nächste Einträge.</span><button type="button" className="lm-button lm-button-primary" onClick={onOpenSchedule}>Zeiten einrichten</button></div>}
             {lessonState?.kind === 'no-lessons' && <div className="lm-today-state"><strong>Heute und in den nächsten Schultagen steht keine Stunde an.</strong><span>Prüfe deinen Stundenplan oder genieße den freien Raum.</span><button type="button" className="lm-button" onClick={onOpenSchedule}>Stundenplan prüfen</button></div>}
             {scheduleError && <div className="lm-today-state is-warning">Der Stundenplan konnte gerade nicht geladen werden. Bitte Verbindung prüfen.</div>}
-            {lesson && <><div className="lm-lesson-details"><span>{lesson.time}</span>{lesson.location && <span>Raum {lesson.location}</span>}{lessonState.kind === 'current' && <span>Noch {remainingMinutes(lesson, now)} Min.</span>}</div><div className="lm-lesson-actions">{!lesson.isBreak && <button type="button" className="lm-button lm-button-primary" disabled={!lesson.folderId} onClick={() => onOpenMaterials?.(lesson.folderId)}>{lesson.folderId ? 'Materialien öffnen' : 'Kein Materialordner verknüpft'}</button>}<button type="button" className="lm-button" onClick={onOpenSchedule}>Stundenplan</button><button type="button" className="lm-button" onClick={onOpenTimer}>Timer öffnen</button></div>{lesson.isBreak ? <p className="lm-today-muted">Pausenaufsicht im Blick.</p> : (!lesson.folderId && <p className="lm-today-muted">Verknüpfe einen Materialordner direkt in der passenden Stundenplanzelle.</p>)}</>}
+            {lesson && <><div className="lm-lesson-details"><span>{lesson.time}</span>{lesson.location && <span>Raum {lesson.location}</span>}{lessonState.kind === 'current' && <span>Noch {remainingMinutes(lesson, now)} Min.</span>}</div><div className="lm-lesson-actions">{!lesson.isBreak && (lesson.folderId ? <button type="button" className="lm-button lm-button-primary" onClick={() => onOpenMaterials?.(lesson.folderId)}>Materialien öffnen</button> : lessonOneNoteTarget ? <button type="button" className="lm-text-button lm-today-onenote-button" onClick={() => onOpenOneNote?.(lessonOneNoteTarget)}>zu OneNote</button> : <button type="button" className="lm-button lm-button-primary" disabled>Kein Materialordner verknüpft</button>)}<button type="button" className="lm-button" onClick={onOpenSchedule}>Stundenplan</button><button type="button" className="lm-button" onClick={onOpenTimer}>Timer öffnen</button></div>{lesson.isBreak ? <p className="lm-today-muted">Pausenaufsicht im Blick.</p> : (!lesson.folderId && !lessonOneNoteTarget && <p className="lm-today-muted">Verknüpfe einen Materialordner direkt in der passenden Stundenplanzelle.</p>)}</>}
           </section>
 
           <section id="tasks" className="lm-editorial-card lm-today-tasks" aria-busy={!loaded}>
