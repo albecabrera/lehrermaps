@@ -5,6 +5,7 @@ import { useEscapeKey } from '../hooks/useEscapeKey';
 import { useIsMobile } from '../hooks/useIsMobile';
 import api from '../lib/api';
 import { BREAKS, SCHEDULE_META_KEY, getScheduleSettings, withScheduleSettings } from '../lib/schedule';
+import { scheduleOneNoteTarget } from '../lib/externalApps';
 
 const STORAGE_KEY = 'lm_schedule';
 const DAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
@@ -562,7 +563,10 @@ function normalizeScheduleText(value) {
 }
 
 function getScheduleNavigationTarget(cell, folders) {
-  if (!cell || LEGACY_FOLDER_SUBJECTS.has(cell.subjectId)) return null;
+  if (!cell) return null;
+  const oneNoteTarget = scheduleOneNoteTarget(cell.label);
+  if (oneNoteTarget) return { externalApp: oneNoteTarget, label: 'OneNote öffnen' };
+  if (LEGACY_FOLDER_SUBJECTS.has(cell.subjectId)) return null;
   if (cell.folderId) {
     const folder = folders.find((candidate) => String(candidate.id) === String(cell.folderId));
     if (folder) return { subjectId: folder.subject, folderId: folder.id };

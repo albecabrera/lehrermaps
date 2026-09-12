@@ -25,7 +25,7 @@ import FolderGallery from '../components/FolderGallery';
 import FolderIcon from '../components/FolderIcon';
 import { useTheme } from '../contexts/ThemeContext';
 import BrandMark from '../components/BrandMark';
-import { IDOCEO_APP_URL, ONE_NOTE_APP_URL, WEB_UNTIS_URL } from '../lib/externalApps';
+import { IDOCEO_APP_URL, ONE_NOTE_APP_URL, WEB_UNTIS_URL, openOneNoteWithFallback } from '../lib/externalApps';
 
 const KLASURPLAN_DOCUMENTS = [
   { key: 'first', label: '1. Quartal', filename: 'Klausurplan_8_9-10_2026-27 1. Quartal.docx' },
@@ -492,6 +492,10 @@ export default function App({ onLogout }) {
 
   const openScheduleTarget = (target) => {
     if (!target) return;
+    if (typeof target === 'object' && target.externalApp?.type === 'onenote') {
+      openOneNoteWithFallback(target.externalApp);
+      return;
+    }
     const folderId = typeof target === 'object' ? target.folderId : target;
     if (folderId) {
       const folder = folders.find((candidate) => String(candidate.id) === String(folderId));
