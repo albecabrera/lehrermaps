@@ -24,7 +24,17 @@ export function scheduleOneNoteTarget(label) {
   return null;
 }
 
-/** Attempts the native handler once, then opens web only if this page stays visible. */
+function safeOneNoteNativeUrl(nativeUrl) {
+  return String(nativeUrl).replace(/[^\x00-\x7F]/g, (character) => encodeURIComponent(character));
+}
+
+/** Opens a mapped OneNote target in the installed app without a web fallback. */
+export function openOneNoteInApp(target, { windowRef = window } = {}) {
+  if (!target?.nativeUrl) return;
+  windowRef.location.href = safeOneNoteNativeUrl(target.nativeUrl);
+}
+
+/** Generic opt-in behavior: attempts the native handler, then opens web if the page stays visible. */
 export function openOneNoteWithFallback(target, { windowRef = window, documentRef = document, delay = 750 } = {}) {
   let completed = false;
   let timer = null;
@@ -40,7 +50,7 @@ export function openOneNoteWithFallback(target, { windowRef = window, documentRe
   };
   documentRef.addEventListener?.('visibilitychange', onPageHidden);
   windowRef.addEventListener?.('pagehide', onPageHidden, { once: true });
-  windowRef.location.href = target.nativeUrl;
+  windowRef.location.href = safeOneNoteNativeUrl(target.nativeUrl);
   timer = windowRef.setTimeout(() => {
     if (!completed && documentRef.visibilityState === 'visible') windowRef.open(target.webUrl, '_blank', 'noopener,noreferrer');
     cleanup();

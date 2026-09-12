@@ -5,6 +5,7 @@ import {
   SCHEDULE_SPANISCH_10_ONENOTE,
   SCHEDULE_SPANISCH_Q2_ONENOTE,
   SCHEDULE_WP_INFORMATIK_8_ONENOTE,
+  openOneNoteInApp,
   openOneNoteWithFallback,
   scheduleOneNoteTarget,
 } from '../externalApps.js';
@@ -15,6 +16,18 @@ test('maps Informatik 6d and 6f labels to the schedule OneNote target', () => {
   assert.match(SCHEDULE_INFORMATIK_6_ONENOTE.nativeUrl, /^onenote:/);
   assert.match(SCHEDULE_INFORMATIK_6_ONENOTE.webUrl, /^https:\/\/onedrive\.live\.com\/view\.aspx\?/);
   assert.equal(SCHEDULE_INFORMATIK_6_ONENOTE.nativeUrl, 'onenote:https://d.docs.live.net/D4ACB07AA3091664/Dokumente/Informatik%20Jgst%206/26-27-IF-6/0.%20Grundlagen.one#Inhaltsverzeichnis&section-id={167BE046-557E-4F49-87A3-81561BF72359}&page-id={CC51E7DE-5DBA-2A43-ABFE-52846D0BBE24}&end');
+});
+
+test('opens mapped schedule targets in the OneNote app only', () => {
+  const windowRef = {
+    location: {},
+    open: () => assert.fail('mapped schedule targets must not open a web fallback'),
+    setTimeout: () => assert.fail('mapped schedule targets must not schedule a web fallback'),
+  };
+
+  openOneNoteInApp(SCHEDULE_SPANISCH_Q2_ONENOTE, { windowRef });
+
+  assert.equal(windowRef.location.href, 'onenote:https://d.docs.live.net/D4ACB07AA3091664/Dokumente/Q2%20Espa%C3%B1ol/26-27-S-Q2/UV5-Latinoam%C3%A9rica%20-%20retos%20y%20oportunidades%20de%20la%20diversidad%20%C3%A9tnica.one#Inhaltsverzeichnis&section-id={E2605677-E8C1-0843-A305-7ABB9497CED9}&page-id={21AB4A37-E55A-CB43-A823-445FB1687B86}&end');
 });
 
 test('uses one delayed web fallback only while the native attempt keeps the page visible', () => {
