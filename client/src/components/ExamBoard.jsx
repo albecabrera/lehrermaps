@@ -516,17 +516,6 @@ export default function ExamBoard({ onDismiss }) {
             Neuer Termin
           </button>
 
-          <button onClick={onDismiss} className="eb-btn-ghost" style={{
-            height:40, padding:'0 18px', border:'1px solid var(--c-border)', borderRadius:10,
-            background:'transparent', color:'var(--c-text-2)',
-            fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
-            display:'flex', alignItems:'center', gap:7,
-          }}>
-            Weiter zu LehrerMaps
-            <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
-              <path d="M2.5 6h7M6.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
         </div>
 
         {/* ── Chronological list ── */}
