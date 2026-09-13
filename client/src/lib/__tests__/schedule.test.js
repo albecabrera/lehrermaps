@@ -72,9 +72,9 @@ const scheduleWithBreaks = {
   [SCHEDULE_META_KEY]: { version: 2, periods: [
     { start: '08:00', end: '08:45' }, { start: '09:00', end: '09:45' },
     { start: '10:00', end: '10:45' }, { start: '11:00', end: '11:45' },
-    { start: '12:30', end: '13:15' }, { start: '13:30', end: '14:15' },
+    { start: '14:00', end: '14:45' }, { start: '15:00', end: '15:45' },
   ], breaks: [
-    { start: '09:45', end: '10:00' }, { start: '11:45', end: '12:30' },
+    { start: '09:45', end: '10:00' }, { start: '12:50', end: '13:50' },
   ] },
   'break-fruehstueck': { 0: { label: 'Aufsicht 6a', location: 'Schulhof' } },
   'break-mittag': { 0: { label: 'Mensaaufsicht' } },
@@ -87,6 +87,14 @@ test('includes a populated first break as the current time-bound Today entry', (
   assert.equal(result.lesson.label, 'Aufsicht 6a');
   assert.equal(result.lesson.blockLabel, 'Pause 1');
   assert.equal(result.lesson.time, '09:45–10:00');
+});
+
+test('includes Pause 2 as a current time-bound Today entry', () => {
+  const result = getCockpitLesson(scheduleWithBreaks, monday(13, 10));
+  assert.equal(result.kind, 'current');
+  assert.equal(result.lesson.label, 'Mensaaufsicht');
+  assert.equal(result.lesson.blockLabel, 'Pause 2');
+  assert.equal(result.lesson.time, '12:50–13:50');
 });
 
 test('selects a populated later break before a later lesson and on future weekdays', () => {

@@ -93,6 +93,7 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
 
   const DAYS = lang === 'es' ? DAYS_ES : DAYS_DE;
   const fileDate = new Date().toISOString().slice(0, 10);
+  const scheduleSettings = getScheduleSettings(schedule);
 
   const persist = useCallback((next) => {
     setSchedule(next);
@@ -292,13 +293,14 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
         {/* Period rows */}
         {Array.from({ length: PERIODS }, (_, p) => (
           [
-            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Pause" value={schedule['break-fruehstueck'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-fruehstueck', day, rect: element.getBoundingClientRect() })} />,
-            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Pause" value={schedule['break-mittag'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-mittag', day, rect: element.getBoundingClientRect() })} />,
+            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Pause" time={formatScheduleTime(scheduleSettings.breaks[0])} value={schedule['break-fruehstueck'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-fruehstueck', day, rect: element.getBoundingClientRect() })} />,
+            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Pause" time={formatScheduleTime(scheduleSettings.breaks[1])} value={schedule['break-mittag'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-mittag', day, rect: element.getBoundingClientRect() })} />,
             <div key={`label-${p}`} style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
             }}>
-              {t('schedule.period')}{p + 1}
+              <div>{t('schedule.period')}{p + 1}</div>
+              {formatScheduleTime(scheduleSettings.periods[p]) && <div style={{ marginTop: 2, fontSize: 9, whiteSpace: 'nowrap' }}>{formatScheduleTime(scheduleSettings.periods[p])}</div>}
             </div>,
             ...Array.from({ length: 5 }, (_, d) => {
               const key = `${d}-${p}`;
@@ -596,7 +598,11 @@ function readDndPayload(dataTransfer) {
 
 const AUFSICHT_COLOR = '#64748B';
 
-function BreakRow({ breakKey, label, value, onEditDay }) {
+function formatScheduleTime(range) {
+  return range?.start && range?.end ? `${range.start}–${range.end}` : '';
+}
+
+function BreakRow({ breakKey, label, time, value, onEditDay }) {
   return [
     <div key={`${breakKey}-label`} style={{
       display: 'flex', alignItems: 'center',
@@ -604,7 +610,7 @@ function BreakRow({ breakKey, label, value, onEditDay }) {
       textTransform: 'uppercase', color: 'var(--c-text-3)',
       justifyContent: 'flex-end', paddingRight: 6,
       minHeight: 76,
-    }}>{label}</div>,
+    }}><span>{label}</span>{time && <span style={{ marginTop: 2, fontSize: 8, fontFamily: '"DM Mono", monospace', letterSpacing: 0, textTransform: 'none', whiteSpace: 'nowrap' }}>{time}</span>}</div>,
     ...[0, 1, 2, 3, 4].map((d) => (
       <BreakDayCell key={`${breakKey}-${d}`} entry={value[d]} onEdit={(element) => onEditDay(d, element)} />
     )),
