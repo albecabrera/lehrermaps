@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getExams, createExam, deleteExam, updateExam } from '../lib/api';
+import BrandMark from './BrandMark';
 
 const FAECHER = ['Prüfung', 'Konferenz', 'Organisation', 'Sonstiges'];
 const TERMIN_TITEL = [
@@ -470,6 +471,9 @@ export default function ExamBoard({ onDismiss }) {
           boxShadow:'0 1px 0 var(--c-border)',
         }}>
           <div style={{ flex:1, display:'flex', alignItems:'center', gap:16 }}>
+            <button type="button" onClick={onDismiss} aria-label="Zur Hauptansicht" title="Zur Hauptansicht" style={{ display:'inline-flex', alignItems:'center', padding:0, border:0, background:'transparent', cursor:'pointer', flexShrink:0 }}>
+              <BrandMark size={42} label={false} />
+            </button>
             <div style={{
               width:46, height:46, borderRadius:12,
               background:'linear-gradient(135deg, #E8472A22 0%, #E8472A11 100%)',
