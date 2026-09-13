@@ -1019,6 +1019,10 @@ button:active {
 .lm-schedule-header h2 { font-size: clamp(24px, 2.4vw, 32px) !important; }
 .lm-schedule-header button { min-height: 40px; font-size: 14px !important; }
 .lm-schedule-grid { gap: 7px !important; }
+.lm-schedule-grid { grid-template-columns: 66px repeat(5, minmax(0, 1fr)) !important; }
+.lm-schedule-period-label { min-width: 0; }
+.lm-schedule-period-time { margin-top: 2px; color: var(--c-text-3); font: 500 clamp(7px, .75vw, 9px)/1.1 "DM Mono", monospace; white-space: normal; overflow-wrap: anywhere; }
+.lm-schedule-break-row-time { margin-top: 2px; color: var(--c-text-3); font: 500 clamp(7px, .75vw, 8px)/1.1 "DM Mono", monospace; letter-spacing: 0; text-transform: none; white-space: normal; overflow-wrap: anywhere; }
 .lm-schedule-cell { min-height: 88px !important; }
 .lm-schedule-cell > div { min-height: 88px !important; padding: 12px 10px !important; }
 .lm-schedule-cell-label { font-size: clamp(14px, 1.4vw, 18px) !important; font-weight: 700 !important; }
@@ -1049,7 +1053,7 @@ button:active {
   .lm-schedule-grid {
     min-width: 704px !important;
     width: max-content;
-    grid-template-columns: 44px repeat(5, minmax(128px, 1fr)) !important;
+    grid-template-columns: 72px repeat(5, minmax(128px, 1fr)) !important;
     gap: var(--space-2) !important;
   }
   .lm-schedule-cell { min-height: 92px !important; }

@@ -293,14 +293,14 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
         {/* Period rows */}
         {Array.from({ length: PERIODS }, (_, p) => (
           [
-            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Pause" time={formatScheduleTime(scheduleSettings.breaks[0])} value={schedule['break-fruehstueck'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-fruehstueck', day, rect: element.getBoundingClientRect() })} />,
-            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Pause" time={formatScheduleTime(scheduleSettings.breaks[1])} value={schedule['break-mittag'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-mittag', day, rect: element.getBoundingClientRect() })} />,
-            <div key={`label-${p}`} style={{
+            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Pause" time={formatScheduleTime(scheduleSettings.breaks[0])} value={schedule['break-fruehstueck'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-fruehstueck', day, rect: element.getBoundingClientRect() })} onNavigate={onNavigate} folders={folders} />,
+            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Pause" time={formatScheduleTime(scheduleSettings.breaks[1])} value={schedule['break-mittag'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-mittag', day, rect: element.getBoundingClientRect() })} onNavigate={onNavigate} folders={folders} />,
+            <div key={`label-${p}`} className="lm-schedule-period-label" style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
             }}>
               <div>{t('schedule.period')}{p + 1}</div>
-              {formatScheduleTime(scheduleSettings.periods[p]) && <div style={{ marginTop: 2, fontSize: 9, whiteSpace: 'nowrap' }}>{formatScheduleTime(scheduleSettings.periods[p])}</div>}
+              {formatScheduleTime(scheduleSettings.periods[p]) && <div className="lm-schedule-period-time">{formatScheduleTime(scheduleSettings.periods[p])}</div>}
             </div>,
             ...Array.from({ length: 5 }, (_, d) => {
               const key = `${d}-${p}`;
@@ -484,7 +484,7 @@ function ScheduleCell({
         <div className="lm-schedule-cell-label" style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cell.label}</div>
       </div>
       {cell.location && <div className="lm-schedule-cell-location">📍 {cell.location}</div>}
-      {canNav && hovered && !editing && <div className="lm-schedule-cell-navigation-hint">→ {t('schedule.navigate')}</div>}
+      {canNav && hovered && !editing && <div className="lm-schedule-cell-navigation-hint">→ {navigationTarget.label || t('schedule.navigate')}</div>}
     </div>
   ) : <div className="lm-schedule-cell-add" aria-hidden="true">+</div>;
 
@@ -529,7 +529,7 @@ function ScheduleCell({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {!editing ? <button ref={mainButtonRef} type="button" className="lm-schedule-cell-main" onClick={handleClick} onKeyDown={handleKeyDown} aria-label={cell ? `${cell.label}${canNav ? ` – einmal klicken für ${t('schedule.navigate')}` : ''}. Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten.` : 'Stundenplanfeld bearbeiten'} title={cell ? 'Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten' : 'Stundenplanfeld bearbeiten'}>{cellContent}</button> : cellContent}
+      {!editing ? <button ref={mainButtonRef} type="button" className="lm-schedule-cell-main" onClick={handleClick} onKeyDown={handleKeyDown} aria-label={cell ? `${cell.label}${canNav ? ` – einmal klicken für ${navigationTarget.label || t('schedule.navigate')}` : ''}. Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten.` : 'Stundenplanfeld bearbeiten'} title={cell ? 'Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten' : 'Stundenplanfeld bearbeiten'}>{cellContent}</button> : cellContent}
       {cell && editing && (
         <div className="lm-schedule-cell-edit-actions">
           <button
@@ -602,7 +602,7 @@ function formatScheduleTime(range) {
   return range?.start && range?.end ? `${range.start}–${range.end}` : '';
 }
 
-function BreakRow({ breakKey, label, time, value, onEditDay }) {
+function BreakRow({ breakKey, label, time, value, onEditDay, onNavigate, folders }) {
   return [
     <div key={`${breakKey}-label`} style={{
       display: 'flex', alignItems: 'center',
@@ -610,14 +610,14 @@ function BreakRow({ breakKey, label, time, value, onEditDay }) {
       textTransform: 'uppercase', color: 'var(--c-text-3)',
       justifyContent: 'flex-end', paddingRight: 6,
       minHeight: 76,
-    }}><span>{label}</span>{time && <span style={{ marginTop: 2, fontSize: 8, fontFamily: '"DM Mono", monospace', letterSpacing: 0, textTransform: 'none', whiteSpace: 'nowrap' }}>{time}</span>}</div>,
+    }}><span>{label}</span>{time && <span className="lm-schedule-break-row-time">{time}</span>}</div>,
     ...[0, 1, 2, 3, 4].map((d) => (
-      <BreakDayCell key={`${breakKey}-${d}`} entry={value[d]} onEdit={(element) => onEditDay(d, element)} />
+      <BreakDayCell key={`${breakKey}-${d}`} entry={value[d]} onEdit={(element) => onEditDay(d, element)} onNavigate={onNavigate} folders={folders} />
     )),
   ];
 }
 
-function BreakDayCell({ entry, onEdit }) {
+function BreakDayCell({ entry, onEdit, onNavigate, folders = [] }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
   const longPressTimer = useRef(null);
@@ -628,8 +628,16 @@ function BreakDayCell({ entry, onEdit }) {
   const active = !!entry;
   const label = details.label || 'Aufsicht';
   const location = details.location || details.room || '';
+  const navigationTarget = getScheduleNavigationTarget(active ? { ...details, label, location } : null, folders);
+  const canNavigate = navigationTarget && onNavigate;
+  const navigationTimer = useRef(null);
   useEffect(() => () => window.clearTimeout(longPressTimer.current), []);
+  useEffect(() => () => window.clearTimeout(navigationTimer.current), []);
   const beginEditing = () => onEdit(ref.current);
+  const navigate = () => {
+    window.clearTimeout(navigationTimer.current);
+    navigationTimer.current = window.setTimeout(() => onNavigate(navigationTarget), 260);
+  };
   const startLongPress = (event) => {
     if (!active || event.pointerType !== 'touch') return;
     longPressTimer.current = window.setTimeout(() => { suppressClick.current = true; beginEditing(); }, 550);
@@ -639,8 +647,8 @@ function BreakDayCell({ entry, onEdit }) {
     <button
       ref={ref}
       type="button"
-      onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!active) beginEditing(); }}
-      onDoubleClick={(event) => { if (active) { event.preventDefault(); beginEditing(); } }}
+      onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } if (!active) beginEditing(); else if (canNavigate) navigate(); }}
+      onDoubleClick={(event) => { if (active) { event.preventDefault(); window.clearTimeout(navigationTimer.current); beginEditing(); } }}
       onKeyDown={(event) => { if (active && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); beginEditing(); } }}
       onPointerDown={startLongPress}
       onPointerUp={stopLongPress}
@@ -648,7 +656,7 @@ function BreakDayCell({ entry, onEdit }) {
       onPointerLeave={stopLongPress}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      aria-label={active ? `${label}. Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten.` : 'Aufsicht hinzufügen'}
+      aria-label={active ? `${label}${canNavigate ? ` – einmal klicken für ${navigationTarget.label || 'OneNote öffnen'}` : ''}. Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten.` : 'Aufsicht hinzufügen'}
       title={active ? 'Doppelklicken, lange drücken oder Eingabetaste zum Bearbeiten' : 'Aufsicht hinzufügen'}
       style={{
         minHeight: 76, borderRadius: 6, cursor: 'pointer',
@@ -659,9 +667,10 @@ function BreakDayCell({ entry, onEdit }) {
       }}
     >
       {active ? (
-        <span className="lm-schedule-break-details">
+          <span className="lm-schedule-break-details">
           <span className="lm-schedule-break-label">{label}</span>
           {location && <span className="lm-schedule-break-location">📍 {location}</span>}
+          {canNavigate && hovered && <span className="lm-schedule-cell-navigation-hint">→ {navigationTarget.label || 'OneNote öffnen'}</span>}
         </span>
       ) : hovered ? (
         <span style={{ fontSize: 14, color: AUFSICHT_COLOR, opacity: 0.5 }}>+</span>
