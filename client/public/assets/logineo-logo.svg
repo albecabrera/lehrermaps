@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 72" role="img" aria-labelledby="title desc">
+  <title id="title">LOGINEO NRW</title>
+  <desc id="desc">LOGINEO NRW logo</desc>
+  <rect width="72" height="72" rx="12" fill="#005ca9"/>
+  <path fill="#fff" d="M19 18h10v25h24v11H19z"/>
+  <circle cx="49" cy="22" r="5" fill="#f59e0b"/>
+  <text x="84" y="45" fill="#005ca9" font-family="Arial, Helvetica, sans-serif" font-size="33" font-weight="700" letter-spacing="1">LOGINEO</text>
+  <text x="86" y="63" fill="#4b5563" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="3">NRW</text>
+</svg>
