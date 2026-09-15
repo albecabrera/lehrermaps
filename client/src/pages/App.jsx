@@ -30,6 +30,12 @@ import { IDOCEO_APP_URL, LOGINEO_URL, ONE_NOTE_APP_URL, WEB_UNTIS_URL, openOneNo
 // Official LOGINEO NRW logo published by the NRW Ministry of School and Education.
 const LOGINEO_LOGO_URL = 'https://www.logineo.schulministerium.nrw.de/_LOGINEO-NRW/Grafiken/Leichte-Sprache/LOGINEO_Logo_2017_03_200.png';
 
+const isMacDesktopPlatform = () => (
+  typeof navigator !== 'undefined'
+  && /mac/i.test(navigator.userAgentData?.platform || navigator.platform || '')
+  && navigator.maxTouchPoints <= 1
+);
+
 const KLASURPLAN_DOCUMENTS = [
   { key: 'first', label: '1. Quartal', filename: 'Klausurplan_8_9-10_2026-27 1. Quartal.docx' },
   { key: 'second', label: '2. Quartal', filename: 'Klausurplan_8-9-10_2026-27 2_Quartal.docx' },
@@ -856,7 +862,7 @@ export default function App({ onLogout }) {
 
   return (
     <Suspense fallback={null}>
-    <div className="lm-app-shell" style={{
+    <div className={`lm-app-shell${isMacDesktop ? ' lm-platform-mac-desktop' : ''}`} style={{
       position: 'fixed', inset: 0,
       display: 'flex', flexDirection: 'column',
       background: 'var(--c-bg)', color: 'var(--c-text)',
