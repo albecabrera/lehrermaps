@@ -8,7 +8,8 @@ export const ONE_NOTE_APP_URL = `onenote:${ONE_NOTE_WEB_URL}`;
 export const IDOCEO_APP_URL = 'idoceo://';
 
 export const WEB_UNTIS_URL = 'https://esg.webuntis.com/WebUntis/?school=esg#/basic/login';
-export const LOGINEO_URL = 'https://idp.logineo.nrw.schule/idp/profile/SAML2/Redirect/SSO?execution=e1s1';
+// This direct Mail URL reuses only an existing Logineo session; authentication stays with Logineo.
+export const LOGINEO_URL = 'https://groupware.logineo.nrw.schule/SOGo/so/3d317fac-5441-4491-8ae4-d5512881ada1/Mail/view#!/Mail/0/INBOX';
 
 export const SCHEDULE_INFORMATIK_6_ONENOTE = {
   type: 'onenote',
