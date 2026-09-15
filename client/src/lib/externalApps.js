@@ -8,6 +8,7 @@ export const ONE_NOTE_APP_URL = `onenote:${ONE_NOTE_WEB_URL}`;
 export const IDOCEO_APP_URL = 'idoceo://';
 
 export const WEB_UNTIS_URL = 'https://esg.webuntis.com/WebUntis/?school=esg#/basic/login';
+export const LOGINEO_URL = 'https://idp.logineo.nrw.schule/idp/profile/SAML2/Redirect/SSO?execution=e1s1';
 
 export const SCHEDULE_INFORMATIK_6_ONENOTE = {
   type: 'onenote',

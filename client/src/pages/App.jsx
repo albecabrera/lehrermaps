@@ -25,7 +25,7 @@ import FolderGallery from '../components/FolderGallery';
 import FolderIcon from '../components/FolderIcon';
 import { useTheme } from '../contexts/ThemeContext';
 import BrandMark from '../components/BrandMark';
-import { IDOCEO_APP_URL, ONE_NOTE_APP_URL, WEB_UNTIS_URL, openOneNoteInApp } from '../lib/externalApps';
+import { IDOCEO_APP_URL, LOGINEO_URL, ONE_NOTE_APP_URL, WEB_UNTIS_URL, openOneNoteInApp } from '../lib/externalApps';
 
 const KLASURPLAN_DOCUMENTS = [
   { key: 'first', label: '1. Quartal', filename: 'Klausurplan_8_9-10_2026-27 1. Quartal.docx' },
@@ -890,6 +890,9 @@ export default function App({ onLogout }) {
             <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen">
               <span className="lm-webuntis-glyph" aria-hidden="true">W</span><span className="lm-mobile-header-app-label">WebUntis</span>
             </a>
+            <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--logineo" aria-label="Logineo Dienstmail in neuem Tab öffnen" title="Logineo Dienstmail öffnen">
+              <span className="lm-logineo-glyph" aria-hidden="true">✉</span><span className="lm-mobile-header-app-label">Logineo</span>
+            </a>
           </nav>
         )}
         <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
@@ -908,6 +911,7 @@ export default function App({ onLogout }) {
           <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-notion"><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Notion</span></a>
           <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-miro"><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Miro</span></a>
           <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen"><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span>WebUntis</span></a>
+          <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-logineo" aria-label="Logineo Dienstmail in neuem Tab öffnen" title="Logineo Dienstmail öffnen"><span className="lm-logineo-glyph" aria-hidden="true">✉</span><span>Logineo</span></a>
         </nav>
         <div className="lm-desktop-trailing-group">
           <div className="lm-topbar-tools">

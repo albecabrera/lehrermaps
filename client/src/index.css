@@ -2482,3 +2482,6 @@ textarea:focus {
 .lm-schedule-cell-edit-button:hover { background: var(--c-navy); }
 .lm-schedule-cell-edit-button:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
 .lm-schedule-times-error { grid-column: 1 / -1; margin: 0; color: var(--c-danger-text); font-size: 12px; font-weight: 700; }
+
+.lm-tabbar .lm-topbar-logineo { color: var(--c-text-2); }
+.lm-tabbar .lm-topbar-logineo .lm-logineo-glyph { font-size: 16px; line-height: 1; }
