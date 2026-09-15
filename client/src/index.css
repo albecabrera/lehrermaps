@@ -2485,3 +2485,6 @@ textarea:focus {
 
 .lm-tabbar .lm-topbar-logineo { color: var(--c-text-2); }
 .lm-tabbar .lm-topbar-logineo .lm-logineo-glyph { font-size: 16px; line-height: 1; }
+
+.lm-logineo-logo { width: 42px; flex-basis: 42px; border-radius: 0; }
+@media (max-width: 1100px) { .lm-mobile-header-app .lm-logineo-logo { width: 34px; height: auto; flex-basis: auto; } }
