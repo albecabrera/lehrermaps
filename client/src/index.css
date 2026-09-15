@@ -2469,3 +2469,26 @@ textarea:focus {
 
 .lm-logineo-logo { width: 42px; flex-basis: 42px; border-radius: 0; }
 @media (max-width: 1100px) { .lm-mobile-header-app .lm-logineo-logo { width: 34px; height: auto; flex-basis: auto; } }
+
+/* Desktop-only header scale: keep the compact tablet/mobile composition intact
+   while giving pointer-driven workspace navigation more legible, generous controls. */
+@media (min-width: 1101px) {
+  .lm-tabbar { min-height: 76px !important; padding-block: 12px !important; }
+  .lm-tabbar .lm-app-brand { min-width: 48px; min-height: 48px; padding-inline: 8px 14px; }
+  .lm-tabbar .lm-app-brand .lm-brand-name { font-size: 16px; }
+  .lm-desktop-primary-nav { gap: 6px; }
+  .lm-workspace-nav-item { min-height: 48px; padding-inline: 14px; gap: 8px; font-size: 14px; }
+  .lm-workspace-nav-item > span:first-child { font-size: 18px; }
+  .lm-workspace-nav-item > span:first-child svg { width: 18px; height: 18px; }
+  .lm-workspace-nav-item .lm-topbar-brand-icon,
+  .lm-workspace-nav-item .lm-onenote-glyph,
+  .lm-workspace-nav-item .lm-idoceo-glyph,
+  .lm-workspace-nav-item .lm-webuntis-glyph { width: 20px; height: 20px; flex-basis: 20px; }
+  .lm-topbar-tools { gap: 8px; }
+  .lm-workspace-tool { width: 48px; height: 48px; min-height: 48px !important; font-size: 19px; }
+  .lm-classroom-timer-trigger { min-width: 100px; padding-inline: 16px; }
+  .lm-classroom-timer-trigger-icon { font-size: 20px; }
+  .lm-classroom-timer-trigger-label { font-size: 13px; }
+  .lm-desktop-trailing-group { gap: 8px; }
+  .lm-desktop-trailing-group .lm-topbar-logout { min-height: 48px; padding-inline: 14px; gap: 8px; font-size: 13px; }
+}
