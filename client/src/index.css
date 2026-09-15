@@ -122,10 +122,6 @@ html, body, #root {
   .lm-today-view h1 { font-size: 42px !important; line-height: 1.12 !important; }
   .lm-today-view > div > div:first-child > div:first-child { font-size: 14px !important; }
   .lm-today-view > div > div:first-child > div:first-child + h1 + div { font-size: 17px !important; }
-  .lm-today-stats { gap: 14px !important; margin-bottom: 24px !important; }
-  .lm-today-stats > div { padding: 18px 20px !important; border-radius: 16px !important; }
-  .lm-today-stats > div > div:first-child { font-size: 38px !important; }
-  .lm-today-stats > div > div:last-child { font-size: 13px !important; margin-top: 5px !important; }
   .lm-today-content { gap: 18px !important; }
   .lm-today-content > section { padding: 22px !important; border-radius: 16px !important; }
   .lm-today-content h2 { font-size: 22px !important; }
@@ -1038,10 +1034,6 @@ button:active {
   .lm-today-view > div > div:first-child { align-items: flex-start !important; margin-bottom: 18px !important; }
   .lm-today-view > div > div:first-child > div:last-child { width: 100%; }
   .lm-today-view > div > div:first-child > div:last-child button { flex: 1 1 140px; min-height: 38px; }
-  .lm-today-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; margin-bottom: 12px !important; }
-  .lm-today-stats > div { padding: 11px 12px !important; }
-  .lm-today-stats > div > div:first-child { font-size: 22px !important; }
-  .lm-today-stats > div > div:last-child { font-size: 10px !important; line-height: 1.2; }
   .lm-today-content { grid-template-columns: minmax(0, 1fr) !important; gap: 10px !important; }
   .lm-today-content > section { padding: 14px !important; }
   .lm-today-content section > div:first-child { flex-wrap: wrap; }
@@ -2287,16 +2279,6 @@ textarea:focus {
 }
 .lm-today-date { color: var(--c-text-2); font-size: 13px; }
 .lm-today-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.lm-today-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
-.lm-today-stat { min-width: 0; padding: 16px 18px; }
-.lm-today-stat::before { content: ''; display: block; width: 28px; height: 3px; margin-bottom: 12px; border-radius: 99px; background: var(--stat-color); }
-.lm-today-stat-value { overflow: hidden; color: var(--stat-color); font-size: 25px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-.lm-today-stat-value { color: var(--stat-text-color, var(--stat-color)); }
-[data-theme="dark"] .lm-today-stat:nth-child(1) { --stat-text-color: #55d6c6; }
-[data-theme="dark"] .lm-today-stat:nth-child(2) { --stat-text-color: #ff8f73; }
-[data-theme="dark"] .lm-today-stat:nth-child(3) { --stat-text-color: #78a9ff; }
-.lm-today-stat-value.is-date { font-size: 17px; }
-.lm-today-stat-label { margin-top: 3px; color: var(--c-text-3); font-size: 11px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
 .lm-today-content { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 14px; align-items: stretch; }
 .lm-today-content > .lm-today-lesson-card,
 .lm-today-content > .lm-today-tasks { height: 100%; }
@@ -2420,7 +2402,6 @@ textarea:focus {
   .lm-workspace-tool { min-height: var(--touch-target); }
 }
 @media (max-width: 760px) {
-  .lm-today-stats { grid-template-columns: 1fr !important; }
   .lm-today-content { grid-template-columns: 1fr !important; }
 }
 @media (prefers-reduced-motion: reduce) {

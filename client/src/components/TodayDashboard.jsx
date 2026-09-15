@@ -102,15 +102,9 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
     <div className="lm-today-view">
       <div className="lm-today-shell">
         <header className="lm-today-header">
-          <div><div className="lm-eyebrow">HEUTE · BETRIEBSZENTRALE</div><h1>{getTodayGreeting(now)}</h1><div className="lm-today-date">{now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div></div>
+          <div><h1>{getTodayGreeting(now)}</h1><div className="lm-today-date">{now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div></div>
           <button type="button" className="lm-button lm-today-header-action" onClick={onOpenSchedule}>Stundenplan öffnen</button>
         </header>
-
-        <div className="lm-today-stats" aria-label="Tagesindikatoren">
-          <div className="lm-today-stat" style={{ '--stat-color': '#0F766E' }}><div className="lm-today-stat-value">{lessonState?.kind === 'current' ? 'Läuft' : lessonState?.kind === 'next' ? 'Als Nächstes' : 'Plan prüfen'}</div><div className="lm-today-stat-label">Unterricht</div></div>
-          <div className="lm-today-stat" style={{ '--stat-color': '#E8472A' }}><div className="lm-today-stat-value is-date">{now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</div><div className="lm-today-stat-label">Aktuelle Zeit</div></div>
-          <div className="lm-today-stat" style={{ '--stat-color': '#2563EB' }}><div className="lm-today-stat-value">{openTasks}</div><div className="lm-today-stat-label">Aufgaben offen</div></div>
-        </div>
 
         <div className="lm-today-content">
           <section className="lm-today-lesson-card" aria-live="polite">
