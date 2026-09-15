@@ -1043,22 +1043,23 @@ button:active {
   .lm-schedule-header { margin-bottom: 16px !important; }
   .lm-schedule-header button { min-height: var(--touch-target); padding: 0 10px !important; font-size: 12px !important; }
   .lm-schedule-grid {
-    min-width: 704px !important;
-    width: max-content;
-    grid-template-columns: 72px repeat(5, minmax(128px, 1fr)) !important;
-    gap: var(--space-2) !important;
+    /* Keep the whole Monday–Friday week in view on a phone. */
+    min-width: 0 !important;
+    width: 100%;
+    grid-template-columns: 44px repeat(5, minmax(0, 1fr)) !important;
+    gap: 4px !important;
   }
-  .lm-schedule-cell { min-height: 92px !important; }
-  .lm-schedule-cell > div { min-height: 92px !important; }
+  .lm-schedule-cell { min-height: 76px !important; }
+  .lm-schedule-cell > div { min-height: 76px !important; padding: 8px 4px !important; }
   .lm-schedule-cell-label {
-    font-size: 14px !important;
+    font-size: 12px !important;
     line-height: 1.15;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
   }
   .lm-schedule-cell-location {
-    font-size: 12px;
+    font-size: 10px;
     line-height: 1.15;
     white-space: nowrap;
     overflow: hidden;
@@ -2467,8 +2468,24 @@ textarea:focus {
 .lm-tabbar .lm-topbar-logineo { color: var(--c-text-2); }
 .lm-tabbar .lm-topbar-logineo .lm-logineo-glyph { font-size: 16px; line-height: 1; }
 
-.lm-logineo-logo { width: 42px; flex-basis: 42px; border-radius: 0; }
-@media (max-width: 1100px) { .lm-mobile-header-app .lm-logineo-logo { width: 34px; height: auto; flex-basis: auto; } }
+.lm-logineo-logo {
+  width: 52px;
+  height: 24px;
+  flex: 0 0 52px;
+  padding: 2px 4px;
+  border: 1px solid color-mix(in srgb, var(--c-border) 72%, white);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .14);
+}
+@media (max-width: 1100px) {
+  .lm-mobile-header-app .lm-logineo-logo {
+    width: 38px;
+    height: 26px;
+    flex-basis: auto;
+    padding: 2px;
+  }
+}
 
 /* MacBook-only header scale: keep the compact tablet/mobile composition intact
    while giving pointer-driven workspace navigation more legible, generous controls. */
