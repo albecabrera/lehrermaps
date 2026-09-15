@@ -69,6 +69,7 @@ export default function App({ onLogout }) {
   const { activePageId, setActivePageId } = useNotebook();
   const isMobile = useIsMobile(1100);
   const isPhone = useIsMobile(600);
+  const isMacDesktop = isMacDesktopPlatform();
   const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [schoolCalendarOpen, setSchoolCalendarOpen] = useState(false);
