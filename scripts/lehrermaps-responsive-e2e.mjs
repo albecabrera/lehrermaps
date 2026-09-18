@@ -164,8 +164,8 @@ async function exerciseOneNote(page, viewport) {
     return;
   }
 
-  const oneNote = page.locator('a.lm-topbar-onenote');
-  assert(await oneNote.count() === 1, 'OneNote desktop link is unavailable');
+  const oneNote = page.locator('a.lm-desktop-app-rail-launcher.lm-topbar-onenote');
+  assert(await oneNote.count() === 1, 'OneNote desktop rail link is unavailable');
   assert((await oneNote.getAttribute('href'))?.startsWith('onenote:https://onedrive.live.com/'), 'OneNote link must open the installed app');
   assert(await oneNote.getAttribute('target') === null, 'OneNote app link must not open a browser tab');
 }

@@ -2804,3 +2804,53 @@ button:not(:disabled):focus-visible,
   button:not(:disabled):hover,
   [role="button"]:not([aria-disabled="true"]):hover { transform: none !important; }
 }
+
+/* Desktop-only app rail: this is adjacent to, not a replacement for, the
+   material sidebar. It deliberately has no visible labels; each 44px launcher
+   keeps its accessible name and native tooltip. */
+.lm-desktop-app-rail {
+  width: 60px;
+  min-width: 60px;
+  height: 100%;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-right: 1px solid var(--c-border);
+  background: color-mix(in srgb, var(--c-surface) 90%, var(--c-bg));
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, .22);
+}
+.lm-desktop-app-rail-launcher {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  flex: 0 0 44px;
+}
+.lm-desktop-app-rail-launcher .lm-topbar-brand-icon,
+.lm-desktop-app-rail-launcher .lm-onenote-glyph,
+.lm-desktop-app-rail-launcher .lm-idoceo-glyph,
+.lm-desktop-app-rail-launcher .lm-webuntis-glyph {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+}
+.lm-desktop-app-rail-launcher .lm-logineo-logo {
+  width: 32px;
+  height: 28px;
+  flex-basis: 32px;
+  background: transparent !important;
+  object-fit: contain;
+}
+[data-theme="dark"] .lm-desktop-app-rail {
+  background: color-mix(in srgb, var(--c-surface) 86%, #06263a);
+  border-right-color: color-mix(in srgb, var(--c-border) 72%, var(--c-turquoise));
+  box-shadow: inset -1px 0 0 rgba(91, 235, 224, .1);
+}
+@media (max-width: 1100px) {
+  .lm-desktop-app-rail { display: none; }
+}

@@ -52,6 +52,47 @@ import ClassroomTimer from '../components/ClassroomTimer';
 // and leave iPhone Safari showing a broken-image placeholder.
 const LOGINEO_LOGO_URL = '/assets/logineo-logo.svg';
 
+const DESKTOP_APP_LAUNCHERS = [
+  { id: 'onenote', href: ONE_NOTE_APP_URL, label: 'OneNote in der installierten App öffnen', title: 'In OneNote-App öffnen', icon: 'onenote' },
+  { id: 'idoceo', href: IDOCEO_APP_URL, label: 'iDoceo in der installierten App öffnen', title: 'In iDoceo-App öffnen', icon: 'idoceo' },
+  { id: 'notion', href: 'https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link', label: 'Notion in neuem Tab öffnen', title: 'Notion in neuem Tab öffnen', icon: 'notion', external: true },
+  { id: 'miro', href: 'https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230', label: 'Miro in neuem Tab öffnen', title: 'Miro in neuem Tab öffnen', icon: 'miro', external: true },
+  { id: 'webuntis', href: WEB_UNTIS_URL, label: 'WebUntis in neuem Tab öffnen', title: 'WebUntis in neuem Tab öffnen', icon: 'webuntis', external: true },
+  { id: 'logineo', href: LOGINEO_URL, label: 'Logineo Mail in neuem Tab öffnen', title: 'Logineo Mail öffnen', icon: 'logineo', external: true },
+];
+
+function DesktopAppRail() {
+  const appIcon = (app) => {
+    switch (app.icon) {
+      case 'onenote': return <span className="lm-onenote-glyph" aria-hidden="true">N</span>;
+      case 'idoceo': return <img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" />;
+      case 'notion': return <img src="/assets/icons/notion.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" />;
+      case 'miro': return <img src="/assets/icons/miro.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" />;
+      case 'webuntis': return <span className="lm-webuntis-glyph" aria-hidden="true">W</span>;
+      case 'logineo': return <img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" />;
+      default: return null;
+    }
+  };
+
+  return (
+    <nav className="lm-desktop-app-rail" aria-label="Direkte App-Links">
+      {DESKTOP_APP_LAUNCHERS.map((app) => (
+        <a
+          key={app.id}
+          href={app.href}
+          target={app.external ? '_blank' : undefined}
+          rel={app.external ? 'noopener noreferrer' : undefined}
+          className={`lm-spring lm-external-app-launcher lm-desktop-app-rail-launcher lm-topbar-${app.id}`}
+          aria-label={app.label}
+          title={app.title}
+        >
+          {appIcon(app)}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 // Opened views are split into on-demand chunks without changing their layout.
 const Schedule = lazy(() => import('../components/Schedule'));
 const ExamBoard = lazy(() => import('../components/ExamBoard'));
@@ -935,12 +976,12 @@ export default function App({ onLogout }) {
             const active = viewMode === id;
             return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
           })}
-          <a href={ONE_NOTE_APP_URL} className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-onenote" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen"><span className="lm-onenote-glyph" aria-hidden="true">N</span></a>
-          <a href={IDOCEO_APP_URL} className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-idoceo" aria-label="iDoceo in der installierten App öffnen" title="In iDoceo-App öffnen"><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /></a>
-          <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-notion" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen"><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /></a>
-          <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen"><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /></a>
-          <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen"><span className="lm-webuntis-glyph" aria-hidden="true">W</span></a>
-          <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-logineo" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail öffnen"><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /></a>
+          <a href={ONE_NOTE_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-onenote" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen"><span className="lm-onenote-glyph" aria-hidden="true">N</span><span>OneNote</span></a>
+          <a href={IDOCEO_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-idoceo" aria-label="iDoceo in der installierten App öffnen" title="In iDoceo-App öffnen"><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span>iDoceo</span></a>
+          <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-notion" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen"><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Notion</span></a>
+          <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen"><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Miro</span></a>
+          <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen"><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span>WebUntis</span></a>
+          <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-logineo" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail öffnen"><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /><span>Logineo</span></a>
         </nav>
         <div className="lm-desktop-trailing-group">
           <div className="lm-topbar-tools">
@@ -989,6 +1030,7 @@ export default function App({ onLogout }) {
             width={sidebarWidth}
             onFolderSelect={onFolderSelect}
           />
+          <DesktopAppRail />
         </div>}
         {!isMobile && <div
           onMouseDown={onSidebarResizeMouseDown}
