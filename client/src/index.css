@@ -2740,10 +2740,11 @@ button:not(:disabled):focus-visible,
    header: a white logo panel keeps the full mark legible in both themes. */
 @media (min-width: 601px) {
   .lm-tabbar .lm-topbar-logineo .lm-logineo-logo {
-    width: 116px;
-    height: 34px;
-    flex-basis: 116px;
-    padding: 3px 6px;
+    width: 106px;
+    height: 44px;
+    flex-basis: 106px;
+    padding: 0;
+    object-fit: contain;
     border: 1px solid color-mix(in srgb, var(--c-border) 68%, white) !important;
     border-radius: 8px;
     background: #fff !important;
