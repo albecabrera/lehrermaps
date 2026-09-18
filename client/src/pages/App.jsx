@@ -1001,6 +1001,7 @@ export default function App({ onLogout }) {
         }}
         onMouseLeave={() => setParallax({ x: 0, y: 0 })}
       >
+        {!isPhone && <DesktopAppRail />}
         {viewMode === 'today' ? (
           <TodayDashboard onOpenSchedule={() => navigateToView('schedule')} onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} />
         ) : viewMode === 'klausurplan' ? (
@@ -1029,7 +1030,6 @@ export default function App({ onLogout }) {
             onFolderSelect={onFolderSelect}
           />
         </div>}
-        {!isPhone && <DesktopAppRail />}
         {!isMobile && <div
           onMouseDown={onSidebarResizeMouseDown}
           style={{
