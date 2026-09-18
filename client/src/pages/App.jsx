@@ -955,9 +955,6 @@ export default function App({ onLogout }) {
             <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen">
               <span className="lm-webuntis-glyph" aria-hidden="true">W</span><span className="lm-mobile-header-app-label">WebUntis</span>
             </a>
-            <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--logineo" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail öffnen">
-              <img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="LOGINEO NRW" /><span className="lm-mobile-header-app-label">Logineo Mail</span>
-            </a>
           </nav>
         )}
         <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
