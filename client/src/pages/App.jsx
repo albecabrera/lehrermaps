@@ -64,7 +64,7 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'kahoot', href: 'https://create.kahoot.it/', label: 'Kahoot! öffnen', iconSrc: '/assets/kahoot-favicon.ico' },
   { id: 'classroomscreen', href: 'https://classroomscreen.com/', label: 'Classroomscreen öffnen', iconSrc: '/assets/classroomscreen-favicon.ico' },
   { id: 'plesk-esg', href: 'https://pls1.netcologne.de:8443/smb/web/view', label: 'Plesk ESG öffnen', iconSrc: '/assets/plesk-favicon.ico' },
-  { id: 'netcologne-ticket', href: 'https://service.netcologne.de/', label: 'NetCologne Ticket öffnen', iconSrc: '/assets/netcologne-ticket-favicon.ico' },
+  { id: 'netcologne-ticket', href: 'https://ticket.netcologne-its.de/index.php?section=intern', label: 'NetCologne Ticket öffnen', iconSrc: '/assets/netcologne-ticket-favicon.ico' },
   { id: 'tafino', href: 'https://tafino.de/', label: 'Tafino öffnen', iconSrc: '/assets/tafino-favicon.ico' },
 ];
 
