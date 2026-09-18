@@ -120,8 +120,6 @@ html, body, #root {
   /* Today: increase hierarchy, card density, controls, and reading text. */
   .lm-today-view { padding: 36px clamp(28px, 5vw, 64px) 56px !important; }
   .lm-today-view h1 { font-size: 42px !important; line-height: 1.12 !important; }
-  .lm-today-view > div > div:first-child > div:first-child { font-size: 14px !important; }
-  .lm-today-view > div > div:first-child > div:first-child + h1 + div { font-size: 17px !important; }
   .lm-today-content { gap: 18px !important; }
   .lm-today-content > section { padding: 22px !important; border-radius: 16px !important; }
   .lm-today-content h2 { font-size: 22px !important; }
@@ -188,6 +186,16 @@ html, body, #root {
   display: block;
   object-fit: contain;
   border-radius: 4px;
+}
+.lm-logineo-logo {
+  width: 116px;
+  height: 34px;
+  flex: 0 0 116px;
+  padding: 3px 6px;
+  border: 1px solid color-mix(in srgb, var(--c-border) 68%, white);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .18);
 }
 .lm-brand-name { color: var(--c-text); font-size: 17px; font-weight: 750; letter-spacing: -.45px; }
 .lm-login-shell {
@@ -1602,7 +1610,9 @@ button:active {
 [data-theme="dark"] .lm-tabbar { background: var(--c-tab-bg) !important; }
 [data-theme="dark"] .lm-home-subject-card { box-shadow: inset 0 1px 0 rgba(255,255,255,.025); }
 @media (max-width: 1100px) {
-  /* Mobile/tablet use the dedicated launcher strip so each external app has one link. */
+  /* Mobile/tablet use the dedicated launcher strip. Keep the desktop
+     navigation out of the layout so each external app (including Logineo)
+     has exactly one rendered link at these breakpoints. */
   .lm-desktop-primary-nav { display: none !important; }
   .lm-tabbar {
     display: flex !important;
@@ -1687,6 +1697,7 @@ button:active {
   }
   .lm-mobile-header-app:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
   .lm-mobile-header-app .lm-topbar-brand-icon { width: 20px; height: 20px; object-fit: contain; }
+  .lm-mobile-header-app .lm-logineo-logo { width: 40px; height: 28px; flex-basis: 40px; padding: 2px; border-radius: 7px; }
   .lm-mobile-header-app .lm-idoceo-glyph { width: 21px; height: 21px; }
   .lm-mobile-header-app-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   [data-theme="dark"] .lm-mobile-header-app {
@@ -2047,6 +2058,55 @@ button[aria-pressed="true"] {
   .lm-tabbar { justify-content: space-between; }
 }
 
+/* MacBook-only header scale: keep the compact tablet/mobile composition intact
+   while giving pointer-driven workspace navigation more legible, generous controls. */
+@media (min-width: 1101px) {
+  .lm-app-shell.lm-platform-mac-desktop .lm-tabbar {
+    min-height: 76px !important;
+    padding-block: 12px !important;
+  }
+
+  .lm-app-shell.lm-platform-mac-desktop .lm-tabbar .lm-app-brand {
+    min-width: 48px;
+    min-height: 48px;
+    padding-inline: 8px 14px;
+  }
+  .lm-app-shell.lm-platform-mac-desktop .lm-tabbar .lm-app-brand .lm-brand-name { font-size: 16px; }
+
+  .lm-app-shell.lm-platform-mac-desktop .lm-desktop-primary-nav { gap: 6px; }
+  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item {
+    min-height: 48px;
+    padding-inline: 14px;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item > span:first-child { font-size: 18px; }
+  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item > span:first-child svg { width: 18px; height: 18px; }
+  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item .lm-topbar-brand-icon,
+  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item .lm-onenote-glyph,
+  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item .lm-idoceo-glyph,
+  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item .lm-webuntis-glyph { width: 20px; height: 20px; flex-basis: 20px; }
+
+  .lm-app-shell.lm-platform-mac-desktop .lm-topbar-tools { gap: 8px; }
+  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-tool {
+    width: 48px;
+    height: 48px;
+    min-height: 48px !important;
+    font-size: 19px;
+  }
+  .lm-app-shell.lm-platform-mac-desktop .lm-classroom-timer-trigger { min-width: 100px; padding-inline: 16px; }
+  .lm-app-shell.lm-platform-mac-desktop .lm-classroom-timer-trigger-icon { font-size: 20px; }
+  .lm-app-shell.lm-platform-mac-desktop .lm-classroom-timer-trigger-label { font-size: 13px; }
+
+  .lm-app-shell.lm-platform-mac-desktop .lm-desktop-trailing-group { gap: 8px; }
+  .lm-app-shell.lm-platform-mac-desktop .lm-desktop-trailing-group .lm-topbar-logout {
+    min-height: 48px;
+    padding-inline: 14px;
+    gap: 8px;
+    font-size: 13px;
+  }
+}
+
 /* Editorial Glass — shared application language. Component-specific rules
    below consume the canonical tokens above rather than introducing new
    palettes, radii or shadow scales. */
@@ -2079,7 +2139,6 @@ body,
 }
 
 .lm-editorial-card,
-.lm-today-stat,
 .lm-schedule-grid-wrap,
 .lm-klausurplan-document,
 .lm-checklist-modal,
@@ -2297,12 +2356,22 @@ textarea:focus {
 .lm-today-task > input[type="checkbox"] { width: var(--touch-target); height: var(--touch-target); margin: 0; accent-color: var(--c-turquoise); cursor: pointer; }
 .lm-today-task > span { flex: 1; min-width: 0; padding: 12px 4px; color: var(--c-text); font-size: 13px; line-height: 1.4; cursor: text; }
 .lm-today-task > span.is-done { color: var(--c-text-3); text-decoration: line-through; }
+.lm-today-task > span.is-due { color: var(--c-danger-text); font-weight: 700; }
+.lm-task-due { display: block; margin-top: 2px; color: var(--c-text-3); font-size: 11px; font-weight: 650; text-decoration: none; }
+.lm-today-task > span.is-due .lm-task-due { color: var(--c-danger-text); }
 .lm-today-task.is-editing { align-items: flex-start; padding: 8px 0; }
 .lm-today-task.is-editing > input[type="checkbox"] { margin-top: 2px; }
 .lm-today-task-editor { flex: 1; min-width: 0; display: grid; gap: 8px; }
 .lm-today-task-editor input { width: 100%; min-height: var(--touch-target); padding: 0 12px; font-size: 13px; }
 .lm-today-task-editor-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .lm-today-task-editor-actions .lm-button { min-height: var(--touch-target); }
+.lm-today-task-due-fields { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.lm-today-task-due-fields label { display: grid; gap: 3px; color: var(--c-text-2); font-size: 11px; font-weight: 700; }
+.lm-today-task-due-fields input { min-height: var(--touch-target); padding: 0 8px; font-size: 13px; }
+.lm-today-task-due-fields .lm-text-button,
+.lm-task-notification-button { min-height: var(--touch-target); padding: 0 8px; border: 1px solid var(--c-border); border-radius: 8px; font-size: 12px; font-weight: 700; }
+.lm-task-notification-button { margin: -4px 0 8px; color: var(--c-text-2); }
+.lm-task-reminder-disclosure { margin: -2px 0 10px; color: var(--c-text-3); font-size: 11px; line-height: 1.4; }
 .lm-task-edit-button { font-size: 18px; }
 .lm-today-task > span:focus-visible,
 .lm-today-task > input[type="checkbox"]:focus-visible,
@@ -2467,68 +2536,221 @@ textarea:focus {
 .lm-schedule-cell-edit-button:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
 .lm-schedule-times-error { grid-column: 1 / -1; margin: 0; color: var(--c-danger-text); font-size: 12px; font-weight: 700; }
 
-.lm-tabbar .lm-topbar-logineo { color: var(--c-text-2); }
-.lm-tabbar .lm-topbar-logineo .lm-logineo-glyph { font-size: 16px; line-height: 1; }
+/* Visual refresh — this final layer deliberately owns the shared motion and
+   high-contrast dark-theme tokens so older component rules cannot dilute them. */
+:root {
+  --c-accent: #0f9e9a;
+  --lm-motion-fast: 140ms;
+  --lm-motion-enter: 220ms;
+  --lm-motion-ease: cubic-bezier(.22, 1, .36, 1);
+}
 
+[data-theme="dark"] {
+  --c-bg: #061724;
+  --c-surface: #0c2639;
+  --c-surface-2: #12354b;
+  --c-tab-bg: rgba(6, 23, 36, .96);
+  --c-border: rgba(131, 222, 220, .28);
+  --c-border-soft: rgba(173, 235, 235, .17);
+  --c-text: #f4fcff;
+  --c-text-2: #c9e3e9;
+  --c-text-3: #9dc4ce;
+  --c-hover: rgba(39, 218, 207, .18);
+  --c-hover-2: rgba(92, 222, 216, .10);
+  --c-input-bg: #082033;
+  --c-scrollbar: rgba(147, 228, 225, .46);
+  --c-focus: #3ee4d8;
+  --c-accent: #27d7cd;
+  --c-glass-bg: rgba(11, 38, 57, .94);
+  --c-glass-border: rgba(163, 241, 237, .24);
+  --c-glass-shadow: 0 20px 54px rgba(0, 5, 13, .52), inset 0 1px 0 rgba(222,255,253,.09);
+}
+
+@keyframes lm-premium-enter {
+  from { opacity: 0; transform: translateY(10px) scale(.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes lm-sidebar-drop-pulse {
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--c-accent) 16%, transparent); }
+}
+
+/* View and overlay entrances stay short enough to preserve rapid classroom work. */
+.lm-home-view,
+.lm-folder-overview,
+.lm-today-view,
+.lm-schedule-view,
+.lm-annual-planning,
+.lm-klausurplan-workspace {
+  animation: lm-premium-enter var(--lm-motion-enter) var(--lm-motion-ease) both;
+}
+
+.lm-home-subject-card,
+.lm-folder-card,
+.lm-editorial-card,
+.lm-annual-entry-card,
+.lm-today-lesson-card,
+.lm-schedule-grid-wrap {
+  transition: transform var(--lm-motion-fast) var(--lm-motion-ease), box-shadow var(--lm-motion-fast) ease, border-color var(--lm-motion-fast) ease, background-color var(--lm-motion-fast) ease;
+}
+
+.lm-modal-surface,
+.lm-checklist-modal,
+.lm-upload-modal,
+.lm-add-link-modal,
+.lm-klausurplan-preview-dialog,
+.lm-klasurplan-viewer-dialog {
+  animation-duration: var(--lm-motion-enter);
+  animation-timing-function: var(--lm-motion-ease);
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+.lm-sidebar-tree-button {
+  transition-timing-function: var(--lm-motion-ease);
+}
+
+button:not(:disabled):hover,
+[role="button"]:not([aria-disabled="true"]):hover {
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--c-accent) 13%, transparent);
+}
+
+button:not(:disabled):focus-visible,
+[role="button"]:not([aria-disabled="true"]):focus-visible,
+.lm-sidebar-tree-button:focus-visible {
+  outline-color: color-mix(in srgb, var(--c-accent) 66%, white);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-accent) 20%, transparent);
+}
+
+/* The tree is its own drag surface: turquoise always identifies the operation,
+   while a thin before/after marker keeps the destination unambiguous. */
+.lm-sidebar-tree-node { transition: opacity var(--lm-motion-fast) ease; }
+.lm-sidebar-tree-button {
+  transition: transform var(--lm-motion-fast) var(--lm-motion-ease), opacity var(--lm-motion-fast) ease, background-color var(--lm-motion-fast) ease, color var(--lm-motion-fast) ease, box-shadow var(--lm-motion-fast) ease;
+}
+.lm-sidebar-tree-button.is-dragging {
+  opacity: .58 !important;
+  background: color-mix(in srgb, var(--c-accent) 18%, var(--c-surface)) !important;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--c-accent) 22%, transparent);
+  transform: scale(1.015);
+}
+.lm-sidebar-tree-button.is-drop-target {
+  background: color-mix(in srgb, var(--c-accent) 10%, var(--c-surface)) !important;
+}
+.lm-sidebar-drop-target { animation: lm-sidebar-drop-pulse 900ms ease-in-out infinite; }
+.lm-sidebar-folder-drop-target.is-before,
+.lm-sidebar-folder-drop-target.is-after {
+  height: 3px !important;
+  background: var(--c-accent) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-accent) 36%, transparent), 0 0 14px color-mix(in srgb, var(--c-accent) 45%, transparent);
+}
+.lm-sidebar-folder-drop-target.is-before::before,
+.lm-sidebar-folder-drop-target.is-after::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: 50%;
+  left: -2px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  transform: translateY(-50%);
+}
+
+/* A transparent Logineo asset needs contrast, not a white card behind it. */
 .lm-logineo-logo {
-  width: 116px;
-  height: 34px;
-  flex: 0 0 116px;
-  padding: 3px 6px;
-  border: 1px solid color-mix(in srgb, var(--c-border) 68%, white);
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, .18);
+  background: transparent !important;
+  border-color: color-mix(in srgb, var(--c-border) 82%, var(--c-accent)) !important;
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--c-navy-deep) 18%, transparent) !important;
 }
-@media (max-width: 1100px) {
-  .lm-mobile-header-app .lm-logineo-logo { width: 40px; height: 28px; flex-basis: 40px; padding: 2px; border-radius: 7px; }
+[data-theme="dark"] .lm-logineo-logo {
+  border-color: color-mix(in srgb, var(--c-accent) 58%, var(--c-border)) !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .55));
 }
 
-/* MacBook-only header scale: keep the compact tablet/mobile composition intact
-   while giving pointer-driven workspace navigation more legible, generous controls. */
-@media (min-width: 1101px) {
-  .lm-app-shell.lm-platform-mac-desktop .lm-tabbar {
-    min-height: 76px !important;
-    padding-block: 12px !important;
-  }
+/* Dark mode relies on surface separation and readable secondary information,
+   including dense tables and controls that are disabled by application state. */
+[data-theme="dark"] .lm-sidebar,
+[data-theme="dark"] .lm-tabbar,
+[data-theme="dark"] .lm-drawer,
+[data-theme="dark"] .lm-floating-klasurplan-switcher {
+  background: var(--c-glass-bg) !important;
+  border-color: var(--c-glass-border) !important;
+}
+[data-theme="dark"] .lm-tabbar .is-active,
+[data-theme="dark"] .lm-workspace-nav-item.is-active,
+[data-theme="dark"] .lm-mobile-header-app[aria-current="page"] {
+  color: #eaffff !important;
+  border-color: color-mix(in srgb, var(--c-accent) 74%, white) !important;
+  background: color-mix(in srgb, var(--c-accent) 28%, #082a3e) !important;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--c-accent) 23%, transparent) !important;
+}
+[data-theme="dark"] button:disabled,
+[data-theme="dark"] input:disabled,
+[data-theme="dark"] select:disabled,
+[data-theme="dark"] textarea:disabled,
+[data-theme="dark"] [aria-disabled="true"] {
+  color: #8eabb5 !important;
+  background-color: #0a2132 !important;
+  border-color: rgba(143, 190, 200, .2) !important;
+  opacity: .78;
+}
+[data-theme="dark"] th { color: #d8f1f4; }
+[data-theme="dark"] td { color: var(--c-text-2); border-color: var(--c-border); }
+[data-theme="dark"] thead { background: #11364c; }
+[data-theme="dark"] tbody tr:nth-child(even) { background: rgba(21, 63, 82, .42); }
+[data-theme="dark"] tbody tr:hover { background: color-mix(in srgb, var(--c-accent) 13%, #10344a); }
 
-  .lm-app-shell.lm-platform-mac-desktop .lm-tabbar .lm-app-brand {
-    min-width: 48px;
-    min-height: 48px;
-    padding-inline: 8px 14px;
+/* iPad/Safari: keep the navigation composited as an opaque, unfiltered layer.
+   The scope is intentionally limited to header/nav descendants, never content. */
+@media (min-width: 601px) and (max-width: 1100px) {
+  .lm-tabbar,
+  .lm-tabbar *,
+  .lm-tabbar *::before,
+  .lm-tabbar *::after,
+  .lm-mobile-header-apps,
+  .lm-mobile-header-apps *,
+  .lm-mobile-header-actions,
+  .lm-mobile-header-actions * {
+    filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    transform: none !important;
   }
-  .lm-app-shell.lm-platform-mac-desktop .lm-tabbar .lm-app-brand .lm-brand-name { font-size: 16px; }
+  .lm-tabbar {
+    background: color-mix(in srgb, var(--c-surface) 98%, var(--c-bg)) !important;
+    box-shadow: 0 1px 0 var(--c-border), 0 5px 16px rgba(6, 23, 36, .09) !important;
+  }
+  [data-theme="dark"] .lm-tabbar { background: #092237 !important; }
+  .lm-tabbar .lm-app-brand,
+  .lm-tabbar .lm-mobile-header-app,
+  .lm-tabbar .lm-mobile-menu-trigger,
+  .lm-tabbar .lm-mobile-header-action {
+    background: var(--c-surface) !important;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, white 42%, transparent) !important;
+  }
+}
 
-  .lm-app-shell.lm-platform-mac-desktop .lm-desktop-primary-nav { gap: 6px; }
-  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item {
-    min-height: 48px;
-    padding-inline: 14px;
-    gap: 8px;
-    font-size: 14px;
+@media (prefers-reduced-motion: reduce) {
+  .lm-home-view,
+  .lm-folder-overview,
+  .lm-today-view,
+  .lm-schedule-view,
+  .lm-annual-planning,
+  .lm-klausurplan-workspace,
+  .lm-sidebar-drop-target,
+  .lm-sidebar-tree-button,
+  .lm-sidebar-tree-node,
+  .lm-modal-surface,
+  .lm-checklist-modal,
+  .lm-upload-modal,
+  .lm-add-link-modal,
+  .lm-klausurplan-preview-dialog,
+  .lm-klasurplan-viewer-dialog {
+    animation: none !important;
+    transition: none !important;
   }
-  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item > span:first-child { font-size: 18px; }
-  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item > span:first-child svg { width: 18px; height: 18px; }
-  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item .lm-topbar-brand-icon,
-  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item .lm-onenote-glyph,
-  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item .lm-idoceo-glyph,
-  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-nav-item .lm-webuntis-glyph { width: 20px; height: 20px; flex-basis: 20px; }
-
-  .lm-app-shell.lm-platform-mac-desktop .lm-topbar-tools { gap: 8px; }
-  .lm-app-shell.lm-platform-mac-desktop .lm-workspace-tool {
-    width: 48px;
-    height: 48px;
-    min-height: 48px !important;
-    font-size: 19px;
-  }
-  .lm-app-shell.lm-platform-mac-desktop .lm-classroom-timer-trigger { min-width: 100px; padding-inline: 16px; }
-  .lm-app-shell.lm-platform-mac-desktop .lm-classroom-timer-trigger-icon { font-size: 20px; }
-  .lm-app-shell.lm-platform-mac-desktop .lm-classroom-timer-trigger-label { font-size: 13px; }
-
-  .lm-app-shell.lm-platform-mac-desktop .lm-desktop-trailing-group { gap: 8px; }
-  .lm-app-shell.lm-platform-mac-desktop .lm-desktop-trailing-group .lm-topbar-logout {
-    min-height: 48px;
-    padding-inline: 14px;
-    gap: 8px;
-    font-size: 13px;
-  }
+  .lm-sidebar-tree-button.is-dragging,
+  button:not(:disabled):hover,
+  [role="button"]:not([aria-disabled="true"]):hover { transform: none !important; }
 }

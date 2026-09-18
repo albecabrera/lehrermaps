@@ -263,7 +263,7 @@ export default function Sidebar({
                     folderDropTarget={folderDropTarget}
                     draggingFolderId={draggingFolderId}
                     onFolderDragStart={(id) => setDraggingFolderId(id)}
-                    onFolderDragEnd={() => { setDraggingFolderId(null); setFolderDropTargetId(null); }}
+                    onFolderDragEnd={() => { setDraggingFolderId(null); setFolderDropTarget(null); }}
                     onExpandSubtree={setExpandedSubtreeId}
                     expandDescendants={node.id === expandedSubtreeId}
                     onDragOver={handleDragOver}
@@ -374,7 +374,7 @@ function TreeNode({
   const lineX = depth * INDENT + 8;
 
   return (
-    <div>
+    <div className="lm-sidebar-tree-node">
       {/* Row */}
       <div
         ref={rowRef}
@@ -399,16 +399,16 @@ function TreeNode({
 
         {/* File drop highlight */}
         {isFileDrop && !collapsed && (
-          <div style={{
+          <div className="lm-sidebar-drop-target lm-sidebar-file-drop-target" style={{
             position: 'absolute', inset: 0, borderRadius: 6,
-            border: '2px solid #22C55E', background: 'rgba(34,197,94,0.07)',
+            border: '2px solid var(--c-accent)', background: 'color-mix(in srgb, var(--c-accent) 13%, transparent)',
             pointerEvents: 'none', zIndex: 1,
           }}/>
         )}
 
         {/* Folder drop highlight */}
         {isFolderDrop && !collapsed && (
-          <div style={{
+          <div className={`lm-sidebar-drop-target lm-sidebar-folder-drop-target is-${folderDropPlacement}`} style={{
             position: 'absolute',
             left: folderDropPlacement === 'inside' ? 0 : 4,
             right: folderDropPlacement === 'inside' ? 0 : 4,
@@ -416,15 +416,15 @@ function TreeNode({
             bottom: folderDropPlacement === 'before' ? 'auto' : folderDropPlacement === 'after' ? -1 : 0,
             height: folderDropPlacement === 'inside' ? 'auto' : 3,
             borderRadius: folderDropPlacement === 'inside' ? 6 : 3,
-            border: folderDropPlacement === 'inside' ? `2px solid ${accent}` : 'none',
-            background: folderDropPlacement === 'inside' ? `${accent}18` : accent,
+            border: folderDropPlacement === 'inside' ? '2px solid var(--c-accent)' : 'none',
+            background: folderDropPlacement === 'inside' ? 'color-mix(in srgb, var(--c-accent) 13%, transparent)' : 'var(--c-accent)',
             pointerEvents: 'none', zIndex: 1,
           }}/>
         )}
 
         <button
           onClick={handleClick}
-          className="lm-spring"
+          className={`lm-spring lm-sidebar-tree-button${isDragging ? ' is-dragging' : ''}${isFileDrop || isFolderDrop ? ' is-drop-target' : ''}`}
           draggable={!collapsed}
           onDragStart={(e) => {
             e.stopPropagation();
