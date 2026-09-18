@@ -52,41 +52,39 @@ import ClassroomTimer from '../components/ClassroomTimer';
 // and leave iPhone Safari showing a broken-image placeholder.
 const LOGINEO_LOGO_URL = '/assets/logineo-logo.svg';
 
-const DESKTOP_APP_LAUNCHERS = [
-  { id: 'onenote', href: ONE_NOTE_APP_URL, label: 'OneNote in der installierten App öffnen', title: 'In OneNote-App öffnen', icon: 'onenote' },
-  { id: 'idoceo', href: IDOCEO_APP_URL, label: 'iDoceo in der installierten App öffnen', title: 'In iDoceo-App öffnen', icon: 'idoceo' },
-  { id: 'notion', href: 'https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link', label: 'Notion in neuem Tab öffnen', title: 'Notion in neuem Tab öffnen', icon: 'notion', external: true },
-  { id: 'miro', href: 'https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230', label: 'Miro in neuem Tab öffnen', title: 'Miro in neuem Tab öffnen', icon: 'miro', external: true },
-  { id: 'webuntis', href: WEB_UNTIS_URL, label: 'WebUntis in neuem Tab öffnen', title: 'WebUntis in neuem Tab öffnen', icon: 'webuntis', external: true },
-  { id: 'logineo', href: LOGINEO_URL, label: 'Logineo Mail in neuem Tab öffnen', title: 'Logineo Mail öffnen', icon: 'logineo', external: true },
+const EXTERNAL_APP_RAIL_LAUNCHERS = [
+  { id: 'ucs', href: 'https://ucs.schule/', label: 'UCS öffnen', mark: 'U', color: '#0B4F71', colorEnd: '#1677A8' },
+  { id: 'anton', href: 'https://anton.app/', label: 'ANTON öffnen', mark: 'A', color: '#EF5B2A', colorEnd: '#FF9A3D' },
+  { id: 'vamos-1', href: 'https://www.klett-sprachen.de/vamos-adelante-curso-intensivo-1/r-1/2', label: 'Vamos adelante 1 öffnen', mark: 'V1', color: '#DF3153', colorEnd: '#FF7592' },
+  { id: 'vamos-2', href: 'https://www.klett-sprachen.de/vamos-adelante-curso-intensivo-2/r-1/2', label: 'Vamos adelante 2 öffnen', mark: 'V2', color: '#8B3FC4', colorEnd: '#C678F2' },
+  { id: 'taskcards', href: 'https://www.taskcards.de/', label: 'TaskCards öffnen', mark: 'TC', color: '#1B9E77', colorEnd: '#5ACF9E', badge: 'cards' },
+  { id: 'esg-tech-help', href: 'https://esg-koeln.de/', label: 'ESG-Technikhilfe öffnen', mark: '⚙', color: '#1769AA', colorEnd: '#38A8E0', badge: 'gear' },
+  { id: 'quizlet', href: 'https://quizlet.com/de/9b-vokabeln-unidad-3', label: 'Quizlet öffnen', mark: 'Q', color: '#4255FF', colorEnd: '#7B8CFF' },
+  { id: 'eduki', href: 'https://eduki.com/de', label: 'Eduki öffnen', mark: 'e', color: '#EF7C1A', colorEnd: '#F7B245' },
+  { id: 'kahoot', href: 'https://create.kahoot.it/', label: 'Kahoot! öffnen', mark: 'K!', color: '#6D28D9', colorEnd: '#A855F7' },
+  { id: 'classroomscreen', href: 'https://classroomscreen.com/', label: 'Classroomscreen öffnen', mark: 'CS', color: '#008C95', colorEnd: '#27C7B8', badge: 'screen' },
+  { id: 'plesk-esg', href: 'https://lehrermaps.albertocabrera.de:8443/', label: 'Plesk ESG öffnen', mark: 'P', color: '#243B53', colorEnd: '#52738D' },
+  { id: 'netcologne-ticket', href: 'https://service.netcologne.de/', label: 'NetCologne Ticket öffnen', mark: 'N', color: '#E54535', colorEnd: '#F78154' },
+  { id: 'tafino', href: 'https://tafino.de/', label: 'Tafino öffnen', mark: 'T', color: '#D97706', colorEnd: '#F7B733' },
 ];
 
 function DesktopAppRail() {
-  const appIcon = (app) => {
-    switch (app.icon) {
-      case 'onenote': return <span className="lm-onenote-glyph" aria-hidden="true">N</span>;
-      case 'idoceo': return <img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" />;
-      case 'notion': return <img src="/assets/icons/notion.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" />;
-      case 'miro': return <img src="/assets/icons/miro.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" />;
-      case 'webuntis': return <span className="lm-webuntis-glyph" aria-hidden="true">W</span>;
-      case 'logineo': return <img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" />;
-      default: return null;
-    }
-  };
-
   return (
-    <nav className="lm-desktop-app-rail" aria-label="Direkte App-Links">
-      {DESKTOP_APP_LAUNCHERS.map((app) => (
+    <nav className="lm-desktop-app-rail" aria-label="Externe Unterrichts-Apps">
+      {EXTERNAL_APP_RAIL_LAUNCHERS.map((app) => (
         <a
           key={app.id}
           href={app.href}
-          target={app.external ? '_blank' : undefined}
-          rel={app.external ? 'noopener noreferrer' : undefined}
-          className={`lm-spring lm-external-app-launcher lm-desktop-app-rail-launcher lm-topbar-${app.id}`}
-          aria-label={app.label}
-          title={app.title}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`lm-spring lm-desktop-app-rail-launcher lm-app-rail-${app.id}`}
+          aria-label={`${app.label} (öffnet in neuem Tab)`}
+          title={`${app.label} (öffnet in neuem Tab)`}
+          style={{ '--rail-color': app.color, '--rail-color-end': app.colorEnd }}
         >
-          {appIcon(app)}
+          <span className={`lm-app-rail-badge${app.badge ? ` lm-app-rail-badge--${app.badge}` : ''}`} aria-hidden="true">
+            <span>{app.mark}</span>
+          </span>
         </a>
       ))}
     </nav>
@@ -1030,8 +1028,8 @@ export default function App({ onLogout }) {
             width={sidebarWidth}
             onFolderSelect={onFolderSelect}
           />
-          <DesktopAppRail />
         </div>}
+        {!isPhone && <DesktopAppRail />}
         {!isMobile && <div
           onMouseDown={onSidebarResizeMouseDown}
           style={{

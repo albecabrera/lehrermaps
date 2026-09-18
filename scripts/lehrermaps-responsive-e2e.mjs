@@ -164,10 +164,29 @@ async function exerciseOneNote(page, viewport) {
     return;
   }
 
-  const oneNote = page.locator('a.lm-desktop-app-rail-launcher.lm-topbar-onenote');
-  assert(await oneNote.count() === 1, 'OneNote desktop rail link is unavailable');
+  const oneNote = page.locator('.lm-desktop-primary-nav a.lm-topbar-onenote');
+  assert(await oneNote.count() === 1, 'OneNote desktop header link is unavailable');
   assert((await oneNote.getAttribute('href'))?.startsWith('onenote:https://onedrive.live.com/'), 'OneNote link must open the installed app');
   assert(await oneNote.getAttribute('target') === null, 'OneNote app link must not open a browser tab');
+}
+
+async function exerciseExternalAppRail(page, viewport) {
+  const rail = page.locator('.lm-desktop-app-rail');
+  if (viewport.width <= 600) {
+    assert(await rail.count() === 0 || !(await rail.isVisible()), 'external app rail must be hidden on phones');
+    return;
+  }
+
+  await rail.waitFor({ state: 'visible' });
+  const launchers = rail.locator('a.lm-desktop-app-rail-launcher');
+  assert(await launchers.count() === 13, 'all external app launchers must be present in the left rail');
+  for (const id of ['anton', 'vamos-1', 'vamos-2', 'taskcards', 'quizlet', 'kahoot', 'tafino']) {
+    const launcher = rail.locator(`a.lm-app-rail-${id}`);
+    assert(await launcher.count() === 1, `${id} launcher is unavailable`);
+    assert(await launcher.getAttribute('target') === '_blank', `${id} must open in a new tab`);
+    assert(await launcher.getAttribute('rel') === 'noopener noreferrer', `${id} must use safe new-tab rel attributes`);
+    assert((await launcher.getAttribute('aria-label'))?.includes('öffnet in neuem Tab'), `${id} needs an accessible label`);
+  }
 }
 
 async function run() {
@@ -197,6 +216,7 @@ async function run() {
           if (viewport.mobileUi && role === 'teacher') await exerciseHomeDrawer(page);
           await exerciseKlausurplan(page, viewport);
           await exerciseOneNote(page, viewport);
+          await exerciseExternalAppRail(page, viewport);
           await measureLayout(page, viewport);
           assert(!consoleErrors.length, `console errors: ${consoleErrors.join('; ')}`);
           pass(`${viewport.name} · ${role}`, 'login, layout, interaction, console');
