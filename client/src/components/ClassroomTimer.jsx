@@ -30,6 +30,9 @@ export default function ClassroomTimer({ open, onClose }) {
   const [running, setRunning] = useState(false);
   const [duration, setDuration] = useState({ hours: 0, minutes: 5, seconds: 0 });
   const [nativeFullscreen, setNativeFullscreen] = useState(false);
+  // iOS Safari does not expose element.requestFullscreen consistently. Keep an
+  // app-level immersive mode so the timer remains usable on those devices.
+  const [immersiveFullscreen, setImmersiveFullscreen] = useState(false);
   const [fullscreenNotice, setFullscreenNotice] = useState('');
   const [completionNotice, setCompletionNotice] = useState('');
   const [completionCelebration, setCompletionCelebration] = useState(false);
@@ -102,6 +105,7 @@ export default function ClassroomTimer({ open, onClose }) {
     const onFullscreenChange = () => {
       const isFullscreen = document.fullscreenElement === surfaceRef.current;
       setNativeFullscreen(isFullscreen);
+      if (isFullscreen) setImmersiveFullscreen(false);
       if (isFullscreen) {
         window.requestAnimationFrame(() => fullscreenFocusRef.current?.focus());
       } else if (fullscreenTriggerRef.current?.isConnected) {
@@ -122,12 +126,16 @@ export default function ClassroomTimer({ open, onClose }) {
         if (document.exitFullscreen) document.exitFullscreen().catch(() => setFullscreenNotice('Vollbild konnte nicht beendet werden.'));
         return;
       }
+      if (immersiveFullscreen) {
+        setImmersiveFullscreen(false);
+        return;
+      }
       onClose?.();
     };
     // Capture stops App-level shortcuts and makes Esc deterministic for the dialog.
     document.addEventListener('keydown', onKeyDown, true);
     return () => document.removeEventListener('keydown', onKeyDown, true);
-  }, [open, onClose]);
+  }, [immersiveFullscreen, open, onClose]);
 
   const applyDuration = useCallback(() => {
     const next = toSeconds(duration);
@@ -183,6 +191,10 @@ export default function ClassroomTimer({ open, onClose }) {
 
   const toggleFullscreen = useCallback(async (event) => {
     setFullscreenNotice('');
+    if (immersiveFullscreen) {
+      setImmersiveFullscreen(false);
+      return;
+    }
     if (document.fullscreenElement === surfaceRef.current) {
       if (!document.exitFullscreen) {
         setFullscreenNotice('Vollbild kann in diesem Browser nicht beendet werden.');
@@ -192,21 +204,24 @@ export default function ClassroomTimer({ open, onClose }) {
       return;
     }
     if (!surfaceRef.current?.requestFullscreen) {
-      setFullscreenNotice('Vollbild ist in diesem Browser nicht verfügbar – die Großansicht bleibt geöffnet.');
+      fullscreenTriggerRef.current = event?.currentTarget || document.activeElement;
+      setImmersiveFullscreen(true);
       return;
     }
     fullscreenTriggerRef.current = event?.currentTarget || document.activeElement;
     try {
       await surfaceRef.current.requestFullscreen();
     } catch {
-      setFullscreenNotice('Vollbild wurde blockiert – die Großansicht bleibt geöffnet.');
+      // Fall back to a viewport-filling app surface (notably iOS Safari).
+      setImmersiveFullscreen(true);
     }
-  }, []);
+  }, [immersiveFullscreen]);
 
   const closeTimer = useCallback(async () => {
     if (document.fullscreenElement === surfaceRef.current && document.exitFullscreen) {
       try { await document.exitFullscreen(); } catch { /* browser may already be closing the fullscreen element */ }
     }
+    setImmersiveFullscreen(false);
     setCompletionCelebration(false);
     onClose?.();
   }, [onClose]);
@@ -215,16 +230,18 @@ export default function ClassroomTimer({ open, onClose }) {
   const clock = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now);
   const display = mode === 'clock' ? clock : formatDuration(remaining);
   const finalMinute = mode === 'countdown' && isFinalMinute(remaining);
-  const fullscreenCompletion = isFullscreenCompletion({ nativeFullscreen, completionCelebration });
+  const isFullscreen = nativeFullscreen || immersiveFullscreen;
+  const fullscreenCompletion = isFullscreenCompletion({ nativeFullscreen: isFullscreen, completionCelebration });
 
   return createPortal(
     <div className="lm-classroom-timer-backdrop" role="presentation">
-      <section ref={surfaceRef} className="lm-classroom-timer" role="dialog" aria-modal="true" aria-labelledby={fullscreenCompletion ? undefined : 'classroom-timer-title'} aria-label={fullscreenCompletion ? completionMessage : nativeFullscreen ? getFullscreenTimerHeading(mode) : undefined}>
+      <section ref={surfaceRef} className={`lm-classroom-timer${immersiveFullscreen ? ' is-app-fullscreen' : ''}`} role="dialog" aria-modal="true" aria-labelledby={fullscreenCompletion ? undefined : 'classroom-timer-title'} aria-label={fullscreenCompletion ? completionMessage : isFullscreen ? getFullscreenTimerHeading(mode) : undefined}>
+        {immersiveFullscreen && <button className="lm-classroom-timer-app-exit" type="button" onClick={() => setImmersiveFullscreen(false)} aria-label="Vollbild verlassen" title="Vollbild verlassen">×</button>}
         {fullscreenCompletion ? <div className="lm-classroom-timer-completion is-fullscreen" role="status" aria-live="assertive" aria-atomic="true"><div className="lm-classroom-timer-confetti" aria-hidden="true">{Array.from({ length: 28 }, (_, index) => <i key={index} style={{ '--confetti-index': index, '--confetti-drift': `${((index % 5) - 2) * 42}px`, left: `${(index * 37) % 100}%` }} />)}</div><strong>{completionMessage}</strong></div> : <>
         <header className="lm-classroom-timer-header">
           <div><p className="lm-classroom-timer-kicker">Classroom tools</p><h2 id="classroom-timer-title">Klassenzeit</h2></div>
           <div className="lm-classroom-timer-header-actions">
-            <button className="lm-classroom-timer-icon-button" type="button" onClick={toggleFullscreen} aria-label={nativeFullscreen ? 'Vollbild verlassen' : 'Timer im Vollbild öffnen'} title={nativeFullscreen ? 'Vollbild verlassen' : 'Vollbild'}><Icon><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" /></Icon></button>
+            <button className="lm-classroom-timer-icon-button" type="button" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Vollbild verlassen' : 'Timer im Vollbild öffnen'} title={isFullscreen ? 'Vollbild verlassen' : 'Vollbild'}><Icon><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" /></Icon></button>
             <button className="lm-classroom-timer-icon-button" type="button" onClick={closeTimer} aria-label="Timer schließen" title="Schließen"><span aria-hidden="true">×</span></button>
           </div>
         </header>
@@ -254,7 +271,7 @@ export default function ClassroomTimer({ open, onClose }) {
           {fullscreenNotice && <p className="lm-classroom-timer-notice" role="status">{fullscreenNotice}</p>}
           {!completionCelebration && completionNotice && <p className="lm-classroom-timer-notice" role="status">{completionNotice}</p>}
         </main>
-        <footer className="lm-classroom-timer-footer">{nativeFullscreen ? 'Esc beendet zuerst nur das Vollbild.' : 'Esc schließt den Timer.'}</footer>
+        <footer className="lm-classroom-timer-footer">{isFullscreen ? 'Esc beendet zuerst nur das Vollbild.' : 'Esc schließt den Timer.'}</footer>
         </>}
       </section>
     </div>,
