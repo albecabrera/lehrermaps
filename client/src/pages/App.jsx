@@ -55,7 +55,7 @@ const LOGINEO_LOGO_URL = '/assets/logineo-logo.svg';
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'ucs', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
   { id: 'anton', href: 'https://anton.app/', label: 'ANTON öffnen', iconSrc: '/assets/anton-favicon.ico' },
-  { id: 'vamos-1', href: 'https://www.klett-sprachen.de/vamos-adelante-curso-intensivo-1/r-1/2', label: 'Vamos adelante 1 öffnen', iconSrc: '/assets/klett-favicon.ico' },
+  { id: 'vamos-1', href: 'https://bridge.klett.de/DUA-W9ISFVJLTT/?page=1', label: 'Vamos adelante 1 öffnen', iconSrc: '/assets/klett-favicon.ico' },
   { id: 'vamos-2', href: 'https://www.klett-sprachen.de/vamos-adelante-curso-intensivo-2/r-1/2', label: 'Vamos adelante 2 öffnen', iconSrc: '/assets/klett-favicon.ico' },
   { id: 'taskcards', href: 'https://www.taskcards.de/', label: 'TaskCards öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
   { id: 'esg-tech-help', href: 'https://esg-koeln.de/', label: 'ESG-Technikhilfe öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
