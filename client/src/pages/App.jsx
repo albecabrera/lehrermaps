@@ -58,7 +58,7 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'vamos-1', href: 'https://bridge.klett.de/DUA-W9ISFVJLTT/?page=1', label: 'Vamos adelante 1 öffnen', iconSrc: '/assets/klett-favicon.ico' },
   { id: 'vamos-2', href: 'https://bridge.klett.de/DUA-CD68AUVZY1/?page=9', label: 'Vamos adelante 2 öffnen', iconSrc: '/assets/klett-favicon.ico' },
   { id: 'taskcards', href: 'https://www.taskcards.de/', label: 'TaskCards öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
-  { id: 'esg-tech-help', href: 'https://www.taskcards.de/#/account/eb918c74-80f5-4149-aaa5-5bde5999f6ac/accesses', label: 'TaskCards ESG öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
+  { id: 'esg-tech-help', href: 'https://www.taskcards.de/#/board/77bc3933-9659-4ce7-86f0-f6ef26ad9ede/view', label: 'TaskCards ESG-Technikhilfe öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
   { id: 'quizlet', href: 'https://quizlet.com/de/9b-vokabeln-unidad-3', label: 'Quizlet öffnen', iconSrc: '/assets/quizlet-logo.png', iconClass: 'wide' },
   { id: 'eduki', href: 'https://eduki.com/de', label: 'Eduki öffnen', iconSrc: '/assets/eduki-favicon.ico' },
   { id: 'kahoot', href: 'https://create.kahoot.it/', label: 'Kahoot! öffnen', iconSrc: '/assets/kahoot-favicon.ico' },
