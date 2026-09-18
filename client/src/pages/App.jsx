@@ -53,7 +53,7 @@ import ClassroomTimer from '../components/ClassroomTimer';
 const LOGINEO_LOGO_URL = '/assets/logineo-logo.svg';
 
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
-  { id: 'ucs', href: 'https://ucs.schule/', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
+  { id: 'ucs', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
   { id: 'anton', href: 'https://anton.app/', label: 'ANTON öffnen', iconSrc: '/assets/anton-favicon.ico' },
   { id: 'vamos-1', href: 'https://www.klett-sprachen.de/vamos-adelante-curso-intensivo-1/r-1/2', label: 'Vamos adelante 1 öffnen', iconSrc: '/assets/klett-favicon.ico' },
   { id: 'vamos-2', href: 'https://www.klett-sprachen.de/vamos-adelante-curso-intensivo-2/r-1/2', label: 'Vamos adelante 2 öffnen', iconSrc: '/assets/klett-favicon.ico' },
