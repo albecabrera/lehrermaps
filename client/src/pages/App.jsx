@@ -998,7 +998,10 @@ export default function App({ onLogout }) {
         }}
         onMouseLeave={() => setParallax({ x: 0, y: 0 })}
       >
-        {!isPhone && <DesktopAppRail />}
+        {/* Keep the external app rail available on every form factor. On phones
+            it becomes a compact, scrollable icon sidebar; the material/folder
+            sidebar remains in its existing drawer. */}
+        <DesktopAppRail />
         {viewMode === 'today' ? (
           <TodayDashboard onOpenSchedule={() => navigateToView('schedule')} onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} />
         ) : viewMode === 'klausurplan' ? (

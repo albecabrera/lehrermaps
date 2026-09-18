@@ -2872,5 +2872,27 @@ button:not(:disabled):focus-visible,
   background: color-mix(in srgb, var(--c-surface) 90%, #082035);
 }
 @media (max-width: 600px) {
-  .lm-desktop-app-rail { display: none; }
+  /* iPhone: keep the launcher rail in the body flex row rather than overlaying
+     content or the thumb-zone bottom navigation. Safe-area padding prevents
+     icons from sitting under a display cutout in landscape. */
+  .lm-desktop-app-rail {
+    display: flex;
+    width: 58px;
+    min-width: 58px;
+    padding: 10px 7px calc(10px + var(--safe-area-bottom));
+    gap: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border-right-color: var(--c-border);
+  }
+  .lm-desktop-app-rail-launcher {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex-basis: 44px;
+  }
+  .lm-desktop-app-rail-launcher:active { transform: scale(.94); }
 }
