@@ -26,16 +26,7 @@ import FolderIcon from '../components/FolderIcon';
 import { useTheme } from '../contexts/ThemeContext';
 import BrandMark from '../components/BrandMark';
 import { IDOCEO_APP_URL, LOGINEO_URL, ONE_NOTE_APP_URL, WEB_UNTIS_URL, openOneNoteInApp } from '../lib/externalApps';
-
-// Official LOGINEO NRW logo published by the NRW Ministry of School and Education.
-// Keep the logo local: remote image hosts can be blocked by mobile content blockers.
-const LOGINEO_LOGO_URL = '/assets/logineo-logo.svg';
-
-const isMacDesktopPlatform = () => (
-  typeof navigator !== 'undefined'
-  && /mac/i.test(navigator.userAgentData?.platform || navigator.platform || '')
-  && navigator.maxTouchPoints <= 1
-);
+import { hashForView, parseAppHash } from '../lib/deepLinks';
 
 const KLASURPLAN_DOCUMENTS = [
   { key: 'first', label: '1. Quartal', filename: 'Klausurplan_8_9-10_2026-27 1. Quartal.docx' },
@@ -57,12 +48,22 @@ import BugChecklist, { BugChecklistIcon } from '../components/BugChecklist';
 import KlausurplanWorkspace from '../components/KlausurplanWorkspace';
 import ClassroomTimer from '../components/ClassroomTimer';
 
+// Keep the logo local: remote image hosts can be blocked by mobile content blockers
+// and leave iPhone Safari showing a broken-image placeholder.
+const LOGINEO_LOGO_URL = '/assets/logineo-logo.svg';
+
 // Opened views are split into on-demand chunks without changing their layout.
 const Schedule = lazy(() => import('../components/Schedule'));
 const ExamBoard = lazy(() => import('../components/ExamBoard'));
 const NotesEditor = lazy(() => import('../components/NotesEditor'));
 const AnnualPlanning = lazy(() => import('../components/AnnualPlanning'));
 const PageCanvas = lazy(() => import('../components/Canvas/PageCanvas'));
+
+const isMacDesktopPlatform = () => (
+  typeof navigator !== 'undefined'
+  && /mac/i.test(navigator.userAgentData?.platform || navigator.platform || '')
+  && navigator.maxTouchPoints <= 1
+);
 
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -100,7 +101,7 @@ export default function App({ onLogout }) {
   const [toast, setToast] = useState(null);
   const [pendingDeleteIds, setPendingDeleteIds] = useState(new Set());
   const deleteTimersRef = useRef(new Map());
-  const [viewMode, setViewMode] = useState('today');
+  const [viewMode, setViewMode] = useState(() => parseAppHash(window.location.hash)?.view || 'today');
   const [examBoardOpen, setExamBoardOpen] = useState(false);
   const [dropOver, setDropOver] = useState(false);
   const [dropFiles, setDropFiles] = useState(null);
@@ -123,6 +124,26 @@ export default function App({ onLogout }) {
   const klasurplanTriggerRef = useRef(null);
   const klasurplanPortalRef = useRef(null);
   const floatingKlasurplanMenuRef = useRef(null);
+
+  const navigateToView = useCallback((nextView, hash = hashForView(nextView)) => {
+    setViewMode(nextView);
+    const nextUrl = `${window.location.pathname}${window.location.search}${hash}`;
+    window.history.replaceState(null, '', nextUrl);
+  }, []);
+
+  useEffect(() => {
+    const applyHashRoute = () => {
+      const route = parseAppHash(window.location.hash);
+      if (!route) return;
+      setViewMode(route.view);
+      if (route.focusId) {
+        window.requestAnimationFrame(() => document.getElementById(route.focusId)?.scrollIntoView({ block: 'start' }));
+      }
+    };
+    applyHashRoute();
+    window.addEventListener('hashchange', applyHashRoute);
+    return () => window.removeEventListener('hashchange', applyHashRoute);
+  }, []);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId) || { id: 'workspace', name: 'Arbeitsbereich', short: 'LM', color: '#0F766E', colorSoft: '#DDF5EE', colorDark: '#0B5C52', groups: [] };
   const accent = subject.color;
@@ -152,7 +173,7 @@ export default function App({ onLogout }) {
 
   const openKlasurplanDocument = (file) => {
     if (!file) return;
-    setViewMode('subjects');
+    navigateToView('subjects');
     setActivePageId(null);
     setActiveFolder(printReadyFolder);
     setActiveFile(file);
@@ -483,7 +504,7 @@ export default function App({ onLogout }) {
     setActiveFile(null);
     setActiveFile2(null);
     setQuery('');
-    setViewMode('subjects');
+    navigateToView('subjects');
   };
 
   const onFolderSelect = (folder, sourceRect = null) => {
@@ -519,7 +540,7 @@ export default function App({ onLogout }) {
       if (folder) {
         setSubjectId(folder.subject);
         onFolderSelect(folder);
-        setViewMode('subjects');
+        navigateToView('subjects');
         return;
       }
     }
@@ -531,7 +552,7 @@ export default function App({ onLogout }) {
       setToast({ type: 'warning', msg: 'Druckfertig wird gerade eingerichtet.' });
       return;
     }
-    setViewMode('subjects');
+    navigateToView('subjects');
     onFolderSelect(printReadyFolder, sourceRect);
   };
 
@@ -875,7 +896,7 @@ export default function App({ onLogout }) {
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Workspace navigation — preserves the original visual language without restoring archived subject navigation. */}
       <header className="lm-tabbar" aria-label="Hauptnavigation">
-        <button className="lm-app-brand" type="button" onClick={() => { setViewMode('today'); setActivePageId(null); closeFolderView(); }} aria-label="Zu Heute">
+        <button className="lm-app-brand" type="button" onClick={() => { navigateToView('today'); setActivePageId(null); closeFolderView(); }} aria-label="Zu Heute">
           <BrandMark size={isMobile ? 30 : 28} label={!isMobile} />
         </button>
         {isMobile && (
@@ -886,9 +907,6 @@ export default function App({ onLogout }) {
         )}
         {isMobile && (
           <nav className="lm-mobile-header-apps" aria-label="Direkte App-Links">
-            <a href={ONE_NOTE_APP_URL} className="lm-mobile-header-app lm-mobile-header-app--onenote" aria-label="OneNote in der installierten App öffnen" title="OneNote öffnen">
-              <span className="lm-onenote-glyph" aria-hidden="true">N</span><span className="lm-mobile-header-app-label">OneNote</span>
-            </a>
             <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen">
               <img src="/assets/icons/miro.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /><span className="lm-mobile-header-app-label">Miro</span>
             </a>
@@ -901,24 +919,24 @@ export default function App({ onLogout }) {
             <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen">
               <span className="lm-webuntis-glyph" aria-hidden="true">W</span><span className="lm-mobile-header-app-label">WebUntis</span>
             </a>
-            <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--logineo" aria-label="Logineo in neuem Tab öffnen" title="Logineo öffnen">
-              <img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="LOGINEO NRW" /><span className="lm-mobile-header-app-label">Logineo</span>
+            <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--logineo" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail öffnen">
+              <img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="LOGINEO NRW" /><span className="lm-mobile-header-app-label">Logineo Mail</span>
             </a>
           </nav>
         )}
         <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
           {[
-            ['today', '⌂', 'Heute', () => setViewMode('today')],
-            ['schedule', <svg key="schedule-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3M5 9h2M9 9h2M5 11.5h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Stundenplan', () => setViewMode('schedule')],
-            ['appointments', <svg key="appointments-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/><circle cx="10.5" cy="10" r="1" fill="currentColor"/></svg>, 'Termine', () => setViewMode('appointments')],
-            ['klausurplan', <svg key="exam-plan-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2.5h6l2 2V13.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M10 2.5v2h2M6 7h4M6 9.5h4M6 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Klausurplan', () => setViewMode('klausurplan')],
+            ['today', '⌂', 'Heute', () => navigateToView('today')],
+            ['schedule', <svg key="schedule-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3M5 9h2M9 9h2M5 11.5h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Stundenplan', () => navigateToView('schedule')],
+            ['appointments', <svg key="appointments-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/><circle cx="10.5" cy="10" r="1" fill="currentColor"/></svg>, 'Termine', () => navigateToView('appointments')],
+            ['klausurplan', <svg key="exam-plan-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2.5h6l2 2V13.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M10 2.5v2h2M6 7h4M6 9.5h4M6 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Klausurplan', () => navigateToView('klausurplan')],
             ['bugs', <BugChecklistIcon key="bug-icon" size={16} />, 'Bugs', () => setBugChecklistOpen(true)],
           ].map(([id, icon, label, onClick]) => {
             const active = viewMode === id;
             return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
           })}
-          <a href={IDOCEO_APP_URL} className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-idoceo" aria-label="iDoceo in der installierten App öffnen" title="In iDoceo-App öffnen"><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /></a>
           <a href={ONE_NOTE_APP_URL} className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-onenote" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen"><span className="lm-onenote-glyph" aria-hidden="true">N</span></a>
+          <a href={IDOCEO_APP_URL} className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-idoceo" aria-label="iDoceo in der installierten App öffnen" title="In iDoceo-App öffnen"><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /></a>
           <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-notion" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen"><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /></a>
           <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen"><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /></a>
           <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-external-app-launcher lm-topbar-webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen"><span className="lm-webuntis-glyph" aria-hidden="true">W</span></a>
@@ -945,16 +963,16 @@ export default function App({ onLogout }) {
         onMouseLeave={() => setParallax({ x: 0, y: 0 })}
       >
         {viewMode === 'today' ? (
-          <TodayDashboard onOpenSchedule={() => setViewMode('schedule')} onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} />
+          <TodayDashboard onOpenSchedule={() => navigateToView('schedule')} onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} />
         ) : viewMode === 'klausurplan' ? (
           <KlausurplanWorkspace />
         ) : viewMode === 'appointments' ? (
-          <ExamBoard onDismiss={() => setViewMode('today')} />
+          <ExamBoard onDismiss={() => navigateToView('today')} />
         ) : viewMode === 'schedule' ? (
           <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
             <Schedule
               folders={folders}
-              onClose={() => setViewMode('today')}
+              onClose={() => navigateToView('today')}
               onNavigate={openScheduleTarget}
             />
           </div>
@@ -1616,9 +1634,9 @@ export default function App({ onLogout }) {
           accent={accent}
           active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'today'}
           items={[
-            { id: 'today', label: 'Heute', icon: navIcons.subjects, onClick: () => { setViewMode('today'); setActivePageId(null); closeFolderView(); } },
+            { id: 'today', label: 'Heute', icon: navIcons.subjects, onClick: () => { navigateToView('today'); setActivePageId(null); closeFolderView(); } },
             { id: 'search', label: t('mobile.search'), icon: navIcons.search, onClick: () => setGlobalSearchOpen(true) },
-            { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => setViewMode('schedule') },
+            { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => navigateToView('schedule') },
             { id: 'more', label: t('mobile.more'), icon: navIcons.more, onClick: () => setMoreSheetOpen(true) },
           ]}
         />
