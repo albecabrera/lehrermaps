@@ -63,7 +63,7 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'eduki', href: 'https://eduki.com/de', label: 'Eduki öffnen', iconSrc: '/assets/eduki-favicon.ico' },
   { id: 'kahoot', href: 'https://create.kahoot.it/', label: 'Kahoot! öffnen', iconSrc: '/assets/kahoot-favicon.ico' },
   { id: 'classroomscreen', href: 'https://classroomscreen.com/', label: 'Classroomscreen öffnen', iconSrc: '/assets/classroomscreen-favicon.ico' },
-  { id: 'plesk-esg', href: 'https://lehrermaps.albertocabrera.de:8443/', label: 'Plesk ESG öffnen', iconSrc: '/assets/plesk-favicon.ico' },
+  { id: 'plesk-esg', href: 'https://pls1.netcologne.de:8443/smb/web/view', label: 'Plesk ESG öffnen', iconSrc: '/assets/plesk-favicon.ico' },
   { id: 'netcologne-ticket', href: 'https://service.netcologne.de/', label: 'NetCologne Ticket öffnen', iconSrc: '/assets/netcologne-ticket-favicon.ico' },
   { id: 'tafino', href: 'https://tafino.de/', label: 'Tafino öffnen', iconSrc: '/assets/tafino-favicon.ico' },
 ];
