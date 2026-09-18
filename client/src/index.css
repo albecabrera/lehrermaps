@@ -2764,6 +2764,24 @@ button:not(:disabled):focus-visible,
   }
 }
 
+/* MacBook uses a higher-specificity navigation sizing rule. Override it here
+   so the complete Logineo mark fills the desktop button instead of shrinking
+   to the generic 20px app-icon size. */
+@media (min-width: 1101px) {
+  .lm-app-shell.lm-platform-mac-desktop .lm-tabbar .lm-topbar-logineo {
+    width: 116px;
+    min-width: 116px;
+    height: 48px;
+    min-height: 48px;
+  }
+  .lm-app-shell.lm-platform-mac-desktop .lm-tabbar .lm-topbar-logineo .lm-logineo-logo {
+    width: 100%;
+    height: 100%;
+    flex-basis: 100%;
+    object-fit: contain;
+  }
+}
+
 /* Dark mode relies on surface separation and readable secondary information,
    including dense tables and controls that are disabled by application state. */
 [data-theme="dark"] .lm-sidebar,
@@ -2941,4 +2959,76 @@ button:not(:disabled):focus-visible,
     flex-basis: 44px;
   }
   .lm-desktop-app-rail-launcher:active { transform: scale(.94); }
+}
+
+.lm-phone-header-utilities { display: none; }
+
+/* iPhone keeps its essential actions visible rather than hiding them inside
+   the horizontally scrollable launcher strip. Both controls remain at least
+   44px tall and the supplied Logineo JPEG keeps its complete aspect ratio. */
+@media (max-width: 600px) {
+  .lm-tabbar .lm-mobile-header-apps {
+    flex: 1 1 0;
+    max-width: none;
+    margin-left: 0;
+  }
+  .lm-phone-header-utilities {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+  .lm-phone-logineo,
+  .lm-phone-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--c-border-soft);
+    border-radius: 12px;
+    background: var(--c-surface);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255,255,255,.42);
+    color: var(--c-text-2);
+    text-decoration: none;
+  }
+  .lm-phone-logineo {
+    width: 76px;
+    min-width: 76px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .lm-phone-logineo .lm-logineo-logo {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0 !important;
+    border-radius: inherit;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+    object-fit: contain;
+  }
+  .lm-phone-theme-toggle {
+    width: 44px;
+    min-width: 44px;
+    cursor: pointer;
+    font: 700 18px/1 inherit;
+  }
+  .lm-phone-logineo:hover,
+  .lm-phone-logineo:focus-visible,
+  .lm-phone-theme-toggle:hover,
+  .lm-phone-theme-toggle:focus-visible {
+    border-color: var(--c-focus);
+    background: var(--c-hover);
+  }
+  .lm-phone-logineo:focus-visible,
+  .lm-phone-theme-toggle:focus-visible {
+    outline: 3px solid var(--c-focus);
+    outline-offset: 2px;
+  }
+  [data-theme="dark"] .lm-phone-logineo { background: #fff; }
+  [data-theme="dark"] .lm-phone-theme-toggle { background: var(--c-surface); }
 }

@@ -957,6 +957,29 @@ export default function App({ onLogout }) {
             </a>
           </nav>
         )}
+        {isPhone && (
+          <nav className="lm-phone-header-utilities" aria-label="Schnellzugriffe">
+            <a
+              href={LOGINEO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="lm-phone-logineo"
+              aria-label="Logineo Mail in neuem Tab öffnen"
+              title="Logineo Mail öffnen"
+            >
+              <img src={LOGINEO_LOGO_URL} className="lm-logineo-logo" alt="" aria-hidden="true" />
+            </a>
+            <button
+              className="lm-phone-theme-toggle"
+              type="button"
+              onClick={toggleTheme}
+              aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}
+              title={isDark ? t('app.theme_light') : t('app.theme_dark')}
+            >
+              <span aria-hidden="true">{isDark ? '☀' : '◐'}</span>
+            </button>
+          </nav>
+        )}
         <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
           {[
             ['today', '⌂', 'Heute', () => navigateToView('today')],
