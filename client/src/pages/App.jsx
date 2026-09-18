@@ -53,19 +53,19 @@ import ClassroomTimer from '../components/ClassroomTimer';
 const LOGINEO_LOGO_URL = '/assets/logineo-logo.svg';
 
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
-  { id: 'ucs', href: 'https://ucs.schule/', label: 'UCS öffnen', mark: 'U', color: '#0B4F71', colorEnd: '#1677A8' },
-  { id: 'anton', href: 'https://anton.app/', label: 'ANTON öffnen', mark: 'A', color: '#EF5B2A', colorEnd: '#FF9A3D' },
-  { id: 'vamos-1', href: 'https://www.klett-sprachen.de/vamos-adelante-curso-intensivo-1/r-1/2', label: 'Vamos adelante 1 öffnen', mark: 'V1', color: '#DF3153', colorEnd: '#FF7592' },
-  { id: 'vamos-2', href: 'https://www.klett-sprachen.de/vamos-adelante-curso-intensivo-2/r-1/2', label: 'Vamos adelante 2 öffnen', mark: 'V2', color: '#8B3FC4', colorEnd: '#C678F2' },
-  { id: 'taskcards', href: 'https://www.taskcards.de/', label: 'TaskCards öffnen', mark: 'TC', color: '#1B9E77', colorEnd: '#5ACF9E', badge: 'cards' },
-  { id: 'esg-tech-help', href: 'https://esg-koeln.de/', label: 'ESG-Technikhilfe öffnen', mark: '⚙', color: '#1769AA', colorEnd: '#38A8E0', badge: 'gear' },
-  { id: 'quizlet', href: 'https://quizlet.com/de/9b-vokabeln-unidad-3', label: 'Quizlet öffnen', mark: 'Q', color: '#4255FF', colorEnd: '#7B8CFF' },
-  { id: 'eduki', href: 'https://eduki.com/de', label: 'Eduki öffnen', mark: 'e', color: '#EF7C1A', colorEnd: '#F7B245' },
-  { id: 'kahoot', href: 'https://create.kahoot.it/', label: 'Kahoot! öffnen', mark: 'K!', color: '#6D28D9', colorEnd: '#A855F7' },
-  { id: 'classroomscreen', href: 'https://classroomscreen.com/', label: 'Classroomscreen öffnen', mark: 'CS', color: '#008C95', colorEnd: '#27C7B8', badge: 'screen' },
-  { id: 'plesk-esg', href: 'https://lehrermaps.albertocabrera.de:8443/', label: 'Plesk ESG öffnen', mark: 'P', color: '#243B53', colorEnd: '#52738D' },
-  { id: 'netcologne-ticket', href: 'https://service.netcologne.de/', label: 'NetCologne Ticket öffnen', mark: 'N', color: '#E54535', colorEnd: '#F78154' },
-  { id: 'tafino', href: 'https://tafino.de/', label: 'Tafino öffnen', mark: 'T', color: '#D97706', colorEnd: '#F7B733' },
+  { id: 'ucs', href: 'https://ucs.schule/', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
+  { id: 'anton', href: 'https://anton.app/', label: 'ANTON öffnen', iconSrc: '/assets/anton-favicon.ico' },
+  { id: 'vamos-1', href: 'https://www.klett-sprachen.de/vamos-adelante-curso-intensivo-1/r-1/2', label: 'Vamos adelante 1 öffnen', iconSrc: '/assets/klett-favicon.ico' },
+  { id: 'vamos-2', href: 'https://www.klett-sprachen.de/vamos-adelante-curso-intensivo-2/r-1/2', label: 'Vamos adelante 2 öffnen', iconSrc: '/assets/klett-favicon.ico' },
+  { id: 'taskcards', href: 'https://www.taskcards.de/', label: 'TaskCards öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
+  { id: 'esg-tech-help', href: 'https://esg-koeln.de/', label: 'ESG-Technikhilfe öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
+  { id: 'quizlet', href: 'https://quizlet.com/de/9b-vokabeln-unidad-3', label: 'Quizlet öffnen', iconSrc: '/assets/quizlet-logo.png', iconClass: 'wide' },
+  { id: 'eduki', href: 'https://eduki.com/de', label: 'Eduki öffnen', iconSrc: '/assets/eduki-favicon.ico' },
+  { id: 'kahoot', href: 'https://create.kahoot.it/', label: 'Kahoot! öffnen', iconSrc: '/assets/kahoot-favicon.ico' },
+  { id: 'classroomscreen', href: 'https://classroomscreen.com/', label: 'Classroomscreen öffnen', iconSrc: '/assets/classroomscreen-favicon.ico' },
+  { id: 'plesk-esg', href: 'https://lehrermaps.albertocabrera.de:8443/', label: 'Plesk ESG öffnen', iconSrc: '/assets/plesk-favicon.ico' },
+  { id: 'netcologne-ticket', href: 'https://service.netcologne.de/', label: 'NetCologne Ticket öffnen', iconSrc: '/assets/netcologne-ticket-favicon.ico' },
+  { id: 'tafino', href: 'https://tafino.de/', label: 'Tafino öffnen', iconSrc: '/assets/tafino-favicon.ico' },
 ];
 
 function DesktopAppRail() {
@@ -80,11 +80,8 @@ function DesktopAppRail() {
           className={`lm-spring lm-desktop-app-rail-launcher lm-app-rail-${app.id}`}
           aria-label={`${app.label} (öffnet in neuem Tab)`}
           title={`${app.label} (öffnet in neuem Tab)`}
-          style={{ '--rail-color': app.color, '--rail-color-end': app.colorEnd }}
         >
-          <span className={`lm-app-rail-badge${app.badge ? ` lm-app-rail-badge--${app.badge}` : ''}`} aria-hidden="true">
-            <span>{app.mark}</span>
-          </span>
+          <img className={`lm-app-rail-icon${app.iconClass ? ` lm-app-rail-icon--${app.iconClass}` : ''}`} src={app.iconSrc} alt="" aria-hidden="true" />
         </a>
       ))}
     </nav>

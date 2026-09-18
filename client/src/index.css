@@ -2832,79 +2832,44 @@ button:not(:disabled):focus-visible,
   flex: 0 0 44px;
   display: grid;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--rail-color) 42%, var(--c-border));
+  border: 1px solid color-mix(in srgb, var(--c-border) 82%, transparent);
   border-radius: 13px;
-  background: color-mix(in srgb, var(--rail-color) 10%, var(--c-surface));
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--rail-color) 12%, transparent), inset 0 1px 0 rgba(255, 255, 255, .36);
+  background: color-mix(in srgb, var(--c-surface) 94%, var(--c-bg));
+  box-shadow: 0 3px 10px rgba(17, 54, 77, .10), inset 0 1px 0 rgba(255, 255, 255, .36);
   text-decoration: none;
   transition: transform .18s cubic-bezier(.22, 1.3, .36, 1), border-color .18s ease, background .18s ease, box-shadow .18s ease;
 }
 .lm-desktop-app-rail-launcher:hover {
-  border-color: color-mix(in srgb, var(--rail-color) 80%, var(--c-border));
-  background: color-mix(in srgb, var(--rail-color) 18%, var(--c-surface));
-  box-shadow: 0 9px 20px color-mix(in srgb, var(--rail-color) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, .48);
+  border-color: color-mix(in srgb, var(--c-turquoise) 52%, var(--c-border));
+  background: color-mix(in srgb, var(--c-turquoise) 9%, var(--c-surface));
+  box-shadow: 0 9px 20px rgba(17, 95, 128, .18), inset 0 1px 0 rgba(255, 255, 255, .48);
   transform: translateY(-2px) scale(1.055);
 }
 .lm-desktop-app-rail-launcher:active { transform: translateY(0) scale(.96); }
-.lm-desktop-app-rail-launcher:focus-visible { outline: 3px solid var(--rail-color); outline-offset: 3px; }
-.lm-app-rail-badge {
-  position: relative;
-  display: grid;
-  place-items: center;
+.lm-desktop-app-rail-launcher:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 3px; }
+.lm-app-rail-icon {
+  display: block;
   width: 30px;
   height: 30px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, .37);
-  border-radius: 9px;
-  background: linear-gradient(145deg, var(--rail-color-end), var(--rail-color));
-  color: #fff;
-  font: 800 13px/1 "Inter", "DM Sans", sans-serif;
-  letter-spacing: -.7px;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, .2);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .35), 0 3px 7px color-mix(in srgb, var(--rail-color) 42%, transparent);
+  object-fit: contain;
+  border-radius: 8px;
+  filter: saturate(1.12) contrast(1.05);
 }
-.lm-app-rail-badge::after {
-  content: '';
-  position: absolute;
-  width: 28px;
-  height: 10px;
-  top: -5px;
-  left: -8px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .22);
-  transform: rotate(-24deg);
+/* UCS and Quizlet are wordmarks, not square favicons. Keep their original
+   transparent marks intact instead of putting them on a synthetic white tile. */
+.lm-app-rail-icon--wide {
+  width: 35px;
+  height: 28px;
+  border-radius: 0;
 }
-.lm-app-rail-badge > span { position: relative; z-index: 1; }
-.lm-app-rail-badge--cards { border-radius: 8px; }
-.lm-app-rail-badge--cards::before {
-  content: '';
-  position: absolute;
-  width: 19px;
-  height: 15px;
-  border: 1px solid rgba(255, 255, 255, .55);
-  border-radius: 4px;
-  transform: translate(-4px, 3px) rotate(-7deg);
-}
-.lm-app-rail-badge--gear { font-size: 18px; letter-spacing: 0; }
-.lm-app-rail-badge--gear > span { transform: translateY(-.5px); }
-.lm-app-rail-badge--screen { border-radius: 7px; font-size: 10px; letter-spacing: -.5px; }
-.lm-app-rail-badge--screen::before,
-.lm-app-rail-badge--screen::after {
-  content: '';
-  position: absolute;
-  inset: 5px;
-  border: 1px solid rgba(255, 255, 255, .45);
-  border-radius: 3px;
-}
-.lm-app-rail-badge--screen::after { inset: 5px 14px; border-width: 0 1px; border-radius: 0; }
 [data-theme="dark"] .lm-desktop-app-rail {
   background: color-mix(in srgb, var(--c-surface) 86%, #06263a);
   border-right-color: color-mix(in srgb, var(--c-border) 72%, var(--c-turquoise));
   box-shadow: inset -1px 0 0 rgba(91, 235, 224, .1);
 }
 [data-theme="dark"] .lm-desktop-app-rail-launcher {
-  border-color: color-mix(in srgb, var(--rail-color) 62%, var(--c-border));
-  background: color-mix(in srgb, var(--rail-color) 20%, #082035);
+  border-color: color-mix(in srgb, var(--c-border) 84%, var(--c-turquoise));
+  background: color-mix(in srgb, var(--c-surface) 90%, #082035);
 }
 @media (max-width: 600px) {
   .lm-desktop-app-rail { display: none; }
