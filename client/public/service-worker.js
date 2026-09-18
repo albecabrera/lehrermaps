@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'lehrermaps-v59';
+const CACHE_VERSION = 'lehrermaps-v60';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -7,7 +7,7 @@ const APP_SHELL = [
   '/favicon-v2.ico',
   '/apple-touch-icon.png',
   '/apple-touch-icon-180x180.png',
-  '/assets/logineo-logo.svg',
+  '/assets/logineo-logo.jpg',
   '/assets/icons/lehrermaps-mark.svg',
   '/assets/icons/lehrermaps-favicon-16.png',
   '/assets/icons/lehrermaps-favicon-32.png',

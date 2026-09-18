@@ -50,7 +50,7 @@ import ClassroomTimer from '../components/ClassroomTimer';
 
 // Keep the logo local: remote image hosts can be blocked by mobile content blockers
 // and leave iPhone Safari showing a broken-image placeholder.
-const LOGINEO_LOGO_URL = '/assets/logineo-logo.svg';
+const LOGINEO_LOGO_URL = '/assets/logineo-logo.jpg';
 
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'ucs', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
