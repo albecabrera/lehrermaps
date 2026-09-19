@@ -10,7 +10,7 @@ export function ThemeProvider({ children }) {
     localStorage.setItem('lm_theme', isDark ? 'dark' : 'light');
     // Keep standalone and browser chrome aligned with the editorial shell.
     const tc = document.querySelector('meta[name="theme-color"]');
-    if (tc) tc.setAttribute('content', isDark ? '#071827' : '#EEF3F6');
+    if (tc) tc.setAttribute('content', isDark ? '#0B0B0D' : '#EEF3F6');
     // Remove no-transition guard once theme is applied
     document.documentElement.classList.remove('lm-no-transition');
   }, [isDark]);

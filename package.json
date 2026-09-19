@@ -16,6 +16,7 @@
     "test:onenote-sync": "node scripts/lehrermaps-onenote-sync.mjs",
     "test:onenote-api": "node scripts/lehrermaps-onenote-rich-text-api.mjs",
     "test:responsive-launch": "node scripts/lehrermaps-responsive-launch.mjs",
+    "test:dark-theme": "node scripts/lehrermaps-dark-theme-audit.mjs",
     "test:annual-planning": "node scripts/lehrermaps-annual-plan-api.mjs",
     "test:e2e:teaching": "node scripts/lehrermaps-teaching-e2e.mjs",
     "test:e2e:responsive": "node scripts/lehrermaps-responsive-e2e.mjs",
