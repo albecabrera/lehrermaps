@@ -3278,3 +3278,131 @@ button:not(:disabled):focus-visible,
   }
   [data-theme="dark"] .lm-phone-theme-toggle:hover { border-color: #c1fffa; background: linear-gradient(145deg, #1b7089, #0d3650) !important; }
 }
+
+/* Today: a calm school-branded workspace. The logo is deliberately a local
+   decorative layer so the operational content remains the only reading focus. */
+@keyframes lm-today-school-logo-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-5deg) scale(1); }
+  50% { transform: translate3d(-2.5%, -1.5%, 0) rotate(-2deg) scale(1.035); }
+}
+
+.lm-today-view {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 8% 4%, color-mix(in srgb, var(--c-turquoise) 12%, transparent), transparent 31rem),
+    radial-gradient(circle at 93% 92%, color-mix(in srgb, var(--c-accent) 10%, transparent), transparent 36rem);
+}
+.lm-today-view::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  width: min(680px, 65vw);
+  aspect-ratio: 1;
+  right: clamp(-250px, -15vw, -112px);
+  bottom: clamp(-230px, -14vw, -94px);
+  pointer-events: none;
+  background: url('/assets/icons/esg-logo-with-lettering.svg') center / contain no-repeat;
+  opacity: .055;
+  mix-blend-mode: multiply;
+  transform-origin: 56% 48%;
+  animation: lm-today-school-logo-float 22s ease-in-out infinite;
+}
+.lm-today-shell {
+  position: relative;
+  z-index: 1;
+}
+.lm-today-header {
+  padding-bottom: 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-border) 74%, transparent);
+}
+.lm-today-header h1 {
+  text-wrap: balance;
+}
+.lm-today-tasks {
+  border-color: color-mix(in srgb, var(--c-turquoise) 28%, var(--c-border)) !important;
+  background-color: color-mix(in srgb, var(--c-surface) 88%, var(--c-turquoise) 12%) !important;
+}
+.lm-today-tasks .lm-task-count {
+  background: linear-gradient(135deg, var(--c-turquoise), color-mix(in srgb, var(--c-turquoise) 58%, var(--c-navy))) !important;
+  color: var(--c-navy-deep) !important;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--c-turquoise) 24%, transparent);
+}
+
+/* On a laptop, the action list is the working surface. Keep the next lesson
+   visible and actionable, but move it to a deliberately compact side card. */
+@media (min-width: 1101px) {
+  .lm-today-shell { width: min(1240px, 100%); }
+  .lm-today-content {
+    grid-template-columns: minmax(0, 1.55fr) minmax(290px, .72fr) !important;
+    grid-template-areas: 'focus lesson';
+    align-items: start;
+    gap: 20px;
+  }
+  .lm-today-tasks {
+    grid-area: focus;
+    min-height: clamp(430px, 60vh, 640px);
+    padding: clamp(24px, 2.4vw, 32px);
+  }
+  .lm-today-lesson-card {
+    grid-area: lesson;
+    min-height: 0;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 13px 32px color-mix(in srgb, var(--c-navy-deep) 10%, transparent);
+  }
+  .lm-today-lesson-card::after {
+    width: 165px;
+    height: 165px;
+    right: -85px;
+    bottom: -102px;
+  }
+  .lm-today-lesson-card h2 {
+    font-size: clamp(22px, 2vw, 29px);
+    line-height: 1.1;
+  }
+  .lm-today-lesson-card .lm-eyebrow { font-size: 10px; }
+  .lm-today-lesson-card .lm-lesson-details { margin: 15px 0; }
+  .lm-today-lesson-card .lm-lesson-actions { gap: 7px; }
+  .lm-today-lesson-card .lm-lesson-actions .lm-button,
+  .lm-today-lesson-card .lm-today-onenote-button {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
+[data-theme="dark"] .lm-today-view {
+  background:
+    radial-gradient(circle at 8% 4%, rgba(39, 218, 207, .13), transparent 31rem),
+    radial-gradient(circle at 93% 92%, rgba(42, 147, 232, .11), transparent 36rem);
+}
+[data-theme="dark"] .lm-today-view::before {
+  opacity: .105;
+  mix-blend-mode: screen;
+  filter: saturate(.8) contrast(1.08);
+}
+[data-theme="dark"] .lm-today-tasks {
+  background-color: color-mix(in srgb, var(--c-surface) 89%, #0b6973 11%) !important;
+  border-color: color-mix(in srgb, var(--c-turquoise) 38%, var(--c-border)) !important;
+}
+
+@media (max-width: 1100px) {
+  .lm-today-view::before {
+    width: min(580px, 86vw);
+    right: -190px;
+    bottom: -205px;
+  }
+}
+@media (max-width: 760px) {
+  .lm-today-header { padding-bottom: 12px; }
+  .lm-today-view::before {
+    width: min(500px, 108vw);
+    right: -180px;
+    bottom: -205px;
+    opacity: .04;
+  }
+  [data-theme="dark"] .lm-today-view::before { opacity: .075; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lm-today-view::before { animation: none; }
+}
