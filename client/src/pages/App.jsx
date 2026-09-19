@@ -142,6 +142,7 @@ export default function App({ onLogout }) {
   const isPhone = useIsMobile(600);
   const isMacDesktop = isMacDesktopPlatform();
   const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
+  const [phoneHeaderVisible, setPhoneHeaderVisible] = useState(true);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [schoolCalendarOpen, setSchoolCalendarOpen] = useState(false);
   const [bugChecklistOpen, setBugChecklistOpen] = useState(false);
@@ -353,6 +354,32 @@ export default function App({ onLogout }) {
   const previewPaneRef = useRef(null);
   const backSwipeRef = useRef({ dragging: false, startX: 0, pointerId: null });
   const pullRef = useRef({ startY: 0, pulling: false, atTop: false });
+  const phoneHeaderSwipeRef = useRef({ startY: 0, pulling: false });
+
+  useEffect(() => {
+    if (!isPhone) {
+      setPhoneHeaderVisible(true);
+      return undefined;
+    }
+
+    const onTouchStart = (event) => {
+      const touch = event.touches[0];
+      if (touch && touch.clientY <= 28) phoneHeaderSwipeRef.current = { startY: touch.clientY, pulling: true };
+    };
+    const onTouchEnd = (event) => {
+      const touch = event.changedTouches[0];
+      const pull = phoneHeaderSwipeRef.current;
+      if (pull.pulling && touch && touch.clientY - pull.startY >= 48) setPhoneHeaderVisible(true);
+      phoneHeaderSwipeRef.current = { startY: 0, pulling: false };
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isPhone]);
 
   useEffect(() => {
     if (!toast) return;
@@ -442,15 +469,15 @@ export default function App({ onLogout }) {
         setActiveLink(null);
         return;
       }
+      if (e.key === 'Escape' && isMobile && sidebarDrawerOpen) {
+        e.preventDefault();
+        setSidebarDrawerOpen(false);
+        return;
+      }
       if (e.key === 'Escape' && viewMode !== 'today' && !isTyping) {
         e.preventDefault();
         setViewMode('today');
         closeFolderView();
-        return;
-      }
-      if (e.key === 'Escape' && isMobile && sidebarDrawerOpen) {
-        e.preventDefault();
-        setSidebarDrawerOpen(false);
         return;
       }
       if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen || classroomTimerOpen) return;
@@ -981,7 +1008,7 @@ export default function App({ onLogout }) {
       <a className="lm-skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Workspace navigation — preserves the original visual language without restoring archived subject navigation. */}
-      <header className="lm-tabbar" aria-label="Hauptnavigation">
+      <header className={`lm-tabbar${isPhone ? ' lm-phone-focus-header' : ''}${isPhone && !phoneHeaderVisible ? ' is-collapsed' : ''}`} aria-label="Hauptnavigation">
         <button className="lm-app-brand" type="button" onClick={() => { navigateToView('today'); setActivePageId(null); closeFolderView(); }} aria-label="Zu Heute">
           <BrandMark size={isMobile ? 30 : 28} label={!isMobile} />
         </button>
@@ -1009,6 +1036,25 @@ export default function App({ onLogout }) {
         )}
         {isPhone && (
           <nav className="lm-phone-header-utilities" aria-label="Schnellzugriffe">
+            <button
+              className="lm-phone-menu-trigger"
+              type="button"
+              onClick={() => setSidebarDrawerOpen(true)}
+              aria-label="Materialien und Fächer öffnen"
+              title="Materialien und Fächer öffnen"
+              aria-expanded={sidebarDrawerOpen}
+            >
+              <span aria-hidden="true">☰</span>
+            </button>
+            <button
+              className="lm-phone-header-toggle"
+              type="button"
+              onClick={() => setPhoneHeaderVisible(false)}
+              aria-label="Kopfzeile ausblenden"
+              title="Kopfzeile ausblenden"
+            >
+              <span aria-hidden="true">⌃</span>
+            </button>
             <a
               href={LOGINEO_URL}
               target="_blank"
@@ -1056,6 +1102,17 @@ export default function App({ onLogout }) {
           <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout"><span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span></button>
         </div>
       </header>
+      {isPhone && !phoneHeaderVisible && (
+        <button
+          className="lm-phone-header-reveal"
+          type="button"
+          onClick={() => setPhoneHeaderVisible(true)}
+          aria-label="Kopfzeile einblenden"
+          title="Kopfzeile einblenden"
+        >
+          <span aria-hidden="true">⌃</span>
+        </button>
+      )}
 
       {/* Body */}
       <div

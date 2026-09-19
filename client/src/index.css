@@ -2955,6 +2955,84 @@ button:not(:disabled):focus-visible,
    the horizontally scrollable launcher strip. Both controls remain at least
    44px tall and the supplied Logineo JPEG keeps its complete aspect ratio. */
 @media (max-width: 600px) {
+  /* iPhone focus mode: keep only the page context and intentional controls in
+     the compact header. Less frequent app links remain in the More sheet. */
+  .lm-phone-focus-header {
+    min-height: 58px !important;
+    height: calc(58px + var(--safe-area-top)) !important;
+    padding-top: max(6px, var(--safe-area-top)) !important;
+    padding-bottom: 6px !important;
+    gap: 5px !important;
+    transition: height .2s ease, min-height .2s ease, opacity .16s ease, transform .2s ease;
+  }
+  .lm-phone-focus-header.is-collapsed {
+    display: none !important;
+  }
+  .lm-phone-focus-header .lm-mobile-header-apps,
+  .lm-phone-focus-header .lm-phone-logineo,
+  .lm-phone-focus-header .lm-phone-theme-toggle {
+    display: none !important;
+  }
+  .lm-phone-focus-header .lm-mobile-header-context {
+    margin-left: 2px;
+  }
+  .lm-phone-menu-trigger,
+  .lm-phone-header-toggle,
+  .lm-phone-header-reveal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    min-width: var(--touch-target);
+    height: var(--touch-target);
+    min-height: var(--touch-target);
+    padding: 0;
+    border: 1px solid var(--c-border-soft);
+    border-radius: 12px;
+    background: var(--c-surface);
+    color: var(--c-text-2);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255,255,255,.42);
+    cursor: pointer;
+    font: 700 18px/1 inherit;
+  }
+  .lm-phone-menu-trigger:hover,
+  .lm-phone-header-toggle:hover,
+  .lm-phone-menu-trigger:focus-visible,
+  .lm-phone-header-toggle:focus-visible,
+  .lm-phone-header-reveal:hover,
+  .lm-phone-header-reveal:focus-visible {
+    border-color: var(--c-focus);
+    background: var(--c-hover);
+  }
+  .lm-phone-menu-trigger:focus-visible,
+  .lm-phone-header-toggle:focus-visible,
+  .lm-phone-header-reveal:focus-visible {
+    outline: 3px solid var(--c-focus);
+    outline-offset: 2px;
+  }
+  .lm-phone-header-reveal {
+    position: fixed;
+    top: max(8px, var(--safe-area-top));
+    right: max(10px, var(--safe-area-right));
+    z-index: 1210;
+    border-radius: 999px;
+    box-shadow: var(--shadow-lg, 0 14px 36px rgba(15, 23, 42, .18));
+  }
+  [data-theme="dark"] .lm-phone-menu-trigger,
+  [data-theme="dark"] .lm-phone-header-toggle,
+  [data-theme="dark"] .lm-phone-header-reveal {
+    background: var(--c-tab-bg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-phone-focus-header,
+  .lm-phone-header-reveal {
+    transition: none !important;
+  }
+}
+
+@media (max-width: 600px) {
   .lm-tabbar .lm-mobile-header-apps {
     flex: 1 1 0;
     max-width: none;
@@ -3350,6 +3428,123 @@ button:not(:disabled):focus-visible,
   filter: saturate(1.08) contrast(1.08) brightness(1.02);
 }
 [data-theme="dark"] .lm-app-rail-quizlet .lm-app-rail-icon { filter: saturate(1.18) contrast(1.08) brightness(1.1) drop-shadow(0 2px 4px rgba(0, 0, 0, .48)); }
+
+/* macOS-style app labels for pointer users. The text comes from the existing
+   title attribute so navigation and accessibility labels remain single-source.
+   Focus-visible gets the same treatment for keyboard users; coarse touch
+   pointers are intentionally excluded so labels never obstruct tapping. */
+@media (hover: hover) and (pointer: fine), (any-hover: none) and (any-pointer: coarse) {
+  .lm-desktop-app-rail-launcher,
+  .lm-tabbar .lm-workspace-nav-item[title],
+  .lm-tabbar .lm-workspace-tool[title],
+  .lm-tabbar .lm-topbar-logout[title],
+  .lm-sidebar button[title] {
+    position: relative;
+  }
+
+  .lm-desktop-app-rail-launcher::after,
+  .lm-tabbar .lm-workspace-nav-item[title]::after,
+  .lm-tabbar .lm-workspace-tool[title]::after,
+  .lm-tabbar .lm-topbar-logout[title]::after,
+  .lm-sidebar button[title]::after {
+    position: absolute;
+    z-index: 50;
+    pointer-events: none;
+    content: attr(title);
+    width: max-content;
+    max-width: min(240px, 42vw);
+    padding: 7px 10px;
+    border: 1px solid color-mix(in srgb, var(--c-border) 78%, transparent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--c-surface) 88%, var(--c-bg));
+    color: var(--c-text);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .18), inset 0 1px 0 rgba(255, 255, 255, .42);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    font: 700 11px/1.25 "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: .01em;
+    white-space: normal;
+    text-align: center;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(5px) scale(.94);
+    transform-origin: center bottom;
+    transition: opacity .16s ease, visibility 0s linear .16s, transform .22s cubic-bezier(.22, 1.25, .3, 1);
+  }
+
+  .lm-desktop-app-rail-launcher::after {
+    top: 50%;
+    left: calc(100% + 10px);
+    transform-origin: left center;
+    transform: translateY(-50%) translateX(-4px) scale(.94);
+  }
+
+  .lm-tabbar .lm-workspace-nav-item[title]::after,
+  .lm-tabbar .lm-workspace-tool[title]::after,
+  .lm-tabbar .lm-topbar-logout[title]::after {
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-4px) scale(.94);
+  }
+
+  .lm-sidebar button[title]::after {
+    top: 50%;
+    left: calc(100% + 10px);
+    transform-origin: left center;
+    transform: translateY(-50%) translateX(-4px) scale(.94);
+  }
+
+  .lm-desktop-app-rail-launcher:hover::after,
+  .lm-desktop-app-rail-launcher:focus-visible::after,
+  .lm-tabbar .lm-workspace-nav-item[title]:hover::after,
+  .lm-tabbar .lm-workspace-nav-item[title]:focus-visible::after,
+  .lm-tabbar .lm-workspace-tool[title]:hover::after,
+  .lm-tabbar .lm-workspace-tool[title]:focus-visible::after,
+  .lm-tabbar .lm-topbar-logout[title]:hover::after,
+  .lm-tabbar .lm-topbar-logout[title]:focus-visible::after,
+  .lm-sidebar button[title]:hover::after,
+  .lm-sidebar button[title]:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    transition-delay: .08s, 0s, .08s;
+  }
+
+  .lm-tabbar .lm-workspace-nav-item[title]:hover::after,
+  .lm-tabbar .lm-workspace-nav-item[title]:focus-visible::after,
+  .lm-tabbar .lm-workspace-tool[title]:hover::after,
+  .lm-tabbar .lm-workspace-tool[title]:focus-visible::after,
+  .lm-tabbar .lm-topbar-logout[title]:hover::after,
+  .lm-tabbar .lm-topbar-logout[title]:focus-visible::after {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+
+  .lm-desktop-app-rail-launcher:hover::after,
+  .lm-desktop-app-rail-launcher:focus-visible::after,
+  .lm-sidebar button[title]:hover::after,
+  .lm-sidebar button[title]:focus-visible::after {
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
+
+  [data-theme="dark"] .lm-desktop-app-rail-launcher::after,
+  [data-theme="dark"] .lm-tabbar .lm-workspace-nav-item[title]::after,
+  [data-theme="dark"] .lm-tabbar .lm-workspace-tool[title]::after,
+  [data-theme="dark"] .lm-tabbar .lm-topbar-logout[title]::after,
+  [data-theme="dark"] .lm-sidebar button[title]::after {
+    background: color-mix(in srgb, var(--c-surface) 92%, #000);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-desktop-app-rail-launcher::after,
+  .lm-tabbar .lm-workspace-nav-item[title]::after,
+  .lm-tabbar .lm-workspace-tool[title]::after,
+  .lm-tabbar .lm-topbar-logout[title]::after,
+  .lm-sidebar button[title]::after {
+    transition: none !important;
+  }
+}
 
 /* Header launchers use stronger, brand-aware surfaces in dark mode. No image
    filters are applied here, which keeps the protected iPad header sharp. */
