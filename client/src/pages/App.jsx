@@ -66,6 +66,7 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'plesk-esg', href: 'https://pls1.netcologne.de:8443/smb/web/view', label: 'Plesk ESG öffnen', iconSrc: '/assets/plesk-favicon.ico' },
   { id: 'netcologne-ticket', href: 'https://ticket.netcologne-its.de/index.php?section=intern', label: 'NetCologne Ticket öffnen', iconSrc: '/assets/netcologne-ticket-favicon.ico' },
   { id: 'tafino', href: 'https://tafino.verlagruhr.de/desktops/C.%20Cabrera', label: 'Tafino öffnen', iconSrc: '/assets/tafino-favicon.ico' },
+  { id: 'school-home', href: 'https://igs-bonn.de/?s=wordpress&search_404=1', label: 'Schul-Homepage öffnen', iconSrc: '/assets/icons/Logo_ESG_ohne_Schrift.svg', iconClass: 'wide' },
 ];
 
 function DesktopAppRail() {
