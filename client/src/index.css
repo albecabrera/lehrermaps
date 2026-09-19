@@ -3300,15 +3300,15 @@ button:not(:disabled):focus-visible,
 .lm-today-content::before {
   content: '';
   position: absolute;
-  z-index: 0;
+  z-index: 2;
   width: min(840px, 76vw);
   aspect-ratio: 1;
   left: 50%;
   top: 50%;
   pointer-events: none;
   background: url('/assets/icons/esg-logo-with-lettering.svg') center / contain no-repeat;
-  opacity: .038;
-  mix-blend-mode: multiply;
+  opacity: .026;
+  mix-blend-mode: soft-light;
   transform-origin: center;
   animation: lm-today-school-logo-breathe 22s ease-in-out infinite;
 }
@@ -3386,7 +3386,7 @@ button:not(:disabled):focus-visible,
     radial-gradient(circle at 93% 92%, rgba(42, 147, 232, .11), transparent 36rem);
 }
 [data-theme="dark"] .lm-today-content::before {
-  opacity: .072;
+  opacity: .052;
   mix-blend-mode: screen;
   filter: saturate(.8) contrast(1.08);
 }
@@ -3406,15 +3406,15 @@ button:not(:disabled):focus-visible,
   .lm-today-content::before {
     width: min(620px, 122vw);
     top: 50%;
-    opacity: .03;
+    opacity: .02;
   }
-  [data-theme="dark"] .lm-today-content::before { opacity: .058; }
+  [data-theme="dark"] .lm-today-content::before { opacity: .042; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lm-today-content::before {
     animation: none;
-    opacity: .038;
+    opacity: .026;
     transform: translate3d(-50%, -50%, 0);
   }
-  [data-theme="dark"] .lm-today-content::before { opacity: .072; }
+  [data-theme="dark"] .lm-today-content::before { opacity: .052; }
 }
