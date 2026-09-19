@@ -3185,3 +3185,96 @@ button:not(:disabled):focus-visible,
     transform: none !important;
   }
 }
+
+/* Dark launcher contrast pass. Brand assets stay untouched; the surrounding
+   tile supplies the separation that small favicons and transparent wordmarks
+   lose against a dark glass surface. */
+[data-theme="dark"] .lm-desktop-app-rail-launcher {
+  --lm-rail-accent: var(--c-turquoise);
+  border-color: color-mix(in srgb, var(--lm-rail-accent) 54%, #8fe9e3) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--lm-rail-accent) 24%, #102d43), #071b2b) !important;
+  box-shadow: 0 7px 17px rgba(0, 0, 0, .36), inset 0 1px 0 rgba(233, 255, 253, .16), inset 0 -1px 0 rgba(0, 0, 0, .28);
+}
+[data-theme="dark"] .lm-app-rail-ucs { --lm-rail-accent: #3ec7ff; }
+[data-theme="dark"] .lm-app-rail-anton { --lm-rail-accent: #72dc84; }
+[data-theme="dark"] .lm-app-rail-vamos-1,
+[data-theme="dark"] .lm-app-rail-vamos-2 { --lm-rail-accent: #ff9a53; }
+[data-theme="dark"] .lm-app-rail-taskcards,
+[data-theme="dark"] .lm-app-rail-esg-tech-help { --lm-rail-accent: #ba8cff; }
+[data-theme="dark"] .lm-app-rail-quizlet { --lm-rail-accent: #7c92ff; }
+[data-theme="dark"] .lm-app-rail-eduki { --lm-rail-accent: #ff7d91; }
+[data-theme="dark"] .lm-app-rail-kahoot { --lm-rail-accent: #bc81ff; }
+[data-theme="dark"] .lm-app-rail-classroomscreen { --lm-rail-accent: #f0bf55; }
+[data-theme="dark"] .lm-app-rail-plesk-esg { --lm-rail-accent: #4cc8f2; }
+[data-theme="dark"] .lm-app-rail-netcologne-ticket { --lm-rail-accent: #ff776c; }
+[data-theme="dark"] .lm-app-rail-tafino { --lm-rail-accent: #61d7bd; }
+
+[data-theme="dark"] .lm-desktop-app-rail-launcher:hover {
+  border-color: color-mix(in srgb, var(--lm-rail-accent) 78%, white) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--lm-rail-accent) 34%, #12374f), #082235) !important;
+  box-shadow: 0 15px 27px color-mix(in srgb, var(--lm-rail-accent) 25%, transparent), inset 0 1px 0 rgba(255, 255, 255, .26), inset 0 0 0 1px color-mix(in srgb, var(--lm-rail-accent) 24%, transparent);
+}
+[data-theme="dark"] .lm-desktop-app-rail-launcher:focus-visible {
+  outline-color: #b9fffb;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--lm-rail-accent) 34%, transparent), 0 13px 26px rgba(0, 0, 0, .44);
+}
+[data-theme="dark"] .lm-app-rail-icon {
+  filter: saturate(1.24) contrast(1.14) brightness(1.16) drop-shadow(0 2px 4px rgba(0, 0, 0, .58));
+}
+/* UCS has a transparent dark wordmark; its small light chip restores the
+   original mark's contrast without recolouring or replacing the asset. */
+[data-theme="dark"] .lm-app-rail-ucs .lm-app-rail-icon {
+  background: #effcff;
+  border-radius: 6px;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .32);
+  filter: saturate(1.08) contrast(1.08) brightness(1.02);
+}
+[data-theme="dark"] .lm-app-rail-quizlet .lm-app-rail-icon { filter: saturate(1.18) contrast(1.08) brightness(1.1) drop-shadow(0 2px 4px rgba(0, 0, 0, .48)); }
+
+/* Header launchers use stronger, brand-aware surfaces in dark mode. No image
+   filters are applied here, which keeps the protected iPad header sharp. */
+[data-theme="dark"] .lm-tabbar .lm-topbar-notion,
+[data-theme="dark"] .lm-tabbar .lm-topbar-miro,
+[data-theme="dark"] .lm-tabbar .lm-topbar-onenote,
+[data-theme="dark"] .lm-tabbar .lm-topbar-idoceo,
+[data-theme="dark"] .lm-tabbar .lm-topbar-webuntis {
+  border-color: color-mix(in srgb, var(--launcher-color) 64%, #a7f5ef) !important;
+  background: color-mix(in srgb, var(--launcher-color) 22%, #0b2639) !important;
+  color: #f2ffff !important;
+  box-shadow: 0 5px 13px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .13) !important;
+}
+[data-theme="dark"] .lm-tabbar .lm-topbar-notion:hover,
+[data-theme="dark"] .lm-tabbar .lm-topbar-miro:hover,
+[data-theme="dark"] .lm-tabbar .lm-topbar-onenote:hover,
+[data-theme="dark"] .lm-tabbar .lm-topbar-idoceo:hover,
+[data-theme="dark"] .lm-tabbar .lm-topbar-webuntis:hover {
+  border-color: color-mix(in srgb, var(--launcher-color) 76%, white) !important;
+  background: color-mix(in srgb, var(--launcher-color) 33%, #10364f) !important;
+}
+[data-theme="dark"] .lm-tabbar .lm-topbar-logineo {
+  border: 1px solid #8edbd8 !important;
+  box-shadow: 0 0 0 2px rgba(91, 235, 224, .14), 0 7px 16px rgba(0, 0, 0, .32) !important;
+}
+
+/* iPhone keeps the supplied Logineo artwork readable while its theme control
+   gains the same high-contrast focus and active treatment as the app rail. */
+@media (max-width: 600px) {
+  [data-theme="dark"] .lm-mobile-header-app {
+    border-color: #5bb9c8;
+    background: #0c2a40;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(230, 255, 253, .12);
+  }
+  [data-theme="dark"] .lm-mobile-header-app:hover { border-color: #b5fffa; background: #123a54; }
+  [data-theme="dark"] .lm-phone-logineo {
+    border-color: #8edbd8;
+    box-shadow: 0 0 0 2px rgba(91, 235, 224, .15), 0 6px 15px rgba(0, 0, 0, .3);
+  }
+  [data-theme="dark"] .lm-phone-theme-toggle {
+    border-color: #78dcd6;
+    background: linear-gradient(145deg, #155a73, #0b293e) !important;
+    color: #fffde6;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, .54);
+    box-shadow: 0 5px 14px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .18);
+  }
+  [data-theme="dark"] .lm-phone-theme-toggle:hover { border-color: #c1fffa; background: linear-gradient(145deg, #1b7089, #0d3650) !important; }
+}
