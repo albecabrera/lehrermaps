@@ -3032,3 +3032,156 @@ button:not(:disabled):focus-visible,
   [data-theme="dark"] .lm-phone-logineo { background: #fff; }
   [data-theme="dark"] .lm-phone-theme-toggle { background: var(--c-surface); }
 }
+
+/* Apple-inspired Liquid Glass refinement. The existing palette remains the
+   source of truth; these layers add depth, a soft highlight, and refraction
+   without turning classroom content into a low-contrast decorative surface. */
+:root {
+  --lm-liquid-highlight: linear-gradient(135deg, rgba(255, 255, 255, .48) 0%, rgba(255, 255, 255, .16) 30%, rgba(255, 255, 255, 0) 62%);
+  --lm-liquid-border: rgba(255, 255, 255, .58);
+  --lm-liquid-shadow: 0 18px 48px rgba(13, 41, 72, .12), inset 0 1px 0 rgba(255, 255, 255, .72), inset 0 -1px 0 rgba(23, 59, 102, .05);
+  --lm-liquid-blur: blur(22px) saturate(155%);
+}
+
+[data-theme="dark"] {
+  --lm-liquid-highlight: linear-gradient(135deg, rgba(191, 255, 251, .12) 0%, rgba(91, 235, 224, .055) 30%, rgba(91, 235, 224, 0) 62%);
+  --lm-liquid-border: rgba(172, 243, 238, .22);
+  --lm-liquid-shadow: 0 20px 54px rgba(0, 5, 13, .5), inset 0 1px 0 rgba(222, 255, 253, .1), inset 0 -1px 0 rgba(0, 0, 0, .18);
+}
+
+.lm-tabbar,
+.lm-sidebar,
+.lm-drawer,
+.lm-desktop-app-rail,
+.lm-floating-klasurplan-switcher,
+.lm-editorial-card,
+.lm-home-subject-card,
+.lm-folder-card,
+.lm-annual-entry-card,
+.lm-today-lesson-card,
+.lm-schedule-grid-wrap,
+.lm-klausurplan-document,
+.lm-checklist-modal,
+.lm-modal-surface,
+.lm-upload-modal,
+.lm-add-link-modal,
+.lm-klausurplan-preview-dialog,
+.lm-klasurplan-viewer-dialog,
+.lm-classroom-timer {
+  background-image: var(--lm-liquid-highlight);
+  border-color: var(--lm-liquid-border);
+  box-shadow: var(--lm-liquid-shadow);
+  backdrop-filter: var(--lm-liquid-blur);
+  -webkit-backdrop-filter: var(--lm-liquid-blur);
+}
+
+/* Several long-standing shells use an important background shorthand. Give
+   those chrome surfaces their highlight explicitly, while leaving specialised
+   content gradients (such as the timer) intact. */
+.lm-tabbar,
+.lm-sidebar,
+.lm-drawer,
+.lm-desktop-app-rail,
+.lm-floating-klasurplan-switcher,
+.lm-checklist-modal,
+.lm-modal-surface,
+.lm-upload-modal,
+.lm-add-link-modal,
+.lm-klausurplan-preview-dialog,
+.lm-klasurplan-viewer-dialog {
+  background-image: var(--lm-liquid-highlight) !important;
+}
+
+/* Launchers use the same compact spring so the application destinations feel
+   responsive whether they live in the rail, desktop header, or iPhone header. */
+.lm-desktop-app-rail-launcher,
+.lm-external-app-launcher,
+.lm-mobile-header-app,
+.lm-phone-logineo,
+.lm-phone-theme-toggle,
+.lm-tabbar .lm-workspace-nav-item {
+  will-change: transform;
+  transition: transform 150ms cubic-bezier(.22, 1.3, .36, 1), border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lm-desktop-app-rail-launcher:hover,
+  .lm-external-app-launcher:hover,
+  .lm-mobile-header-app:hover,
+  .lm-phone-logineo:hover,
+  .lm-phone-theme-toggle:hover,
+  .lm-tabbar .lm-workspace-nav-item:hover {
+    transform: translateY(-3px) scale(1.12);
+    box-shadow: 0 16px 30px color-mix(in srgb, var(--c-accent) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, .58);
+  }
+
+  .lm-desktop-app-rail-launcher:active,
+  .lm-external-app-launcher:active,
+  .lm-mobile-header-app:active,
+  .lm-phone-logineo:active,
+  .lm-phone-theme-toggle:active,
+  .lm-tabbar .lm-workspace-nav-item:active {
+    transform: translateY(0) scale(.955);
+  }
+}
+
+.lm-desktop-app-rail-launcher:focus-visible,
+.lm-external-app-launcher:focus-visible,
+.lm-mobile-header-app:focus-visible,
+.lm-phone-logineo:focus-visible,
+.lm-phone-theme-toggle:focus-visible,
+.lm-tabbar .lm-workspace-nav-item:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--c-focus) 20%, transparent), var(--lm-liquid-shadow);
+}
+
+/* iPad Safari must keep the header as an opaque, unfiltered compositing
+   layer. Reassert this after the glass enhancement so text and logos stay
+   pin-sharp even when the page behind the header scrolls. */
+@media (min-width: 601px) and (max-width: 1100px) {
+  .lm-tabbar,
+  .lm-tabbar *,
+  .lm-tabbar *::before,
+  .lm-tabbar *::after,
+  .lm-mobile-header-apps,
+  .lm-mobile-header-apps *,
+  .lm-mobile-header-actions,
+  .lm-mobile-header-actions * {
+    filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    transform: none !important;
+  }
+  .lm-tabbar {
+    background-image: none !important;
+    background: color-mix(in srgb, var(--c-surface) 98%, var(--c-bg)) !important;
+  }
+  [data-theme="dark"] .lm-tabbar { background: #092237 !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-desktop-app-rail-launcher,
+  .lm-external-app-launcher,
+  .lm-mobile-header-app,
+  .lm-phone-logineo,
+  .lm-phone-theme-toggle,
+  .lm-tabbar .lm-workspace-nav-item {
+    will-change: auto;
+    transition: none !important;
+  }
+  .lm-desktop-app-rail-launcher:hover,
+  .lm-external-app-launcher:hover,
+  .lm-mobile-header-app:hover,
+  .lm-phone-logineo:hover,
+  .lm-phone-theme-toggle:hover,
+  .lm-tabbar .lm-workspace-nav-item:hover,
+  .lm-desktop-app-rail-launcher:active,
+  .lm-external-app-launcher:active,
+  .lm-mobile-header-app:active,
+  .lm-phone-logineo:active,
+  .lm-phone-theme-toggle:active,
+  .lm-tabbar .lm-workspace-nav-item:active {
+    transform: none !important;
+  }
+}
