@@ -3168,6 +3168,144 @@ button:not(:disabled):focus-visible,
   }
 }
 
+/* Cmd/Ctrl+J personal Plesk terminal. The layer is mounted only while open,
+   so it never changes hit testing or stacking for the workspace at rest. */
+.lm-plesk-terminal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1600;
+  pointer-events: none;
+}
+.lm-plesk-terminal-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: color-mix(in srgb, var(--c-bg) 38%, transparent);
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.lm-plesk-terminal-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: min(54vh, 680px);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+  background: var(--c-surface);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -22px 70px rgba(0, 0, 0, .28);
+  animation: lm-plesk-terminal-enter 220ms cubic-bezier(.22, 1, .36, 1) both;
+}
+.lm-plesk-terminal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  background: var(--c-surface-elevated, var(--c-surface));
+  border-bottom: 1px solid var(--c-border);
+}
+.lm-plesk-terminal-kicker {
+  color: var(--c-text-3);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.lm-plesk-terminal-header h2 {
+  margin: 3px 0 0;
+  font-size: 15px;
+  line-height: 1.2;
+}
+.lm-plesk-terminal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lm-plesk-terminal-external {
+  color: var(--c-accent);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.lm-plesk-terminal-external:hover { text-decoration: underline; }
+.lm-plesk-terminal-close {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-hover);
+  color: var(--c-text);
+  cursor: pointer;
+  font: 500 21px/1 inherit;
+}
+.lm-plesk-terminal-close:hover,
+.lm-plesk-terminal-close:focus-visible {
+  border-color: var(--c-focus);
+  background: var(--c-active);
+}
+.lm-plesk-terminal-close:focus-visible,
+.lm-plesk-terminal-external:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 3px;
+}
+.lm-plesk-terminal-frame-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: var(--c-input-bg, #141416);
+}
+.lm-plesk-terminal-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--c-input-bg, #141416);
+}
+.lm-plesk-terminal-fallback {
+  position: absolute;
+  right: 14px;
+  bottom: 10px;
+  max-width: min(520px, calc(100% - 28px));
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-surface) 92%, transparent);
+  color: var(--c-text-2);
+  font-size: 10px;
+  line-height: 1.4;
+  pointer-events: auto;
+}
+.lm-plesk-terminal-fallback a { color: var(--c-accent); font-weight: 700; }
+@keyframes lm-plesk-terminal-enter {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 600px) {
+  .lm-plesk-terminal-panel { height: min(68vh, 620px); min-height: 260px; border-radius: 14px 14px 0 0; }
+  .lm-plesk-terminal-header { padding: 10px 12px; }
+  .lm-plesk-terminal-external { max-width: 112px; text-align: right; }
+  .lm-plesk-terminal-fallback { left: 10px; right: 10px; bottom: 8px; max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lm-plesk-terminal-panel { animation: none; }
+}
+
 /* Dark launcher contrast pass. Brand assets stay untouched; the surrounding
    tile supplies the separation that small favicons and transparent wordmarks
    lose against a dark glass surface. */

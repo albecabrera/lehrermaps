@@ -51,6 +51,7 @@ import ClassroomTimer from '../components/ClassroomTimer';
 // Keep the logo local: remote image hosts can be blocked by mobile content blockers
 // and leave iPhone Safari showing a broken-image placeholder.
 const LOGINEO_LOGO_URL = '/assets/logineo-logo.jpg';
+const PLESK_TERMINAL_URL = 'https://h2953700.stratoserver.net:8443/modules/ssh-terminal/?dom_id=22&site_id=22';
 
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'ucs', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
@@ -89,6 +90,37 @@ function DesktopAppRail() {
   );
 }
 
+function PleskTerminalPanel({ onClose }) {
+  return (
+    <div className="lm-plesk-terminal-layer" role="dialog" aria-modal="true" aria-labelledby="lm-plesk-terminal-title">
+      <button className="lm-plesk-terminal-backdrop" type="button" aria-label="Plesk-Terminal schließen" onClick={onClose} />
+      <section className="lm-plesk-terminal-panel">
+        <header className="lm-plesk-terminal-header">
+          <div>
+            <div className="lm-plesk-terminal-kicker">Plesk · SSH</div>
+            <h2 id="lm-plesk-terminal-title">Persönliches Terminal</h2>
+          </div>
+          <div className="lm-plesk-terminal-actions">
+            <a href={PLESK_TERMINAL_URL} target="_blank" rel="noopener noreferrer" className="lm-plesk-terminal-external">In neuem Tab öffnen</a>
+            <button type="button" className="lm-plesk-terminal-close" onClick={onClose} aria-label="Plesk-Terminal schließen" title="Schließen (Esc)">×</button>
+          </div>
+        </header>
+        <div className="lm-plesk-terminal-frame-wrap">
+          <iframe
+            title="Plesk SSH-Terminal"
+            src={PLESK_TERMINAL_URL}
+            className="lm-plesk-terminal-frame"
+            sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"
+            allow="clipboard-read; clipboard-write"
+            referrerPolicy="no-referrer"
+          />
+          <p className="lm-plesk-terminal-fallback">Wenn Plesk das Einbetten durch Login- oder Frame-Richtlinien blockiert, öffne das Terminal bitte <a href={PLESK_TERMINAL_URL} target="_blank" rel="noopener noreferrer">in einem neuen Tab</a>.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 // Opened views are split into on-demand chunks without changing their layout.
 const Schedule = lazy(() => import('../components/Schedule'));
 const ExamBoard = lazy(() => import('../components/ExamBoard'));
@@ -114,6 +146,8 @@ export default function App({ onLogout }) {
   const [schoolCalendarOpen, setSchoolCalendarOpen] = useState(false);
   const [bugChecklistOpen, setBugChecklistOpen] = useState(false);
   const [classroomTimerOpen, setClassroomTimerOpen] = useState(false);
+  const [appRailVisible, setAppRailVisible] = useState(true);
+  const [pleskTerminalOpen, setPleskTerminalOpen] = useState(false);
 
   const [subjectId, setSubjectId] = useState('workspace');
   const [activeFolder, setActiveFolder] = useState(null);
@@ -386,6 +420,11 @@ export default function App({ onLogout }) {
       const target = e.target;
       const tag = target?.tagName?.toLowerCase();
       const isTyping = tag === 'input' || tag === 'textarea' || target?.isContentEditable;
+      if (e.key === 'Escape' && pleskTerminalOpen) {
+        e.preventDefault();
+        setPleskTerminalOpen(false);
+        return;
+      }
       if (e.key === 'Escape' && document.fullscreenElement) {
         e.preventDefault();
         document.exitFullscreen();
@@ -415,6 +454,16 @@ export default function App({ onLogout }) {
         return;
       }
       if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen || classroomTimerOpen) return;
+      if (!isTyping && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        setAppRailVisible((visible) => !visible);
+        return;
+      }
+      if (!isTyping && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        setPleskTerminalOpen((open) => !open);
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setGlobalSearchOpen(true);
@@ -488,7 +537,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, classroomTimerOpen, klasurplanOpen, isMobile, sidebarDrawerOpen, viewMode]);
+  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, classroomTimerOpen, klasurplanOpen, isMobile, sidebarDrawerOpen, viewMode, pleskTerminalOpen]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -1022,7 +1071,7 @@ export default function App({ onLogout }) {
         {/* Keep the external app rail available on every form factor. On phones
             it becomes a compact, scrollable icon sidebar; the material/folder
             sidebar remains in its existing drawer. */}
-        <DesktopAppRail />
+        {appRailVisible && <DesktopAppRail />}
         {viewMode === 'today' ? (
           <TodayDashboard onOpenSchedule={() => navigateToView('schedule')} onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} />
         ) : viewMode === 'klausurplan' ? (
@@ -1744,6 +1793,7 @@ export default function App({ onLogout }) {
       {schoolCalendarOpen && <SchoolCalendarPdf onClose={() => setSchoolCalendarOpen(false)} />}
       <BugChecklist open={bugChecklistOpen} onClose={() => setBugChecklistOpen(false)} t={t} />
       <ClassroomTimer open={classroomTimerOpen} onClose={() => setClassroomTimerOpen(false)} />
+      {pleskTerminalOpen && <PleskTerminalPanel onClose={() => setPleskTerminalOpen(false)} />}
       {folderZoom && (
         <div
           style={{
