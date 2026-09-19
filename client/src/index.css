@@ -3307,8 +3307,10 @@ button:not(:disabled):focus-visible,
   top: 50%;
   pointer-events: none;
   background: url('/assets/icons/esg-logo-with-lettering.svg') center / contain no-repeat;
-  opacity: .026;
-  mix-blend-mode: soft-light;
+  /* Multiply preserves the SVG's coloured/black mark on pale cards; the
+     full white SVG canvas remains visually neutral at this low opacity. */
+  opacity: .074;
+  mix-blend-mode: multiply;
   transform-origin: center;
   animation: lm-today-school-logo-breathe 22s ease-in-out infinite;
 }
@@ -3406,14 +3408,14 @@ button:not(:disabled):focus-visible,
   .lm-today-content::before {
     width: min(620px, 122vw);
     top: 50%;
-    opacity: .02;
+    opacity: .052;
   }
   [data-theme="dark"] .lm-today-content::before { opacity: .042; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lm-today-content::before {
     animation: none;
-    opacity: .026;
+    opacity: .074;
     transform: translate3d(-50%, -50%, 0);
   }
   [data-theme="dark"] .lm-today-content::before { opacity: .052; }
