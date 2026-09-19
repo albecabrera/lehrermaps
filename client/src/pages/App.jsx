@@ -67,6 +67,7 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'plesk-esg', href: 'https://pls1.netcologne.de:8443/smb/web/view', label: 'Plesk ESG öffnen', iconSrc: '/assets/plesk-favicon.ico' },
   { id: 'netcologne-ticket', href: 'https://ticket.netcologne-its.de/index.php?section=intern', label: 'NetCologne Ticket öffnen', iconSrc: '/assets/netcologne-ticket-favicon.ico' },
   { id: 'tafino', href: 'https://tafino.verlagruhr.de/desktops/C.%20Cabrera', label: 'Tafino öffnen', iconSrc: '/assets/tafino-favicon.ico' },
+  { id: 'linguacode', href: 'https://albecabrera.github.io/linguaCode/', label: 'LinguaCode öffnen', iconText: 'LC' },
   { id: 'school-home', href: 'https://igs-bonn.de/?s=wordpress&search_404=1', label: 'Schul-Homepage öffnen', iconSrc: '/assets/icons/Logo_ESG_ohne_Schrift.svg', iconClass: 'wide' },
 ];
 
@@ -83,7 +84,11 @@ function DesktopAppRail() {
           aria-label={`${app.label} (öffnet in neuem Tab)`}
           title={`${app.label} (öffnet in neuem Tab)`}
         >
-          <img className={`lm-app-rail-icon${app.iconClass ? ` lm-app-rail-icon--${app.iconClass}` : ''}`} src={app.iconSrc} alt="" aria-hidden="true" />
+          {app.iconText ? (
+            <span className="lm-app-rail-icon lm-app-rail-monogram" aria-hidden="true">{app.iconText}</span>
+          ) : (
+            <img className={`lm-app-rail-icon${app.iconClass ? ` lm-app-rail-icon--${app.iconClass}` : ''}`} src={app.iconSrc} alt="" aria-hidden="true" />
+          )}
         </a>
       ))}
     </nav>

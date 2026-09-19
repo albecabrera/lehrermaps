@@ -2914,6 +2914,18 @@ button:not(:disabled):focus-visible,
   height: 28px;
   border-radius: 0;
 }
+.lm-app-rail-monogram {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #5b42d6, #2d8cff);
+  color: #fff;
+  font: 800 12px/1 "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -.04em;
+  box-shadow: 0 3px 8px rgba(61, 78, 190, .3);
+}
 [data-theme="dark"] .lm-desktop-app-rail {
   background: var(--c-bg-secondary);
   border-right-color: var(--c-border);
@@ -3406,6 +3418,7 @@ button:not(:disabled):focus-visible,
 [data-theme="dark"] .lm-app-rail-plesk-esg { --lm-rail-accent: #4cc8f2; }
 [data-theme="dark"] .lm-app-rail-netcologne-ticket { --lm-rail-accent: #ff776c; }
 [data-theme="dark"] .lm-app-rail-tafino { --lm-rail-accent: #61d7bd; }
+[data-theme="dark"] .lm-app-rail-linguacode { --lm-rail-accent: #7f8cff; }
 
 [data-theme="dark"] .lm-desktop-app-rail-launcher:hover {
   border-color: color-mix(in srgb, var(--lm-rail-accent) 70%, var(--c-border)) !important;
