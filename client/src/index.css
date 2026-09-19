@@ -3306,9 +3306,9 @@ button:not(:disabled):focus-visible,
   left: 50%;
   top: 50%;
   pointer-events: none;
-  background: url('/assets/icons/esg-logo-with-lettering.svg') center / contain no-repeat;
-  /* Multiply preserves the SVG's coloured/black mark on pale cards; the
-     full white SVG canvas remains visually neutral at this low opacity. */
+  background: url('/assets/icons/esg-logo-overlay.svg') center / contain no-repeat;
+  /* The transparent derived SVG contains only the logo paths, so multiply
+     keeps the coloured and dark mark visible on pale cards without a canvas. */
   opacity: .074;
   mix-blend-mode: multiply;
   transform-origin: center;
