@@ -3281,9 +3281,9 @@ button:not(:disabled):focus-visible,
 
 /* Today: a calm school-branded workspace. The logo is deliberately a local
    decorative layer so the operational content remains the only reading focus. */
-@keyframes lm-today-school-logo-float {
-  0%, 100% { transform: translate3d(-50%, 0, 0) rotate(-4deg) scale(1); }
-  50% { transform: translate3d(-52.5%, -1.5%, 0) rotate(-2deg) scale(1.025); }
+@keyframes lm-today-school-logo-breathe {
+  0%, 100% { transform: translate3d(-50%, -50%, 0) scale(1); }
+  50% { transform: translate3d(-50%, -50%, 0) scale(1.012); }
 }
 
 .lm-today-view {
@@ -3304,17 +3304,18 @@ button:not(:disabled):focus-visible,
   width: min(840px, 76vw);
   aspect-ratio: 1;
   left: 50%;
-  top: 48%;
+  top: 50%;
   pointer-events: none;
   background: url('/assets/icons/esg-logo-with-lettering.svg') center / contain no-repeat;
-  opacity: .055;
+  opacity: .038;
   mix-blend-mode: multiply;
-  transform-origin: 56% 48%;
-  animation: lm-today-school-logo-float 22s ease-in-out infinite;
+  transform-origin: center;
+  animation: lm-today-school-logo-breathe 22s ease-in-out infinite;
 }
 .lm-today-content > section {
   position: relative;
   z-index: 1;
+  background-color: color-mix(in srgb, var(--c-surface) 96%, var(--c-turquoise) 4%) !important;
 }
 .lm-today-shell {
   position: relative;
@@ -3385,7 +3386,7 @@ button:not(:disabled):focus-visible,
     radial-gradient(circle at 93% 92%, rgba(42, 147, 232, .11), transparent 36rem);
 }
 [data-theme="dark"] .lm-today-content::before {
-  opacity: .105;
+  opacity: .072;
   mix-blend-mode: screen;
   filter: saturate(.8) contrast(1.08);
 }
@@ -3404,11 +3405,16 @@ button:not(:disabled):focus-visible,
   .lm-today-header { padding-bottom: 12px; }
   .lm-today-content::before {
     width: min(620px, 122vw);
-    top: 52%;
-    opacity: .04;
+    top: 50%;
+    opacity: .03;
   }
-  [data-theme="dark"] .lm-today-content::before { opacity: .075; }
+  [data-theme="dark"] .lm-today-content::before { opacity: .058; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lm-today-content::before { animation: none; }
+  .lm-today-content::before {
+    animation: none;
+    opacity: .038;
+    transform: translate3d(-50%, -50%, 0);
+  }
+  [data-theme="dark"] .lm-today-content::before { opacity: .072; }
 }
