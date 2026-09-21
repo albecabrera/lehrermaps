@@ -3601,6 +3601,10 @@ button:not(:disabled):focus-visible,
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--lm-rail-accent) 34%, transparent), var(--shadow-md);
 }
 [data-theme="dark"] .lm-app-rail-icon {
+  box-sizing: border-box;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--lm-rail-accent) 35%, #fff);
+  background: color-mix(in srgb, #fff 92%, var(--lm-rail-accent));
   filter: saturate(1.24) contrast(1.14) brightness(1.16) drop-shadow(0 2px 4px rgba(0, 0, 0, .58));
 }
 /* UCS has a transparent dark wordmark; its small light chip restores the
@@ -3950,3 +3954,297 @@ button:not(:disabled):focus-visible,
   color: var(--c-warning);
 }
 [data-theme="dark"] .lm-annual-entry-actions .is-danger { color: var(--c-danger); }
+
+@media (max-width: 600px) {
+  .lm-phone-app-rail-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    min-width: var(--touch-target);
+    height: var(--touch-target);
+    min-height: var(--touch-target);
+    padding: 0;
+    border: 1px solid var(--c-border-soft);
+    border-radius: 12px;
+    background: var(--c-surface);
+    color: var(--c-text-2);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255,255,255,.42);
+    cursor: pointer;
+    font: 700 18px/1 inherit;
+  }
+  .lm-phone-app-rail-toggle:hover,
+  .lm-phone-app-rail-toggle:focus-visible {
+    border-color: var(--c-focus);
+    background: var(--c-hover);
+  }
+  .lm-phone-app-rail-toggle:focus-visible {
+    outline: 3px solid var(--c-focus);
+    outline-offset: 2px;
+  }
+  [data-theme="dark"] .lm-phone-app-rail-toggle { background: var(--c-tab-bg); }
+}
+
+/* Today keeps its two working areas in one shared surface, so the school mark
+   reads as a calm background instead of being split by separate card chrome. */
+.lm-today-content {
+  display: block;
+}
+.lm-today-content > .lm-today-summary-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(290px, .72fr);
+  grid-template-areas: 'tasks lesson';
+  gap: 0;
+  min-height: clamp(430px, 60vh, 640px);
+  padding: 0 !important;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--c-turquoise) 28%, var(--c-border)) !important;
+  background-color: color-mix(in srgb, var(--c-surface) 88%, var(--c-turquoise) 12%) !important;
+}
+.lm-today-summary-card > .lm-today-tasks,
+.lm-today-summary-card > .lm-today-lesson-card {
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  padding: clamp(20px, 2.4vw, 32px);
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.lm-today-summary-card > .lm-today-tasks {
+  grid-area: tasks;
+  min-height: 0;
+}
+.lm-today-summary-card > .lm-today-lesson-card {
+  grid-area: lesson;
+  min-height: 0;
+  border-left: 1px solid color-mix(in srgb, var(--c-border) 74%, transparent) !important;
+}
+.lm-today-summary-card > .lm-today-lesson-card::after {
+  right: -85px;
+  bottom: -102px;
+  width: 165px;
+  height: 165px;
+}
+.lm-today-summary-card > .lm-today-lesson-card h2 {
+  font-size: clamp(22px, 2vw, 29px);
+  line-height: 1.1;
+}
+.lm-today-summary-card > .lm-today-lesson-card .lm-lesson-details { margin: 15px 0; }
+.lm-today-summary-card > .lm-today-lesson-card .lm-lesson-actions { gap: 7px; }
+.lm-today-summary-card > .lm-today-lesson-card .lm-lesson-actions .lm-button,
+.lm-today-summary-card > .lm-today-lesson-card .lm-today-onenote-button {
+  flex: 1 1 100%;
+  justify-content: center;
+}
+[data-theme="dark"] .lm-today-content > .lm-today-summary-card {
+  background-color: var(--c-surface) !important;
+  border-color: var(--c-border) !important;
+}
+@media (max-width: 1100px) {
+  .lm-today-content > .lm-today-summary-card {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'lesson' 'tasks';
+    min-height: 0;
+  }
+  .lm-today-summary-card > .lm-today-lesson-card {
+    border-bottom: 1px solid color-mix(in srgb, var(--c-border) 74%, transparent) !important;
+    border-left: 0 !important;
+  }
+}
+@media (max-width: 640px) {
+  .lm-today-summary-card > .lm-today-tasks,
+  .lm-today-summary-card > .lm-today-lesson-card { padding: 19px !important; }
+}
+
+/* Unterricht vorbereiten: shared surfaces, chips and calm, purposeful feedback. */
+.lm-lesson-dashboard { flex: 1; min-width: 0; overflow: auto; padding: clamp(28px, 5vw, 64px); background: var(--c-surface-2); }
+.lm-lesson-dashboard-shell { width: min(1120px, 100%); margin: 0 auto; }
+.lm-lesson-command-header, .lm-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
+.lm-lesson-command-header { margin-bottom: 28px; }
+.lm-lesson-command-header h1 { margin: 5px 0 8px; font: 600 clamp(32px, 4vw, 48px)/1.04 var(--font-editorial); letter-spacing: -.04em; }
+.lm-lesson-command-header p, .lm-lesson-card p { margin: 0; color: var(--c-text-2); line-height: 1.5; }
+.lm-lesson-create { flex-shrink: 0; background: linear-gradient(135deg, var(--lesson-accent, var(--c-turquoise)), var(--c-navy)); }
+.lm-section-heading { margin: 28px 0 12px; }
+.lm-section-heading h2 { margin: 4px 0 0; font: 600 clamp(21px, 2vw, 27px)/1.15 var(--font-editorial); letter-spacing: -.025em; }
+.lm-status-chip { display: inline-flex; align-items: center; min-height: 26px; padding: 0 9px; border: 1px solid color-mix(in srgb, var(--c-turquoise) 25%, var(--c-border)); border-radius: 999px; background: color-mix(in srgb, var(--c-turquoise) 9%, var(--c-surface)); color: var(--c-text-2); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.lm-status-chip.is-active { background: #16a34a18; border-color: #16a34a55; color: #15803d; }
+.lm-status-chip.is-completed { background: #2563eb14; border-color: #2563eb44; color: #1d4ed8; }
+.lm-status-chip.is-draft { background: #f59e0b17; border-color: #f59e0b55; color: #b45309; }
+.lm-lesson-list { display: grid; gap: 10px; }
+.lm-lesson-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, .42fr); gap: 20px; padding: 18px; border: 1px solid var(--c-border); border-radius: var(--radius-md); background: color-mix(in srgb, var(--c-surface) 92%, transparent); box-shadow: var(--shadow-sm); transition: transform .18s var(--ease-out), box-shadow .18s ease, border-color .18s ease; }
+.lm-lesson-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--lesson-accent) 46%, var(--c-border)); box-shadow: var(--shadow-md); }
+.lm-lesson-card-main { display: flex; gap: 12px; min-width: 0; }
+.lm-lesson-subject-dot { width: 12px; height: 12px; margin-top: 6px; flex: 0 0 auto; border-radius: 50%; background: var(--lesson-accent, var(--c-turquoise)); box-shadow: 0 0 0 5px color-mix(in srgb, var(--lesson-accent, var(--c-turquoise)) 14%, transparent); }
+.lm-lesson-card-meta { display: flex; gap: 6px; color: var(--c-text-3); font-size: 12px; font-weight: 700; }
+.lm-lesson-card h3 { margin: 5px 0 5px; font-size: 17px; letter-spacing: -.015em; }
+.lm-lesson-card-side { display: grid; justify-items: end; align-content: center; gap: 9px; }
+.lm-lesson-progress-label { display: flex; width: 100%; justify-content: space-between; gap: 8px; color: var(--c-text-3); font-size: 11px; font-weight: 700; }
+.lm-lesson-progress { width: 100%; height: 7px; overflow: hidden; border-radius: 999px; background: var(--c-surface-3, var(--c-border-soft)); }
+.lm-lesson-progress i { display: block; height: 100%; border-radius: inherit; background: var(--lesson-accent, var(--c-turquoise)); transition: width .25s var(--ease-out); }
+.lm-empty-state { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: clamp(22px, 4vw, 38px); border: 1px dashed color-mix(in srgb, var(--c-turquoise) 42%, var(--c-border)); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--c-turquoise) 6%, var(--c-surface)); }
+.lm-empty-state > span { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 15px; background: var(--c-surface); color: var(--c-turquoise); box-shadow: var(--shadow-sm); font-size: 22px; }
+.lm-empty-state h2 { margin: 0 0 5px; font-size: 20px; }
+.lm-empty-state p { margin: 0; color: var(--c-text-2); line-height: 1.5; }
+.lm-today-prepare { background: linear-gradient(135deg, var(--c-turquoise), var(--c-navy)); }
+.lm-schedule-view .lm-schedule-header { padding: 14px 16px; border: 1px solid var(--c-border); border-radius: var(--radius-md); background: color-mix(in srgb, var(--c-surface) 86%, transparent); box-shadow: var(--shadow-sm); }
+.lm-folder-card, .lm-file-table, .lm-editorial-card { box-shadow: var(--shadow-sm); }
+@media (max-width: 860px) { .lm-lesson-dashboard { padding: 20px 14px calc(26px + env(safe-area-inset-bottom)); } .lm-lesson-command-header, .lm-section-heading { align-items: flex-start; flex-direction: column; gap: 12px; } .lm-lesson-create { width: 100%; } .lm-lesson-card { grid-template-columns: 1fr; gap: 14px; } .lm-lesson-card-side { justify-items: stretch; } .lm-lesson-card-side .lm-button { width: 100%; } .lm-empty-state { grid-template-columns: 1fr; } .lm-today-header-actions { width: 100%; } .lm-today-header-actions .lm-button { flex: 1 1 170px; } }
+@media (prefers-reduced-motion: reduce) { .lm-lesson-card, .lm-lesson-progress i { transition: none !important; } .lm-lesson-card:hover { transform: none; } }
+
+/* Unterrichtsmodus: eine klare nächste Handlung, Phasen als lesbare Zeitlinie. */
+.lm-teaching-command-panel { box-shadow: 10px 0 30px color-mix(in srgb, var(--c-navy) 7%, transparent); }
+.lm-teaching-lesson-head { padding: 4px 2px 12px; border-bottom: 1px solid var(--c-border-soft); }
+.lm-teaching-timeline { position: relative; padding-left: 10px; }
+.lm-teaching-timeline::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 2px; border-radius: 9px; background: color-mix(in srgb, var(--c-turquoise) 26%, var(--c-border)); }
+.lm-teaching-timeline button { position: relative; min-height: 54px; }
+.lm-teaching-timeline button::before { content: ''; position: absolute; left: -16px; top: 50%; width: 9px; height: 9px; transform: translateY(-50%); border: 2px solid var(--c-surface); border-radius: 50%; background: var(--c-text-3); }
+.lm-teaching-timeline button[style*="12"]::before { background: var(--c-turquoise); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-turquoise) 16%, transparent); }
+.lm-teaching-secondary-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: var(--touch-target); margin-top: 12px; padding: 0 10px; border: 1px solid var(--c-border); border-radius: 9px; background: transparent; color: var(--c-text-2); font: 700 12px/1 inherit; cursor: pointer; }
+.lm-teaching-secondary-tools { display: none; }
+.lm-teaching-secondary-tools.is-open { display: grid; }
+.lm-teaching-next-action { display: flex; align-items: center; gap: 9px; width: fit-content; max-width: 100%; padding: 8px 11px; border: 1px solid color-mix(in srgb, var(--c-turquoise) 34%, var(--c-border)); border-radius: 10px; background: color-mix(in srgb, var(--c-turquoise) 8%, var(--c-surface)); color: var(--c-text-2); font-size: 12px; }
+.lm-teaching-next-action span { color: var(--c-turquoise); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.lm-teaching-next-action strong { color: var(--c-text); }
+.lm-teaching-workspace h1 { max-width: 850px; }
+@media (max-width: 860px) { .lm-teaching-command-panel { box-shadow: none; } .lm-teaching-next-action { align-items: flex-start; flex-direction: column; gap: 3px; } }
+
+/* Desktop mega menu: the three core areas stay visible in the header. Each
+   area reveals only its relevant destinations, keeping the menu useful instead
+   of turning it into a permanent wall of links. */
+@media (min-width: 1101px) {
+  .lm-tabbar:has(.lm-mega-menu-panel) { position: relative; z-index: 1600; }
+  .lm-desktop-primary-nav.lm-mega-menu {
+    position: relative;
+    z-index: 1601;
+    display: block;
+    min-width: min(650px, 52vw);
+    white-space: normal;
+  }
+  .lm-mega-menu-areas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 4px;
+    border: 1px solid var(--c-border-soft);
+    border-radius: 15px;
+    background: color-mix(in srgb, var(--c-surface) 82%, transparent);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .06), inset 0 1px 0 rgba(255,255,255,.45);
+  }
+  .lm-mega-menu-area-trigger {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    min-height: 48px;
+    padding: 6px 9px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--c-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s var(--ease-out);
+  }
+  .lm-mega-menu-area-trigger:hover,
+  .lm-mega-menu-area-trigger[aria-expanded="true"] {
+    border-color: color-mix(in srgb, var(--c-focus) 38%, var(--c-border));
+    background: color-mix(in srgb, var(--c-focus) 9%, var(--c-surface));
+    box-shadow: 0 6px 16px rgba(13, 41, 72, .1);
+    transform: translateY(-1px);
+  }
+  .lm-mega-menu-area-trigger:focus-visible,
+  .lm-mega-menu-panel a:focus-visible,
+  .lm-mega-menu-panel button:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--c-focus) 60%, transparent);
+    outline-offset: 3px;
+  }
+  .lm-mega-menu-area-icon {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--c-focus) 12%, var(--c-surface));
+    color: var(--c-focus);
+    font-size: 15px;
+    font-weight: 850;
+  }
+  .lm-mega-menu-area-trigger strong,
+  .lm-mega-menu-area-trigger small { display: block; }
+  .lm-mega-menu-area-trigger strong { font-size: 12px; font-weight: 800; line-height: 1.15; }
+  .lm-mega-menu-area-trigger small { margin-top: 2px; overflow: hidden; color: var(--c-text-3); font-size: 9px; font-weight: 650; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+  .lm-mega-menu-chevron { color: var(--c-text-3); font-size: 16px; line-height: 1; transition: transform .16s ease; }
+  .lm-mega-menu-area-trigger[aria-expanded="true"] .lm-mega-menu-chevron { color: var(--c-focus); transform: rotate(180deg); }
+  .lm-mega-menu-panel {
+    position: absolute;
+    z-index: 1602;
+    top: calc(100% + 10px);
+    left: 50%;
+    width: min(720px, calc(100vw - 48px));
+    padding: 22px;
+    border: 1px solid color-mix(in srgb, var(--c-border) 92%, transparent);
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--c-surface) 96%, transparent);
+    box-shadow: 0 28px 70px rgba(13, 41, 72, .26), inset 0 1px 0 rgba(255,255,255,.7);
+    transform: translateX(-50%);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    animation: lmMegaMenuIn .18s var(--ease-out);
+  }
+  .lm-mega-menu-intro { display: grid; gap: 3px; margin: 0 4px 16px; }
+  .lm-mega-menu-intro span { margin: 0; color: var(--c-text-3); font-size: 10px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+  .lm-mega-menu-intro strong { font-family: var(--font-editorial); font-size: 22px; font-weight: 600; letter-spacing: -.025em; }
+  .lm-mega-menu-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .lm-mega-menu-links--tools { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .lm-mega-menu-links > a,
+  .lm-mega-menu-links > button {
+    display: grid;
+    grid-template-rows: 28px auto;
+    align-content: start;
+    gap: 8px;
+    min-height: 132px;
+    padding: 13px;
+    border: 1px solid color-mix(in srgb, var(--c-border-soft) 84%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--c-surface-2) 70%, transparent);
+    color: var(--c-text);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color .14s ease, background .14s ease, transform .14s var(--ease-out), box-shadow .14s ease;
+  }
+  .lm-mega-menu-links > a > :first-child,
+  .lm-mega-menu-links > button > :first-child { display: grid; place-items: center; width: 26px; height: 26px; color: var(--c-focus); font-size: 17px; font-weight: 800; }
+  .lm-mega-menu-links .lm-idoceo-glyph { width: 22px; height: 22px; margin: 2px; }
+  .lm-mega-menu-links > a:hover,
+  .lm-mega-menu-links > button:hover { border-color: color-mix(in srgb, var(--c-focus) 35%, var(--c-border)); background: color-mix(in srgb, var(--c-focus) 8%, var(--c-surface)); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+  .lm-mega-menu-links strong,
+  .lm-mega-menu-links small { display: block; }
+  .lm-mega-menu-links strong { font-size: 13px; font-weight: 790; line-height: 1.28; }
+  .lm-mega-menu-links small { margin-top: 3px; color: var(--c-text-3); font-size: 11px; font-weight: 600; line-height: 1.35; }
+  .lm-mega-menu-footer { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding: 12px 4px 0; border-top: 1px solid var(--c-border-soft); }
+  .lm-mega-menu-footer a,
+  .lm-mega-menu-footer button { min-height: 34px; padding: 0 9px; border: 0; border-radius: 8px; background: transparent; color: var(--c-text-2); font: inherit; font-size: 12px; font-weight: 720; text-decoration: none; cursor: pointer; }
+  .lm-mega-menu-footer a:hover,
+  .lm-mega-menu-footer button:hover { background: var(--c-hover); color: var(--c-text); }
+}
+@keyframes lmMegaMenuIn { from { opacity: 0; transform: translate(-50%, -6px) scale(.985); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+[data-theme="dark"] .lm-mega-menu-panel { background: color-mix(in srgb, var(--c-surface) 97%, transparent); box-shadow: 0 28px 70px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.035); }
+[data-theme="dark"] .lm-mega-menu-links > a,
+[data-theme="dark"] .lm-mega-menu-links > button { background: color-mix(in srgb, var(--c-surface-2) 80%, transparent); }
+@media (min-width: 1101px) and (max-width: 1280px) {
+  .lm-desktop-primary-nav.lm-mega-menu { min-width: 585px; }
+  .lm-mega-menu-area-trigger { padding-inline: 7px; }
+  .lm-mega-menu-area-trigger small { display: none; }
+  .lm-mega-menu-links--tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lm-mega-menu-panel { animation: none; }
+  .lm-mega-menu-area-trigger, .lm-mega-menu-chevron, .lm-mega-menu-links > a, .lm-mega-menu-links > button { transition: none; }
+}

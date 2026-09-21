@@ -175,6 +175,9 @@ export default function App({ onLogout }) {
   const [classroomTimerOpen, setClassroomTimerOpen] = useState(false);
   const [appRailVisible, setAppRailVisible] = useState(true);
   const [pleskTerminalOpen, setPleskTerminalOpen] = useState(false);
+  const [desktopMegaMenuOpen, setDesktopMegaMenuOpen] = useState(false);
+  const [desktopMegaMenuArea, setDesktopMegaMenuArea] = useState('teaching');
+  const desktopMegaMenuRef = useRef(null);
 
   const [subjectId, setSubjectId] = useState('workspace');
   const [activeFolder, setActiveFolder] = useState(null);
@@ -242,6 +245,27 @@ export default function App({ onLogout }) {
     window.addEventListener('hashchange', applyHashRoute);
     return () => window.removeEventListener('hashchange', applyHashRoute);
   }, []);
+
+  useEffect(() => {
+    if (!desktopMegaMenuOpen) return undefined;
+
+    const closeOnOutsidePointer = (event) => {
+      if (!desktopMegaMenuRef.current?.contains(event.target)) setDesktopMegaMenuOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      setDesktopMegaMenuOpen(false);
+      window.requestAnimationFrame(() => desktopMegaMenuRef.current?.querySelector(`[data-mega-area="${desktopMegaMenuArea}"]`)?.focus());
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape, true);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape, true);
+    };
+  }, [desktopMegaMenuArea, desktopMegaMenuOpen]);
 
   const subject = SUBJECTS.find((s) => s.id === subjectId) || { id: 'workspace', name: 'Arbeitsbereich', short: 'LM', color: '#0F766E', colorSoft: '#DDF5EE', colorDark: '#0B5C52', groups: [] };
   const accent = subject.color;
@@ -1078,6 +1102,16 @@ export default function App({ onLogout }) {
               <span aria-hidden="true">☰</span>
             </button>
             <button
+              className="lm-phone-app-rail-toggle"
+              type="button"
+              onClick={() => setAppRailVisible((visible) => !visible)}
+              aria-label={appRailVisible ? 'App-Leiste ausblenden' : 'App-Leiste einblenden'}
+              title={appRailVisible ? 'App-Leiste ausblenden' : 'App-Leiste einblenden'}
+              aria-expanded={appRailVisible}
+            >
+              <span aria-hidden="true">▦</span>
+            </button>
+            <button
               className="lm-phone-header-toggle"
               type="button"
               onClick={() => setPhoneHeaderVisible(false)}
@@ -1107,23 +1141,72 @@ export default function App({ onLogout }) {
             </button>
           </nav>
         )}
-        <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
-          {[
-            ['today', '⌂', 'Heute', () => navigateToView('today')],
-            ['schedule', <svg key="schedule-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3M5 9h2M9 9h2M5 11.5h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Stundenplan', () => navigateToView('schedule')],
-            ['appointments', <svg key="appointments-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/><circle cx="10.5" cy="10" r="1" fill="currentColor"/></svg>, 'Termine', () => navigateToView('appointments')],
-            ['klausurplan', <svg key="exam-plan-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2.5h6l2 2V13.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M10 2.5v2h2M6 7h4M6 9.5h4M6 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Klausurplan', () => navigateToView('klausurplan')],
-            ['bugs', <BugChecklistIcon key="bug-icon" size={16} />, 'Bugs', () => setBugChecklistOpen(true)],
-          ].map(([id, icon, label, onClick]) => {
-            const active = viewMode === id;
-            return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
-          })}
-          <a href={ONE_NOTE_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-onenote" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen" data-app-name="OneNote"><span className="lm-onenote-glyph" aria-hidden="true">N</span><span>OneNote</span></a>
-          <a href={IDOCEO_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-idoceo" aria-label="iDoceo in der installierten App öffnen" title="In iDoceo-App öffnen" data-app-name="iDoceo"><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span>iDoceo</span></a>
-          <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-notion" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen" data-app-name="Notion"><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Notion</span></a>
-          <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen" data-app-name="Miro"><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Miro</span></a>
-          <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen" data-app-name="WebUntis"><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span>WebUntis</span></a>
-          <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-logineo" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail öffnen" data-app-name="Logineo Mail"><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /></a>
+        <nav
+          className="lm-desktop-primary-nav lm-mega-menu"
+          aria-label="Primäre Navigation"
+          ref={desktopMegaMenuRef}
+        >
+          <div className="lm-mega-menu-areas" role="group" aria-label="Arbeitsbereiche">
+            {[
+              ['teaching', 'Unterricht', 'Heute, Planung und Stundenplan', '✦'],
+              ['organisation', 'Organisation', 'Termine, Klausuren und Materialien', '▦'],
+              ['tools', 'Apps & Werkzeuge', 'Timer und verbundene Anwendungen', '⌘'],
+            ].map(([area, label, description, icon]) => (
+              <button
+                key={area}
+                data-mega-area={area}
+                className="lm-mega-menu-area-trigger"
+                type="button"
+                aria-expanded={desktopMegaMenuOpen && desktopMegaMenuArea === area}
+                aria-controls="workspace-mega-menu"
+                onMouseEnter={() => { setDesktopMegaMenuArea(area); setDesktopMegaMenuOpen(true); }}
+                onFocus={() => { setDesktopMegaMenuArea(area); setDesktopMegaMenuOpen(true); }}
+                onClick={() => {
+                  if (desktopMegaMenuOpen && desktopMegaMenuArea === area) setDesktopMegaMenuOpen(false);
+                  else { setDesktopMegaMenuArea(area); setDesktopMegaMenuOpen(true); }
+                }}
+              >
+                <span className="lm-mega-menu-area-icon" aria-hidden="true">{icon}</span>
+                <span><strong>{label}</strong><small>{description}</small></span>
+                <span className="lm-mega-menu-chevron" aria-hidden="true">⌄</span>
+              </button>
+            ))}
+          </div>
+          {desktopMegaMenuOpen && (
+            <section id="workspace-mega-menu" className="lm-mega-menu-panel" aria-label={`${desktopMegaMenuArea === 'teaching' ? 'Unterricht' : desktopMegaMenuArea === 'organisation' ? 'Organisation' : 'Apps und Werkzeuge'} öffnen`}>
+              {desktopMegaMenuArea === 'teaching' && <>
+                <div className="lm-mega-menu-intro"><span>Unterricht</span><strong>Vom Tagesüberblick direkt in die nächste Stunde.</strong></div>
+                <div className="lm-mega-menu-links">
+                  <button type="button" onClick={() => { navigateToView('today'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">⌂</span><span><strong>Heute</strong><small>Tagesüberblick und nächste Schritte</small></span></button>
+                  <button type="button" onClick={() => { navigateToView('lessons'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">✦</span><span><strong>Unterricht planen</strong><small>Stunden vorbereiten und fortsetzen</small></span></button>
+                  <button type="button" onClick={() => { navigateToView('schedule'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▦</span><span><strong>Stundenplan</strong><small>Deine Woche im Blick</small></span></button>
+                </div>
+              </>}
+              {desktopMegaMenuArea === 'organisation' && <>
+                <div className="lm-mega-menu-intro"><span>Organisation</span><strong>Alles Wichtige für Schule, Klassen und Material.</strong></div>
+                <div className="lm-mega-menu-links">
+                  <button type="button" onClick={() => { navigateToView('appointments'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Termine</strong><small>Besprechungen und Erinnerungen</small></span></button>
+                  <button type="button" onClick={() => { navigateToView('klausurplan'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▤</span><span><strong>Klausurplan</strong><small>Prüfungen sicher koordinieren</small></span></button>
+                  <button type="button" onClick={() => { navigateToView('subjects'); setActivePageId(null); closeFolderView(); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▱</span><span><strong>Materialien</strong><small>Fächer, Ordner und Dateien</small></span></button>
+                </div>
+              </>}
+              {desktopMegaMenuArea === 'tools' && <>
+                <div className="lm-mega-menu-intro"><span>Apps &amp; Werkzeuge</span><strong>Unterrichtstools und externe Anwendungen.</strong></div>
+                <div className="lm-mega-menu-links lm-mega-menu-links--tools">
+                  <button type="button" onClick={() => { setClassroomTimerOpen(true); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Klassenzeit</strong><small>Timer für den Unterricht</small></span></button>
+                  <a href={ONE_NOTE_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-onenote-glyph" aria-hidden="true">N</span><span><strong>OneNote</strong><small>In der installierten App öffnen</small></span></a>
+                  <a href={IDOCEO_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span><strong>iDoceo</strong><small>Klassenverwaltung öffnen</small></span></a>
+                  <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span><strong>WebUntis</strong><small>In neuem Tab öffnen</small></span></a>
+                </div>
+                <div className="lm-mega-menu-footer">
+                  <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}>Notion <span aria-hidden="true">↗</span></a>
+                  <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}>Miro <span aria-hidden="true">↗</span></a>
+                  <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}>Logineo Mail <span aria-hidden="true">↗</span></a>
+                  <button type="button" onClick={() => { setBugChecklistOpen(true); setDesktopMegaMenuOpen(false); }}>Bugs melden</button>
+                </div>
+              </>}
+            </section>
+          )}
         </nav>
         <div className="lm-desktop-trailing-group">
           <div className="lm-topbar-tools">
@@ -1161,7 +1244,7 @@ export default function App({ onLogout }) {
             sidebar remains in its existing drawer. */}
         {appRailVisible && <DesktopAppRail />}
         {viewMode === 'today' ? (
-          <TodayDashboard onOpenSchedule={() => navigateToView('schedule')} onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} />
+          <TodayDashboard onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} />
         ) : viewMode === 'klausurplan' ? (
           <KlausurplanWorkspace />
         ) : viewMode === 'appointments' ? (
@@ -1175,7 +1258,7 @@ export default function App({ onLogout }) {
             />
           </div>
         ) : viewMode === 'lessons' ? (
-          <LessonDashboard sessions={lessonSessions} folders={folders} accent={accent} onOpen={(folder) => { setActiveFolder(folder); setSubjectId(folder.subject); setTeachingMode(true); }} />
+          <LessonDashboard sessions={lessonSessions} folders={folders} accent={accent} onOpen={(folder, lesson) => { setActiveFolder(folder); setSubjectId(folder.subject); setStartNewLessonPlanning(false); setTeachingSessionId(lesson.id); setTeachingMode(true); }} onPlan={(folder) => { setActiveFolder(folder); setSubjectId(folder.subject); setTeachingSessionId(null); setStartNewLessonPlanning(true); setTeachingMode(true); }} />
         ) : <>
         {!isMobile && <div style={{
           display: 'flex', flexShrink: 0, minHeight: 0, height: '100%',
@@ -1830,10 +1913,10 @@ export default function App({ onLogout }) {
       {isMobile && (
         <MobileBottomNav
           accent={accent}
-          active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'today'}
+          active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : viewMode === 'lessons' ? 'lessons' : 'today'}
           items={[
             { id: 'today', label: 'Heute', icon: navIcons.subjects, onClick: () => { navigateToView('today'); setActivePageId(null); closeFolderView(); } },
-            { id: 'search', label: t('mobile.search'), icon: navIcons.search, onClick: () => setGlobalSearchOpen(true) },
+            { id: 'lessons', label: 'Unterricht', icon: '✦', onClick: () => navigateToView('lessons') },
             { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => navigateToView('schedule') },
             { id: 'more', label: t('mobile.more'), icon: navIcons.more, onClick: () => setMoreSheetOpen(true) },
           ]}

@@ -41,7 +41,7 @@ function pendingTaskIsNewer(pending, backendTasks, dashboard) {
   return Number.isFinite(pendingAt) ? (!Number.isFinite(storedAt) || pendingAt > storedAt) : backendTasks.length === 0;
 }
 
-export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpenTimer, onOpenOneNote }) {
+export default function TodayDashboard({ onOpenMaterials, onOpenTimer, onOpenOneNote }) {
   const date = todayKey();
   const [now, setNow] = useState(() => new Date());
   const [schedule, setSchedule] = useState(null);
@@ -152,12 +152,12 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
     <div className="lm-today-view">
       <div className="lm-today-shell">
         <header className="lm-today-header">
-          <div><h1>{getTodayGreeting(now)}</h1><div className="lm-today-date">{now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div></div>
-          <button type="button" className="lm-button lm-today-header-action" onClick={onOpenSchedule}>Stundenplan öffnen</button>
+          <div><div className="lm-eyebrow">Dein Unterrichtstag</div><h1>{getTodayGreeting(now)}</h1><div className="lm-today-date">{now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div></div>
         </header>
 
         <div className="lm-today-content">
-          <section className="lm-today-lesson-card" aria-live="polite">
+          <section className="lm-editorial-card lm-today-summary-card">
+            <section className="lm-today-lesson-card" aria-live="polite">
             <div className="lm-today-section-header"><div><div className="lm-eyebrow">{lessonState?.kind === 'current' ? 'JETZT' : 'NÄCHSTE STUNDE'}</div><h2>{lesson ? lesson.label : 'Dein Unterricht im Blick'}</h2></div>{lesson && <span className="lm-lesson-block">{lesson.blockLabel || `Block ${lesson.block}`}</span>}</div>
             {!lessonState && <p className="lm-today-muted">Stundenplan wird geladen…</p>}
             {lessonState?.kind === 'no-time-config' && <div className="lm-today-state"><strong>Unterrichts- und Pausenzeiten fehlen noch.</strong><span>Lege die Block- und Pausenzeiten im Stundenplan fest. Erst dann zeigt dieses Cockpit echte aktuelle und nächste Einträge.</span></div>}
@@ -166,7 +166,7 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
             {lesson && <><div className="lm-lesson-details"><span>{lesson.time}</span>{lesson.location && <span>Raum {lesson.location}</span>}{lessonState.kind === 'current' && <span>Noch {remainingMinutes(lesson, now)} Min.</span>}</div><div className="lm-lesson-actions">{!lesson.isBreak && (lesson.folderId ? <button type="button" className="lm-button lm-button-primary" onClick={() => onOpenMaterials?.(lesson.folderId)}>Materialien öffnen</button> : <button type="button" className="lm-button lm-button-primary" disabled>Kein Materialordner verknüpft</button>)}<button type="button" className="lm-button" onClick={onOpenTimer}>Timer öffnen</button></div>{lesson.isBreak ? <p className="lm-today-muted">Pausenaufsicht im Blick.</p> : (!lesson.folderId && <p className="lm-today-muted">Verknüpfe einen Materialordner direkt in der passenden Stundenplanzelle.</p>)}</>}
           </section>
 
-          <section id="tasks" className="lm-editorial-card lm-today-tasks" aria-busy={!loaded}>
+            <section id="tasks" className="lm-editorial-card lm-today-tasks" aria-busy={!loaded}>
             <div className="lm-today-section-header"><div><h2><span className="lm-today-task-kicker">FOKUS</span>Meine Aufgaben</h2></div><span className="lm-task-count">{openTasks}</span></div>
             <div className="lm-today-task-entry"><input value={taskText} disabled={!loaded} onChange={(e) => setTaskText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder="Neue Aufgabe…" aria-label="Neue Aufgabe" /><button disabled={!loaded} onClick={addTask} className="lm-button lm-button-primary" aria-label="Aufgabe hinzufügen">+</button></div>
             {notificationPermission === 'default' && <button type="button" className="lm-text-button lm-task-notification-button" onClick={requestNotifications}>Benachrichtigungen aktivieren</button>}
@@ -186,6 +186,7 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
             <div className="lm-visually-hidden" aria-live="polite" aria-atomic="true">{taskAnnouncement}</div>
             <div className={tasksSync.status === 'error' ? 'lm-today-save-status is-error' : 'lm-today-save-status'} aria-live="polite">{tasksSync.status === 'error' ? <><span>Aufgaben konnten nicht gespeichert werden.</span> <button type="button" onClick={retryTasksSync} className="lm-text-button">Erneut versuchen</button></> : (tasksSync.status === 'pending' ? 'Wird gespeichert…' : 'In deinem Konto gespeichert.')}</div>
           </section>
+                    </section>
         </div>
       </div>
     </div>
