@@ -2917,9 +2917,12 @@ button:not(:disabled):focus-visible,
   transition: width .2s ease, min-width .2s ease;
 }
 .lm-desktop-app-rail-scroll {
-  width: 100%;
+  width: calc(100% + 16px);
   min-height: 0;
   flex: 1;
+  box-sizing: border-box;
+  margin: -8px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2940,6 +2943,7 @@ button:not(:disabled):focus-visible,
   flex: 0 0 44px;
   display: grid;
   place-items: center;
+  position: relative;
   border: 1px solid color-mix(in srgb, var(--c-border) 82%, transparent);
   border-radius: 13px;
   background: color-mix(in srgb, var(--c-surface) 94%, var(--c-bg));
@@ -2951,8 +2955,22 @@ button:not(:disabled):focus-visible,
 .lm-desktop-app-rail-launcher:focus-visible {
   border-color: color-mix(in srgb, var(--c-turquoise) 52%, var(--c-border));
   background: color-mix(in srgb, var(--c-turquoise) 9%, var(--c-surface));
-  box-shadow: 0 9px 20px rgba(17, 95, 128, .18), inset 0 1px 0 rgba(255, 255, 255, .48);
-  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 12px 24px rgba(17, 95, 128, .24), 0 0 0 4px color-mix(in srgb, var(--c-turquoise) 14%, transparent), inset 0 1px 0 rgba(255, 255, 255, .48);
+  transform: translateY(-2px) scale(1.27);
+}
+.lm-desktop-app-rail-launcher:hover::before,
+.lm-desktop-app-rail-launcher:focus-visible::before {
+  position: absolute;
+  z-index: 1;
+  top: 9px;
+  bottom: 9px;
+  left: -7px;
+  width: 3px;
+  border-radius: 99px;
+  background: var(--c-turquoise);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c-turquoise) 72%, transparent);
+  pointer-events: none;
+  content: '';
 }
 .lm-desktop-app-rail-launcher:active { transform: translateY(0) scale(.96); }
 .lm-desktop-app-rail-launcher:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 3px; }
