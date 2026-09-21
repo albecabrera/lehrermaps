@@ -40,14 +40,13 @@ const ExamBoard = lazy(() => import('./components/ExamBoard'));
   }
 }());
 
-// Bootstrap ?token= before React mounts — runs once, no side effects inside render
-(function bootstrapUrlToken() {
-  const params = new URLSearchParams(window.location.search);
-  const urlToken = params.get('token');
-  if (!urlToken) return;
-  localStorage.setItem('lm_token', urlToken);
-  params.delete('token');
-  window.history.replaceState(null, '', params.toString() ? `?${params}` : window.location.pathname);
+// Tokens are accepted only through authenticated API headers. If an old link
+// still contains one, remove it without importing it into browser storage.
+(function discardUrlToken() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('token')) return;
+  url.searchParams.delete('token');
+  window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
 }());
 
 function isTeacherToken(token) {

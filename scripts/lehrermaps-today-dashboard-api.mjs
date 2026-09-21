@@ -73,10 +73,11 @@ try {
   await request('/api/today-dashboard/tasks', { token, method: 'PUT', expected: 400, body: { tasks: [{ id: 'invalid', text: 'not boolean', done: 'yes' }] } });
   await request('/api/today-dashboard/note', { token, method: 'PUT', expected: 400, body: { date: '2026-02-30', content: 'invalid calendar date' } });
 
-  const tasks = [{ id: 'task-1', text: 'Persisted task', done: false }];
+  const tasks = [{ id: 'task-1', text: 'Persisted task', done: false, dueDate: '2026-09-12', dueTime: '08:30' }];
   const savedTasks = await request('/api/today-dashboard/tasks', { token, method: 'PUT', body: { tasks } });
   assert.deepEqual(savedTasks.tasks, tasks);
   assert.equal(typeof savedTasks.updatedAt, 'string', 'task save returns the persisted timestamp');
+  await request('/api/today-dashboard/tasks', { token, method: 'PUT', expected: 400, body: { tasks: [{ id: 'invalid-due', text: 'Bad due time', done: false, dueDate: '2026-09-12', dueTime: '25:00' }] } });
   await request('/api/today-dashboard/note', { token, method: 'PUT', body: { date, content: 'Persisted note' } });
   const loaded = await request(`/api/today-dashboard?date=${date}`, { token });
   assert.deepEqual({ tasks: loaded.tasks, note: loaded.note, date: loaded.date }, { tasks, note: 'Persisted note', date });

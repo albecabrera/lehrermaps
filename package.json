@@ -11,6 +11,8 @@
     "test:pwa": "node scripts/lehrermaps-pwa-audit.mjs",
     "test:authorization": "node scripts/lehrermaps-authorization-e2e.mjs",
     "test:today-dashboard": "node scripts/lehrermaps-today-dashboard-api.mjs",
+    "test:widget": "node --test server/lib/__tests__/widgetToday.test.js && node scripts/lehrermaps-widget-api.mjs",
+    "test:deep-links": "node --test client/src/lib/__tests__/deepLinks.test.js",
     "test:bug-checklist": "node scripts/lehrermaps-bug-checklist-api.mjs",
     "test:pending-sync": "node scripts/lehrermaps-pending-sync.mjs",
     "test:onenote-sync": "node scripts/lehrermaps-onenote-sync.mjs",

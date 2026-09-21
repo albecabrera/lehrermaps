@@ -4,6 +4,8 @@ import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const SHORTCUTS = [
   { keys: ['⌘', 'K'], label: 'Globale Suche öffnen' },
+  { keys: ['⌘/Ctrl', 'J'], label: 'Plesk-Terminal öffnen/schließen' },
+  { keys: ['⌘/Ctrl', 'S'], label: 'App-Seitenleiste ein-/ausblenden' },
   { keys: ['⌘/Ctrl', '⇧', 'L'], label: 'Hell-/Dunkelmodus wechseln' },
   { keys: ['?'], label: 'Diese Hilfe anzeigen' },
   { keys: ['J'], label: 'Nächste Datei auswählen' },

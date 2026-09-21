@@ -1,5 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <path d="M74 116 208 168v250L74 366zM214 168l84-52v250l-84 52zM304 116l134 52v250l-134-52z"/>
-  <path fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="22" d="M128 276c42-54 83-54 128 0s86 54 128 0"/>
-  <circle cx="128" cy="276" r="19"/><circle cx="256" cy="276" r="24"/><circle cx="384" cy="276" r="19"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" color="#173B66" role="img" aria-labelledby="title desc">
+  <title id="title">LehrerMaps monochrome map and book mark</title>
+  <desc id="desc">An open book supports a folded map with a route and a location pin.</desc>
+  <path fill="currentColor" d="M34 352c72-36 145-30 222 18 77-48 150-54 222-18l12 80c-77-38-147-34-208 14-15 12-37 12-52 0-61-48-131-52-208-14z"/>
+  <path fill="#fff" d="M49 357c65-29 128-23 198 18v45c-62-37-125-42-192-15z"/>
+  <path fill="#fff" d="M463 357c-65-29-128-23-198 18v45c62-37 125-42 192-15z"/>
+  <path fill="currentColor" d="m78 145 121-51v243c-41-22-81-30-121-25zm129-51 49 29 49-29v271c-22 13-38 29-49 44-11-15-27-31-49-44zm106 0 121 51v167c-40-5-80 3-121 25z"/>
+  <path fill="none" stroke="#fff" stroke-linecap="round" stroke-width="15" stroke-dasharray="21 18" d="M119 257c52-51 92-45 129 2 38 49 76 55 118-9"/>
+  <circle cx="119" cy="257" r="17" fill="currentColor"/>
+  <path fill="currentColor" fill-rule="evenodd" d="M366 124c-30 0-54 24-54 54 0 39 54 96 54 96s54-57 54-96c0-30-24-54-54-54zm0 35a19 19 0 1 0 0 38 19 19 0 0 0 0-38z"/>
 </svg>

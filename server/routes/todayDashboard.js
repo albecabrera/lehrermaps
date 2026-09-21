@@ -22,6 +22,14 @@ function validDate(value) {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
+function validDueTime(value) {
+  return typeof value === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function validDueDate(value) {
+  return validDate(value) && value >= '2000-01-01' && value <= '2099-12-31';
+}
+
 function normalizeTasks(tasks) {
   if (!Array.isArray(tasks) || tasks.length > 20) return null;
   const ids = new Set();
@@ -31,7 +39,10 @@ function normalizeTasks(tasks) {
     const text = String(task?.text || '').trim();
     if (!id || id.length > 100 || !text || text.length > 500 || ids.has(id) || typeof task?.done !== 'boolean') return null;
     ids.add(id);
-    normalized.push({ id, text, done: Boolean(task.done) });
+    const hasDueDate = task?.dueDate !== undefined;
+    const hasDueTime = task?.dueTime !== undefined;
+    if ((hasDueDate && !validDueDate(task.dueDate)) || (hasDueTime && (!hasDueDate || !validDueTime(task.dueTime)))) return null;
+    normalized.push({ id, text, done: Boolean(task.done), ...(hasDueDate ? { dueDate: task.dueDate } : {}), ...(hasDueTime ? { dueTime: task.dueTime } : {}) });
   }
   return normalized;
 }

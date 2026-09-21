@@ -1,0 +1,7 @@
+// Replace these placeholders with identifiers registered in your Apple Developer account.
+APP_GROUP_IDENTIFIER = group.de.example.lehrermaps
+KEYCHAIN_GROUP_SUFFIX = de.example.lehrermaps.shared
+KEYCHAIN_ACCESS_GROUP = $(AppIdentifierPrefix)$(KEYCHAIN_GROUP_SUFFIX)
+
+LEHRERMAPS_BUNDLE_ID = de.example.LehrerMaps
+LEHRERMAPS_WIDGET_BUNDLE_ID = de.example.LehrerMaps.Widget

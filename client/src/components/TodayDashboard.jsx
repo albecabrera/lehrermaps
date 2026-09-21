@@ -2,11 +2,26 @@ import { useEffect, useRef, useState } from 'react';
 import api, { getTodayDashboard, saveTodayDashboardTasks } from '../lib/api';
 import { usePendingSync } from '../lib/pendingSync';
 import { getCockpitLesson, remainingMinutes } from '../lib/schedule';
-import { normalizeTodayTasks, orderTasksByCompletion, toggleTodayTask, updateTodayTaskText } from '../lib/todayTasks';
-import { scheduleOneNoteTarget } from '../lib/externalApps';
+import { isTaskReminderEligible, normalizeTodayTasks, orderTasksByCompletion, taskDueAt, toggleTodayTask, updateTodayTaskDue, updateTodayTaskText } from '../lib/todayTasks';
 import { getTodayGreeting } from '../lib/todayGreeting';
+import { scheduleOneNoteTarget } from '../lib/externalApps';
 
 const LEGACY_TASKS_KEY = 'lm_today_tasks';
+const REMINDER_MARKER_KEY = 'lm_today_task_reminders';
+
+function reminderMarker(task) {
+  return `${task.id}:${task.dueDate || ''}:${task.dueTime || ''}`;
+}
+
+function readReminderMarkers() {
+  try { return JSON.parse(localStorage.getItem(REMINDER_MARKER_KEY) || '{}'); } catch { return {}; }
+}
+
+function formatDue(task) {
+  const due = taskDueAt(task);
+  if (!due) return task.dueDate ? `Termin: ${new Date(`${task.dueDate}T00:00:00`).toLocaleDateString('de-DE')}` : '';
+  return `Fällig: ${due.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}, ${task.dueTime}`;
+}
 
 function todayKey() {
   const now = new Date();
@@ -33,7 +48,10 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
   const [taskText, setTaskText] = useState('');
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingTaskText, setEditingTaskText] = useState('');
+  const [editingTaskDueDate, setEditingTaskDueDate] = useState('');
+  const [editingTaskDueTime, setEditingTaskDueTime] = useState('');
   const [taskAnnouncement, setTaskAnnouncement] = useState('');
+  const [notificationPermission, setNotificationPermission] = useState(() => globalThis.Notification?.permission || 'unsupported');
   const [scheduleError, setScheduleError] = useState(false);
   const editInputRef = useRef(null);
   const lastTaskTouchRef = useRef({ id: null, at: 0 });
@@ -57,6 +75,7 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
   const lesson = lessonState?.lesson;
   const openTasks = tasks.filter((task) => !task.done).length;
   const lessonOneNoteTarget = lesson && !lesson.folderId ? scheduleOneNoteTarget(lesson.label) : null;
+  const dueTaskIds = new Set(tasks.filter((task) => isTaskReminderEligible(task, now)).map((task) => task.id));
   const addTask = () => {
     const text = taskText.trim();
     if (!text) return;
@@ -68,11 +87,15 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
     if (!loaded) return;
     setEditingTaskId(task.id);
     setEditingTaskText(task.text);
+    setEditingTaskDueDate(task.dueDate || '');
+    setEditingTaskDueTime(task.dueTime || '');
     setTaskAnnouncement(`Aufgabe bearbeiten: ${task.text}`);
   };
   const cancelEditingTask = () => {
     setEditingTaskId(null);
     setEditingTaskText('');
+    setEditingTaskDueDate('');
+    setEditingTaskDueTime('');
     setTaskAnnouncement('Bearbeiten abgebrochen.');
   };
   const saveEditingTask = () => {
@@ -83,9 +106,11 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
       editInputRef.current?.focus();
       return;
     }
-    setTasks(updateTodayTaskText(tasks, editingTaskId, nextText));
+    setTasks(updateTodayTaskDue(updateTodayTaskText(tasks, editingTaskId, nextText), editingTaskId, editingTaskDueDate, editingTaskDueTime));
     setEditingTaskId(null);
     setEditingTaskText('');
+    setEditingTaskDueDate('');
+    setEditingTaskDueTime('');
     setTaskAnnouncement('Aufgabe gespeichert.');
   };
   const toggleTask = (task) => {
@@ -97,6 +122,31 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
   useEffect(() => {
     if (editingTaskId) editInputRef.current?.focus();
   }, [editingTaskId]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+    const markers = readReminderMarkers();
+    let changed = false;
+    tasks.filter((task) => isTaskReminderEligible(task, now)).forEach((task) => {
+      const marker = reminderMarker(task);
+      if (markers[marker]) return;
+      if (globalThis.Notification?.permission === 'granted') {
+        try {
+          new Notification('LehrerMaps · Aufgabe fällig', { body: task.text, tag: marker });
+          markers[marker] = Date.now();
+          changed = true;
+        } catch { /* in-app due state remains available */ }
+      }
+    });
+    if (changed) { try { localStorage.setItem(REMINDER_MARKER_KEY, JSON.stringify(markers)); } catch {} }
+  }, [now, tasks, notificationPermission]);
+
+  const requestNotifications = async () => {
+    if (!globalThis.Notification?.requestPermission) return;
+    const permission = await globalThis.Notification.requestPermission();
+    setNotificationPermission(permission);
+    setTaskAnnouncement(permission === 'granted' ? 'Benachrichtigungen für offene Erinnerungen aktiviert.' : 'Benachrichtigungen sind nicht aktiviert. Fällige Aufgaben bleiben hier sichtbar.');
+  };
 
   return (
     <div className="lm-today-view">
@@ -117,15 +167,17 @@ export default function TodayDashboard({ onOpenSchedule, onOpenMaterials, onOpen
           </section>
 
           <section id="tasks" className="lm-editorial-card lm-today-tasks" aria-busy={!loaded}>
-            <div className="lm-today-section-header"><div><div className="lm-eyebrow">FOKUS</div><h2>Meine Aufgaben</h2></div><span className="lm-task-count">{openTasks}</span></div>
+            <div className="lm-today-section-header"><div><h2><span className="lm-today-task-kicker">FOKUS</span>Meine Aufgaben</h2></div><span className="lm-task-count">{openTasks}</span></div>
             <div className="lm-today-task-entry"><input value={taskText} disabled={!loaded} onChange={(e) => setTaskText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder="Neue Aufgabe…" aria-label="Neue Aufgabe" /><button disabled={!loaded} onClick={addTask} className="lm-button lm-button-primary" aria-label="Aufgabe hinzufügen">+</button></div>
+            {notificationPermission === 'default' && <button type="button" className="lm-text-button lm-task-notification-button" onClick={requestNotifications}>Benachrichtigungen aktivieren</button>}
+            <p className="lm-task-reminder-disclosure">Erinnerungen funktionieren bestmöglich, solange LehrerMaps geöffnet und sichtbar ist. Bei geschlossener oder pausierter App können sie verspätet sein.</p>
             {tasks.length === 0 && <div className="lm-today-empty">Noch keine Aufgaben. Alles bereit.</div>}
             <div className="lm-today-task-list" aria-label="Aufgabenliste">
               {tasks.map((task) => {
                 const editing = editingTaskId === task.id;
                 return <div key={task.id} className={`lm-today-task${editing ? ' is-editing' : ''}`}>
                   <input type="checkbox" disabled={!loaded || editing} checked={task.done} onChange={() => toggleTask(task)} aria-label={`${task.text} als ${task.done ? 'offen' : 'erledigt'} markieren`} />
-                  {editing ? <div className="lm-today-task-editor"><input ref={editInputRef} value={editingTaskText} maxLength="500" onChange={(event) => setEditingTaskText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); saveEditingTask(); } if (event.key === 'Escape') { event.preventDefault(); cancelEditingTask(); } }} aria-label="Aufgabentext bearbeiten" /><div className="lm-today-task-editor-actions"><button type="button" className="lm-button lm-button-primary" onClick={saveEditingTask}>Speichern</button><button type="button" className="lm-button" onClick={cancelEditingTask}>Abbrechen</button></div></div> : <span className={task.done ? 'is-done' : undefined} onDoubleClick={(event) => { event.preventDefault(); startEditingTask(task); }} onPointerUp={(event) => { if (event.pointerType !== 'touch') return; const now = Date.now(); const previous = lastTaskTouchRef.current; if (previous.id === task.id && now - previous.at < 400) { lastTaskTouchRef.current = { id: null, at: 0 }; startEditingTask(task); } else { lastTaskTouchRef.current = { id: task.id, at: now }; } }} title="Doppelklicken oder doppeltippen zum Bearbeiten">{task.text}</span>}
+                  {editing ? <div className="lm-today-task-editor"><input ref={editInputRef} value={editingTaskText} maxLength="500" onChange={(event) => setEditingTaskText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); saveEditingTask(); } if (event.key === 'Escape') { event.preventDefault(); cancelEditingTask(); } }} aria-label="Aufgabentext bearbeiten" /><div className="lm-today-task-due-fields"><label>Datum<input type="date" value={editingTaskDueDate} onChange={(event) => setEditingTaskDueDate(event.target.value)} aria-label="Fälligkeitsdatum" /></label><label>Uhrzeit<input type="time" value={editingTaskDueTime} disabled={!editingTaskDueDate} onChange={(event) => setEditingTaskDueTime(event.target.value)} aria-label="Fälligkeitszeit" /></label><button type="button" className="lm-text-button" onClick={() => { setEditingTaskDueDate(''); setEditingTaskDueTime(''); }}>Termin entfernen</button></div><div className="lm-today-task-editor-actions"><button type="button" className="lm-button lm-button-primary" onClick={saveEditingTask}>Speichern</button><button type="button" className="lm-button" onClick={cancelEditingTask}>Abbrechen</button></div></div> : <span className={`${task.done ? 'is-done' : ''}${dueTaskIds.has(task.id) ? ' is-due' : ''}`} onDoubleClick={(event) => { event.preventDefault(); startEditingTask(task); }} onPointerUp={(event) => { if (event.pointerType !== 'touch') return; const now = Date.now(); const previous = lastTaskTouchRef.current; if (previous.id === task.id && now - previous.at < 400) { lastTaskTouchRef.current = { id: null, at: 0 }; startEditingTask(task); } else { lastTaskTouchRef.current = { id: task.id, at: now }; } }} title="Doppelklicken oder doppeltippen zum Bearbeiten">{task.text}{formatDue(task) && <small className="lm-task-due">{formatDue(task)}{dueTaskIds.has(task.id) ? ' · fällig' : ''}</small>}</span>}
                   {!editing && <button type="button" disabled={!loaded} onClick={() => startEditingTask(task)} aria-label={`Aufgabe bearbeiten: ${task.text}`} className="lm-icon-button lm-task-edit-button"><span aria-hidden="true">✎</span><span className="lm-visually-hidden">Bearbeiten</span></button>}
                   {!editing && <button type="button" disabled={!loaded} onClick={() => setTasks(tasks.filter((item) => item.id !== task.id))} aria-label={`Aufgabe löschen: ${task.text}`} className="lm-icon-button">×</button>}
                 </div>;

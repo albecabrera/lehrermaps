@@ -60,14 +60,14 @@ await check('LehrerMaps app icons', async () => {
   if (!pageResponse.ok) throw new Error(`index.html -> HTTP ${pageResponse.status}`);
   const html = await pageResponse.text();
   for (const expected of [
-    'href="/favicon.ico"',
-    'href="/assets/icons/lehrermaps-favicon-32.png"',
-    'href="/assets/icons/lehrermaps-apple-touch-icon.png"',
+    'href="/favicon-v2.ico"',
+    'href="/assets/icons/lehrermaps-v2-favicon-32.png"',
+    'href="/assets/icons/lehrermaps-v2-apple-touch-icon.png"',
     'rel="apple-touch-icon-precomposed"',
   ]) {
     if (!html.includes(expected)) throw new Error(`missing ${expected}`);
   }
-  for (const icon of ['/favicon.ico', '/assets/icons/lehrermaps-favicon-32.png', '/assets/icons/lehrermaps-apple-touch-icon.png']) {
+  for (const icon of ['/favicon.ico', '/favicon-v2.ico', '/apple-touch-icon.png', '/apple-touch-icon-180x180.png', '/assets/icons/lehrermaps-v2-favicon-32.png', '/assets/icons/lehrermaps-v2-apple-touch-icon.png']) {
     const iconResponse = await get(icon);
     if (!iconResponse.ok) throw new Error(`${icon} -> HTTP ${iconResponse.status}`);
     requireContentType(iconResponse, /^image\//i, icon);

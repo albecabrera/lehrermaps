@@ -99,7 +99,9 @@ function DesktopAppRail() {
           title={`${app.label} (öffnet in neuem Tab)`}
           onMouseEnter={(event) => showAppLabel(event, app)}
           onFocus={(event) => showAppLabel(event, app)}
-          onBlur={() => setHoveredApp(null)}
+          onBlur={(event) => {
+            if (!event.currentTarget.closest('.lm-desktop-app-rail')?.contains(event.relatedTarget)) setHoveredApp(null);
+          }}
         >
           {app.iconText ? (
             <span className="lm-app-rail-icon lm-app-rail-monogram" aria-hidden="true">{app.iconText}</span>
