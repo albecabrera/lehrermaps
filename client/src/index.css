@@ -2956,7 +2956,11 @@ button:not(:disabled):focus-visible,
   border-color: color-mix(in srgb, var(--c-turquoise) 52%, var(--c-border));
   background: color-mix(in srgb, var(--c-turquoise) 9%, var(--c-surface));
   box-shadow: 0 12px 24px rgba(17, 95, 128, .24), 0 0 0 4px color-mix(in srgb, var(--c-turquoise) 14%, transparent), inset 0 1px 0 rgba(255, 255, 255, .48);
-  transform: translateY(-2px) scale(1.27);
+  transform: translateY(-2px);
+}
+.lm-desktop-app-rail-launcher:hover .lm-app-rail-icon,
+.lm-desktop-app-rail-launcher:focus-visible .lm-app-rail-icon {
+  transform: scale(1.2);
 }
 .lm-desktop-app-rail-launcher:hover::before,
 .lm-desktop-app-rail-launcher:focus-visible::before {
@@ -2981,6 +2985,7 @@ button:not(:disabled):focus-visible,
   object-fit: contain;
   border-radius: 8px;
   filter: saturate(1.12) contrast(1.05);
+  transition: transform .18s cubic-bezier(.22, 1.3, .36, 1);
 }
 /* UCS and Quizlet are wordmarks, not square favicons. Keep their original
    transparent marks intact instead of putting them on a synthetic white tile. */
@@ -3000,14 +3005,6 @@ button:not(:disabled):focus-visible,
   font: 800 12px/1 "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
   letter-spacing: -.04em;
   box-shadow: 0 3px 8px rgba(61, 78, 190, .3);
-}
-@media (hover: hover) and (pointer: fine) {
-  .lm-desktop-app-rail:hover,
-  .lm-desktop-app-rail:focus-within {
-    width: 200px;
-    min-width: 200px;
-    align-items: flex-start;
-  }
 }
 .lm-today-tasks h2 {
   display: flex;
@@ -3285,7 +3282,11 @@ button:not(:disabled):focus-visible,
   /* The rail is a destination picker, so give its icons a stronger visual
      response than the compact controls in the header. */
   .lm-desktop-app-rail-launcher:hover {
-    transform: translateY(-4px) scale(1.22);
+    transform: translateY(-4px);
+  }
+
+  .lm-desktop-app-rail-launcher:hover .lm-app-rail-icon {
+    transform: scale(1.2);
   }
 
   .lm-desktop-app-rail-launcher:active,
@@ -3295,6 +3296,14 @@ button:not(:disabled):focus-visible,
   .lm-phone-theme-toggle:active,
   .lm-tabbar .lm-workspace-nav-item:active {
     transform: translateY(0) scale(.955);
+  }
+
+  .lm-desktop-app-rail-launcher:active {
+    transform: translateY(0);
+  }
+
+  .lm-desktop-app-rail-launcher:active .lm-app-rail-icon {
+    transform: scale(.94);
   }
 }
 
