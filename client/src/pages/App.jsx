@@ -72,8 +72,21 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
 ];
 
 function DesktopAppRail() {
+  const [hoveredApp, setHoveredApp] = useState(null);
+  const [labelTop, setLabelTop] = useState(0);
+
+  const showAppLabel = (event, app) => {
+    const rail = event.currentTarget.closest('.lm-desktop-app-rail');
+    if (!rail) return;
+    const railRect = rail.getBoundingClientRect();
+    const launcherRect = event.currentTarget.getBoundingClientRect();
+    setLabelTop(launcherRect.top - railRect.top + launcherRect.height / 2);
+    setHoveredApp(app);
+  };
+
   return (
-    <nav className="lm-desktop-app-rail" aria-label="Externe Unterrichts-Apps">
+    <nav className="lm-desktop-app-rail" aria-label="Externe Unterrichts-Apps" onMouseLeave={() => setHoveredApp(null)}>
+      <div className="lm-desktop-app-rail-scroll">
       {EXTERNAL_APP_RAIL_LAUNCHERS.map((app) => (
         <a
           key={app.id}
@@ -84,6 +97,9 @@ function DesktopAppRail() {
           data-app-name={app.name}
           aria-label={`${app.label} (öffnet in neuem Tab)`}
           title={`${app.label} (öffnet in neuem Tab)`}
+          onMouseEnter={(event) => showAppLabel(event, app)}
+          onFocus={(event) => showAppLabel(event, app)}
+          onBlur={() => setHoveredApp(null)}
         >
           {app.iconText ? (
             <span className="lm-app-rail-icon lm-app-rail-monogram" aria-hidden="true">{app.iconText}</span>
@@ -92,6 +108,8 @@ function DesktopAppRail() {
           )}
         </a>
       ))}
+      </div>
+      {hoveredApp && <span className="lm-desktop-app-rail-label" style={{ top: labelTop }} aria-hidden="true">{hoveredApp.name}</span>}
     </nav>
   );
 }
