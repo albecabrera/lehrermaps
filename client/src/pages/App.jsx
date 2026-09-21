@@ -54,21 +54,21 @@ const LOGINEO_LOGO_URL = '/assets/logineo-logo.jpg';
 const PLESK_TERMINAL_URL = 'https://h2953700.stratoserver.net:8443/modules/ssh-terminal/?dom_id=22&site_id=22';
 
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
-  { id: 'ucs', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
-  { id: 'anton', href: 'https://anton.app/', label: 'ANTON öffnen', iconSrc: '/assets/anton-favicon.ico' },
-  { id: 'vamos-1', href: 'https://bridge.klett.de/DUA-W9ISFVJLTT/?page=1', label: 'Vamos adelante 1 öffnen', iconSrc: '/assets/klett-favicon.ico' },
-  { id: 'vamos-2', href: 'https://bridge.klett.de/DUA-CD68AUVZY1/?page=9', label: 'Vamos adelante 2 öffnen', iconSrc: '/assets/klett-favicon.ico' },
-  { id: 'taskcards', href: 'https://www.taskcards.de/', label: 'TaskCards öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
-  { id: 'esg-tech-help', href: 'https://www.taskcards.de/#/board/77bc3933-9659-4ce7-86f0-f6ef26ad9ede/view', label: 'TaskCards ESG-Technikhilfe öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
-  { id: 'quizlet', href: 'https://quizlet.com/de/9b-vokabeln-unidad-3', label: 'Quizlet öffnen', iconSrc: '/assets/quizlet-logo.png', iconClass: 'wide' },
-  { id: 'eduki', href: 'https://eduki.com/de', label: 'Eduki öffnen', iconSrc: '/assets/eduki-favicon.ico' },
-  { id: 'kahoot', href: 'https://create.kahoot.it/', label: 'Kahoot! öffnen', iconSrc: '/assets/kahoot-favicon.ico' },
-  { id: 'classroomscreen', href: 'https://classroomscreen.com/', label: 'Classroomscreen öffnen', iconSrc: '/assets/classroomscreen-favicon.ico' },
-  { id: 'plesk-esg', href: 'https://pls1.netcologne.de:8443/smb/web/view', label: 'Plesk ESG öffnen', iconSrc: '/assets/plesk-favicon.ico' },
-  { id: 'netcologne-ticket', href: 'https://ticket.netcologne-its.de/index.php?section=intern', label: 'NetCologne Ticket öffnen', iconSrc: '/assets/netcologne-ticket-favicon.ico' },
-  { id: 'tafino', href: 'https://tafino.verlagruhr.de/desktops/C.%20Cabrera', label: 'Tafino öffnen', iconSrc: '/assets/tafino-favicon.ico' },
-  { id: 'linguacode', href: 'https://albecabrera.github.io/linguaCode/', label: 'LinguaCode öffnen', iconText: 'LC' },
-  { id: 'school-home', href: 'https://igs-bonn.de/?s=wordpress&search_404=1', label: 'Schul-Homepage öffnen', iconSrc: '/assets/icons/Logo_ESG_ohne_Schrift.svg', iconClass: 'wide' },
+  { id: 'ucs', name: 'UCS', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
+  { id: 'anton', name: 'ANTON', href: 'https://anton.app/', label: 'ANTON öffnen', iconSrc: '/assets/anton-favicon.ico' },
+  { id: 'vamos-1', name: 'Vamos adelante 1', href: 'https://bridge.klett.de/DUA-W9ISFVJLTT/?page=1', label: 'Vamos adelante 1 öffnen', iconSrc: '/assets/klett-favicon.ico' },
+  { id: 'vamos-2', name: 'Vamos adelante 2', href: 'https://bridge.klett.de/DUA-CD68AUVZY1/?page=9', label: 'Vamos adelante 2 öffnen', iconSrc: '/assets/klett-favicon.ico' },
+  { id: 'taskcards', name: 'TaskCards', href: 'https://www.taskcards.de/', label: 'TaskCards öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
+  { id: 'esg-tech-help', name: 'TaskCards ESG-Technikhilfe', href: 'https://www.taskcards.de/#/board/77bc3933-9659-4ce7-86f0-f6ef26ad9ede/view', label: 'TaskCards ESG-Technikhilfe öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
+  { id: 'quizlet', name: 'Quizlet', href: 'https://quizlet.com/de/9b-vokabeln-unidad-3', label: 'Quizlet öffnen', iconSrc: '/assets/quizlet-logo.png', iconClass: 'wide' },
+  { id: 'eduki', name: 'Eduki', href: 'https://eduki.com/de', label: 'Eduki öffnen', iconSrc: '/assets/eduki-favicon.ico' },
+  { id: 'kahoot', name: 'Kahoot!', href: 'https://create.kahoot.it/', label: 'Kahoot! öffnen', iconSrc: '/assets/kahoot-favicon.ico' },
+  { id: 'classroomscreen', name: 'Classroomscreen', href: 'https://classroomscreen.com/', label: 'Classroomscreen öffnen', iconSrc: '/assets/classroomscreen-favicon.ico' },
+  { id: 'plesk-esg', name: 'Plesk ESG', href: 'https://pls1.netcologne.de:8443/smb/web/view', label: 'Plesk ESG öffnen', iconSrc: '/assets/plesk-favicon.ico' },
+  { id: 'netcologne-ticket', name: 'NetCologne Ticket', href: 'https://ticket.netcologne-its.de/index.php?section=intern', label: 'NetCologne Ticket öffnen', iconSrc: '/assets/netcologne-ticket-favicon.ico' },
+  { id: 'tafino', name: 'Tafino', href: 'https://tafino.verlagruhr.de/desktops/C.%20Cabrera', label: 'Tafino öffnen', iconSrc: '/assets/tafino-favicon.ico' },
+  { id: 'linguacode', name: 'LinguaCode', href: 'https://albecabrera.github.io/linguaCode/', label: 'LinguaCode öffnen', iconText: 'LC' },
+  { id: 'school-home', name: 'Schul-Homepage', href: 'https://igs-bonn.de/?s=wordpress&search_404=1', label: 'Schul-Homepage öffnen', iconSrc: '/assets/icons/Logo_ESG_ohne_Schrift.svg', iconClass: 'wide' },
 ];
 
 function DesktopAppRail() {
@@ -81,6 +81,7 @@ function DesktopAppRail() {
           target="_blank"
           rel="noopener noreferrer"
           className={`lm-spring lm-desktop-app-rail-launcher lm-app-rail-${app.id}`}
+          data-app-name={app.name}
           aria-label={`${app.label} (öffnet in neuem Tab)`}
           title={`${app.label} (öffnet in neuem Tab)`}
         >
@@ -1025,16 +1026,16 @@ export default function App({ onLogout }) {
         )}
         {isMobile && (
           <nav className="lm-mobile-header-apps" aria-label="Direkte App-Links">
-            <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen">
+            <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen" data-app-name="Miro">
               <img src="/assets/icons/miro.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /><span className="lm-mobile-header-app-label">Miro</span>
             </a>
-            <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--notion" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen">
+            <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--notion" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen" data-app-name="Notion">
               <img src="/assets/icons/notion.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /><span className="lm-mobile-header-app-label">Notion</span>
             </a>
-            <a href={IDOCEO_APP_URL} className="lm-mobile-header-app lm-mobile-header-app--idoceo" aria-label="iDoceo in der installierten App öffnen" title="iDoceo öffnen">
+            <a href={IDOCEO_APP_URL} className="lm-mobile-header-app lm-mobile-header-app--idoceo" aria-label="iDoceo in der installierten App öffnen" title="iDoceo öffnen" data-app-name="iDoceo">
               <img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span className="lm-mobile-header-app-label">iDoceo</span>
             </a>
-            <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen">
+            <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen" data-app-name="WebUntis">
               <span className="lm-webuntis-glyph" aria-hidden="true">W</span><span className="lm-mobile-header-app-label">WebUntis</span>
             </a>
           </nav>
@@ -1092,12 +1093,12 @@ export default function App({ onLogout }) {
             const active = viewMode === id;
             return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
           })}
-          <a href={ONE_NOTE_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-onenote" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen"><span className="lm-onenote-glyph" aria-hidden="true">N</span><span>OneNote</span></a>
-          <a href={IDOCEO_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-idoceo" aria-label="iDoceo in der installierten App öffnen" title="In iDoceo-App öffnen"><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span>iDoceo</span></a>
-          <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-notion" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen"><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Notion</span></a>
-          <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen"><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Miro</span></a>
-          <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen"><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span>WebUntis</span></a>
-          <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-logineo" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail öffnen"><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /></a>
+          <a href={ONE_NOTE_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-onenote" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen" data-app-name="OneNote"><span className="lm-onenote-glyph" aria-hidden="true">N</span><span>OneNote</span></a>
+          <a href={IDOCEO_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-idoceo" aria-label="iDoceo in der installierten App öffnen" title="In iDoceo-App öffnen" data-app-name="iDoceo"><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span>iDoceo</span></a>
+          <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-notion" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen" data-app-name="Notion"><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Notion</span></a>
+          <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen" data-app-name="Miro"><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Miro</span></a>
+          <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen" data-app-name="WebUntis"><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span>WebUntis</span></a>
+          <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-logineo" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail öffnen" data-app-name="Logineo Mail"><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /></a>
         </nav>
         <div className="lm-desktop-trailing-group">
           <div className="lm-topbar-tools">
