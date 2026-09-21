@@ -465,7 +465,7 @@ export default function App({ onLogout }) {
   }, [hapticPulse]);
 
 
-  // Keyboard shortcuts: Cmd/Ctrl+P, j/k navigation, space preview toggle
+  // Keyboard shortcuts: Cmd/Ctrl combinations, j/k navigation, space preview toggle
   useEffect(() => {
     const handler = (e) => {
       const target = e.target;
@@ -505,6 +505,11 @@ export default function App({ onLogout }) {
         return;
       }
       if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen || classroomTimerOpen) return;
+      if (!isTyping && (e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        toggleTheme();
+        return;
+      }
       if (!isTyping && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
         setAppRailVisible((visible) => !visible);
@@ -588,7 +593,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, classroomTimerOpen, klasurplanOpen, isMobile, sidebarDrawerOpen, viewMode, pleskTerminalOpen]);
+  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, classroomTimerOpen, klasurplanOpen, isMobile, sidebarDrawerOpen, viewMode, pleskTerminalOpen, toggleTheme]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();

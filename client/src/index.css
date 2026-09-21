@@ -3237,6 +3237,12 @@ button:not(:disabled):focus-visible,
     box-shadow: 0 16px 30px color-mix(in srgb, var(--c-accent) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, .58);
   }
 
+  /* The rail is a destination picker, so give its icons a stronger visual
+     response than the compact controls in the header. */
+  .lm-desktop-app-rail-launcher:hover {
+    transform: translateY(-4px) scale(1.22);
+  }
+
   .lm-desktop-app-rail-launcher:active,
   .lm-external-app-launcher:active,
   .lm-mobile-header-app:active,
@@ -3597,10 +3603,12 @@ button:not(:disabled):focus-visible,
   }
 
   .lm-desktop-app-rail-launcher::after {
+    content: attr(data-app-name);
     top: 50%;
     left: calc(100% + 10px);
     transform-origin: left center;
     transform: translateY(-50%) translateX(-4px) scale(.94);
+    transition: none;
   }
 
   .lm-tabbar .lm-workspace-nav-item[title]::after,
@@ -3632,6 +3640,11 @@ button:not(:disabled):focus-visible,
     visibility: visible;
     transform: translateY(0) scale(1);
     transition-delay: .08s, 0s, .08s;
+  }
+
+  .lm-desktop-app-rail-launcher:hover::after,
+  .lm-desktop-app-rail-launcher:focus-visible::after {
+    transition-delay: 0s;
   }
 
   .lm-tabbar .lm-workspace-nav-item[title]:hover::after,

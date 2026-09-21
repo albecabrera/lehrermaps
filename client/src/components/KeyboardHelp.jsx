@@ -4,6 +4,7 @@ import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const SHORTCUTS = [
   { keys: ['⌘', 'K'], label: 'Globale Suche öffnen' },
+  { keys: ['⌘/Ctrl', '⇧', 'L'], label: 'Hell-/Dunkelmodus wechseln' },
   { keys: ['?'], label: 'Diese Hilfe anzeigen' },
   { keys: ['J'], label: 'Nächste Datei auswählen' },
   { keys: ['K'], label: 'Vorherige Datei auswählen' },
