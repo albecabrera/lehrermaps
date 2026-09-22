@@ -160,6 +160,20 @@ const isMacDesktopPlatform = () => (
   && navigator.maxTouchPoints <= 1
 );
 
+function MegaMenuGroup({ id, label, isOpen, onToggle, children }) {
+  const contentId = `workspace-mega-menu-${id}`;
+  return (
+    <section className="lm-mega-menu-group">
+      <h2>
+        <button type="button" className="lm-mega-menu-group-trigger" aria-expanded={Boolean(isOpen)} aria-controls={contentId} onClick={onToggle}>
+          <span>{label}</span><span className="lm-mega-menu-group-chevron" aria-hidden="true">⌄</span>
+        </button>
+      </h2>
+      {isOpen && <div id={contentId} className="lm-mega-menu-group-content">{children}</div>}
+    </section>
+  );
+}
+
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { t } = useLang();
@@ -177,7 +191,9 @@ export default function App({ onLogout }) {
   const [pleskTerminalOpen, setPleskTerminalOpen] = useState(false);
   const [desktopMegaMenuOpen, setDesktopMegaMenuOpen] = useState(false);
   const [desktopMegaMenuArea, setDesktopMegaMenuArea] = useState('teaching');
+  const [desktopMegaMenuGroups, setDesktopMegaMenuGroups] = useState({});
   const desktopMegaMenuRef = useRef(null);
+  const desktopMegaMenuTriggerRef = useRef(null);
 
   const [subjectId, setSubjectId] = useState('workspace');
   const [activeFolder, setActiveFolder] = useState(null);
@@ -257,7 +273,7 @@ export default function App({ onLogout }) {
       event.preventDefault();
       event.stopPropagation();
       setDesktopMegaMenuOpen(false);
-      window.requestAnimationFrame(() => desktopMegaMenuRef.current?.querySelector(`[data-mega-area="${desktopMegaMenuArea}"]`)?.focus());
+      window.requestAnimationFrame(() => desktopMegaMenuTriggerRef.current?.focus());
     };
     document.addEventListener('pointerdown', closeOnOutsidePointer);
     document.addEventListener('keydown', closeOnEscape, true);
@@ -1159,11 +1175,15 @@ export default function App({ onLogout }) {
                 type="button"
                 aria-expanded={desktopMegaMenuOpen && desktopMegaMenuArea === area}
                 aria-controls="workspace-mega-menu"
-                onMouseEnter={() => { setDesktopMegaMenuArea(area); setDesktopMegaMenuOpen(true); }}
-                onFocus={() => { setDesktopMegaMenuArea(area); setDesktopMegaMenuOpen(true); }}
-                onClick={() => {
-                  if (desktopMegaMenuOpen && desktopMegaMenuArea === area) setDesktopMegaMenuOpen(false);
-                  else { setDesktopMegaMenuArea(area); setDesktopMegaMenuOpen(true); }
+                onClick={(event) => {
+                  desktopMegaMenuTriggerRef.current = event.currentTarget;
+                  if (desktopMegaMenuOpen && desktopMegaMenuArea === area) {
+                    setDesktopMegaMenuOpen(false);
+                    return;
+                  }
+                  setDesktopMegaMenuArea(area);
+                  setDesktopMegaMenuGroups(area === 'tools' ? { 'tools-connected': true } : {});
+                  setDesktopMegaMenuOpen(true);
                 }}
               >
                 <span className="lm-mega-menu-area-icon" aria-hidden="true">{icon}</span>
@@ -1176,51 +1196,45 @@ export default function App({ onLogout }) {
             <section id="workspace-mega-menu" className="lm-mega-menu-panel" aria-label={`${desktopMegaMenuArea === 'teaching' ? 'Unterricht' : desktopMegaMenuArea === 'organisation' ? 'Organisation' : 'Apps und Werkzeuge'} öffnen`}>
               {desktopMegaMenuArea === 'teaching' && <>
                 <div className="lm-mega-menu-intro"><span>Unterricht</span><strong>Vom Tagesüberblick direkt in die nächste Stunde.</strong></div>
-                <section className="lm-mega-menu-group" aria-label="Unterricht planen">
-                  <h2>Unterricht planen</h2>
+                <MegaMenuGroup id="teaching-plan" label="Unterricht planen" isOpen={desktopMegaMenuGroups['teaching-plan']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'teaching-plan': !groups['teaching-plan'] }))}>
                   <div className="lm-mega-menu-links">
                     <button type="button" onClick={() => { navigateToView('today'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">⌂</span><span><strong>Heute</strong><small>Tagesüberblick und nächste Schritte</small></span></button>
                     <button type="button" onClick={() => { navigateToView('schedule'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▦</span><span><strong>Stundenplan</strong><small>Deine Woche im Blick</small></span></button>
                   </div>
-                </section>
+                </MegaMenuGroup>
               </>}
               {desktopMegaMenuArea === 'organisation' && <>
                 <div className="lm-mega-menu-intro"><span>Organisation</span><strong>Alles Wichtige für Schule, Klassen und Material.</strong></div>
-                <section className="lm-mega-menu-group" aria-label="Planung und Termine">
-                  <h2>Planung und Termine</h2>
+                <MegaMenuGroup id="organisation-planning" label="Planung und Termine" isOpen={desktopMegaMenuGroups['organisation-planning']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'organisation-planning': !groups['organisation-planning'] }))}>
                   <div className="lm-mega-menu-links">
                     <button type="button" onClick={() => { navigateToView('appointments'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Termine</strong><small>Besprechungen und Erinnerungen</small></span></button>
                     <button type="button" onClick={() => { navigateToView('klausurplan'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▤</span><span><strong>Klausurplan</strong><small>Prüfungen sicher koordinieren</small></span></button>
                   </div>
-                </section>
-                <section className="lm-mega-menu-group" aria-label="Materialien verwalten">
-                  <h2>Materialien verwalten</h2>
+                </MegaMenuGroup>
+                <MegaMenuGroup id="organisation-materials" label="Materialien verwalten" isOpen={desktopMegaMenuGroups['organisation-materials']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'organisation-materials': !groups['organisation-materials'] }))}>
                   <div className="lm-mega-menu-links">
                     <button type="button" onClick={() => { navigateToView('subjects'); setActivePageId(null); closeFolderView(); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▱</span><span><strong>Materialien</strong><small>Fächer, Ordner und Dateien</small></span></button>
                   </div>
-                </section>
+                </MegaMenuGroup>
               </>}
               {desktopMegaMenuArea === 'tools' && <>
                 <div className="lm-mega-menu-intro"><span>Apps &amp; Werkzeuge</span><strong>Unterrichtstools und externe Anwendungen.</strong></div>
-                <section className="lm-mega-menu-group" aria-label="Unterrichtswerkzeuge">
-                  <h2>Unterrichtswerkzeuge</h2>
+                <MegaMenuGroup id="tools-classroom" label="Unterrichtswerkzeuge" isOpen={desktopMegaMenuGroups['tools-classroom']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'tools-classroom': !groups['tools-classroom'] }))}>
                   <div className="lm-mega-menu-links"><button type="button" onClick={() => { setClassroomTimerOpen(true); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Klassenzeit</strong><small>Timer für den Unterricht</small></span></button></div>
-                </section>
-                <section className="lm-mega-menu-group" aria-label="Verbundene Anwendungen">
-                  <h2>Verbundene Anwendungen</h2>
+                </MegaMenuGroup>
+                <MegaMenuGroup id="tools-connected" label="Verbundene Anwendungen" isOpen={desktopMegaMenuGroups['tools-connected']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'tools-connected': !groups['tools-connected'] }))}>
                   <div className="lm-mega-menu-links lm-mega-menu-links--tools">
                     <a href={ONE_NOTE_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-onenote-glyph" aria-hidden="true">N</span><span><strong>OneNote</strong><small>In der installierten App öffnen</small></span></a>
                     <a href={IDOCEO_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span><strong>iDoceo</strong><small>Klassenverwaltung öffnen</small></span></a>
                     <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span><strong>WebUntis</strong><small>In neuem Tab öffnen</small></span></a>
-                    <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/icons/notion.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /><span><strong>Notion</strong><small>Notizen und Arbeitsbereiche öffnen</small></span></a>
-                    <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/icons/miro.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /><span><strong>Miro</strong><small>Board im neuen Tab öffnen</small></span></a>
-                    <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /><span><strong>Logineo Mail</strong><small>Postfach im neuen Tab öffnen</small></span></a>
+                    <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-mega-menu-link--icon-only" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen" onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/icons/notion.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /></a>
+                    <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-mega-menu-link--icon-only" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen" onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/icons/miro.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /></a>
+                    <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-mega-menu-link--icon-only" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail in neuem Tab öffnen" onClick={() => setDesktopMegaMenuOpen(false)}><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /></a>
                   </div>
-                </section>
-                <section className="lm-mega-menu-group" aria-label="Support">
-                  <h2>Support</h2>
-                  <div className="lm-mega-menu-links"><button type="button" onClick={() => { setBugChecklistOpen(true); setDesktopMegaMenuOpen(false); }}><BugChecklistIcon size={16} /><span><strong>Bugs melden</strong><small>Probleme strukturiert erfassen</small></span></button></div>
-                </section>
+                </MegaMenuGroup>
+                <MegaMenuGroup id="tools-support" label="Support" isOpen={desktopMegaMenuGroups['tools-support']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'tools-support': !groups['tools-support'] }))}>
+                  <div className="lm-mega-menu-links"><button type="button" className="lm-mega-menu-link--icon-only" aria-label="Bugs melden" title="Bugs melden" onClick={() => { setBugChecklistOpen(true); setDesktopMegaMenuOpen(false); }}><BugChecklistIcon size={16} /></button></div>
+                </MegaMenuGroup>
               </>}
             </section>
           )}
