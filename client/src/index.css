@@ -4121,7 +4121,7 @@ button:not(:disabled):focus-visible,
     position: relative;
     z-index: 1601;
     display: block;
-    min-width: min(650px, 52vw);
+    min-width: min(760px, 60vw);
     white-space: normal;
   }
   .lm-mega-menu-areas {
@@ -4185,10 +4185,10 @@ button:not(:disabled):focus-visible,
     z-index: 1602;
     top: calc(100% + 10px);
     left: 50%;
-    width: min(720px, calc(100vw - 48px));
-    padding: 22px;
+    width: min(960px, calc(100vw - 48px));
+    padding: 28px;
     border: 1px solid color-mix(in srgb, var(--c-border) 92%, transparent);
-    border-radius: 20px;
+    border-radius: 24px;
     background: color-mix(in srgb, var(--c-surface) 96%, transparent);
     box-shadow: 0 28px 70px rgba(13, 41, 72, .26), inset 0 1px 0 rgba(255,255,255,.7);
     transform: translateX(-50%);
@@ -4196,19 +4196,22 @@ button:not(:disabled):focus-visible,
     -webkit-backdrop-filter: blur(22px) saturate(140%);
     animation: lmMegaMenuIn .18s var(--ease-out);
   }
-  .lm-mega-menu-intro { display: grid; gap: 3px; margin: 0 4px 16px; }
-  .lm-mega-menu-intro span { margin: 0; color: var(--c-text-3); font-size: 10px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
-  .lm-mega-menu-intro strong { font-family: var(--font-editorial); font-size: 22px; font-weight: 600; letter-spacing: -.025em; }
+  .lm-mega-menu-intro { display: grid; gap: 4px; margin: 0 4px 22px; }
+  .lm-mega-menu-intro span { margin: 0; color: var(--c-text-3); font-size: 11px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+  .lm-mega-menu-intro strong { font-family: var(--font-editorial); font-size: 27px; font-weight: 600; letter-spacing: -.025em; }
+  .lm-mega-menu-group { margin-top: 20px; padding: 18px; border: 1px solid var(--c-border-soft); border-radius: 18px; background: color-mix(in srgb, var(--c-surface-2) 38%, transparent); }
+  .lm-mega-menu-intro + .lm-mega-menu-group { margin-top: 0; }
+  .lm-mega-menu-group h2 { margin: 0 0 12px; color: var(--c-text-2); font-size: 12px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
   .lm-mega-menu-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .lm-mega-menu-links--tools { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .lm-mega-menu-links--tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .lm-mega-menu-links > a,
   .lm-mega-menu-links > button {
     display: grid;
-    grid-template-rows: 28px auto;
+    grid-template-rows: 34px auto;
     align-content: start;
-    gap: 8px;
-    min-height: 132px;
-    padding: 13px;
+    gap: 10px;
+    min-height: 158px;
+    padding: 17px;
     border: 1px solid color-mix(in srgb, var(--c-border-soft) 84%, transparent);
     border-radius: 14px;
     background: color-mix(in srgb, var(--c-surface-2) 70%, transparent);
@@ -4220,17 +4223,21 @@ button:not(:disabled):focus-visible,
     transition: border-color .14s ease, background .14s ease, transform .14s var(--ease-out), box-shadow .14s ease;
   }
   .lm-mega-menu-links > a > :first-child,
-  .lm-mega-menu-links > button > :first-child { display: grid; place-items: center; width: 26px; height: 26px; color: var(--c-focus); font-size: 17px; font-weight: 800; }
-  .lm-mega-menu-links .lm-idoceo-glyph { width: 22px; height: 22px; margin: 2px; }
+  .lm-mega-menu-links > button > :first-child { display: grid; place-items: center; width: 32px; height: 32px; color: var(--c-focus); font-size: 20px; font-weight: 800; }
+  .lm-mega-menu-links .lm-idoceo-glyph { width: 28px; height: 28px; margin: 2px; }
   .lm-mega-menu-links > a:hover,
   .lm-mega-menu-links > button:hover { border-color: color-mix(in srgb, var(--c-focus) 35%, var(--c-border)); background: color-mix(in srgb, var(--c-focus) 8%, var(--c-surface)); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
   .lm-mega-menu-links strong,
   .lm-mega-menu-links small { display: block; }
-  .lm-mega-menu-links strong { font-size: 13px; font-weight: 790; line-height: 1.28; }
-  .lm-mega-menu-links small { margin-top: 3px; color: var(--c-text-3); font-size: 11px; font-weight: 600; line-height: 1.35; }
+  .lm-mega-menu-links strong { font-size: 15px; font-weight: 790; line-height: 1.28; }
+  .lm-mega-menu-links small { margin-top: 4px; color: var(--c-text-3); font-size: 12px; font-weight: 600; line-height: 1.4; }
   .lm-mega-menu-footer { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding: 12px 4px 0; border-top: 1px solid var(--c-border-soft); }
   .lm-mega-menu-footer a,
-  .lm-mega-menu-footer button { min-height: 34px; padding: 0 9px; border: 0; border-radius: 8px; background: transparent; color: var(--c-text-2); font: inherit; font-size: 12px; font-weight: 720; text-decoration: none; cursor: pointer; }
+  .lm-mega-menu-footer button { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 9px; border: 0; border-radius: 8px; background: transparent; color: var(--c-text-2); font: inherit; font-size: 12px; font-weight: 720; text-decoration: none; cursor: pointer; }
+  .lm-mega-menu-footer a { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 9px; border: 0; border-radius: 8px; background: transparent; color: var(--c-text-2); font: inherit; font-size: 12px; font-weight: 720; text-decoration: none; cursor: pointer; }
+  .lm-mega-menu-footer .lm-topbar-brand-icon { width: 20px; height: 20px; flex: 0 0 20px; }
+  .lm-mega-menu-footer .lm-logineo-logo { width: 30px; height: 20px; flex-basis: 30px; padding: 1px 2px; border: 1px solid color-mix(in srgb, var(--c-border) 68%, white); border-radius: 5px; object-fit: cover; object-position: left center; background: #fff; box-shadow: 0 2px 5px rgba(15, 23, 42, .14); }
+  .lm-mega-menu-footer button svg { width: 20px; height: 20px; flex: 0 0 20px; color: var(--c-focus); }
   .lm-mega-menu-footer a:hover,
   .lm-mega-menu-footer button:hover { background: var(--c-hover); color: var(--c-text); }
 }

@@ -1176,34 +1176,51 @@ export default function App({ onLogout }) {
             <section id="workspace-mega-menu" className="lm-mega-menu-panel" aria-label={`${desktopMegaMenuArea === 'teaching' ? 'Unterricht' : desktopMegaMenuArea === 'organisation' ? 'Organisation' : 'Apps und Werkzeuge'} öffnen`}>
               {desktopMegaMenuArea === 'teaching' && <>
                 <div className="lm-mega-menu-intro"><span>Unterricht</span><strong>Vom Tagesüberblick direkt in die nächste Stunde.</strong></div>
-                <div className="lm-mega-menu-links">
-                  <button type="button" onClick={() => { navigateToView('today'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">⌂</span><span><strong>Heute</strong><small>Tagesüberblick und nächste Schritte</small></span></button>
-                  <button type="button" onClick={() => { navigateToView('lessons'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">✦</span><span><strong>Unterricht planen</strong><small>Stunden vorbereiten und fortsetzen</small></span></button>
-                  <button type="button" onClick={() => { navigateToView('schedule'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▦</span><span><strong>Stundenplan</strong><small>Deine Woche im Blick</small></span></button>
-                </div>
+                <section className="lm-mega-menu-group" aria-label="Unterricht planen">
+                  <h2>Unterricht planen</h2>
+                  <div className="lm-mega-menu-links">
+                    <button type="button" onClick={() => { navigateToView('today'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">⌂</span><span><strong>Heute</strong><small>Tagesüberblick und nächste Schritte</small></span></button>
+                    <button type="button" onClick={() => { navigateToView('schedule'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▦</span><span><strong>Stundenplan</strong><small>Deine Woche im Blick</small></span></button>
+                  </div>
+                </section>
               </>}
               {desktopMegaMenuArea === 'organisation' && <>
                 <div className="lm-mega-menu-intro"><span>Organisation</span><strong>Alles Wichtige für Schule, Klassen und Material.</strong></div>
-                <div className="lm-mega-menu-links">
-                  <button type="button" onClick={() => { navigateToView('appointments'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Termine</strong><small>Besprechungen und Erinnerungen</small></span></button>
-                  <button type="button" onClick={() => { navigateToView('klausurplan'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▤</span><span><strong>Klausurplan</strong><small>Prüfungen sicher koordinieren</small></span></button>
-                  <button type="button" onClick={() => { navigateToView('subjects'); setActivePageId(null); closeFolderView(); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▱</span><span><strong>Materialien</strong><small>Fächer, Ordner und Dateien</small></span></button>
-                </div>
+                <section className="lm-mega-menu-group" aria-label="Planung und Termine">
+                  <h2>Planung und Termine</h2>
+                  <div className="lm-mega-menu-links">
+                    <button type="button" onClick={() => { navigateToView('appointments'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Termine</strong><small>Besprechungen und Erinnerungen</small></span></button>
+                    <button type="button" onClick={() => { navigateToView('klausurplan'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▤</span><span><strong>Klausurplan</strong><small>Prüfungen sicher koordinieren</small></span></button>
+                  </div>
+                </section>
+                <section className="lm-mega-menu-group" aria-label="Materialien verwalten">
+                  <h2>Materialien verwalten</h2>
+                  <div className="lm-mega-menu-links">
+                    <button type="button" onClick={() => { navigateToView('subjects'); setActivePageId(null); closeFolderView(); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▱</span><span><strong>Materialien</strong><small>Fächer, Ordner und Dateien</small></span></button>
+                  </div>
+                </section>
               </>}
               {desktopMegaMenuArea === 'tools' && <>
                 <div className="lm-mega-menu-intro"><span>Apps &amp; Werkzeuge</span><strong>Unterrichtstools und externe Anwendungen.</strong></div>
-                <div className="lm-mega-menu-links lm-mega-menu-links--tools">
-                  <button type="button" onClick={() => { setClassroomTimerOpen(true); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Klassenzeit</strong><small>Timer für den Unterricht</small></span></button>
-                  <a href={ONE_NOTE_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-onenote-glyph" aria-hidden="true">N</span><span><strong>OneNote</strong><small>In der installierten App öffnen</small></span></a>
-                  <a href={IDOCEO_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span><strong>iDoceo</strong><small>Klassenverwaltung öffnen</small></span></a>
-                  <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span><strong>WebUntis</strong><small>In neuem Tab öffnen</small></span></a>
-                </div>
-                <div className="lm-mega-menu-footer">
-                  <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}>Notion <span aria-hidden="true">↗</span></a>
-                  <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}>Miro <span aria-hidden="true">↗</span></a>
-                  <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}>Logineo Mail <span aria-hidden="true">↗</span></a>
-                  <button type="button" onClick={() => { setBugChecklistOpen(true); setDesktopMegaMenuOpen(false); }}>Bugs melden</button>
-                </div>
+                <section className="lm-mega-menu-group" aria-label="Unterrichtswerkzeuge">
+                  <h2>Unterrichtswerkzeuge</h2>
+                  <div className="lm-mega-menu-links"><button type="button" onClick={() => { setClassroomTimerOpen(true); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Klassenzeit</strong><small>Timer für den Unterricht</small></span></button></div>
+                </section>
+                <section className="lm-mega-menu-group" aria-label="Verbundene Anwendungen">
+                  <h2>Verbundene Anwendungen</h2>
+                  <div className="lm-mega-menu-links lm-mega-menu-links--tools">
+                    <a href={ONE_NOTE_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-onenote-glyph" aria-hidden="true">N</span><span><strong>OneNote</strong><small>In der installierten App öffnen</small></span></a>
+                    <a href={IDOCEO_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span><strong>iDoceo</strong><small>Klassenverwaltung öffnen</small></span></a>
+                    <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span><strong>WebUntis</strong><small>In neuem Tab öffnen</small></span></a>
+                    <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/icons/notion.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /><span><strong>Notion</strong><small>Notizen und Arbeitsbereiche öffnen</small></span></a>
+                    <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/icons/miro.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /><span><strong>Miro</strong><small>Board im neuen Tab öffnen</small></span></a>
+                    <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /><span><strong>Logineo Mail</strong><small>Postfach im neuen Tab öffnen</small></span></a>
+                  </div>
+                </section>
+                <section className="lm-mega-menu-group" aria-label="Support">
+                  <h2>Support</h2>
+                  <div className="lm-mega-menu-links"><button type="button" onClick={() => { setBugChecklistOpen(true); setDesktopMegaMenuOpen(false); }}><BugChecklistIcon size={16} /><span><strong>Bugs melden</strong><small>Probleme strukturiert erfassen</small></span></button></div>
+                </section>
               </>}
             </section>
           )}
