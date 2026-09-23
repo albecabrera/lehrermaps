@@ -54,6 +54,7 @@ const LOGINEO_LOGO_URL = '/assets/logineo-logo.jpg';
 const PLESK_TERMINAL_URL = 'https://h2953700.stratoserver.net:8443/modules/ssh-terminal/?dom_id=22&site_id=22';
 
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
+  { id: 'click-and-teach-5-6', name: 'click & teach 5/6', href: 'https://www.click-and-teach.de/Player/id/1280/page/8', label: 'click & teach 5/6 öffnen', iconSrc: 'https://www.click-and-teach.de/img/CCBLogo.png', iconClass: 'wide' },
   { id: 'ucs', name: 'UCS', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
   { id: 'anton', name: 'ANTON', href: 'https://anton.app/', label: 'ANTON öffnen', iconSrc: '/assets/anton-favicon.ico' },
   { id: 'vamos-1', name: 'Vamos adelante 1', href: 'https://bridge.klett.de/DUA-W9ISFVJLTT/?page=1', label: 'Vamos adelante 1 öffnen', iconSrc: '/assets/klett-favicon.ico' },
