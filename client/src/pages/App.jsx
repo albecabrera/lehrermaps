@@ -52,6 +52,7 @@ import ClassroomTimer from '../components/ClassroomTimer';
 // and leave iPhone Safari showing a broken-image placeholder.
 const LOGINEO_LOGO_URL = '/assets/logineo-logo.jpg';
 const PLESK_TERMINAL_URL = 'https://h2953700.stratoserver.net:8443/modules/ssh-terminal/?dom_id=22&site_id=22';
+const EXTERNAL_APP_RAIL_ORDER_STORAGE_KEY = 'lm-external-app-rail-order';
 
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'click-and-teach-5-6', name: 'click & teach 5/6', href: 'https://www.click-and-teach.de/Player/id/1280/page/8', label: 'click & teach 5/6 öffnen', iconSrc: 'https://www.click-and-teach.de/img/CCBLogo.png', iconClass: 'wide' },
@@ -77,6 +78,35 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
 function DesktopAppRail() {
   const [hoveredApp, setHoveredApp] = useState(null);
   const [labelTop, setLabelTop] = useState(0);
+  const [appOrder, setAppOrder] = useState(() => {
+    const defaultOrder = EXTERNAL_APP_RAIL_LAUNCHERS.map((app) => app.id);
+    try {
+      const savedOrder = JSON.parse(window.localStorage.getItem(EXTERNAL_APP_RAIL_ORDER_STORAGE_KEY));
+      return Array.isArray(savedOrder)
+        && savedOrder.length === defaultOrder.length
+        && savedOrder.every((id) => defaultOrder.includes(id))
+        ? savedOrder
+        : defaultOrder;
+    } catch {
+      return defaultOrder;
+    }
+  });
+  const [draggedAppId, setDraggedAppId] = useState(null);
+  const orderedApps = appOrder.map((id) => EXTERNAL_APP_RAIL_LAUNCHERS.find((app) => app.id === id)).filter(Boolean);
+
+  const moveApp = (sourceId, targetId) => {
+    if (!sourceId || sourceId === targetId) return;
+    setAppOrder((currentOrder) => {
+      const nextOrder = [...currentOrder];
+      const sourceIndex = nextOrder.indexOf(sourceId);
+      const targetIndex = nextOrder.indexOf(targetId);
+      if (sourceIndex < 0 || targetIndex < 0) return currentOrder;
+      nextOrder.splice(sourceIndex, 1);
+      nextOrder.splice(targetIndex, 0, sourceId);
+      window.localStorage.setItem(EXTERNAL_APP_RAIL_ORDER_STORAGE_KEY, JSON.stringify(nextOrder));
+      return nextOrder;
+    });
+  };
 
   const showAppLabel = (event, app) => {
     const rail = event.currentTarget.closest('.lm-desktop-app-rail');
@@ -90,7 +120,7 @@ function DesktopAppRail() {
   return (
     <nav className="lm-desktop-app-rail" aria-label="Externe Unterrichts-Apps" onMouseLeave={() => setHoveredApp(null)}>
       <div className="lm-desktop-app-rail-scroll">
-      {EXTERNAL_APP_RAIL_LAUNCHERS.map((app) => (
+      {orderedApps.map((app) => (
         <a
           key={app.id}
           href={app.href}
@@ -100,6 +130,22 @@ function DesktopAppRail() {
           data-app-name={app.name}
           aria-label={`${app.label} (öffnet in neuem Tab)`}
           title={`${app.label} (öffnet in neuem Tab)`}
+          draggable
+          onDragStart={(event) => {
+            setDraggedAppId(app.id);
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', app.id);
+          }}
+          onDragOver={(event) => {
+            if (draggedAppId && draggedAppId !== app.id) event.preventDefault();
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            moveApp(event.dataTransfer.getData('text/plain') || draggedAppId, app.id);
+            setDraggedAppId(null);
+          }}
+          onDragEnd={() => setDraggedAppId(null)}
+          style={draggedAppId === app.id ? { opacity: 0.45 } : undefined}
           onMouseEnter={(event) => showAppLabel(event, app)}
           onFocus={(event) => showAppLabel(event, app)}
           onBlur={(event) => {
