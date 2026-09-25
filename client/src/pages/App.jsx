@@ -311,6 +311,15 @@ export default function App({ onLogout }) {
     return () => window.removeEventListener('hashchange', applyHashRoute);
   }, []);
 
+  const openDesktopMegaMenu = useCallback((area, trigger) => {
+    desktopMegaMenuTriggerRef.current = trigger;
+    setDesktopMegaMenuArea(area);
+    setDesktopMegaMenuGroups(
+      area === 'teaching' ? { 'teaching-plan': true } : area === 'tools' ? { 'tools-connected': true } : {},
+    );
+    setDesktopMegaMenuOpen(true);
+  }, []);
+
   useEffect(() => {
     if (!desktopMegaMenuOpen) return undefined;
 
@@ -1225,23 +1234,14 @@ export default function App({ onLogout }) {
                 aria-expanded={desktopMegaMenuOpen && desktopMegaMenuArea === area}
                 aria-controls="workspace-mega-menu"
                 onClick={(event) => {
-                  desktopMegaMenuTriggerRef.current = event.currentTarget;
                   if (desktopMegaMenuOpen && desktopMegaMenuArea === area) {
                     setDesktopMegaMenuOpen(false);
                     return;
                   }
-                  setDesktopMegaMenuArea(area);
-                  setDesktopMegaMenuGroups(
-                    area === 'teaching' ? { 'teaching-plan': true } : area === 'tools' ? { 'tools-connected': true } : {},
-                  );
-                  setDesktopMegaMenuOpen(true);
+                  openDesktopMegaMenu(area, event.currentTarget);
                 }}
-                onMouseEnter={(event) => {
-                  if (area !== 'organisation') return;
-                  desktopMegaMenuTriggerRef.current = event.currentTarget;
-                  setDesktopMegaMenuArea('organisation');
-                  setDesktopMegaMenuOpen(true);
-                }}
+                onMouseEnter={(event) => openDesktopMegaMenu(area, event.currentTarget)}
+                onFocus={(event) => openDesktopMegaMenu(area, event.currentTarget)}
               >
                 <span className="lm-mega-menu-area-icon" aria-hidden="true">{icon}</span>
                 <span><strong>{label}</strong><small>{description}</small></span>

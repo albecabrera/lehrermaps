@@ -4185,7 +4185,8 @@ button:not(:disabled):focus-visible,
     z-index: 1602;
     top: calc(100% + 10px);
     left: 50%;
-    width: min(960px, calc(100vw - 48px));
+    inline-size: fit-content;
+    max-inline-size: calc(100vw - 48px);
     padding: 28px;
     border: 1px solid color-mix(in srgb, var(--c-border) 92%, transparent);
     border-radius: 24px;
@@ -4207,8 +4208,16 @@ button:not(:disabled):focus-visible,
   .lm-mega-menu-group-chevron { color: var(--c-text-3); font-size: 18px; line-height: 1; transition: transform .16s ease, color .16s ease; }
   .lm-mega-menu-group-trigger[aria-expanded="true"] .lm-mega-menu-group-chevron { color: var(--c-focus); transform: rotate(180deg); }
   .lm-mega-menu-group-content { padding: 0 18px 18px; }
-  .lm-mega-menu-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .lm-mega-menu-links--tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lm-mega-menu-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-inline-size: calc(100vw - 104px);
+  }
+  .lm-mega-menu-links > a,
+  .lm-mega-menu-links > button { flex: 1 1 210px; max-inline-size: 260px; }
+  .lm-mega-menu-links--tools > a,
+  .lm-mega-menu-links--tools > button { flex-basis: 210px; }
   .lm-mega-menu-links > a,
   .lm-mega-menu-links > button {
     display: grid;
@@ -4262,7 +4271,6 @@ button:not(:disabled):focus-visible,
   .lm-desktop-primary-nav.lm-mega-menu { min-width: 585px; }
   .lm-mega-menu-area-trigger { padding-inline: 7px; }
   .lm-mega-menu-area-trigger small { display: none; }
-  .lm-mega-menu-links--tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .lm-mega-menu-panel { animation: none; }
