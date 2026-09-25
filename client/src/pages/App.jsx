@@ -1214,7 +1214,7 @@ export default function App({ onLogout }) {
           <div className="lm-mega-menu-areas" role="group" aria-label="Arbeitsbereiche">
             {[
               ['teaching', 'Unterricht', 'Heute, Planung und Stundenplan', '✦'],
-              ['organisation', 'Organisation', 'Termine, Klausuren und Materialien', '▦'],
+              ['organisation', 'Organisation', 'Termine und Klausurplan', '▦'],
               ['tools', 'Apps & Werkzeuge', 'Timer und verbundene Anwendungen', '⌘'],
             ].map(([area, label, description, icon]) => (
               <button
@@ -1236,6 +1236,12 @@ export default function App({ onLogout }) {
                   );
                   setDesktopMegaMenuOpen(true);
                 }}
+                onMouseEnter={(event) => {
+                  if (area !== 'organisation') return;
+                  desktopMegaMenuTriggerRef.current = event.currentTarget;
+                  setDesktopMegaMenuArea('organisation');
+                  setDesktopMegaMenuOpen(true);
+                }}
               >
                 <span className="lm-mega-menu-area-icon" aria-hidden="true">{icon}</span>
                 <span><strong>{label}</strong><small>{description}</small></span>
@@ -1255,18 +1261,10 @@ export default function App({ onLogout }) {
                 </MegaMenuGroup>
               </>}
               {desktopMegaMenuArea === 'organisation' && <>
-                <div className="lm-mega-menu-intro"><span>Organisation</span><strong>Alles Wichtige für Schule, Klassen und Material.</strong></div>
-                <MegaMenuGroup id="organisation-planning" label="Planung und Termine" isOpen={desktopMegaMenuGroups['organisation-planning']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'organisation-planning': !groups['organisation-planning'] }))}>
-                  <div className="lm-mega-menu-links">
-                    <button type="button" onClick={() => { navigateToView('appointments'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Termine</strong><small>Besprechungen und Erinnerungen</small></span></button>
-                    <button type="button" onClick={() => { navigateToView('klausurplan'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▤</span><span><strong>Klausurplan</strong><small>Prüfungen sicher koordinieren</small></span></button>
-                  </div>
-                </MegaMenuGroup>
-                <MegaMenuGroup id="organisation-materials" label="Materialien verwalten" isOpen={desktopMegaMenuGroups['organisation-materials']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'organisation-materials': !groups['organisation-materials'] }))}>
-                  <div className="lm-mega-menu-links">
-                    <button type="button" onClick={() => { navigateToView('subjects'); setActivePageId(null); closeFolderView(); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▱</span><span><strong>Materialien</strong><small>Fächer, Ordner und Dateien</small></span></button>
-                  </div>
-                </MegaMenuGroup>
+                <div className="lm-mega-menu-links">
+                  <button type="button" onClick={() => { navigateToView('appointments'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Termine</strong><small>Besprechungen und Erinnerungen</small></span></button>
+                  <button type="button" onClick={() => { navigateToView('klausurplan'); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">▤</span><span><strong>Klausurplan</strong><small>Prüfungen sicher koordinieren</small></span></button>
+                </div>
               </>}
               {desktopMegaMenuArea === 'tools' && <>
                 <div className="lm-mega-menu-intro"><span>Apps &amp; Werkzeuge</span><strong>Unterrichtstools und externe Anwendungen.</strong></div>
