@@ -45,7 +45,6 @@ export default function Sidebar({
   const [draggingFileName, setDraggingFileName] = useState('');
   const [folderDropTarget, setFolderDropTarget] = useState(null);
   const [draggingFolderId, setDraggingFolderId] = useState(null);
-  const [expandedSubtreeId, setExpandedSubtreeId] = useState(null);
   const accent = subject.color;
   const subjectList = (subjects.length ? subjects : [subject]).filter(Boolean);
 
@@ -264,8 +263,6 @@ export default function Sidebar({
                     draggingFolderId={draggingFolderId}
                     onFolderDragStart={(id) => setDraggingFolderId(id)}
                     onFolderDragEnd={() => { setDraggingFolderId(null); setFolderDropTarget(null); }}
-                    onExpandSubtree={setExpandedSubtreeId}
-                    expandDescendants={node.id === expandedSubtreeId}
                     onDragOver={handleDragOver}
                     onFileDrop={handleFileDrop}
                     onFolderDrop={handleFolderDrop}
@@ -334,11 +331,11 @@ function TreeNode({
   fileDropTargetId, draggingFileName,
   folderDropTarget, draggingFolderId,
   onFolderDragStart, onFolderDragEnd,
-  onExpandSubtree, expandDescendants = false,
   onDragOver, onFileDrop, onFolderDrop, onDragLeave,
   t,
 }) {
-  const [expanded, setExpanded] = useState(depth < 1);
+  const [expanded, setExpanded] = useState(false);
+  const [flyoutPosition, setFlyoutPosition] = useState(null);
   const [hovered, setHovered] = useState(false);
   const rowRef = useRef(null);
 
@@ -355,10 +352,41 @@ function TreeNode({
     if (isActive) rowRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   }, [isActive]);
 
+  useLayoutEffect(() => {
+    if (!expanded || !hasChildren || collapsed) return undefined;
+
+    const updatePosition = () => {
+      const rect = rowRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const panelWidth = Math.min(280, Math.max(160, viewportWidth - 16));
+      const estimatedHeight = Math.min(420, Math.max(ROW_H + 12, node.children.length * ROW_H + 12));
+      const panelHeight = Math.min(estimatedHeight, viewportHeight - 16);
+      const opensLeft = viewportWidth - rect.right < panelWidth + 8 && rect.left >= panelWidth + 8;
+      const left = opensLeft ? rect.left - panelWidth - 4 : rect.right + 4;
+
+      setFlyoutPosition({
+        left: Math.max(8, Math.min(left, viewportWidth - panelWidth - 8)),
+        top: Math.max(8, Math.min(rect.top, viewportHeight - panelHeight - 8)),
+        width: panelWidth,
+        maxHeight: panelHeight,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [collapsed, expanded, hasChildren, node.children.length]);
+
   const handleToggle = (e) => {
     e.stopPropagation();
     e.preventDefault();
-    onExpandSubtree?.(null);
     setExpanded((v) => !v);
   };
 
@@ -366,12 +394,8 @@ function TreeNode({
     onSelect(node, e.currentTarget.getBoundingClientRect());
     if (hasChildren) {
       setExpanded(true);
-      onExpandSubtree?.(node.id);
     }
   };
-
-  // Tree line X for this depth (center of expand toggle)
-  const lineX = depth * INDENT + 8;
 
   return (
     <div className="lm-sidebar-tree-node">
@@ -435,7 +459,9 @@ function TreeNode({
           }}
           onDragEnd={onFolderDragEnd}
           onKeyDown={(e) => {
-            if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
+            if (e.key === 'Escape' && hasChildren) {
+              setExpanded(false);
+            } else if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
               e.preventDefault();
               handleClick(e);
             }
@@ -474,6 +500,8 @@ function TreeNode({
             }
           }}
           onDragLeave={onDragLeave}
+          aria-expanded={hasChildren ? expanded : undefined}
+          aria-controls={hasChildren && expanded ? `lm-folder-flyout-${node.id}` : undefined}
           aria-grabbed={isDragging}
         >
           {/* Expand toggle (only when not collapsed) */}
@@ -549,26 +577,18 @@ function TreeNode({
         )}
       </div>
 
-      {/* Children subtree */}
-      {!collapsed && hasChildren && (expanded || expandDescendants) && (
-        <div style={{ position: 'relative' }}>
-          {/* Vertical guide line */}
-          <div
-            style={{
-              position: 'absolute',
-              left: lineX,
-              top: 0,
-              bottom: ROW_H / 2,
-              width: 1,
-              background: 'var(--c-tree-line, var(--c-border))',
-              pointerEvents: 'none',
-            }}
-          />
+      {/* Children open in a viewport-aware flyout, so every level stays beside its parent. */}
+      {!collapsed && hasChildren && expanded && flyoutPosition && createPortal(
+        <FolderFlyout
+          id={`lm-folder-flyout-${node.id}`}
+          position={flyoutPosition}
+          onClose={() => setExpanded(false)}
+        >
           {node.children.map((child) => (
             <TreeNode
               key={child.id}
               node={child}
-              depth={depth + 1}
+              depth={0}
               collapsed={collapsed}
               accent={accent}
               activeFolderId={activeFolderId}
@@ -581,8 +601,6 @@ function TreeNode({
               draggingFolderId={draggingFolderId}
               onFolderDragStart={onFolderDragStart}
               onFolderDragEnd={onFolderDragEnd}
-              onExpandSubtree={onExpandSubtree}
-              expandDescendants={expandDescendants}
               onDragOver={onDragOver}
               onFileDrop={onFileDrop}
               onFolderDrop={onFolderDrop}
@@ -590,8 +608,36 @@ function TreeNode({
               t={t}
             />
           ))}
-        </div>
+        </FolderFlyout>,
+        document.body,
       )}
+    </div>
+  );
+}
+
+// ── Folder flyout ─────────────────────────────────────────────────────────
+function FolderFlyout({ id, position, onClose, children }) {
+  return (
+    <div
+      id={id}
+      role="group"
+      aria-label="Unterordner"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          onClose();
+        }
+      }}
+      style={{
+        position: 'fixed', left: position.left, top: position.top,
+        width: position.width, maxHeight: position.maxHeight,
+        overflowY: 'auto', overflowX: 'hidden', zIndex: 1000,
+        padding: '6px 0', background: 'var(--c-surface)',
+        border: '1px solid var(--c-border)', borderRadius: 8,
+        boxShadow: '0 12px 28px rgba(0, 0, 0, 0.18)',
+      }}
+    >
+      {children}
     </div>
   );
 }
