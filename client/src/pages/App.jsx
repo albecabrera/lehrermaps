@@ -1231,7 +1231,9 @@ export default function App({ onLogout }) {
                     return;
                   }
                   setDesktopMegaMenuArea(area);
-                  setDesktopMegaMenuGroups(area === 'tools' ? { 'tools-connected': true } : {});
+                  setDesktopMegaMenuGroups(
+                    area === 'teaching' ? { 'teaching-plan': true } : area === 'tools' ? { 'tools-connected': true } : {},
+                  );
                   setDesktopMegaMenuOpen(true);
                 }}
               >
