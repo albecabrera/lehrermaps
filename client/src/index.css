@@ -1646,36 +1646,8 @@ button:active {
 .lm-home-section-heading .lm-home-kicker { margin-bottom: 5px; }
 .lm-home-section-heading h2 { font-size: clamp(25px, 3vw, 34px); line-height: 1.08; }
 .lm-home-section-heading > span { padding-bottom: 3px; color: var(--c-text-3); font-size: 12px; font-weight: 700; }
-.lm-home-subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(218px, 1fr)); gap: 14px; }
-.lm-home-subject-card {
-  position: relative;
-  min-height: 180px;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  overflow: hidden;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-lg);
-  background: var(--c-surface);
-  box-shadow: 0 1px 1px rgba(54, 47, 38, .04);
-  color: var(--c-text);
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
-}
-.lm-home-subject-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--subject-color); }
-.lm-home-subject-card:hover { border-color: color-mix(in srgb, var(--subject-color) 50%, var(--c-border)); box-shadow: 0 16px 30px rgba(54, 47, 38, .10); transform: translateY(-3px); }
-.lm-home-subject-card:focus-visible { outline: 3px solid color-mix(in srgb, var(--subject-color) 45%, var(--c-focus)); outline-offset: 3px; }
-.lm-home-subject-card-top { display: flex; align-items: flex-start; justify-content: space-between; }
-.lm-home-subject-monogram { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: var(--subject-soft); color: var(--subject-dark); font-size: 12px; font-weight: 900; letter-spacing: .02em; }
-.lm-home-subject-arrow { color: var(--c-text-3); font-size: 20px; line-height: 1; transition: color .18s ease, transform .18s ease; }
-.lm-home-subject-card:hover .lm-home-subject-arrow { color: var(--subject-color); transform: translate(2px, -2px); }
-.lm-home-subject-name { margin-top: auto; font-size: 18px; font-weight: 800; letter-spacing: -.025em; }
-.lm-home-subject-meta { margin-top: 4px; color: var(--c-text-3); font-size: 12px; font-weight: 600; }
 [data-theme="dark"] .lm-app-shell { background: var(--c-bg) !important; }
 [data-theme="dark"] .lm-tabbar { background: var(--c-tab-bg) !important; }
-[data-theme="dark"] .lm-home-subject-card { box-shadow: inset 0 1px 0 rgba(255,255,255,.025); }
 @media (max-width: 1100px) {
   /* Mobile/tablet use the dedicated launcher strip. Keep the desktop
      navigation out of the layout so each external app (including Logineo)
@@ -1864,12 +1836,6 @@ button:active {
   .lm-home-view { padding-top: 32px; padding-bottom: calc(32px + var(--safe-area-bottom)); }
   .lm-home-intro { margin-bottom: 38px; }
 }
-@media (max-width: 520px) {
-  .lm-home-subject-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .lm-home-subject-card { min-height: 154px; padding: 15px; border-radius: 14px; }
-  .lm-home-subject-name { font-size: 15px; }
-  .lm-home-section-heading h2 { font-size: 26px; }
-}
 
 /* Jahresplanung quick capture */
 .lm-annual-planning{min-height:100%;padding:24px clamp(16px,3vw,40px) 42px;color:var(--c-text);overflow:auto;background:linear-gradient(180deg,var(--c-surface-2),transparent 360px)}
@@ -1903,12 +1869,10 @@ button:active {
 .lm-folder-overview {
   background: radial-gradient(ellipse 70% 40% at 80% -8%, rgba(15, 158, 154, .07), transparent 70%);
 }
-.lm-home-subject-card,
 .lm-folder-card {
   border-color: var(--c-border) !important;
   box-shadow: 0 1px 2px rgba(23, 59, 102, .04) !important;
 }
-.lm-home-subject-card:hover,
 .lm-folder-card:hover {
   border-color: color-mix(in srgb, #0F9E9A 40%, var(--c-border)) !important;
   box-shadow: 0 14px 30px rgba(23, 59, 102, .12) !important;
@@ -2681,7 +2645,6 @@ textarea:focus {
   animation: lm-premium-enter var(--lm-motion-enter) var(--lm-motion-ease) both;
 }
 
-.lm-home-subject-card,
 .lm-folder-card,
 .lm-editorial-card,
 .lm-annual-entry-card,
@@ -3219,7 +3182,6 @@ button:not(:disabled):focus-visible,
 .lm-desktop-app-rail,
 .lm-floating-klasurplan-switcher,
 .lm-editorial-card,
-.lm-home-subject-card,
 .lm-folder-card,
 .lm-annual-entry-card,
 .lm-today-lesson-card,
@@ -4060,41 +4022,6 @@ button:not(:disabled):focus-visible,
   .lm-today-summary-card > .lm-today-lesson-card { padding: 19px !important; }
 }
 
-/* Unterricht vorbereiten: shared surfaces, chips and calm, purposeful feedback. */
-.lm-lesson-dashboard { flex: 1; min-width: 0; overflow: auto; padding: clamp(28px, 5vw, 64px); background: var(--c-surface-2); }
-.lm-lesson-dashboard-shell { width: min(1120px, 100%); margin: 0 auto; }
-.lm-lesson-command-header, .lm-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
-.lm-lesson-command-header { margin-bottom: 28px; }
-.lm-lesson-command-header h1 { margin: 5px 0 8px; font: 600 clamp(32px, 4vw, 48px)/1.04 var(--font-editorial); letter-spacing: -.04em; }
-.lm-lesson-command-header p, .lm-lesson-card p { margin: 0; color: var(--c-text-2); line-height: 1.5; }
-.lm-lesson-create { flex-shrink: 0; background: linear-gradient(135deg, var(--lesson-accent, var(--c-turquoise)), var(--c-navy)); }
-.lm-section-heading { margin: 28px 0 12px; }
-.lm-section-heading h2 { margin: 4px 0 0; font: 600 clamp(21px, 2vw, 27px)/1.15 var(--font-editorial); letter-spacing: -.025em; }
-.lm-status-chip { display: inline-flex; align-items: center; min-height: 26px; padding: 0 9px; border: 1px solid color-mix(in srgb, var(--c-turquoise) 25%, var(--c-border)); border-radius: 999px; background: color-mix(in srgb, var(--c-turquoise) 9%, var(--c-surface)); color: var(--c-text-2); font-size: 11px; font-weight: 800; white-space: nowrap; }
-.lm-status-chip.is-active { background: #16a34a18; border-color: #16a34a55; color: #15803d; }
-.lm-status-chip.is-completed { background: #2563eb14; border-color: #2563eb44; color: #1d4ed8; }
-.lm-status-chip.is-draft { background: #f59e0b17; border-color: #f59e0b55; color: #b45309; }
-.lm-lesson-list { display: grid; gap: 10px; }
-.lm-lesson-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, .42fr); gap: 20px; padding: 18px; border: 1px solid var(--c-border); border-radius: var(--radius-md); background: color-mix(in srgb, var(--c-surface) 92%, transparent); box-shadow: var(--shadow-sm); transition: transform .18s var(--ease-out), box-shadow .18s ease, border-color .18s ease; }
-.lm-lesson-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--lesson-accent) 46%, var(--c-border)); box-shadow: var(--shadow-md); }
-.lm-lesson-card-main { display: flex; gap: 12px; min-width: 0; }
-.lm-lesson-subject-dot { width: 12px; height: 12px; margin-top: 6px; flex: 0 0 auto; border-radius: 50%; background: var(--lesson-accent, var(--c-turquoise)); box-shadow: 0 0 0 5px color-mix(in srgb, var(--lesson-accent, var(--c-turquoise)) 14%, transparent); }
-.lm-lesson-card-meta { display: flex; gap: 6px; color: var(--c-text-3); font-size: 12px; font-weight: 700; }
-.lm-lesson-card h3 { margin: 5px 0 5px; font-size: 17px; letter-spacing: -.015em; }
-.lm-lesson-card-side { display: grid; justify-items: end; align-content: center; gap: 9px; }
-.lm-lesson-progress-label { display: flex; width: 100%; justify-content: space-between; gap: 8px; color: var(--c-text-3); font-size: 11px; font-weight: 700; }
-.lm-lesson-progress { width: 100%; height: 7px; overflow: hidden; border-radius: 999px; background: var(--c-surface-3, var(--c-border-soft)); }
-.lm-lesson-progress i { display: block; height: 100%; border-radius: inherit; background: var(--lesson-accent, var(--c-turquoise)); transition: width .25s var(--ease-out); }
-.lm-empty-state { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: clamp(22px, 4vw, 38px); border: 1px dashed color-mix(in srgb, var(--c-turquoise) 42%, var(--c-border)); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--c-turquoise) 6%, var(--c-surface)); }
-.lm-empty-state > span { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 15px; background: var(--c-surface); color: var(--c-turquoise); box-shadow: var(--shadow-sm); font-size: 22px; }
-.lm-empty-state h2 { margin: 0 0 5px; font-size: 20px; }
-.lm-empty-state p { margin: 0; color: var(--c-text-2); line-height: 1.5; }
-.lm-today-prepare { background: linear-gradient(135deg, var(--c-turquoise), var(--c-navy)); }
-.lm-schedule-view .lm-schedule-header { padding: 14px 16px; border: 1px solid var(--c-border); border-radius: var(--radius-md); background: color-mix(in srgb, var(--c-surface) 86%, transparent); box-shadow: var(--shadow-sm); }
-.lm-folder-card, .lm-file-table, .lm-editorial-card { box-shadow: var(--shadow-sm); }
-@media (max-width: 860px) { .lm-lesson-dashboard { padding: 20px 14px calc(26px + env(safe-area-inset-bottom)); } .lm-lesson-command-header, .lm-section-heading { align-items: flex-start; flex-direction: column; gap: 12px; } .lm-lesson-create { width: 100%; } .lm-lesson-card { grid-template-columns: 1fr; gap: 14px; } .lm-lesson-card-side { justify-items: stretch; } .lm-lesson-card-side .lm-button { width: 100%; } .lm-empty-state { grid-template-columns: 1fr; } .lm-today-header-actions { width: 100%; } .lm-today-header-actions .lm-button { flex: 1 1 170px; } }
-@media (prefers-reduced-motion: reduce) { .lm-lesson-card, .lm-lesson-progress i { transition: none !important; } .lm-lesson-card:hover { transform: none; } }
-
 /* Unterrichtsmodus: eine klare nächste Handlung, Phasen als lesbare Zeitlinie. */
 .lm-teaching-command-panel { box-shadow: 10px 0 30px color-mix(in srgb, var(--c-navy) 7%, transparent); }
 .lm-teaching-lesson-head { padding: 4px 2px 12px; border-bottom: 1px solid var(--c-border-soft); }
@@ -4275,6 +4202,44 @@ button:not(:disabled):focus-visible,
 @media (prefers-reduced-motion: reduce) {
   .lm-mega-menu-panel { animation: none; }
   .lm-mega-menu-area-trigger, .lm-mega-menu-chevron, .lm-mega-menu-group-chevron, .lm-mega-menu-links > a, .lm-mega-menu-links > button { transition: none; }
+}
+
+
+/* Prominent authenticated brand across desktop, tablet, and phone layouts. */
+.lm-tabbar .lm-app-brand--prominent {
+  gap: 9px;
+  padding-inline: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--c-turquoise) 34%, var(--c-border));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c-turquoise) 10%, var(--c-surface)), var(--c-surface));
+  box-shadow: 0 5px 16px rgba(15, 59, 102, .10), inset 0 1px 0 rgba(255, 255, 255, .58);
+}
+.lm-tabbar .lm-app-brand--prominent .lm-brand-mark {
+  padding: 3px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(15, 59, 102, .16);
+}
+.lm-tabbar .lm-app-brand--prominent .lm-brand-name {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+@media (max-width: 1100px) {
+  .lm-tabbar .lm-app-brand--prominent {
+    width: auto;
+    min-width: 0;
+    height: 48px;
+    min-height: 48px;
+    padding-inline: 6px 10px;
+  }
+  .lm-tabbar .lm-app-brand--prominent .lm-brand-name { font-size: 14px; }
+}
+@media (max-width: 600px) {
+  .lm-phone-focus-header .lm-app-brand--prominent {
+    width: 48px;
+    padding: 0;
+  }
+  .lm-phone-focus-header .lm-app-brand--prominent .lm-brand-name { display: none; }
 }
 
 /* Apps & Werkzeuge keeps its independent disclosures side by side, so opened

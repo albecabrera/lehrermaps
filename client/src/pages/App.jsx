@@ -41,9 +41,7 @@ import { useNotebook } from '../contexts/NotebookContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/MobileNav';
 import TeachingMode from '../components/TeachingMode';
-import LessonDashboard from '../components/LessonDashboard';
 import SchoolCalendarPdf from '../components/SchoolCalendarPdf';
-import HomeDashboard from '../components/HomeDashboard';
 import BugChecklist, { BugChecklistIcon } from '../components/BugChecklist';
 import KlausurplanWorkspace from '../components/KlausurplanWorkspace';
 import ClassroomTimer from '../components/ClassroomTimer';
@@ -55,11 +53,11 @@ const PLESK_TERMINAL_URL = 'https://h2953700.stratoserver.net:8443/modules/ssh-t
 const EXTERNAL_APP_RAIL_ORDER_STORAGE_KEY = 'lm-external-app-rail-order';
 
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
+  { id: 'ucs', name: 'UCS', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
+  { id: 'anton', name: 'ANTON', href: 'https://anton.app/', label: 'ANTON öffnen', iconSrc: '/assets/anton-favicon.ico' },
   { id: 'click-and-teach-5-6', name: 'click & teach 5/6', href: 'https://www.click-and-teach.de/Player/id/1280/page/8', label: 'click & teach 5/6 öffnen', iconSrc: 'https://www.click-and-teach.de/img/CCBLogo.png', iconClass: 'wide' },
   { id: 'click-and-teach-7-8', name: 'click & teach 7/8', href: 'https://www.click-and-teach.de/Player/id/1259/page/121', label: 'click & teach 7/8 öffnen', iconSrc: 'https://www.click-and-teach.de/img/CCBLogo.png', iconClass: 'wide' },
   { id: 'click-and-teach-9-10', name: 'click & teach 9/10', href: 'https://www.click-and-teach.de/Player/id/1399/page/61', label: 'click & teach 9/10 öffnen', iconSrc: 'https://www.click-and-teach.de/img/CCBLogo.png', iconClass: 'wide' },
-  { id: 'ucs', name: 'UCS', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
-  { id: 'anton', name: 'ANTON', href: 'https://anton.app/', label: 'ANTON öffnen', iconSrc: '/assets/anton-favicon.ico' },
   { id: 'vamos-1', name: 'Vamos adelante 1', href: 'https://bridge.klett.de/DUA-W9ISFVJLTT/?page=1', label: 'Vamos adelante 1 öffnen', iconSrc: '/assets/klett-favicon.ico' },
   { id: 'vamos-2', name: 'Vamos adelante 2', href: 'https://bridge.klett.de/DUA-CD68AUVZY1/?page=9', label: 'Vamos adelante 2 öffnen', iconSrc: '/assets/klett-favicon.ico' },
   { id: 'taskcards', name: 'TaskCards', href: 'https://www.taskcards.de/', label: 'TaskCards öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
@@ -278,7 +276,6 @@ export default function App({ onLogout }) {
   const [kbdMarkedFileId, setKbdMarkedFileId] = useState(null);
   const [kbdMarkedFolderId, setKbdMarkedFolderId] = useState(null);
   const [folderLessonSessions, setFolderLessonSessions] = useState([]);
-  const [lessonSessions, setLessonSessions] = useState([]);
   const [teachingMode, setTeachingMode] = useState(false);
   const [startNewLessonPlanning, setStartNewLessonPlanning] = useState(false);
   const [teachingSessionId, setTeachingSessionId] = useState(null);
@@ -423,7 +420,6 @@ export default function App({ onLogout }) {
       .catch(() => { if (!cancelled) setFolderLessonSessions([]); });
     return () => { cancelled = true; };
   }, [activeFolder?.id]);
-  useEffect(() => { getLessonSessions().then((sessions) => setLessonSessions(sessions || [])).catch(() => setLessonSessions([])); }, [teachingMode]);
   const subjectFolders = folders.filter((f) => f.subject === subjectId);
   const subjectRootFolders = subjectFolders.filter((f) => !f.parent_id);
   // Ahnenkette des aktiven Ordners (Wurzel → aktiv) für den Breadcrumb
@@ -1138,12 +1134,11 @@ export default function App({ onLogout }) {
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Workspace navigation — preserves the original visual language without restoring archived subject navigation. */}
       <header className={`lm-tabbar${isPhone ? ' lm-phone-focus-header' : ''}${isPhone && !phoneHeaderVisible ? ' is-collapsed' : ''}`} aria-label="Hauptnavigation">
-        <button className="lm-app-brand" type="button" onClick={() => { navigateToView('today'); setActivePageId(null); closeFolderView(); }} aria-label="Zu Heute">
-          <BrandMark size={isMobile ? 30 : 28} label={!isMobile} />
+        <button className="lm-app-brand lm-app-brand--prominent" type="button" onClick={() => { navigateToView('today'); setActivePageId(null); closeFolderView(); }} aria-label="Zu Heute">
+          <BrandMark size={isPhone ? 34 : 38} />
         </button>
         {isMobile && (
           <div className="lm-mobile-header-context" aria-live="polite">
-            <span>Lehrermaps</span>
             <strong>{mobileHeaderTitle}</strong>
           </div>
         )}
@@ -1349,8 +1344,6 @@ export default function App({ onLogout }) {
               onNavigate={openScheduleTarget}
             />
           </div>
-        ) : viewMode === 'lessons' ? (
-          <LessonDashboard sessions={lessonSessions} folders={folders} accent={accent} onOpen={(folder, lesson) => { setActiveFolder(folder); setSubjectId(folder.subject); setStartNewLessonPlanning(false); setTeachingSessionId(lesson.id); setTeachingMode(true); }} onPlan={(folder) => { setActiveFolder(folder); setSubjectId(folder.subject); setTeachingSessionId(null); setStartNewLessonPlanning(true); setTeachingMode(true); }} />
         ) : <>
         {!isMobile && <div style={{
           display: 'flex', flexShrink: 0, minHeight: 0, height: '100%',
@@ -2005,10 +1998,9 @@ export default function App({ onLogout }) {
       {isMobile && (
         <MobileBottomNav
           accent={accent}
-          active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : viewMode === 'lessons' ? 'lessons' : 'today'}
+          active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'today'}
           items={[
             { id: 'today', label: 'Heute', icon: navIcons.subjects, onClick: () => { navigateToView('today'); setActivePageId(null); closeFolderView(); } },
-            { id: 'lessons', label: 'Unterricht', icon: '✦', onClick: () => navigateToView('lessons') },
             { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => navigateToView('schedule') },
             { id: 'more', label: t('mobile.more'), icon: navIcons.more, onClick: () => setMoreSheetOpen(true) },
           ]}
