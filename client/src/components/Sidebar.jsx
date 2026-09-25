@@ -332,7 +332,7 @@ function TreeNode({
   folderDropTarget, draggingFolderId,
   onFolderDragStart, onFolderDragEnd,
   onDragOver, onFileDrop, onFolderDrop, onDragLeave,
-  t, inFlyout = false,
+  t,
 }) {
   const [expanded, setExpanded] = useState(false);
   const [flyoutPosition, setFlyoutPosition] = useState(null);
@@ -361,8 +361,8 @@ function TreeNode({
 
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      const panelWidth = Math.min(340, Math.max(220, viewportWidth - 16));
-      const estimatedHeight = Math.min(460, Math.max(112, node.children.length * 42 + 58));
+      const panelWidth = Math.min(280, Math.max(160, viewportWidth - 16));
+      const estimatedHeight = Math.min(420, Math.max(ROW_H + 12, node.children.length * ROW_H + 12));
       const panelHeight = Math.min(estimatedHeight, viewportHeight - 16);
       const opensLeft = viewportWidth - rect.right < panelWidth + 8 && rect.left >= panelWidth + 8;
       const left = opensLeft ? rect.left - panelWidth - 4 : rect.right + 4;
@@ -470,42 +470,26 @@ function TreeNode({
           style={{
             appearance: 'none', border: 'none', font: 'inherit', textAlign: 'left',
             width: collapsed ? 44 : '100%',
-            paddingLeft: collapsed ? 0 : inFlyout ? 12 : depth * INDENT + 4,
-            paddingRight: collapsed ? 0 : inFlyout ? 12 : 10,
-            paddingTop: inFlyout ? 9 : 5, paddingBottom: inFlyout ? 9 : 5,
-            margin: collapsed ? '2px auto' : inFlyout ? '0 8px' : 0,
+            paddingLeft: collapsed ? 0 : depth * INDENT + 4,
+            paddingRight: collapsed ? 0 : 10,
+            paddingTop: 5, paddingBottom: 5,
+            margin: collapsed ? '2px auto' : 0,
             display: 'flex', alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
             gap: 5, cursor: isDragging ? 'grabbing' : 'pointer',
-            background: isActive ? `color-mix(in srgb, ${nodeAccent} 13%, var(--c-surface))` : 'transparent',
-            borderLeft: !collapsed && isActive && !inFlyout ? `3px solid ${nodeAccent}` : '3px solid transparent',
-            borderRadius: collapsed || inFlyout ? 8 : 0,
+            background: isActive ? `${nodeAccent}14` : 'transparent',
+            borderLeft: !collapsed && isActive ? `3px solid ${nodeAccent}` : '3px solid transparent',
+            borderRadius: collapsed ? 8 : 0,
             color: isActive ? 'var(--c-text)' : depth === 0 ? 'var(--c-text)' : 'var(--c-text-2)',
-            fontSize: inFlyout ? 13 : depth === 0 ? 13.5 : 12.5,
-            fontWeight: isActive ? 700 : inFlyout || depth === 0 ? 600 : 400,
-            transition: 'background .16s ease, color .16s ease, box-shadow .16s ease, opacity .1s',
-            minHeight: inFlyout ? 42 : depth === 0 ? 34 : ROW_H,
+            fontSize: depth === 0 ? 13.5 : 12.5,
+            fontWeight: isActive ? 700 : depth === 0 ? 600 : 400,
+            transition: 'background .08s, color .08s, opacity .1s',
+            minHeight: depth === 0 ? 34 : ROW_H,
             opacity: isDragging ? 0.4 : 1,
             userSelect: 'none',
           }}
-          onMouseEnter={(e) => {
-            if (!isActive) e.currentTarget.style.background = inFlyout
-              ? `color-mix(in srgb, ${nodeAccent} 8%, var(--c-surface))`
-              : 'var(--c-hover-2)';
-            if (inFlyout) e.currentTarget.style.boxShadow = `inset 3px 0 0 ${nodeAccent}`;
-          }}
-          onMouseLeave={(e) => {
-            if (!isActive) e.currentTarget.style.background = 'transparent';
-            if (inFlyout) e.currentTarget.style.boxShadow = 'none';
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.outline = `2px solid color-mix(in srgb, ${nodeAccent} 62%, transparent)`;
-            e.currentTarget.style.outlineOffset = '-2px';
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.outline = 'none';
-            e.currentTarget.style.outlineOffset = '0';
-          }}
+          onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'var(--c-hover-2)'; }}
+          onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
           onDragOver={(e) => onDragOver(e, node.id)}
           onDrop={(e) => {
             e.stopPropagation();
@@ -622,7 +606,6 @@ function TreeNode({
               onFolderDrop={onFolderDrop}
               onDragLeave={onDragLeave}
               t={t}
-              inFlyout
             />
           ))}
         </FolderFlyout>,
@@ -649,24 +632,11 @@ function FolderFlyout({ id, position, onClose, children }) {
         position: 'fixed', left: position.left, top: position.top,
         width: position.width, maxHeight: position.maxHeight,
         overflowY: 'auto', overflowX: 'hidden', zIndex: 1000,
-        padding: '10px 0 12px', background: 'var(--c-surface)',
-        border: '1px solid color-mix(in srgb, var(--c-border) 82%, transparent)', borderRadius: 12,
-        boxShadow: '0 18px 40px rgba(15, 23, 42, 0.14), 0 3px 10px rgba(15, 23, 42, 0.06)',
+        padding: '6px 0', background: 'var(--c-surface)',
+        border: '1px solid var(--c-border)', borderRadius: 8,
+        boxShadow: '0 12px 28px rgba(0, 0, 0, 0.18)',
       }}
     >
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        margin: '0 12px 8px', padding: '0 0 9px',
-        borderBottom: '1px solid var(--c-border)',
-      }}>
-        <span style={{ width: 18, height: 2, borderRadius: 999, background: 'var(--c-accent)', opacity: 0.8 }} />
-        <span style={{
-          fontSize: 10, fontWeight: 700, letterSpacing: 1.1,
-          textTransform: 'uppercase', color: 'var(--c-text-3)',
-        }}>
-          Unterordner
-        </span>
-      </div>
       {children}
     </div>
   );
