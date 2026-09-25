@@ -1161,6 +1161,9 @@ export default function App({ onLogout }) {
             <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen" data-app-name="WebUntis">
               <span className="lm-webuntis-glyph" aria-hidden="true">W</span><span className="lm-mobile-header-app-label">WebUntis</span>
             </a>
+            <button className="lm-mobile-header-app lm-mobile-bug-checklist-trigger" type="button" onClick={() => setBugChecklistOpen(true)} aria-label="Bugs melden" title="Bugs melden">
+              <BugChecklistIcon size={20} />
+            </button>
           </nav>
         )}
         {isPhone && (
@@ -1184,6 +1187,15 @@ export default function App({ onLogout }) {
               aria-expanded={appRailVisible}
             >
               <span aria-hidden="true">▦</span>
+            </button>
+            <button
+              className="lm-phone-bug-checklist-trigger"
+              type="button"
+              onClick={() => setBugChecklistOpen(true)}
+              aria-label="Bugs melden"
+              title="Bugs melden"
+            >
+              <BugChecklistIcon size={20} />
             </button>
             <button
               className="lm-phone-header-toggle"
@@ -1268,22 +1280,21 @@ export default function App({ onLogout }) {
               </>}
               {desktopMegaMenuArea === 'tools' && <>
                 <div className="lm-mega-menu-intro"><span>Apps &amp; Werkzeuge</span><strong>Unterrichtstools und externe Anwendungen.</strong></div>
-                <MegaMenuGroup id="tools-classroom" label="Unterrichtswerkzeuge" isOpen={desktopMegaMenuGroups['tools-classroom']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'tools-classroom': !groups['tools-classroom'] }))}>
-                  <div className="lm-mega-menu-links"><button type="button" onClick={() => { setClassroomTimerOpen(true); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Klassenzeit</strong><small>Timer für den Unterricht</small></span></button></div>
-                </MegaMenuGroup>
-                <MegaMenuGroup id="tools-connected" label="Verbundene Anwendungen" isOpen={desktopMegaMenuGroups['tools-connected']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'tools-connected': !groups['tools-connected'] }))}>
-                  <div className="lm-mega-menu-links lm-mega-menu-links--tools">
-                    <a href={ONE_NOTE_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-onenote-glyph" aria-hidden="true">N</span><span><strong>OneNote</strong><small>In der installierten App öffnen</small></span></a>
-                    <a href={IDOCEO_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span><strong>iDoceo</strong><small>Klassenverwaltung öffnen</small></span></a>
-                    <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span><strong>WebUntis</strong><small>In neuem Tab öffnen</small></span></a>
-                    <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-mega-menu-link--icon-only" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen" onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/icons/notion.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /></a>
-                    <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-mega-menu-link--icon-only" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen" onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/icons/miro.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /></a>
-                    <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-mega-menu-link--icon-only" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail in neuem Tab öffnen" onClick={() => setDesktopMegaMenuOpen(false)}><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /></a>
-                  </div>
-                </MegaMenuGroup>
-                <MegaMenuGroup id="tools-support" label="Support" isOpen={desktopMegaMenuGroups['tools-support']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'tools-support': !groups['tools-support'] }))}>
-                  <div className="lm-mega-menu-links"><button type="button" className="lm-mega-menu-link--icon-only" aria-label="Bugs melden" title="Bugs melden" onClick={() => { setBugChecklistOpen(true); setDesktopMegaMenuOpen(false); }}><BugChecklistIcon size={16} /></button></div>
-                </MegaMenuGroup>
+                <div className="lm-mega-menu-tool-groups">
+                  <MegaMenuGroup id="tools-classroom" label="Unterrichtswerkzeuge" isOpen={desktopMegaMenuGroups['tools-classroom']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'tools-classroom': !groups['tools-classroom'] }))}>
+                    <div className="lm-mega-menu-links"><button type="button" onClick={() => { setClassroomTimerOpen(true); setDesktopMegaMenuOpen(false); }}><span aria-hidden="true">◷</span><span><strong>Klassenzeit</strong><small>Timer für den Unterricht</small></span></button></div>
+                  </MegaMenuGroup>
+                  <MegaMenuGroup id="tools-connected" label="Verbundene Anwendungen" isOpen={desktopMegaMenuGroups['tools-connected']} onToggle={() => setDesktopMegaMenuGroups((groups) => ({ ...groups, 'tools-connected': !groups['tools-connected'] }))}>
+                    <div className="lm-mega-menu-links lm-mega-menu-links--tools">
+                      <a href={ONE_NOTE_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-onenote-glyph" aria-hidden="true">N</span><span><strong>OneNote</strong><small>In der installierten App öffnen</small></span></a>
+                      <a href={IDOCEO_APP_URL} onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span><strong>iDoceo</strong><small>Klassenverwaltung öffnen</small></span></a>
+                      <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" onClick={() => setDesktopMegaMenuOpen(false)}><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span><strong>WebUntis</strong><small>In neuem Tab öffnen</small></span></a>
+                      <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-mega-menu-link--icon-only" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen" onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/icons/notion.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /></a>
+                      <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-mega-menu-link--icon-only" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen" onClick={() => setDesktopMegaMenuOpen(false)}><img src="/assets/icons/miro.png" className="lm-topbar-brand-icon" alt="" aria-hidden="true" /></a>
+                      <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-mega-menu-link--icon-only" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail in neuem Tab öffnen" onClick={() => setDesktopMegaMenuOpen(false)}><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /></a>
+                    </div>
+                  </MegaMenuGroup>
+                </div>
               </>}
             </section>
           )}
@@ -1291,6 +1302,7 @@ export default function App({ onLogout }) {
         <div className="lm-desktop-trailing-group">
           <div className="lm-topbar-tools">
             <button className="lm-spring lm-workspace-tool lm-classroom-timer-trigger" type="button" onClick={() => setClassroomTimerOpen(true)} title="Klassenzeit" aria-label="Klassenzeit öffnen"><span className="lm-classroom-timer-trigger-icon" aria-hidden="true">◷</span><span className="lm-classroom-timer-trigger-label">Timer</span></button>
+            <button className="lm-spring lm-workspace-tool lm-bug-checklist-trigger" type="button" onClick={() => setBugChecklistOpen(true)} title="Bugs melden" aria-label="Bugs melden"><BugChecklistIcon size={19} /></button>
             <button className="lm-spring lm-workspace-tool" onClick={toggleTheme} title={isDark ? t('app.theme_light') : t('app.theme_dark')} aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}>{isDark ? '☀' : '◐'}</button>
           </div>
           <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout"><span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span></button>

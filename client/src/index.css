@@ -4276,3 +4276,92 @@ button:not(:disabled):focus-visible,
   .lm-mega-menu-panel { animation: none; }
   .lm-mega-menu-area-trigger, .lm-mega-menu-chevron, .lm-mega-menu-group-chevron, .lm-mega-menu-links > a, .lm-mega-menu-links > button { transition: none; }
 }
+
+/* Apps & Werkzeuge keeps its independent disclosures side by side, so opened
+   tool groups can be scanned and used without closing their neighbours. */
+@media (min-width: 1101px) {
+  .lm-mega-menu-tool-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    align-items: start;
+    gap: 12px;
+  }
+  .lm-mega-menu-tool-groups .lm-mega-menu-group {
+    min-width: 0;
+    margin-top: 0;
+    transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+  }
+  .lm-mega-menu-tool-groups .lm-mega-menu-group:has(.lm-mega-menu-group-trigger[aria-expanded="true"]) {
+    border-color: color-mix(in srgb, var(--c-focus) 38%, var(--c-border));
+    background: color-mix(in srgb, var(--c-focus) 5%, var(--c-surface-2));
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--c-focus) 10%, transparent);
+  }
+  .lm-mega-menu-tool-groups .lm-mega-menu-group-content { padding: 0 14px 14px; }
+  .lm-mega-menu-tool-groups .lm-mega-menu-links {
+    max-inline-size: 100%;
+  }
+  .lm-mega-menu-tool-groups .lm-mega-menu-links > a,
+  .lm-mega-menu-tool-groups .lm-mega-menu-links > button {
+    flex-basis: 100%;
+    max-inline-size: none;
+  }
+}
+
+/* The issue checklist is available from every header variant, alongside the
+   timer and theme controls, without depending on the desktop mega menu. */
+.lm-bug-checklist-trigger svg,
+.lm-phone-bug-checklist-trigger svg,
+.lm-mobile-bug-checklist-trigger svg { display: block; }
+.lm-bug-checklist-trigger { color: var(--c-text-2); }
+.lm-bug-checklist-trigger:hover { color: var(--c-focus); }
+
+@media (max-width: 1100px) {
+  .lm-mobile-bug-checklist-trigger {
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+  }
+  [data-theme="dark"] .lm-mobile-bug-checklist-trigger {
+    border-color: color-mix(in srgb, var(--c-focus) 44%, var(--c-border));
+    background: color-mix(in srgb, var(--c-focus) 10%, var(--c-surface));
+    color: var(--c-text);
+  }
+}
+
+@media (max-width: 600px) {
+  .lm-phone-bug-checklist-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    min-width: var(--touch-target);
+    height: var(--touch-target);
+    min-height: var(--touch-target);
+    padding: 0;
+    border: 1px solid var(--c-border-soft);
+    border-radius: 12px;
+    background: var(--c-surface);
+    color: var(--c-text-2);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255,255,255,.42);
+    cursor: pointer;
+  }
+  .lm-phone-bug-checklist-trigger:hover,
+  .lm-phone-bug-checklist-trigger:focus-visible {
+    border-color: var(--c-focus);
+    background: var(--c-hover);
+    color: var(--c-focus);
+  }
+  .lm-phone-bug-checklist-trigger:focus-visible {
+    outline: 3px solid var(--c-focus);
+    outline-offset: 2px;
+  }
+  [data-theme="dark"] .lm-phone-bug-checklist-trigger {
+    border-color: color-mix(in srgb, var(--c-focus) 48%, var(--c-border));
+    background: var(--c-tab-bg);
+    color: var(--c-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-mega-menu-tool-groups .lm-mega-menu-group { transition: none; }
+}
