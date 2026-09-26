@@ -1227,7 +1227,7 @@ export default function App({ onLogout }) {
             sidebar remains in its existing drawer. */}
         {appRailVisible && <DesktopAppRail />}
         {viewMode === 'today' ? (
-          <TodayDashboard onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} />
+          <TodayDashboard onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} onOpenSchedule={() => navigateToView('schedule')} />
         ) : viewMode === 'klausurplan' ? (
           <KlausurplanWorkspace />
         ) : viewMode === 'appointments' ? (

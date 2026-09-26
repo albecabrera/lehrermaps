@@ -116,6 +116,30 @@ export function getCockpitLesson(schedule, now = new Date()) {
   return { kind: 'no-lessons' };
 }
 
+export function getScheduleOverviewRows(schedule) {
+  const { periods, breaks } = getScheduleSettings(schedule);
+  return periods.flatMap((period, index) => {
+    const before = [];
+    if (index === 2) before.push({ type: 'break', breakInfo: BREAKS[0], range: breaks[0] });
+    if (index === 4) before.push({ type: 'break', breakInfo: BREAKS[1], range: breaks[1] });
+    return [...before, { type: 'period', index, range: period }];
+  });
+}
+
+export function getScheduleOverviewState(schedule, now = new Date()) {
+  const weekday = now.getDay();
+  const todayDay = weekday >= 1 && weekday <= 5 ? weekday - 1 : null;
+  const lessonState = getCockpitLesson(schedule, now);
+  const lesson = lessonState?.lesson;
+  if (!lesson) return { todayDay, lessonState, highlightKey: null };
+
+  const lessonDay = lesson.start.getDay() - 1;
+  const highlightKey = lesson.isBreak
+    ? `${lesson.block === 'Pause 1' ? 'break-fruehstueck' : 'break-mittag'}-${lessonDay}`
+    : `${lessonDay}-${lesson.block - 1}`;
+  return { todayDay, lessonState, highlightKey };
+}
+
 export function remainingMinutes(lesson, now = new Date()) {
   return Math.max(0, Math.ceil((lesson.end.getTime() - now.getTime()) / 60_000));
 }

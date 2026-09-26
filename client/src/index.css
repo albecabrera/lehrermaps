@@ -4330,3 +4330,82 @@ button:not(:disabled):focus-visible,
 @media (prefers-reduced-motion: reduce) {
   .lm-mega-menu-tool-groups .lm-mega-menu-group { transition: none; }
 }
+
+/* Today desktop cockpit: the weekly timetable is read-only here; editing stays
+   in the dedicated schedule view. Phones retain the focused day-and-tasks view. */
+.lm-today-week-overview { display: none; }
+
+@media (min-width: 768px) {
+  .lm-today-shell { width: min(1440px, 100%); }
+  .lm-today-content > .lm-today-summary-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(300px, .7fr);
+    grid-template-areas: 'schedule tasks';
+    align-items: stretch;
+    min-height: min(680px, calc(100vh - 180px));
+    max-height: calc(100vh - 128px);
+  }
+  .lm-today-week-overview {
+    display: flex;
+    grid-area: schedule;
+    min-width: 0;
+    flex-direction: column;
+    padding: clamp(18px, 2.2vw, 30px);
+    overflow: auto;
+  }
+  .lm-today-summary-card > .lm-today-lesson-card { display: none; }
+  .lm-today-summary-card > .lm-today-tasks {
+    display: flex;
+    grid-area: tasks;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+    border-left: 1px solid color-mix(in srgb, var(--c-border) 74%, transparent) !important;
+  }
+  .lm-today-summary-card > .lm-today-tasks .lm-today-task-list {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+  }
+  .lm-today-week-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+  .lm-today-week-header h2 { margin: 3px 0 0; }
+  .lm-today-week-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+  .lm-today-week-actions .lm-button { min-height: 40px; padding: 0 10px; font-size: 12px; }
+  .lm-today-week-grid {
+    display: grid;
+    grid-template-columns: minmax(80px, .65fr) repeat(5, minmax(105px, 1fr));
+    gap: 5px;
+    min-width: 650px;
+  }
+  .lm-today-week-corner,
+  .lm-today-week-day { display: grid; min-height: 40px; place-content: center; text-align: center; color: var(--c-text-3); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+  .lm-today-week-day { border-bottom: 2px solid transparent; }
+  .lm-today-week-day span { min-height: 13px; color: var(--c-turquoise); font-size: 9px; letter-spacing: 0; text-transform: none; }
+  .lm-today-week-day.is-today { border-color: var(--c-turquoise); color: var(--c-text); }
+  .lm-today-week-row-label { display: grid; align-content: center; gap: 2px; padding: 8px 7px 8px 0; color: var(--c-text-2); font-size: 11px; text-align: right; }
+  .lm-today-week-row-label strong { font-size: 11px; }
+  .lm-today-week-row-label span { color: var(--c-text-3); font-family: "DM Mono", monospace; font-size: 9px; }
+  .lm-today-week-row-label.is-break { opacity: .75; }
+  .lm-today-week-cell { position: relative; display: flex; min-height: 70px; flex-direction: column; justify-content: center; gap: 3px; padding: 8px; border: 1px solid var(--c-border-soft); border-radius: 9px; background: color-mix(in srgb, var(--c-surface) 84%, transparent); color: var(--c-text); }
+  .lm-today-week-cell.is-today { background: color-mix(in srgb, var(--c-turquoise) 7%, var(--c-surface)); }
+  .lm-today-week-cell.is-break { min-height: 52px; background: color-mix(in srgb, var(--c-surface) 91%, var(--c-text-3)); }
+  .lm-today-week-cell.is-current { border: 2px solid var(--c-turquoise); background: color-mix(in srgb, var(--c-turquoise) 14%, var(--c-surface)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-turquoise) 14%, transparent); }
+  .lm-today-week-cell.is-next { border-color: color-mix(in srgb, var(--c-focus) 58%, var(--c-border)); background: color-mix(in srgb, var(--c-focus) 8%, var(--c-surface)); }
+  .lm-today-week-cell-label { display: flex; align-items: center; gap: 5px; min-width: 0; color: var(--c-text); font-size: 11px; font-weight: 750; line-height: 1.25; }
+  .lm-today-week-cell-label i { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; }
+  .lm-today-week-cell small { overflow: hidden; color: var(--c-text-3); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+  .lm-today-week-empty { color: var(--c-text-3); font-size: 13px; text-align: center; }
+  .lm-today-week-status { width: fit-content; padding: 2px 5px; border-radius: 4px; background: var(--c-turquoise); color: var(--c-navy-deep); font-size: 9px; font-weight: 850; text-transform: uppercase; }
+  .lm-today-week-materials { width: fit-content; min-height: 30px; margin-top: 2px; padding: 3px 6px; border: 1px solid var(--c-border); border-radius: 6px; color: var(--c-text-2); font-size: 10px; font-weight: 700; }
+}
+
+@media (min-width: 768px) and (max-width: 950px) {
+  .lm-today-view { padding-inline: 20px !important; }
+  .lm-today-content > .lm-today-summary-card { grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr); }
+  .lm-today-week-overview { padding: 18px; }
+  .lm-today-week-grid { grid-template-columns: 64px repeat(5, minmax(80px, 1fr)); min-width: 500px; }
+  .lm-today-week-cell { min-height: 64px; padding: 6px; }
+  .lm-today-week-actions .lm-button { padding: 0 8px; }
+}

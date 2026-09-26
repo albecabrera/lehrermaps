@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SCHEDULE_META_KEY, getCockpitLesson, getScheduleSettings, lessonsForDate } from '../schedule.js';
+import { SCHEDULE_META_KEY, getCockpitLesson, getScheduleOverviewRows, getScheduleOverviewState, getScheduleSettings, lessonsForDate } from '../schedule.js';
 
 const schedule = {
   [SCHEDULE_META_KEY]: { version: 1, periods: [
@@ -121,4 +121,38 @@ test('requires explicit, chronological break ranges for v2 metadata', () => {
   };
   assert.equal(getScheduleSettings(missingBreak).configured, true, 'legacy six-period metadata remains usable');
   assert.deepEqual(lessonsForDate(missingBreak, monday(9, 50)).map((entry) => entry.label), ['7b'], 'unconfigured breaks are never assigned invented times');
+});
+
+
+test('identifies today plus the cell for a current or next overview lesson', () => {
+  const current = getScheduleOverviewState(schedule, monday(8, 20));
+  assert.equal(current.todayDay, 0);
+  assert.equal(current.highlightKey, '0-0');
+  assert.equal(current.lessonState.kind, 'current');
+
+  const next = getScheduleOverviewState(schedule, monday(9, 50));
+  assert.equal(next.todayDay, 0);
+  assert.equal(next.highlightKey, '0-2');
+  assert.equal(next.lessonState.kind, 'next');
+});
+
+test('identifies a scheduled break cell and has no today column on weekends', () => {
+  const breakState = getScheduleOverviewState(scheduleWithBreaks, monday(9, 50));
+  assert.equal(breakState.highlightKey, 'break-fruehstueck-0');
+  assert.equal(breakState.lessonState.kind, 'current');
+
+  const weekend = getScheduleOverviewState(schedule, new Date(2026, 8, 6, 10));
+  assert.equal(weekend.todayDay, null);
+  assert.equal(weekend.highlightKey, '0-0');
+});
+
+
+test('orders overview rows with both pauses before their following blocks', () => {
+  const order = getScheduleOverviewRows(scheduleWithBreaks).map((row) => (
+    row.type === 'break' ? row.breakInfo.key : `period-${row.index + 1}`
+  ));
+  assert.deepEqual(order, [
+    'period-1', 'period-2', 'break-fruehstueck', 'period-3',
+    'period-4', 'break-mittag', 'period-5', 'period-6',
+  ]);
 });

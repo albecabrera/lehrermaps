@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import api, { getTodayDashboard, saveTodayDashboardTasks } from '../lib/api';
 import { usePendingSync } from '../lib/pendingSync';
-import { getCockpitLesson, remainingMinutes } from '../lib/schedule';
+import { getCockpitLesson, getScheduleOverviewRows, getScheduleOverviewState, getScheduleSettings, remainingMinutes } from '../lib/schedule';
 import { isTaskReminderEligible, normalizeTodayTasks, orderTasksByCompletion, taskDueAt, toggleTodayTask, updateTodayTaskDue, updateTodayTaskText } from '../lib/todayTasks';
 import { getTodayGreeting } from '../lib/todayGreeting';
 import { scheduleOneNoteTarget } from '../lib/externalApps';
@@ -41,7 +41,63 @@ function pendingTaskIsNewer(pending, backendTasks, dashboard) {
   return Number.isFinite(pendingAt) ? (!Number.isFinite(storedAt) || pendingAt > storedAt) : backendTasks.length === 0;
 }
 
-export default function TodayDashboard({ onOpenMaterials, onOpenTimer, onOpenOneNote }) {
+const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+
+function formatScheduleRange(range) {
+  return range?.start && range?.end ? `${range.start}–${range.end}` : '';
+}
+
+function TodayWeeklySchedule({ schedule, now, scheduleError, onOpenMaterials, onOpenTimer, onOpenSchedule }) {
+  const { todayDay, lessonState, highlightKey } = getScheduleOverviewState(schedule, now);
+  const highlightedLesson = lessonState?.lesson;
+  const rows = getScheduleOverviewRows(schedule);
+
+  return (
+    <section className="lm-today-week-overview" aria-labelledby="week-schedule-heading">
+      <div className="lm-today-week-header">
+        <div><div className="lm-eyebrow">WOCHE</div><h2 id="week-schedule-heading">Wochenstundenplan</h2></div>
+        <div className="lm-today-week-actions">
+          <button type="button" className="lm-button" onClick={onOpenTimer}>Timer öffnen</button>
+          <button type="button" className="lm-button lm-button-primary" onClick={onOpenSchedule}>Stundenplan bearbeiten</button>
+        </div>
+      </div>
+      {scheduleError && <div className="lm-today-state is-warning">Der Stundenplan konnte gerade nicht geladen werden. Bitte Verbindung prüfen.</div>}
+      {!schedule && <p className="lm-today-muted">Stundenplan wird geladen…</p>}
+      {schedule && !getScheduleSettings(schedule).configured && <div className="lm-today-state"><strong>Unterrichts- und Pausenzeiten fehlen noch.</strong><span>Lege die Block- und Pausenzeiten im Stundenplan fest, damit die aktuelle oder nächste Stunde markiert werden kann.</span></div>}
+      {schedule && getScheduleSettings(schedule).configured && <div className="lm-today-week-grid" role="table" aria-label="Wochenstundenplan von Montag bis Freitag">
+        <div className="lm-today-week-corner" role="columnheader">Zeit</div>
+        {DAYS.map((day, index) => <div key={day} role="columnheader" className={`lm-today-week-day${todayDay === index ? ' is-today' : ''}`}>{day}<span>{todayDay === index ? 'Heute' : ''}</span></div>)}
+        {rows.map((row) => {
+          const isBreak = row.type === 'break';
+          const time = formatScheduleRange(row.range);
+          const rowLabel = isBreak ? row.breakInfo.label : `Block ${row.index + 1}`;
+          return [
+            <div key={`${rowLabel}-label`} role="rowheader" className={`lm-today-week-row-label${isBreak ? ' is-break' : ''}`}><strong>{rowLabel}</strong>{time && <span>{time}</span>}</div>,
+            ...DAYS.map((day, dayIndex) => {
+              const key = isBreak ? `${row.breakInfo.key}-${dayIndex}` : `${dayIndex}-${row.index}`;
+              const rawCell = isBreak ? schedule[row.breakInfo.key]?.[dayIndex] : schedule[key];
+              const cell = rawCell && typeof rawCell === 'object' ? rawCell : null;
+              const isHighlight = highlightKey === key;
+              const isCurrent = isHighlight && lessonState.kind === 'current';
+              const isNext = isHighlight && lessonState.kind === 'next';
+              return <div key={key} role="cell" className={`lm-today-week-cell${todayDay === dayIndex ? ' is-today' : ''}${isBreak ? ' is-break' : ''}${isCurrent ? ' is-current' : ''}${isNext ? ' is-next' : ''}`}>
+                {cell?.label ? <>
+                  <span className="lm-today-week-cell-label"><i style={{ backgroundColor: cell.color || (isBreak ? '#64748B' : '#2563EB') }} />{cell.label}</span>
+                  {cell.location && <small>Raum {cell.location}</small>}
+                  {isHighlight && <span className="lm-today-week-status">{isCurrent ? 'Jetzt' : 'Nächste Stunde'}</span>}
+                  {cell.folderId && <button type="button" className="lm-text-button lm-today-week-materials" onClick={() => onOpenMaterials?.(cell.folderId)}>Materialien öffnen</button>}
+                </> : <span className="lm-today-week-empty">—</span>}
+              </div>;
+            }),
+          ];
+        })}
+      </div>}
+      {schedule && getScheduleSettings(schedule).configured && !highlightedLesson && <p className="lm-today-muted">Für diese Woche sind noch keine Unterrichtseinträge hinterlegt.</p>}
+    </section>
+  );
+}
+
+export default function TodayDashboard({ onOpenMaterials, onOpenTimer, onOpenOneNote, onOpenSchedule }) {
   const date = todayKey();
   const [now, setNow] = useState(() => new Date());
   const [schedule, setSchedule] = useState(null);
@@ -157,6 +213,7 @@ export default function TodayDashboard({ onOpenMaterials, onOpenTimer, onOpenOne
 
         <div className="lm-today-content">
           <section className="lm-editorial-card lm-today-summary-card">
+            <TodayWeeklySchedule schedule={schedule} now={now} scheduleError={scheduleError} onOpenMaterials={onOpenMaterials} onOpenTimer={onOpenTimer} onOpenSchedule={onOpenSchedule} />
             <section className="lm-today-lesson-card" aria-live="polite">
             <div className="lm-today-section-header"><div><div className="lm-eyebrow">{lessonState?.kind === 'current' ? 'JETZT' : 'NÄCHSTE STUNDE'}</div><h2>{lesson ? lesson.label : 'Dein Unterricht im Blick'}</h2></div>{lesson && <span className="lm-lesson-block">{lesson.blockLabel || `Block ${lesson.block}`}</span>}</div>
             {!lessonState && <p className="lm-today-muted">Stundenplan wird geladen…</p>}
