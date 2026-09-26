@@ -206,6 +206,7 @@ export default function TodayDashboard({ onOpenMaterials, onOpenTimer, onOpenOne
 
   return (
     <div className="lm-today-view">
+      <img className="lm-today-watermark" src="/assets/icons/esg-logo-overlay.svg" alt="" aria-hidden="true" />
       <div className="lm-today-shell">
         <header className="lm-today-header">
           <div><div className="lm-eyebrow">Dein Unterrichtstag</div><h1>{getTodayGreeting(now)}</h1><div className="lm-today-date">{now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div></div>
