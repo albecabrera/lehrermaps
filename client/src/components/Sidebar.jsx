@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import FolderIcon from './FolderIcon';
 import FileBadge from './FileBadge';
-import NotebookSidebar from './Notebooks/NotebookSidebar';
 import { detectKind, compareFolderNames } from '../constants/structure';
 import { useLang } from '../contexts/LangContext';
 
@@ -230,7 +229,6 @@ export default function Sidebar({
         padding: collapsed ? '8px 4px' : '8px 0',
       }}>
 
-        {!collapsed && <NotebookSidebar />}
         {loading ? (
           <SidebarSkeleton collapsed={collapsed} accent={accent} />
         ) : (

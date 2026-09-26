@@ -13,10 +13,9 @@ async function expectStatus(path, expected) {
 
 try {
   await expectStatus(`/api/display/${unknownToken}`, 404);
-  await expectStatus('/api/notebooks', 401);
   console.log(JSON.stringify({
     status: 'PASS',
-    checks: ['öffentliche Projektion ohne JWT', 'Notizbücher weiterhin geschützt'],
+    checks: ['öffentliche Projektion ohne JWT'],
   }, null, 2));
 } catch (error) {
   console.error(JSON.stringify({ status: 'FAIL', error: error.message }, null, 2));

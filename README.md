@@ -49,11 +49,7 @@ Die Links öffnen den click-&-teach-Player in einem neuen Browser-Tab und bleibe
 - **Links por carpeta**: guarda recursos externos junto al material de clase.
 - **Libros click & teach preconfigurados**: los grupos de Informatik tienen acceso directo a los libros correspondientes para Klasse 6, WP 7, WP 8, WP 9 y WP 10.
 - **QR para enlaces externos**: genera códigos QR para abrir recursos externos durante la clase.
-- **Notas y cuadernos**: editor enriquecido con Tiptap, notebooks, secciones y páginas.
 - **Horario semanal**: planificación de clases y vinculación con carpetas/materiales.
-- **Planificación anual**: crea planes por curso escolar y materia, añade horas lectivas, fechas, temas/títulos, notas, tipos de actividad y materiales vinculados; permite duplicar horas y exportar/importar planes completos en ZIP con sus adjuntos.
-- **Arbeitsblätter por hora**: cada hora de la planificación anual puede reunir directamente hojas de trabajo, presentaciones, recuadros de resumen y otros recursos; se admiten formatos habituales como `.png`, `.jpeg`, `.doc`, `.docx`, `.pdf`, `.txt`, `.xls`, `.xlsx`, `.ppt` y `.pptx`.
-- **Acceso desde la planificación**: las horas planificadas pueden abrirse en el modo de enseñanza con sus materiales y contenidos preparados.
 - **Panel diario persistente**: tareas y notas del día se guardan en el backend y permanecen disponibles después de recargar o volver a iniciar sesión.
 - **Checklist de bugs persistente**: registra incidencias, prioridades, estados y notas de seguimiento para que el equipo pueda continuar el diagnóstico después de recargar o iniciar sesión de nuevo.
 - **Búsqueda global**: acceso rápido a carpetas, archivos y contenido relevante.
@@ -219,15 +215,12 @@ La auditoría comprueba el manifest, los iconos, el service worker, los headers 
 
 La app inicializa/migra tablas desde `server/db.js`:
 
-- `folders`: carpetas por materia, grupo, padre, color, favorito, deadline y notas.
+- `folders`: carpetas por materia, grupo, padre, color, favorito y deadline.
 - `files`: archivos subidos, metadatos, deadline, rol de material y datos de versión.
 - `file_edit_copies`: copias de trabajo temporales para editar antes de crear una nueva versión.
 - `links`: recursos externos asociados a carpetas.
 - `schedule`: planificación semanal.
-- `notebooks`, `sections`, `pages`, `blocks`: sistema de notas/cuadernos.
-- `quick_notes`: notas rápidas.
 - `exams`: planificación o gestión de exámenes.
-- `annual_plans`, `annual_plan_entries`, `annual_plan_materials`: planificación anual por materia, hora y curso escolar, con enlaces a archivos y carpetas.
 - `today_dashboard_tasks`, `today_dashboard_notes`: tareas y notas rápidas persistentes del panel diario.
 - `bug_checklists`: incidencias persistentes del checklist de bugs, con estado, prioridad y notas.
 
@@ -249,7 +242,6 @@ GET    /api/folders
 POST   /api/folders
 PUT    /api/folders/:id
 PUT    /api/folders/reorder
-PUT    /api/folders/:id/notes
 PUT    /api/folders/:id/favorite
 PUT    /api/folders/:id/color
 PUT    /api/folders/:id/deadline
@@ -275,7 +267,7 @@ POST   /api/files/:id/versions/commit
 DELETE /api/files/:id
 ```
 
-También existen rutas para `links`, `schedule`, `notebooks`, `search`, `exams` y `ai` bajo `/api`.
+También existen rutas para `links`, `schedule`, `exams` y `ai` bajo `/api`.
 
 ---
 

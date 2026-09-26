@@ -297,17 +297,17 @@ router.get('/search', async (req, res) => {
     `(${fields.map((f) => `${normalizedSql3(f)} LIKE ?`).join(' OR ')})`
   ).join(' AND ');
   const fileFields = ['fi.original_name', 'fo.name', 'fo.group_name', 'fo.subject'];
-  const folderFields = ['name', 'group_name', 'subject', 'notes'];
+  const folderFields = ['name', 'group_name', 'subject'];
   const linkFields = ['li.title', 'li.url', 'fo.name', 'fo.group_name', 'fo.subject'];
   const fileWhere = tokens.length ? buildTokenWhere(fileFields) : `${normalizedSql3('fi.original_name')} LIKE ?`;
-  const folderWhere = tokens.length ? buildTokenWhere(folderFields) : `(${normalizedSql3('name')} LIKE ? OR ${normalizedSql3('notes')} LIKE ?)`;
+  const folderWhere = tokens.length ? buildTokenWhere(folderFields) : `${normalizedSql3('name')} LIKE ?`;
   const linkWhere = tokens.length ? buildTokenWhere(linkFields) : `(${normalizedSql3('li.title')} LIKE ? OR ${normalizedSql3('li.url')} LIKE ?)`;
   const fileParams = tokens.length
     ? tokens.flatMap((t) => fileFields.map(() => `%${t}%`))
     : [`%${norm}%`];
   const folderParams = tokens.length
     ? tokens.flatMap((t) => folderFields.map(() => `%${t}%`))
-    : [`%${norm}%`, `%${norm}%`];
+    : [`%${norm}%`];
   const linkParams = tokens.length
     ? tokens.flatMap((t) => linkFields.map(() => `%${t}%`))
     : [`%${norm}%`, `%${norm}%`];
@@ -324,13 +324,12 @@ router.get('/search', async (req, res) => {
       `, [...fileParams, FILE_LIMIT + 1, fileOffset]),
       pool.execute(`
         SELECT
-          id, name, subject, group_name, is_favorite,
-          CASE WHEN ${normalizedSql3('notes')} LIKE ? THEN 1 ELSE 0 END AS notes_match
+          id, name, subject, group_name, is_favorite
         FROM folders
         WHERE is_archived = 0 AND is_internal = 0 AND ${folderWhere}
-        ORDER BY notes_match DESC, name
+        ORDER BY name
         LIMIT ? OFFSET ?
-      `, [`%${norm}%`, ...folderParams, FOLDER_LIMIT + 1, folderOffset]),
+      `, [...folderParams, FOLDER_LIMIT + 1, folderOffset]),
       pool.execute(`
         SELECT li.id, li.title, li.url, li.created_at,
                fo.id AS folder_id, fo.name AS folder_name, fo.subject, fo.group_name

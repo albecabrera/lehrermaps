@@ -280,7 +280,7 @@ Keep initial navigation fast while loading feature-heavy tools only when a teach
 - Preserved route-level lazy loading for authenticated views and feature-level dynamic imports for QR, terminal, and other optional tools.
 - Configured stable production chunks for React, editor, PDF, terminal, and remaining vendor dependencies.
 - Kept CSS code splitting enabled and source maps disabled in production output.
-- Added content-visibility containment for long home, annual-planning, and PDF thumbnail sections where supported.
+- Added content-visibility containment for long home and PDF thumbnail sections where supported.
 - Bumped the service-worker cache and added the production brand SVG to the app shell cache.
 
 ### Verification boundary

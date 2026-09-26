@@ -216,16 +216,6 @@ router.put('/:id', teacherOnly, async (req, res) => {
   }
 });
 
-router.put('/:id/notes', teacherOnly, async (req, res) => {
-  const { content } = req.body;
-  try {
-    await pool.execute('UPDATE folders SET notes = ? WHERE id = ?', [content ?? '', req.params.id]);
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 router.put('/:id/color', teacherOnly, async (req, res) => {
   const { color } = req.body;
   try {

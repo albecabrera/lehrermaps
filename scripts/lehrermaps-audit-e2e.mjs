@@ -119,7 +119,6 @@ try {
     assert(folders.some(({ id, parent_id }) => id === child.id && Number(parent_id) === Number(root.id)), 'Unterordner fehlt oder ist falsch verschachtelt');
     await teacher.request(`/api/folders/${child.id}`, { method: 'PUT', body: JSON.stringify({ name: `${prefix}CHILD_EDITED` }) });
     await student.request('/api/folders', { method: 'POST', body: JSON.stringify({ name: `${prefix}STUDENT` }), expectedStatus: 403 });
-    await student.request(`/api/folders/${root.id}/notes`, { method: 'PUT', body: JSON.stringify({ content: prefix }), expectedStatus: 403 });
   });
 
   await check('Dateien: Vorschau, Suche, Rolle, Freigabe, Timer, ZIP und Link', async () => {
@@ -263,31 +262,6 @@ try {
     assert(history.some(({ annotation_id, action }) => Number(annotation_id) === Number(annotation.id) && action === 'update'), 'Annotationsverlauf enthält das Update nicht');
     await student.request(`/api/files/${pdfFile.id}/annotations`, { expectedStatus: 403 });
     await student.request(`/api/files/${pdfFile.id}/annotation-history`, { expectedStatus: 403 });
-  });
-
-  await check('Notizbücher: CRUD, Blöcke, Quick Notes, Suche und Nutzerisolation', async () => {
-    let notebook = await teacher.request('/api/notebooks', { method: 'POST', body: JSON.stringify({ title: `${prefix}NOTEBOOK`, color: '#2255AA' }) });
-    cleanup.defer(`Notizbuch ${notebook.id}`, () => teacher.request(`/api/notebooks/${notebook.id}`, { method: 'DELETE' }));
-    notebook = await teacher.request(`/api/notebooks/${notebook.id}`, { method: 'PATCH', body: JSON.stringify({ title: `${prefix}NOTEBOOK_EDITED` }) });
-    let section = await teacher.request('/api/sections', { method: 'POST', body: JSON.stringify({ notebook_id: notebook.id, title: `${prefix}SECTION` }) });
-    section = await teacher.request(`/api/sections/${section.id}`, { method: 'PATCH', body: JSON.stringify({ title: `${prefix}SECTION_EDITED` }) });
-    let pageRecord = await teacher.request('/api/pages', { method: 'POST', body: JSON.stringify({ section_id: section.id, title: `${prefix}PAGE` }) });
-    pageRecord = await teacher.request(`/api/pages/${pageRecord.id}`, { method: 'PATCH', body: JSON.stringify({ title: `${prefix}PAGE_EDITED` }) });
-    const blocks = await teacher.request(`/api/blocks/${pageRecord.id}`, {
-      method: 'PUT', body: JSON.stringify({ blocks: [{ type: 'text', content: { text: `${prefix}BLOCK` }, pos_x: 5, pos_y: 10, width: 420 }] }),
-    });
-    assert(blocks.length === 1, 'Notizblock wurde nicht gespeichert');
-    const quick = await teacher.request('/api/quicknotes', { method: 'POST', body: JSON.stringify({ content: `${prefix}QUICK` }) });
-    cleanup.defer(`Quick Note ${quick.id}`, () => teacher.request(`/api/quicknotes/${quick.id}`, { method: 'DELETE' }));
-    const search = await teacher.request(`/api/search?q=${encodeURIComponent(prefix)}`);
-    assert(JSON.stringify(search).includes(prefix), 'Notizinhalt fehlt in der Suche');
-
-    const studentNotebook = await student.request('/api/notebooks', { method: 'POST', body: JSON.stringify({ title: `${prefix}STUDENT_NOTEBOOK` }) });
-    cleanup.defer(`Schüler-Notizbuch ${studentNotebook.id}`, () => student.request(`/api/notebooks/${studentNotebook.id}`, { method: 'DELETE' }));
-    const teacherNotebooks = await teacher.request('/api/notebooks');
-    const studentNotebooks = await student.request('/api/notebooks');
-    assert(!teacherNotebooks.some(({ id }) => id === studentNotebook.id), 'Schüler-Notizbuch ist für Lehrer sichtbar');
-    assert(!studentNotebooks.some(({ id }) => id === notebook.id), 'Lehrer-Notizbuch ist für Schüler sichtbar');
   });
 
   await check('KI: nur Status- und Authentifizierungspfad', async () => {

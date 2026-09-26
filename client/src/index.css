@@ -994,61 +994,7 @@ button:active {
   outline: 2px solid var(--c-focus, #2563eb);
   outline-offset: 2px;
 }
-/* Jahresplanung: compact cards on narrow screens, table on desktop. */
-.lm-annual-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.lm-annual-table th { text-align: left; padding: 9px 8px; color: var(--c-text-3); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--c-border); }
-.lm-annual-table td { padding: 10px 8px; border-bottom: 1px solid var(--c-border-soft); vertical-align: top; }
-.lm-annual-type { display: inline-flex; padding: 3px 7px; border-radius: 999px; background: var(--c-surface-2); color: var(--c-text-2); font-size: 10px; white-space: nowrap; }
-.lm-annual-type[data-type="exam"], .lm-annual-type[data-type="classwork"] { color: #B91C1C; background: #FEE2E2; }
-.lm-annual-type[data-type="holiday"] { color: #047857; background: #D1FAE5; }
-.lm-annual-type[data-type="presentation"] { color: #7C3AED; background: #EDE9FE; }
-.lm-annual-type[data-type="school_event"] { color: #0369A1; background: #E0F2FE; }
-.lm-annual-table tbody tr, .lm-annual-card { cursor: pointer; }
-.lm-annual-table tbody tr:focus-visible, .lm-annual-card:focus-visible { outline: 2px solid var(--c-focus); outline-offset: -2px; }
-.lm-annual-table tbody tr:hover, .lm-annual-card:hover { background: var(--c-hover); }
-.lm-annual-detail { position: fixed; inset: 0; z-index: 1800; display: grid; place-items: center; padding: 20px; background: var(--c-overlay); backdrop-filter: blur(5px); }
-.lm-annual-detail-card { width: min(680px, 100%); max-height: min(720px, calc(100vh - 40px)); overflow: auto; border: 1px solid var(--c-border); border-radius: 14px; background: var(--c-surface); color: var(--c-text); box-shadow: var(--c-shadow-modal); }
-.lm-annual-detail-header { display: flex; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--c-border); }
-.lm-annual-detail-header h2 { margin: 4px 0 8px; font-size: 20px; line-height: 1.25; }
-.lm-annual-detail-date { color: var(--c-text-3); font-size: 12px; }
-.lm-annual-detail-close { width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--c-text-2); font-size: 24px; cursor: pointer; }
-.lm-annual-detail-close:hover { background: var(--c-hover); color: var(--c-text); }
-.lm-annual-detail-section { padding: 16px 20px; border-bottom: 1px solid var(--c-border-soft); }
-.lm-annual-detail-section h3 { margin: 0 0 8px; color: var(--c-text-2); font-size: 11px; letter-spacing: .5px; text-transform: uppercase; }
-.lm-annual-detail-section p { margin: 0; white-space: pre-wrap; color: var(--c-text); font-size: 13px; line-height: 1.55; }
-.lm-annual-detail-muted { color: var(--c-text-3) !important; }
-.lm-annual-material-list { display: grid; gap: 7px; }
-.lm-annual-material { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-surface-2); font-size: 13px; }
-.lm-annual-material-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lm-annual-material-actions { display: flex; flex-shrink: 0; gap: 10px; font-size: 12px; }
-.lm-annual-material-actions button { min-height: 44px; border: 0; background: transparent; color: #E8472A; font: inherit; cursor: pointer; }
-.lm-annual-detail-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; }
-.lm-annual-cards { display: none; }
-@media (max-width: 860px) {
-  .lm-annual-table-wrap { display: none; }
-  .lm-annual-cards { display: grid; gap: 8px; }
-  .lm-annual-card { display: grid; gap: 7px; padding: 12px; border: 1px solid var(--c-border); border-radius: 9px; background: var(--c-surface); }
-  .lm-annual-card > div:first-child { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .lm-annual-card p { margin: 0; color: var(--c-text-3); font-size: 12px; }
-  .lm-annual-detail { align-items: end; padding: 0; }
-  .lm-annual-detail-card { max-height: 82vh; border-radius: 16px 16px 0 0; border-bottom: 0; }
-  .lm-annual-material { align-items: flex-start; flex-direction: column; gap: 7px; }
-  .lm-annual-editor label { grid-column: auto !important; }
-  .lm-annual-planning { overflow-x: hidden !important; font-size: 16px; }
-  .lm-annual-planning input, .lm-annual-planning textarea, .lm-annual-planning select { font-size: 16px !important; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .lm-annual-planning *, .lm-welcome-login * { transition: none !important; animation: none !important; }
-}
-@media print {
-  body.lm-print-planning #root > * { visibility: hidden; }
-  body.lm-print-planning .lm-annual-print, body.lm-print-planning .lm-annual-print * { visibility: visible; }
-  body.lm-print-planning .lm-annual-print { position: absolute; inset: 0; padding: 12px; overflow: visible; }
-  body.lm-print-planning .lm-annual-no-print { display: none !important; }
-  body.lm-print-planning .lm-annual-cards { display: none !important; }
-  body.lm-print-planning .lm-annual-table-wrap { display: block !important; }
-}
-/* Lehrerhilfe visual phase canvas */
+/* Teaching canvas controls. */
 .lm-teaching-canvas{margin-top:22px;max-width:1000px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:12px;overflow:hidden}.lm-canvas-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--c-border)}.lm-canvas-toolbar strong{margin-right:auto}.lm-canvas-toolbar button{height:30px;padding:0 9px;border:1px solid var(--c-border);border-radius:7px;background:var(--c-surface-2);color:var(--c-text);cursor:pointer;font:inherit;font-size:11px}.lm-canvas-colors{display:flex;gap:4px;margin-left:6px}.lm-canvas-colors button{width:18px;height:18px;padding:0;border-radius:50%;border:1px solid #fff}.lm-canvas-surface{position:relative;min-height:360px;margin:14px;border:1px dashed var(--c-border);border-radius:9px;background:linear-gradient(90deg,transparent 24px,var(--c-border) 25px,transparent 26px),linear-gradient(transparent 24px,var(--c-border) 25px,transparent 26px);background-size:25px 25px}.lm-canvas-empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--c-text-3);font-size:13px}.lm-canvas-element{position:absolute;min-width:78px;min-height:32px;padding:8px 10px;border:2px solid;border-radius:8px;background:var(--c-surface);box-shadow:0 3px 10px #0001;cursor:pointer;font-size:13px}.lm-canvas-element.is-selected{box-shadow:0 0 0 3px #2563eb33}.lm-canvas-marker{border-radius:3px;background:#facc1544!important}.lm-canvas-circle{border-radius:50%;min-width:50px;min-height:50px;display:grid;place-items:center;background:transparent!important}.lm-canvas-arrow{border:0;background:transparent!important;font-size:30px;box-shadow:none}.lm-canvas-material{background:#eff6ff!important}.lm-canvas-solution{background:#fee2e2!important}.lm-canvas-element-actions{position:absolute;top:100%;left:0;z-index:2;display:flex;gap:4px;padding-top:4px}.lm-canvas-element-actions select,.lm-canvas-element-actions button,.lm-canvas-inspector input{height:28px;border:1px solid var(--c-border);border-radius:6px;background:var(--c-surface);color:var(--c-text);font:inherit;font-size:11px}.lm-canvas-element-actions button{width:28px}.lm-canvas-inspector{padding:10px 14px;border-top:1px solid var(--c-border);display:flex;gap:10px;align-items:center;font-size:12px}.lm-canvas-inspector input{flex:1;padding:0 8px}
 .lm-canvas-surface.is-drawing{cursor:crosshair}.lm-canvas-ink-layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .lm-canvas-surface{overflow:hidden;touch-action:none}.lm-canvas-world{position:absolute;inset:0;transform-origin:0 0;will-change:transform}.lm-canvas-surface.is-pannable{cursor:grab}.lm-canvas-surface.is-pannable:active{cursor:grabbing}.lm-canvas-zoom{display:flex;align-items:center;gap:4px;margin-left:auto}.lm-canvas-zoom button{min-width:28px;padding:0 7px}.lm-canvas-zoom span{min-width:42px;text-align:center;font-size:11px;color:var(--c-text-2)}
@@ -1807,108 +1753,7 @@ button:active {
   .lm-home-intro { margin-bottom: 38px; }
 }
 
-/* Jahresplanung quick capture */
-.lm-annual-planning{min-height:100%;padding:24px clamp(16px,3vw,40px) 42px;color:var(--c-text);overflow:auto;background:linear-gradient(180deg,var(--c-surface-2),transparent 360px)}
-.lm-annual-header,.lm-annual-list-header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;flex-wrap:wrap}.lm-annual-header{max-width:1120px;margin:0 auto 18px}.lm-annual-header h1,.lm-annual-list-header h2{margin:3px 0 4px;font-size:clamp(22px,3vw,30px);line-height:1.15}.lm-annual-header p,.lm-annual-list-header p,.lm-annual-quick-heading p,.lm-annual-material-picker p{margin:0;color:var(--c-text-3);font-size:13px}.lm-annual-eyebrow{margin:0;color:var(--c-text-3);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.lm-annual-header-actions{display:flex;align-items:end;gap:8px;flex-wrap:wrap}.lm-annual-header-actions label,.lm-annual-plan-settings label,.lm-annual-primary-fields label,.lm-annual-details-grid label,.lm-annual-material-search{display:grid;gap:5px;color:var(--c-text-2);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}.lm-annual-planning input,.lm-annual-planning textarea,.lm-annual-planning select{box-sizing:border-box;width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--c-border);border-radius:9px;background:var(--c-input-bg);color:var(--c-text);font:inherit;letter-spacing:normal;text-transform:none}.lm-annual-planning textarea{resize:vertical;line-height:1.45}.lm-annual-header-actions input{width:104px}.lm-annual-secondary,.lm-annual-plan-settings button,.lm-annual-save-row button,.lm-annual-detail-footer button{min-height:42px;padding:0 13px;border:1px solid var(--c-border);border-radius:9px;background:var(--c-surface);color:var(--c-text-2);font:inherit;font-size:13px;font-weight:700;cursor:pointer}.lm-annual-save-row button,.lm-annual-plan-settings button[style],.lm-annual-detail-footer button[style]{border-color:transparent;color:#fff}.lm-annual-secondary:hover,.lm-annual-entry-actions button:hover{background:var(--c-hover)}.lm-visually-hidden{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important}.lm-annual-feedback{max-width:1120px;margin:0 auto 12px;padding:11px 13px;border-radius:9px;font-size:13px}.lm-annual-feedback.is-error{background:var(--c-danger-bg);color:var(--c-danger-text)}.lm-annual-feedback.is-success{background:#dcfce7;color:#166534}.lm-annual-quick-entry{max-width:1120px;margin:0 auto 20px;padding:clamp(16px,3vw,24px);border:1px solid color-mix(in srgb,var(--c-accent,#2563eb) 32%,var(--c-border));border-radius:16px;background:var(--c-surface);box-shadow:0 10px 30px #0f172a0d}.lm-annual-quick-heading{display:flex;justify-content:space-between;gap:12px;align-items:start;margin-bottom:18px}.lm-annual-quick-heading h2{margin:3px 0 5px;font-size:20px}.lm-annual-primary-fields{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:14px;align-items:start}.lm-annual-content-field textarea{min-height:100px}.lm-annual-material-picker{display:grid;gap:10px;margin-top:18px;padding-top:18px;border-top:1px solid var(--c-border-soft)}.lm-annual-material-picker h3{margin:0 0 3px;font-size:14px}.lm-annual-dropzone{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:70px;padding:10px 12px;border:1px dashed var(--c-border);border-radius:10px;background:var(--c-surface-2);color:var(--c-text-2);font-size:13px}.lm-annual-dropzone.is-active{border-color:var(--c-accent,#2563eb);background:color-mix(in srgb,var(--c-accent,#2563eb) 8%,var(--c-surface))}.lm-annual-dropzone label{display:inline-flex;align-items:center;min-height:38px;padding:0 11px;border-radius:8px;background:var(--c-accent,#2563eb);color:#fff;font-size:12px;font-weight:700;cursor:pointer}.lm-annual-upload-status{font-size:12px!important}.lm-annual-selected-materials{display:flex;gap:6px;flex-wrap:wrap}.lm-annual-selected-materials span{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:6px 7px;border:1px solid var(--c-border);border-radius:7px;background:var(--c-surface-2);font-size:12px}.lm-annual-selected-materials button{width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--c-text-3);font-size:16px;cursor:pointer}.lm-annual-material-search{margin-top:4px}.lm-annual-material-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px;max-height:175px;overflow:auto;padding:2px}.lm-annual-material-results label{padding:7px 5px;color:var(--c-text-2);font-size:12px}.lm-annual-material-results input{width:auto;min-height:0;margin-right:5px}.lm-annual-details,.lm-annual-plan-settings{margin-top:18px;border-top:1px solid var(--c-border-soft)}.lm-annual-details summary,.lm-annual-plan-settings summary{padding:13px 0;cursor:pointer;color:var(--c-text-2);font-size:13px;font-weight:700}.lm-annual-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-bottom:6px}.lm-annual-full-width{grid-column:1/-1}.lm-annual-save-row{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:20px}.lm-annual-save-row span{color:var(--c-text-3);font-size:12px}.lm-annual-plan-settings{max-width:1120px;margin:0 auto 26px}.lm-annual-plan-settings>div{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:0 0 14px}.lm-annual-plan-settings label{width:180px}.lm-annual-list-section{max-width:1120px;margin:0 auto}.lm-annual-list-header{margin-bottom:14px}.lm-annual-filters{display:flex;gap:8px;flex-wrap:wrap}.lm-annual-filters select{width:auto;min-width:150px}.lm-annual-entry-list{display:grid;gap:9px}.lm-annual-entry-card{display:grid;grid-template-columns:125px minmax(0,1fr) auto;gap:16px;align-items:start;padding:16px;border:1px solid var(--c-border);border-radius:12px;background:var(--c-surface);cursor:pointer;transition:border-color .15s,transform .15s}.lm-annual-entry-card:hover{border-color:var(--c-accent,#2563eb);transform:translateY(-1px)}.lm-annual-entry-card:focus-visible{outline:3px solid color-mix(in srgb,var(--c-accent,#2563eb) 35%,transparent);outline-offset:2px}.lm-annual-entry-card time{font-size:14px;font-weight:800}.lm-annual-entry-content>div{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.lm-annual-entry-content h3{margin:7px 0 4px;font-size:15px}.lm-annual-entry-content p{margin:0;color:var(--c-text-2);font-size:13px;line-height:1.45;white-space:pre-wrap}.lm-annual-lesson-number,.lm-annual-attachment-count{color:var(--c-text-3);font-size:11px}.lm-annual-attachment-count{display:inline-block;margin-top:7px}.lm-annual-entry-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.lm-annual-entry-actions button{min-height:34px;padding:0 8px;border:0;border-radius:7px;background:transparent;color:var(--c-text-2);font:inherit;font-size:12px;font-weight:700;cursor:pointer}.lm-annual-entry-actions .is-danger{color:#dc2626}.lm-annual-empty{display:grid;place-items:center;gap:6px;min-height:160px;padding:20px;border:1px dashed var(--c-border);border-radius:12px;color:var(--c-text-3);text-align:center;font-size:13px}.lm-annual-empty strong{color:var(--c-text);font-size:15px}.lm-annual-loading{max-width:1120px;margin:50px auto;color:var(--c-text-3);text-align:center}
-@media (max-width:700px){.lm-annual-planning{padding:16px 14px 28px}.lm-annual-primary-fields,.lm-annual-details-grid{grid-template-columns:1fr}.lm-annual-entry-card{grid-template-columns:1fr;gap:10px}.lm-annual-entry-actions{justify-content:flex-start}.lm-annual-header-actions{align-items:start}.lm-annual-header-actions label{width:100%}.lm-annual-header-actions input{width:100%}.lm-annual-save-row{align-items:stretch;flex-direction:column}.lm-annual-save-row button{width:100%}.lm-annual-dropzone{align-items:stretch;flex-direction:column}.lm-annual-dropzone label{justify-content:center}.lm-annual-plan-settings label{width:100%}.lm-annual-detail{align-items:end;padding:0}.lm-annual-detail-card{max-height:88dvh;border-radius:16px 16px 0 0;border-bottom:0}.lm-annual-material{align-items:flex-start;flex-direction:column}.lm-annual-planning input,.lm-annual-planning textarea,.lm-annual-planning select{font-size:16px}}
-
-/* Authenticated editorial surfaces. */
-.lm-brand-name { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; }
-.lm-tabbar {
-  border-bottom: 1px solid color-mix(in srgb, var(--c-border) 84%, transparent) !important;
-  background: color-mix(in srgb, var(--c-tab-bg) 92%, transparent) !important;
-  backdrop-filter: blur(20px) saturate(155%);
-  -webkit-backdrop-filter: blur(20px) saturate(155%);
-}
-.lm-tabbar .lm-topbar-today.is-active,
-.lm-tabbar .lm-topbar-schedule.is-active {
-  color: #fff !important;
-  border-color: #173B66 !important;
-  background: #173B66 !important;
-  box-shadow: 0 6px 18px rgba(23, 59, 102, .22) !important;
-}
-.lm-tabbar .lm-topbar-today.is-active span,
-.lm-tabbar .lm-topbar-schedule.is-active span {
-  color: #fff !important;
-}
-.lm-sidebar {
-  border-right-color: var(--c-border) !important;
-  background: color-mix(in srgb, var(--c-surface) 94%, #F0F4F8) !important;
-}
-.lm-home-view,
-.lm-folder-overview {
-  background: radial-gradient(ellipse 70% 40% at 80% -8%, rgba(15, 158, 154, .07), transparent 70%);
-}
-.lm-folder-card {
-  border-color: var(--c-border) !important;
-  box-shadow: 0 1px 2px rgba(23, 59, 102, .04) !important;
-}
-.lm-folder-card:hover {
-  border-color: color-mix(in srgb, #0F9E9A 40%, var(--c-border)) !important;
-  box-shadow: 0 14px 30px rgba(23, 59, 102, .12) !important;
-  transform: translateY(-2px);
-}
-button:not(:disabled),
-[role="button"]:not([aria-disabled="true"]) { transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background-color .16s ease; }
-button:not(:disabled):active,
-[role="button"]:not([aria-disabled="true"]):active { transform: scale(.985); }
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-button:focus-visible,
-[role="button"]:focus-visible { outline: 3px solid color-mix(in srgb, var(--c-focus) 38%, transparent); outline-offset: 2px; }
-.lm-skip-link {
-  position: fixed;
-  z-index: 9999;
-  top: 12px;
-  left: 12px;
-  transform: translateY(-160%);
-  padding: 10px 14px;
-  border-radius: 9px;
-  background: #173B66;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 10px 24px rgba(23, 59, 102, .25);
-  transition: transform .16s ease;
-}
-.lm-skip-link:focus { transform: translateY(0); outline: 3px solid #48C7C1; outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
-}
-
-/* Phase 7 — shared component language */
-.lm-modal-surface,
-.lm-checklist-modal,
-.lm-upload-modal,
-.lm-add-link-modal {
-  border-color: color-mix(in srgb, var(--c-border) 88%, #173B66) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 24px 64px rgba(23, 59, 102, .2), 0 2px 8px rgba(23, 59, 102, .06) !important;
-}
-.lm-checklist-backdrop,
-.lm-upload-modal-backdrop,
-.lm-add-link-backdrop {
-  background: rgba(13, 27, 42, .45) !important;
-  backdrop-filter: blur(10px) saturate(135%);
-  -webkit-backdrop-filter: blur(10px) saturate(135%);
-}
-.lm-upload-modal-header,
-.lm-upload-modal-footer,
-.lm-add-link-footer,
-.lm-checklist-header,
-.lm-checklist-footer {
-  border-color: var(--c-border) !important;
-}
-.lm-upload-format-grid > *,
-.lm-add-link-qr {
-  border-color: var(--c-border) !important;
-  border-radius: 12px !important;
-  background: color-mix(in srgb, var(--c-surface-2) 70%, var(--c-surface)) !important;
-}
-input[type="search"],
-.lm-pdf-search,
+/* Shared compact input treatment. */
 .lm-search-input,
 select,
 .lm-pdf-page-input {
@@ -1984,7 +1829,6 @@ button[aria-pressed="true"] {
 /* Phase 9 — avoid expensive off-screen layout and paint work in long views. */
 @supports (content-visibility: auto) {
   .lm-home-section,
-  .lm-annual-entry-list,
   .lm-pdf-thumbnails {
     content-visibility: auto;
     contain-intrinsic-size: auto 560px;
@@ -2610,14 +2454,12 @@ textarea:focus {
 .lm-folder-overview,
 .lm-today-view,
 .lm-schedule-view,
-.lm-annual-planning,
 .lm-klausurplan-workspace {
   animation: lm-premium-enter var(--lm-motion-enter) var(--lm-motion-ease) both;
 }
 
 .lm-folder-card,
 .lm-editorial-card,
-.lm-annual-entry-card,
 .lm-today-lesson-card,
 .lm-schedule-grid-wrap {
   transition: transform var(--lm-motion-fast) var(--lm-motion-ease), box-shadow var(--lm-motion-fast) ease, border-color var(--lm-motion-fast) ease, background-color var(--lm-motion-fast) ease;
@@ -2811,8 +2653,7 @@ button:not(:disabled):focus-visible,
   .lm-folder-overview,
   .lm-today-view,
   .lm-schedule-view,
-  .lm-annual-planning,
-  .lm-klausurplan-workspace,
+    .lm-klausurplan-workspace,
   .lm-sidebar-drop-target,
   .lm-sidebar-tree-button,
   .lm-sidebar-tree-node,
@@ -3153,7 +2994,6 @@ button:not(:disabled):focus-visible,
 .lm-floating-klasurplan-switcher,
 .lm-editorial-card,
 .lm-folder-card,
-.lm-annual-entry-card,
 .lm-today-lesson-card,
 .lm-schedule-grid-wrap,
 .lm-klausurplan-document,
@@ -3869,23 +3709,12 @@ button:not(:disabled):focus-visible,
 
 /* Premium Black status feedback keeps state legible without reintroducing
    bright legacy panels in the dark theme. */
-[data-theme="dark"] .lm-annual-feedback.is-success {
-  border: 1px solid color-mix(in srgb, var(--c-success) 38%, var(--c-border));
-  background: var(--c-status-success-bg);
-  color: var(--c-success);
-}
-[data-theme="dark"] .lm-annual-feedback.is-error {
-  border: 1px solid var(--c-danger-border);
-  background: var(--c-danger-bg);
-  color: var(--c-danger);
-}
 [data-theme="dark"] .lm-confirm-warning,
 [data-theme="dark"] .lm-today-state.is-warning {
   border-color: color-mix(in srgb, var(--c-warning) 42%, var(--c-border));
   background: var(--c-status-warning-bg);
   color: var(--c-warning);
 }
-[data-theme="dark"] .lm-annual-entry-actions .is-danger { color: var(--c-danger); }
 
 @media (max-width: 600px) {
   .lm-phone-app-rail-toggle {
@@ -4388,7 +4217,7 @@ body, #root, .lm-app-shell { background: radial-gradient(ellipse 72% 46% at 100%
 .lm-modal-surface, .lm-checklist-modal, .lm-upload-modal, .lm-add-link-modal, .lm-klausurplan-preview-dialog, .lm-klasurplan-viewer-dialog { background: var(--c-surface-elevated) !important; box-shadow: var(--c-shadow-modal) !important; }
 .lm-tabbar .lm-topbar-today.is-active, .lm-tabbar .lm-topbar-schedule.is-active { background: var(--c-turquoise) !important; border-color: var(--c-turquoise) !important; color: #fff !important; box-shadow: 0 7px 18px color-mix(in srgb, var(--c-turquoise) 28%, transparent) !important; }
 .lm-tabbar .lm-topbar-today.is-active span, .lm-tabbar .lm-topbar-schedule.is-active span { color: #fff !important; }
-.lm-button-primary, .lm-annual-save-row button, .lm-annual-plan-settings button[style], .lm-annual-detail-footer button[style] { background: linear-gradient(135deg, var(--c-orange), color-mix(in srgb, var(--c-orange) 72%, #8f3d09)) !important; border-color: transparent !important; color: #fff !important; box-shadow: 0 8px 18px color-mix(in srgb, var(--c-orange) 25%, transparent) !important; }
+.lm-button-primary { background: linear-gradient(135deg, var(--c-orange), color-mix(in srgb, var(--c-orange) 72%, #8f3d09)) !important; border-color: transparent !important; color: #fff !important; box-shadow: 0 8px 18px color-mix(in srgb, var(--c-orange) 25%, transparent) !important; }
 .lm-button-primary:hover:not(:disabled) { filter: brightness(1.05); }
 a:not(.lm-button):not(.lm-mobile-brand-link) { color: var(--c-turquoise); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 42%, transparent); text-decoration-thickness: .08em; text-underline-offset: .18em; transition: color .16s ease, text-decoration-color .16s ease; }
 a:not(.lm-button):not(.lm-mobile-brand-link):hover { color: var(--c-focus); text-decoration-color: currentColor; }
@@ -4407,3 +4236,70 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
 [data-theme="dark"] .lm-today-watermark { opacity: .12; filter: saturate(.65) brightness(1.5); mix-blend-mode: screen; }
 @media (max-width: 767px) { .lm-today-watermark { width: 112vw; left: 50%; opacity: .09; } }
 @media (prefers-reduced-motion: reduce) { a:not(.lm-button):not(.lm-mobile-brand-link), button, [role="button"] { transition: none !important; } }
+
+/* One-time post-login welcome. The app stays unmounted until this short handoff
+   finishes, while a restored token bypasses it entirely. */
+.lm-login-welcome {
+  position: fixed;
+  z-index: 2000;
+  inset: 0;
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(24px, 6vw, 96px);
+  background:
+    radial-gradient(circle at 22% 18%, color-mix(in srgb, var(--c-turquoise) 34%, transparent), transparent 36%),
+    radial-gradient(circle at 82% 78%, color-mix(in srgb, var(--c-orange) 28%, transparent), transparent 42%),
+    linear-gradient(135deg, #071d35, #12395d 56%, #0f6f75);
+  color: #fff;
+}
+.lm-login-welcome::before,
+.lm-login-welcome::after {
+  position: absolute;
+  z-index: -1;
+  width: min(72vw, 720px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, .19);
+  border-radius: 50%;
+  content: '';
+}
+.lm-login-welcome::before { transform: translate(-34%, -26%); }
+.lm-login-welcome::after { transform: translate(37%, 33%); }
+.lm-login-welcome-orbit {
+  position: absolute;
+  z-index: -1;
+  width: min(92vw, 1020px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, .13);
+  border-radius: 50%;
+  animation: lm-login-welcome-orbit 5s cubic-bezier(.2, .7, .2, 1) both;
+}
+.lm-login-welcome-content {
+  max-width: 100%;
+  animation: lm-login-welcome-reveal .72s cubic-bezier(.16, 1, .3, 1) both;
+  text-align: center;
+}
+.lm-login-welcome h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(2.8rem, 11vw, 8.5rem);
+  font-weight: 800;
+  letter-spacing: clamp(-.09rem, -.065em, -.025rem);
+  line-height: .96;
+  text-wrap: balance;
+  text-shadow: 0 12px 44px rgba(2, 16, 31, .32);
+}
+@keyframes lm-login-welcome-reveal {
+  from { opacity: 0; transform: translateY(18px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes lm-login-welcome-orbit {
+  from { opacity: 0; transform: scale(.76) rotate(-12deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lm-login-welcome-orbit,
+  .lm-login-welcome-content { animation: none; }
+}

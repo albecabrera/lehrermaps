@@ -62,12 +62,16 @@ await check('LehrerMaps app icons', async () => {
   for (const expected of [
     'href="/favicon-v2.ico"',
     'href="/assets/icons/lehrermaps-v2-favicon-32.png"',
-    'href="/assets/icons/lehrermaps-v2-apple-touch-icon.png"',
     'rel="apple-touch-icon-precomposed"',
   ]) {
     if (!html.includes(expected)) throw new Error(`missing ${expected}`);
   }
-  for (const icon of ['/favicon.ico', '/favicon-v2.ico', '/apple-touch-icon.png', '/apple-touch-icon-180x180.png', '/assets/icons/lehrermaps-v2-favicon-32.png', '/assets/icons/lehrermaps-v2-apple-touch-icon.png']) {
+  const appleTouchIcon = html.match(/<link\b(?=[^>]*\brel="apple-touch-icon")(?:[^>]*\bhref="([^"]+)")[^>]*>/i)?.[1];
+  if (!appleTouchIcon) throw new Error('missing Apple touch icon link');
+  if (new URL(appleTouchIcon, baseUrl).pathname !== '/assets/icons/lehrermaps-v2-apple-touch-icon.png') {
+    throw new Error(`unexpected Apple touch icon path: ${appleTouchIcon}`);
+  }
+  for (const icon of ['/favicon.ico', '/favicon-v2.ico', '/apple-touch-icon.png', '/apple-touch-icon-180x180.png', '/assets/icons/lehrermaps-v2-favicon-32.png', appleTouchIcon]) {
     const iconResponse = await get(icon);
     if (!iconResponse.ok) throw new Error(`${icon} -> HTTP ${iconResponse.status}`);
     requireContentType(iconResponse, /^image\//i, icon);
@@ -114,7 +118,7 @@ await check('production dist integrity', async () => {
   }
   const index = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
   for (const asset of index.matchAll(/(?:src|href)=["'](\/assets\/[^"']+)["']/g)) {
-    const emittedPath = asset[1].replace(/^\//, '');
+    const emittedPath = new URL(asset[1], baseUrl).pathname.replace(/^\//, '');
     await fs.access(path.join(dist, emittedPath));
   }
   pass('production dist integrity');

@@ -13,8 +13,6 @@ function getUserId(req) {
 async function snapshotForUser(userId) {
   const queries = {
     schedule: ['SELECT data, updated_at FROM schedule WHERE user_id = ?', [userId]],
-    notebooks: ['SELECT * FROM notebooks WHERE user_id = ? ORDER BY position, id', [userId]],
-    quick_notes: ['SELECT * FROM quick_notes WHERE user_id = ? ORDER BY id', [userId]],
     dashboard_tasks: ['SELECT * FROM today_dashboard_tasks WHERE user_id = ?', [userId]],
     dashboard_notes: ['SELECT * FROM today_dashboard_notes WHERE user_id = ? ORDER BY note_date', [userId]],
     bug_checklists: ['SELECT * FROM bug_checklists WHERE user_id = ?', [userId]],
@@ -25,18 +23,6 @@ async function snapshotForUser(userId) {
     const [rows] = await pool.execute(sql, values);
     payload.data[key] = rows;
   }
-  const [sections] = await pool.execute(
-    'SELECT s.* FROM sections s JOIN notebooks n ON n.id = s.notebook_id WHERE n.user_id = ? ORDER BY s.id', [userId]
-  );
-  const [pages] = await pool.execute(
-    'SELECT p.* FROM pages p JOIN sections s ON s.id = p.section_id JOIN notebooks n ON n.id = s.notebook_id WHERE n.user_id = ? ORDER BY p.id', [userId]
-  );
-  const [blocks] = await pool.execute(
-    'SELECT b.* FROM blocks b JOIN pages p ON p.id = b.page_id JOIN sections s ON s.id = p.section_id JOIN notebooks n ON n.id = s.notebook_id WHERE n.user_id = ? ORDER BY b.id', [userId]
-  );
-  payload.data.sections = sections;
-  payload.data.pages = pages;
-  payload.data.blocks = blocks;
   const [lessonPhases] = await pool.execute(
     'SELECT p.* FROM lesson_phases p JOIN lesson_sessions s ON s.id = p.lesson_session_id WHERE s.user_id = ? ORDER BY p.id', [userId]
   );

@@ -70,16 +70,11 @@ pool.getConnection = async () => new Connection();
 pool.end = () => database.close();
 
 const schema = [
-  `CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, subject TEXT NOT NULL, group_name TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, notes TEXT, is_favorite INTEGER NOT NULL DEFAULT 0, due_at TEXT, parent_id INTEGER REFERENCES folders(id) ON DELETE CASCADE, color TEXT, is_archived INTEGER NOT NULL DEFAULT 0, is_internal INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, subject TEXT NOT NULL, group_name TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, is_favorite INTEGER NOT NULL DEFAULT 0, due_at TEXT, parent_id INTEGER REFERENCES folders(id) ON DELETE CASCADE, color TEXT, is_archived INTEGER NOT NULL DEFAULT 0, is_internal INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, folder_id INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE, original_name TEXT NOT NULL, stored_name TEXT NOT NULL, mime_type TEXT, size_bytes INTEGER, uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, timer_minutes INTEGER, is_shared INTEGER NOT NULL DEFAULT 0, due_at TEXT, is_public INTEGER NOT NULL DEFAULT 0, public_token TEXT, material_role TEXT NOT NULL DEFAULT 'other', version_group_id TEXT, version_number INTEGER NOT NULL DEFAULT 1, is_current_version INTEGER NOT NULL DEFAULT 1)`,
   `CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, folder_id INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE, title TEXT NOT NULL, url TEXT NOT NULL, is_shared INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS file_edit_copies (id INTEGER PRIMARY KEY, file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE, copy_name TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS schedule (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL DEFAULT 1, data TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-  `CREATE TABLE IF NOT EXISTS notebooks (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, title TEXT NOT NULL, color TEXT DEFAULT '#3B82F6', position INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-  `CREATE TABLE IF NOT EXISTS sections (id INTEGER PRIMARY KEY, notebook_id INTEGER NOT NULL REFERENCES notebooks(id) ON DELETE CASCADE, title TEXT NOT NULL, color TEXT DEFAULT '#64748B', position INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-  `CREATE TABLE IF NOT EXISTS pages (id INTEGER PRIMARY KEY, section_id INTEGER NOT NULL REFERENCES sections(id) ON DELETE CASCADE, title TEXT NOT NULL, template_id TEXT, position INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-  `CREATE TABLE IF NOT EXISTS blocks (id INTEGER PRIMARY KEY, page_id INTEGER NOT NULL REFERENCES pages(id) ON DELETE CASCADE, type TEXT NOT NULL, content TEXT, pos_x INTEGER NOT NULL DEFAULT 0, pos_y INTEGER NOT NULL DEFAULT 0, width INTEGER NOT NULL DEFAULT 420, z_index INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-  `CREATE TABLE IF NOT EXISTS quick_notes (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, content TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS today_dashboard_tasks (user_id INTEGER PRIMARY KEY, tasks_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS today_dashboard_notes (user_id INTEGER NOT NULL, note_date TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, note_date))`,
   `CREATE TABLE IF NOT EXISTS bug_checklists (user_id INTEGER PRIMARY KEY, items_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
@@ -87,9 +82,6 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS document_annotations (id INTEGER PRIMARY KEY, file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE, user_id INTEGER NOT NULL DEFAULT 1, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS document_annotation_history (id INTEGER PRIMARY KEY, annotation_id INTEGER NOT NULL, file_id INTEGER NOT NULL, user_id INTEGER NOT NULL, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, action TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS exams (id INTEGER PRIMARY KEY, title TEXT NOT NULL, class_name TEXT NOT NULL, subject TEXT, exam_date TEXT NOT NULL, exam_time TEXT, notes TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-  `CREATE TABLE IF NOT EXISTS annual_plans (id INTEGER PRIMARY KEY, root_folder_id INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE, school_year TEXT NOT NULL, start_date TEXT, end_date TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(root_folder_id, school_year))`,
-  `CREATE TABLE IF NOT EXISTS annual_plan_entries (id INTEGER PRIMARY KEY, plan_id INTEGER NOT NULL REFERENCES annual_plans(id) ON DELETE CASCADE, entry_date TEXT NOT NULL, end_date TEXT, entry_type TEXT NOT NULL DEFAULT 'lesson', lesson_number TEXT, title TEXT NOT NULL, notes TEXT, sort_order INTEGER NOT NULL DEFAULT 0, lesson_session_id INTEGER REFERENCES lesson_sessions(id) ON DELETE SET NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-  `CREATE TABLE IF NOT EXISTS annual_plan_materials (id INTEGER PRIMARY KEY, entry_id INTEGER NOT NULL REFERENCES annual_plan_entries(id) ON DELETE CASCADE, file_id INTEGER REFERENCES files(id) ON DELETE CASCADE, folder_id INTEGER REFERENCES folders(id) ON DELETE CASCADE, UNIQUE(entry_id, file_id, folder_id))`,
   `CREATE TABLE IF NOT EXISTS lesson_sessions (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL DEFAULT 1, folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL, title TEXT NOT NULL, lesson_date TEXT NOT NULL, class_name TEXT, subject TEXT, learning_goal TEXT, teacher_notes TEXT, status TEXT NOT NULL DEFAULT 'draft', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS lesson_phases (id INTEGER PRIMARY KEY, lesson_session_id INTEGER NOT NULL REFERENCES lesson_sessions(id) ON DELETE CASCADE, position INTEGER NOT NULL DEFAULT 0, title TEXT NOT NULL, duration_seconds INTEGER NOT NULL DEFAULT 300, description TEXT, teacher_notes TEXT, student_instruction TEXT, student_responses TEXT, status TEXT NOT NULL DEFAULT 'pending', timer_state TEXT NOT NULL DEFAULT 'idle', timer_started_at TEXT, timer_remaining_seconds INTEGER, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS lesson_phase_materials (id INTEGER PRIMARY KEY, phase_id INTEGER NOT NULL REFERENCES lesson_phases(id) ON DELETE CASCADE, file_id INTEGER REFERENCES files(id) ON DELETE CASCADE, folder_id INTEGER REFERENCES folders(id) ON DELETE CASCADE, visibility TEXT NOT NULL DEFAULT 'private', position INTEGER NOT NULL DEFAULT 0)`,
@@ -114,6 +106,40 @@ export async function initSchema() {
   if (!folderColumns.some((column) => column.name === 'is_internal')) {
     database.exec('ALTER TABLE folders ADD COLUMN is_internal INTEGER NOT NULL DEFAULT 0');
   }
+  if (folderColumns.some((column) => column.name === 'notes')) {
+    database.exec('ALTER TABLE folders DROP COLUMN notes');
+  }
+  // Removed products must not survive upgrades as orphaned SQLite tables. Drop
+  // dependents first so existing databases remain FK-safe during migration.
+  database.exec(`
+    DROP TRIGGER IF EXISTS notebooks_touch_updated_at;
+    DROP TRIGGER IF EXISTS sections_touch_updated_at;
+    DROP TRIGGER IF EXISTS pages_touch_updated_at;
+    DROP TRIGGER IF EXISTS blocks_touch_updated_at;
+    DROP TRIGGER IF EXISTS annual_plans_touch_updated_at;
+    DROP TRIGGER IF EXISTS annual_plan_entries_touch_updated_at;
+    DROP TRIGGER IF EXISTS annual_plan_materials_validate_insert;
+    DROP TRIGGER IF EXISTS annual_plan_materials_validate_update;
+    DROP TABLE IF EXISTS annual_plan_materials;
+    DROP TABLE IF EXISTS annual_plan_entries;
+    DROP TABLE IF EXISTS annual_plans;
+    DROP TABLE IF EXISTS blocks;
+    DROP TABLE IF EXISTS pages;
+    DROP TABLE IF EXISTS sections;
+    DROP TABLE IF EXISTS notebooks;
+    DROP TABLE IF EXISTS quick_notes;
+  `);
+  const [backupRows] = await pool.execute('SELECT id, payload_json FROM user_backups');
+  for (const backup of backupRows) {
+    try {
+      const payload = JSON.parse(backup.payload_json);
+      if (!payload?.data || typeof payload.data !== 'object') continue;
+      for (const key of ['notebooks', 'sections', 'pages', 'blocks', 'quick_notes', 'annual_plans', 'annual_plan_entries', 'annual_plan_materials']) delete payload.data[key];
+      await pool.execute('UPDATE user_backups SET payload_json = ? WHERE id = ?', [JSON.stringify(payload), backup.id]);
+    } catch {
+      // Preserve unreadable legacy backups rather than failing application startup.
+    }
+  }
   const [examStoreRows] = await pool.execute("SELECT id FROM folders WHERE subject = 'klausurplan' AND is_internal = 1 LIMIT 1");
   let examStoreId = examStoreRows[0]?.id;
   if (!examStoreId) {
@@ -132,30 +158,12 @@ export async function initSchema() {
   if (!scheduleColumns.some((column) => column.name === 'user_id')) {
     database.exec('ALTER TABLE schedule ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1');
   }
-  // SQLite CREATE TABLE does not evolve existing installations. Keep this
-  // migration additive so annual plans made before Unterrichtszentrale work.
-  const entryColumns = database.prepare('PRAGMA table_info(annual_plan_entries)').all();
-  if (!entryColumns.some((column) => column.name === 'lesson_session_id')) {
-    database.exec('ALTER TABLE annual_plan_entries ADD COLUMN lesson_session_id INTEGER REFERENCES lesson_sessions(id) ON DELETE SET NULL');
-  }
-  for (const column of ['content', 'learning_objectives', 'activities', 'homework']) {
-    if (!entryColumns.some((entryColumn) => entryColumn.name === column)) {
-      database.exec(`ALTER TABLE annual_plan_entries ADD COLUMN ${column} TEXT`);
-    }
-  }
-  // Nullable columns do not participate in SQLite composite uniqueness. Remove
-  // legacy duplicate associations before adding the two correct partial indexes.
   database.exec(`
     -- These tables are keyed by user_id (and note_date), not by an id column.
     -- Older releases accidentally installed the generic id-based trigger here,
     -- turning every subsequent task/note update into "no such column: id".
     DROP TRIGGER IF EXISTS today_dashboard_tasks_touch_updated_at;
     DROP TRIGGER IF EXISTS today_dashboard_notes_touch_updated_at;
-    DELETE FROM annual_plan_materials
-    WHERE id NOT IN (
-      SELECT MIN(id) FROM annual_plan_materials
-      GROUP BY entry_id, file_id, folder_id
-    );
   `);
   database.exec(`
     DELETE FROM schedule
@@ -170,10 +178,6 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS links_folder_created ON links(folder_id, created_at);
     CREATE INDEX IF NOT EXISTS document_annotation_owner ON document_annotations(file_id, user_id, page_number);
     CREATE INDEX IF NOT EXISTS document_annotation_history_owner ON document_annotation_history(file_id, user_id, created_at);
-    CREATE INDEX IF NOT EXISTS annual_plan_entries_plan_date ON annual_plan_entries(plan_id, entry_date, sort_order);
-    CREATE UNIQUE INDEX IF NOT EXISTS annual_plan_entries_lesson_session ON annual_plan_entries(lesson_session_id) WHERE lesson_session_id IS NOT NULL;
-    CREATE UNIQUE INDEX IF NOT EXISTS annual_plan_material_file_unique ON annual_plan_materials(entry_id, file_id) WHERE file_id IS NOT NULL;
-    CREATE UNIQUE INDEX IF NOT EXISTS annual_plan_material_folder_unique ON annual_plan_materials(entry_id, folder_id) WHERE folder_id IS NOT NULL;
     CREATE UNIQUE INDEX IF NOT EXISTS files_one_current_version ON files(version_group_id) WHERE is_current_version = 1;
     CREATE INDEX IF NOT EXISTS lesson_sessions_user_date ON lesson_sessions(user_id, lesson_date, updated_at);
     CREATE INDEX IF NOT EXISTS lesson_phases_session_position ON lesson_phases(lesson_session_id, position);
@@ -182,17 +186,7 @@ export async function initSchema() {
     CREATE UNIQUE INDEX IF NOT EXISTS schedule_user_unique ON schedule(user_id);
     CREATE INDEX IF NOT EXISTS user_backups_user_created ON user_backups(user_id, created_at DESC);
   `);
-  database.exec(`
-    CREATE TRIGGER IF NOT EXISTS annual_plan_materials_validate_insert
-    BEFORE INSERT ON annual_plan_materials
-    WHEN (NEW.file_id IS NULL) = (NEW.folder_id IS NULL)
-    BEGIN SELECT RAISE(ABORT, 'annual plan material must reference exactly one file or folder'); END;
-    CREATE TRIGGER IF NOT EXISTS annual_plan_materials_validate_update
-    BEFORE UPDATE ON annual_plan_materials
-    WHEN (NEW.file_id IS NULL) = (NEW.folder_id IS NULL)
-    BEGIN SELECT RAISE(ABORT, 'annual plan material must reference exactly one file or folder'); END;
-  `);
-  for (const table of ['schedule', 'notebooks', 'sections', 'pages', 'blocks', 'document_annotations', 'annual_plans', 'annual_plan_entries', 'lesson_sessions', 'lesson_phases', 'lesson_phase_canvases', 'lesson_phase_elements']) database.exec(`CREATE TRIGGER IF NOT EXISTS ${table}_touch_updated_at AFTER UPDATE ON ${table} FOR EACH ROW BEGIN UPDATE ${table} SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;`);
+  for (const table of ['schedule', 'document_annotations', 'lesson_sessions', 'lesson_phases', 'lesson_phase_canvases', 'lesson_phase_elements']) database.exec(`CREATE TRIGGER IF NOT EXISTS ${table}_touch_updated_at AFTER UPDATE ON ${table} FOR EACH ROW BEGIN UPDATE ${table} SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;`);
   await pool.execute("UPDATE folders SET group_name = 'Klasse 9' WHERE subject = 'spanisch' AND group_name = 'es-9'");
   await pool.execute("UPDATE folders SET group_name = 'Q1' WHERE subject = 'spanisch' AND group_name IN ('Klasse 12', 'es-12')");
   await pool.execute("UPDATE folders SET group_name = 'WP Klasse 6–7' WHERE subject = 'informatik' AND group_name = 'inf-67'");

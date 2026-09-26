@@ -3,19 +3,14 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoginPanel from './pages/LoginPanel';
+import LoginWelcome from './components/LoginWelcome';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LangProvider } from './contexts/LangContext';
-import { NotebookProvider } from './contexts/NotebookContext';
 
 // Authenticated workspaces load only after login; their existing markup and
 // styles remain unchanged.
 const App = lazy(() => import('./pages/App'));
 const ExamBoard = lazy(() => import('./components/ExamBoard'));
-
-// NotebookProvider is intentionally NOT at root — it makes authenticated API
-// calls on mount that fail with 401 during login, causing re-renders that
-// produce compositing flicker in Chromium. It's mounted inside Root only
-// when the user is already authenticated as 'lehrer'.
 
 // Arc-only flicker guard. Arc's compositor repaints heavy gradient/shadow layers
 // on the login screen (Chrome does not). Arc injects --arc-palette-* CSS vars on
@@ -60,6 +55,9 @@ const SESSION_EXAMS_KEY = 'lm_exams_board_seen';
 function Root() {
   const [tick, setTick] = useState(0);
   const [examsDismissed, setExamsDismissed] = useState(true);
+  // This state only changes after an explicit successful login. It deliberately
+  // starts false so restoring an authenticated session never replays the welcome.
+  const [showLoginWelcome, setShowLoginWelcome] = useState(false);
 
   const token = localStorage.getItem('lm_token');
   const isTeacher = token ? isTeacherToken(token) : false;
@@ -67,11 +65,13 @@ function Root() {
   const handleLogin = () => {
     sessionStorage.removeItem(SESSION_EXAMS_KEY);
     setExamsDismissed(true);
+    setShowLoginWelcome(true);
     setTick((n) => n + 1);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('lm_token');
+    setShowLoginWelcome(false);
     setTick((n) => n + 1);
   };
 
@@ -81,13 +81,14 @@ function Root() {
   };
 
   if (isTeacher) {
+    if (showLoginWelcome) {
+      return <LoginWelcome onComplete={() => setShowLoginWelcome(false)} />;
+    }
     return (
-      <NotebookProvider>
-        <Suspense fallback={null}>
-          {!examsDismissed && <ExamBoard onDismiss={handleExamsDismiss} />}
-          <App onLogout={handleLogout} />
-        </Suspense>
-      </NotebookProvider>
+      <Suspense fallback={null}>
+        {!examsDismissed && <ExamBoard onDismiss={handleExamsDismiss} />}
+        <App onLogout={handleLogout} />
+      </Suspense>
     );
   }
   return <LoginPanel onLogin={handleLogin} />;

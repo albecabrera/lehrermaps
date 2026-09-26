@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { saveFolderNotes } from '../lib/api';
 import { useLang } from '../contexts/LangContext';
 
 const DEBOUNCE_MS = 1500;
@@ -633,16 +632,4 @@ function ToolBtn({ children, onClick, title, active, accent }) {
 
 function Divider() {
   return <div style={{ width: 1, height: 18, background: 'var(--c-border)', margin: '0 3px' }} />;
-}
-
-export default function NotesEditor({ folderId, folderName, initialContent, accent = '#E8472A' }) {
-  return (
-    <RichTextEditor
-      value={initialContent}
-      accent={accent}
-      contentKey={`folder-${folderId}`}
-      documentTitle={folderName || 'Notizen'}
-      onSave={(content) => saveFolderNotes(folderId, content)}
-    />
-  );
 }

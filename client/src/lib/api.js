@@ -96,57 +96,10 @@ export const deleteLink = (id) => api.delete(`/links/${id}`);
 export const reorderFolders = (items) =>
   api.put('/folders/reorder', { items });
 
-export const saveFolderNotes = (id, content) =>
-  api.put(`/folders/${id}/notes`, { content });
-
 export const toggleFolderFavorite = (id) =>
   api.put(`/folders/${id}/favorite`).then((r) => r.data);
 export const setFolderColor = (id, color) =>
   api.put(`/folders/${id}/color`, { color }).then((r) => r.data);
-
-export const getAnnualPlan = (rootFolderId, schoolYear) =>
-  api.get('/plans', { params: { folder_id: rootFolderId, school_year: schoolYear } }).then((r) => r.data);
-export const createAnnualPlan = (data) => api.post('/plans', data).then((r) => r.data);
-export const updateAnnualPlan = (id, data) => api.patch(`/plans/${id}`, data).then((r) => r.data);
-export const deleteAnnualPlan = (id) => api.delete(`/plans/${id}`);
-export const getAnnualPlanMaterials = (rootFolderId, q = '') =>
-  api.get('/plans/materials', { params: { root_folder_id: rootFolderId, q } }).then((r) => r.data);
-export const createAnnualPlanEntry = (planId, data) => api.post(`/plans/${planId}/entries`, data).then((r) => r.data);
-export const updateAnnualPlanEntry = (id, data) => api.patch(`/plans/entries/${id}`, data).then((r) => r.data);
-export const duplicateAnnualPlanEntry = (id) => api.post(`/plans/entries/${id}/duplicate`).then((r) => r.data);
-export const deleteAnnualPlanEntry = (id) => api.delete(`/plans/entries/${id}`);
-export const startAnnualPlanLessonSession = (id) => api.post(`/plans/entries/${id}/lesson-session`).then((r) => r.data);
-export const downloadAuthenticated = async (url, fallbackName = 'download') => {
-  const response = await api.get(url, { responseType: 'blob', timeout: 0 });
-  const href = URL.createObjectURL(response.data);
-  const disposition = response.headers['content-disposition'] || '';
-  const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-  const plain = disposition.match(/filename="?([^";]+)"?/i)?.[1];
-  const link = document.createElement('a');
-  link.href = href;
-  link.download = encoded ? decodeURIComponent(encoded) : plain || fallbackName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(href);
-};
-export const openAuthenticated = async (url) => {
-  const response = await api.get(url, { responseType: 'blob', timeout: 0 });
-  const href = URL.createObjectURL(response.data);
-  window.open(href, '_blank', 'noopener,noreferrer');
-  window.setTimeout(() => URL.revokeObjectURL(href), 60_000);
-};
-export const exportAnnualPlanZip = (id, materials = 'linked') => downloadAuthenticated(`/plan-archives/${id}/export.zip?materials=${encodeURIComponent(materials)}`, 'annual-plan.zip');
-export const previewAnnualPlanImport = (rootFolderId, schoolYear, archive) => {
-  const form = new FormData();
-  form.append('root_folder_id', rootFolderId);
-  form.append('school_year', schoolYear);
-  form.append('archive', archive);
-  return api.post('/plan-archives/import/preview', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 0 }).then((r) => r.data);
-};
-export const commitAnnualPlanImport = (token) => api.post('/plan-archives/import/commit', { token }).then((r) => r.data);
-export const attachAnnualPlanMaterial = (entryId, kind, id) => api.post(`/plans/entries/${entryId}/materials`, { kind, id }).then((r) => r.data);
-export const unlinkAnnualPlanMaterial = (entryId, kind, id) => api.delete(`/plans/entries/${entryId}/materials/${kind}/${id}`).then((r) => r.data);
 
 export const searchGlobal = (q, fileOffset = 0, folderOffset = 0, linkOffset = 0) =>
   api.get('/files/search', { params: { q, fileOffset, folderOffset, linkOffset } }).then((r) => r.data);
@@ -201,30 +154,9 @@ export const renameFile = (id, original_name) =>
 export const moveFile = (id, folder_id) =>
   api.put(`/files/${id}`, { folder_id }).then((r) => r.data);
 
-export const getNotebooks = () => api.get('/notebooks').then((r) => r.data);
-export const createNotebook = (data) => api.post('/notebooks', data).then((r) => r.data);
-export const patchNotebook = (id, data) => api.patch(`/notebooks/${id}`, data).then((r) => r.data);
-export const deleteNotebook = (id) => api.delete(`/notebooks/${id}`);
-
-export const getSections = (notebookId) => api.get(`/sections/${notebookId}`).then((r) => r.data);
-export const createSection = (data) => api.post('/sections', data).then((r) => r.data);
-export const patchSection = (id, data) => api.patch(`/sections/${id}`, data).then((r) => r.data);
-export const deleteSection = (id) => api.delete(`/sections/${id}`);
-
-export const getPages = (sectionId) => api.get(`/pages/${sectionId}`).then((r) => r.data);
-export const createPage = (data) => api.post('/pages', data).then((r) => r.data);
-export const patchPage = (id, data) => api.patch(`/pages/${id}`, data).then((r) => r.data);
-export const deletePage = (id) => api.delete(`/pages/${id}`);
-export const getBlocks = (pageId) => api.get(`/blocks/${pageId}`).then((r) => r.data);
-export const saveBlocks = (pageId, blocks) => api.put(`/blocks/${pageId}`, { blocks }).then((r) => r.data);
-export const savePageRichText = (pageId, html) => api.put(`/pages/${pageId}/rich-text`, { html }).then((r) => r.data);
 export const createBackup = () => api.post('/backups').then((r) => r.data);
 export const getBackups = () => api.get('/backups').then((r) => r.data);
 export const getBackup = (id) => api.get(`/backups/${id}`).then((r) => r.data);
-export const getQuickNotes = () => api.get('/quicknotes').then((r) => r.data);
-export const createQuickNote = (content) => api.post('/quicknotes', { content }).then((r) => r.data);
-export const deleteQuickNote = (id) => api.delete(`/quicknotes/${id}`);
-export const searchOneNote = (q) => api.get('/search', { params: { q } }).then((r) => r.data);
 
 export const getTodayDashboard = (date) =>
   api.get('/today-dashboard', { params: { date } }).then((r) => r.data);

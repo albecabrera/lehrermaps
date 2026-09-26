@@ -13,16 +13,9 @@ let teacherToken;
 let root;
 let child;
 let destination;
-let notebook;
-let section;
-let pageRecord;
-let quickNote;
 let exam;
 let originalSchedule;
 let browser;
-let annualPlan;
-let annualEntry;
-let annualCopy;
 
 const pass = (name, detail = '') => results.push({ name, status: 'PASS', detail });
 const fail = (name, error) => results.push({ name, status: 'FAIL', detail: error.message });
@@ -82,20 +75,9 @@ try {
     await request(`/api/folders/${root.id}`, { method: 'PUT', body: JSON.stringify({ name: `${prefix}RENAMED` }) });
     await request(`/api/folders/${root.id}/color`, { method: 'PUT', body: JSON.stringify({ color: '#E8472A' }) });
     await request(`/api/folders/${root.id}/favorite`, { method: 'PUT' });
-    await request(`/api/folders/${root.id}/notes`, { method: 'PUT', body: JSON.stringify({ content: prefix }) });
     await request(`/api/folders/${child.id}/move`, { method: 'PUT', body: JSON.stringify({ parent_id: destination.id }) });
     return request('/api/folders/reorder', { method: 'PUT', body: JSON.stringify({ items: [{ id: root.id, sort_order: 9 }, { id: destination.id, sort_order: 8 }] }) });
   });
-  annualPlan = await request('/api/plans', { method: 'POST', body: JSON.stringify({ root_folder_id: root.id, school_year: '2026/27', start_date: '2026-08-01', end_date: '2027-07-31' }) });
-  annualEntry = await request(`/api/plans/${annualPlan.id}/entries`, { method: 'POST', body: JSON.stringify({ entry_date: '2026-08-10', entry_type: 'lesson', lesson_number: '1', title: `${prefix}Jahresplanung` }) });
-  annualCopy = await request(`/api/plans/entries/${annualEntry.id}/duplicate`, { method: 'POST' });
-  await check('Jahresplanung und CSV', async () => {
-    const loaded = await request(`/api/plans?folder_id=${root.id}&school_year=2026/27`);
-    if (loaded.entries.length !== 2) throw new Error('Jahresplanungseinträge fehlen');
-    const csv = await request(`/api/plans/${annualPlan.id}/export.csv`);
-    if (csv.byteLength < 30) throw new Error('CSV ist leer');
-  });
-
   const fileTypes = [
     ['docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', Buffer.from([0x50, 0x4b, 0x03, 0x04, 1])],
     ['pdf', 'application/pdf', Buffer.from('%PDF-1.4\n%%EOF')],
@@ -135,13 +117,6 @@ try {
   await request('/api/schedule', { method: 'PUT', body: JSON.stringify({ ...originalSchedule, __smoke: prefix }) });
   pass('schedule read and write');
 
-  notebook = await request('/api/notebooks', { method: 'POST', body: JSON.stringify({ title: `${prefix}NOTEBOOK` }) });
-  section = await request('/api/sections', { method: 'POST', body: JSON.stringify({ notebook_id: notebook.id, title: `${prefix}SECTION` }) });
-  pageRecord = await request('/api/pages', { method: 'POST', body: JSON.stringify({ section_id: section.id, title: `${prefix}PAGE` }) });
-  await request(`/api/blocks/${pageRecord.id}`, { method: 'PUT', body: JSON.stringify({ blocks: [{ type: 'text', content: { text: prefix } }] }) });
-  quickNote = await request('/api/quicknotes', { method: 'POST', body: JSON.stringify({ content: `${prefix}QUICK` }) });
-  pass('notebook, page, blocks and quick note');
-
   browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const consoleErrors = [];
@@ -170,14 +145,7 @@ try {
 } finally {
   if (browser) await browser.close().catch(() => {});
   if (originalSchedule) await cleanup('/api/schedule', { method: 'PUT', body: JSON.stringify(originalSchedule) });
-  if (quickNote) await cleanup(`/api/quicknotes/${quickNote.id}`, { method: 'DELETE' });
-  if (pageRecord) await cleanup(`/api/pages/${pageRecord.id}`, { method: 'DELETE' });
-  if (section) await cleanup(`/api/sections/${section.id}`, { method: 'DELETE' });
-  if (notebook) await cleanup(`/api/notebooks/${notebook.id}`, { method: 'DELETE' });
   if (exam) await cleanup(`/api/exams/${exam.id}`, { method: 'DELETE' });
-  if (annualCopy) await cleanup(`/api/plans/entries/${annualCopy.id}`, { method: 'DELETE' });
-  if (annualEntry) await cleanup(`/api/plans/entries/${annualEntry.id}`, { method: 'DELETE' });
-  if (annualPlan) await cleanup(`/api/plans/${annualPlan.id}`, { method: 'DELETE' });
   for (const id of createdFiles) await cleanup(`/api/files/${id}`, { method: 'DELETE' });
   if (root) await cleanup(`/api/folders/${root.id}`, { method: 'DELETE' });
   if (child) await cleanup(`/api/folders/${child.id}`, { method: 'DELETE' });

@@ -9,7 +9,6 @@ import NewFolderModal from '../components/NewFolderModal';
 import Breadcrumb from '../components/Breadcrumb';
 import ConfirmModal from '../components/ConfirmModal';
 import GlobalSearch from '../components/GlobalSearch';
-import SearchModal from '../components/SearchModal';
 import KeyboardHelp from '../components/KeyboardHelp';
 import { SUBJECTS, detectKind, compareFolderNames } from '../constants/structure';
 import { useFolders } from '../hooks/useFolders';
@@ -37,7 +36,6 @@ const KLASURPLAN_DOCUMENTS = [
 
 const normalizeFileName = (name) => String(name || '').normalize('NFKC').trim().toLocaleLowerCase();
 import { useLang } from '../contexts/LangContext';
-import { useNotebook } from '../contexts/NotebookContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/MobileNav';
 import TeachingMode from '../components/TeachingMode';
@@ -197,9 +195,6 @@ function PleskTerminalPanel({ onClose }) {
 // Opened views are split into on-demand chunks without changing their layout.
 const Schedule = lazy(() => import('../components/Schedule'));
 const ExamBoard = lazy(() => import('../components/ExamBoard'));
-const NotesEditor = lazy(() => import('../components/NotesEditor'));
-const AnnualPlanning = lazy(() => import('../components/AnnualPlanning'));
-const PageCanvas = lazy(() => import('../components/Canvas/PageCanvas'));
 
 const isMacDesktopPlatform = () => (
   typeof navigator !== 'undefined'
@@ -210,7 +205,6 @@ const isMacDesktopPlatform = () => (
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { t } = useLang();
-  const { activePageId, setActivePageId } = useNotebook();
   const isMobile = useIsMobile(1100);
   const isPhone = useIsMobile(600);
   const isMacDesktop = isMacDesktopPlatform();
@@ -234,13 +228,8 @@ export default function App({ onLogout }) {
   const [newFolderGroup, setNewFolderGroup] = useState(null);
   const [renamingFolder, setRenamingFolder] = useState(null);
   const [renamingFile, setRenamingFile] = useState(null);
-  // Jahresplanung is the only folder section exposed in the folder header.
-  // Keep the internal tab state for compatibility with existing deep links and
-  // keyboard/drop handlers, but default every folder navigation to planning.
-  const [folderTab, setFolderTab] = useState('annual');
   const [filesView, setFilesView] = useState('list');
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
-  const [oneNoteSearchOpen, setOneNoteSearchOpen] = useState(false);
   const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
   const [toast, setToast] = useState(null);
@@ -291,8 +280,7 @@ export default function App({ onLogout }) {
 
   const subject = SUBJECTS.find((s) => s.id === subjectId) || { id: 'workspace', name: 'Arbeitsbereich', short: 'LM', color: '#0F766E', colorSoft: '#DDF5EE', colorDark: '#0B5C52', groups: [] };
   const accent = subject.color;
-  const isSystemFolder = activeFolder?.subject === 'system';
-  const showFileRepository = isSystemFolder;
+  const showFileRepository = Boolean(activeFolder);
   const mobileHeaderTitle = {
     today: 'Heute',
     schedule: 'Stundenplan',
@@ -318,12 +306,10 @@ export default function App({ onLogout }) {
   const openKlasurplanDocument = (file) => {
     if (!file) return;
     navigateToView('subjects');
-    setActivePageId(null);
     setActiveFolder(printReadyFolder);
     setActiveFile(file);
     setActiveFile2(null);
     setActiveLink(null);
-    setFolderTab('files');
     setKlasurplanOpen(false);
   };
 
@@ -386,7 +372,6 @@ export default function App({ onLogout }) {
     }
     return chain;
   })();
-  const planningFolder = activeFolderPath[0] || activeFolder;
   // Complete subtree of the active folder, preserving the hierarchy order.
   const childFolders = activeFolder ? (() => {
     const descendants = [];
@@ -551,7 +536,7 @@ export default function App({ onLogout }) {
         closeFolderView();
         return;
       }
-      if (globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen || classroomTimerOpen) return;
+      if (globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen || classroomTimerOpen) return;
       if (!isTyping && (e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'l') {
         e.preventDefault();
         toggleTheme();
@@ -572,16 +557,10 @@ export default function App({ onLogout }) {
         setGlobalSearchOpen(true);
         return;
       }
-      // ⌘K abre la búsqueda global (contrato documentado en KeyboardHelp).
-      // Ctrl+K queda para la búsqueda de notas (OneNote) en Windows/Linux.
+      // ⌘K opens the global search (documented in KeyboardHelp).
       if (e.metaKey && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setGlobalSearchOpen(true);
-        return;
-      }
-      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setOneNoteSearchOpen(true);
         return;
       }
       if (e.key === '?' && !isTyping) {
@@ -640,7 +619,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeLink, activeFolder, files, folderTab, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, oneNoteSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, classroomTimerOpen, klasurplanOpen, isMobile, sidebarDrawerOpen, viewMode, pleskTerminalOpen, toggleTheme]);
+  }, [activeFile, activeLink, activeFolder, files, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, classroomTimerOpen, klasurplanOpen, isMobile, sidebarDrawerOpen, viewMode, pleskTerminalOpen, toggleTheme]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -688,7 +667,6 @@ export default function App({ onLogout }) {
 
   const onSubjectChange = (id) => {
     setSubjectId(id);
-    setActivePageId(null);
     setActiveFolder(null);
     setActiveFile(null);
     setActiveFile2(null);
@@ -697,13 +675,11 @@ export default function App({ onLogout }) {
   };
 
   const onFolderSelect = (folder, sourceRect = null) => {
-    setActivePageId(null);
     setActiveFolder(folder);
     setActiveFile(null);
     setActiveFile2(null);
     setActiveLink(null);
     setQuery('');
-    setFolderTab('annual');
     const color = SUBJECTS.find((s) => s.id === folder.subject)?.color;
     setFolderOpenTick((v) => v + 1);
     if (sourceRect && contentPaneRef.current) {
@@ -754,7 +730,6 @@ export default function App({ onLogout }) {
       setActiveLink(null);
       if (target?.type === 'link' && target.id) setPendingLinkId(target.id);
       setQuery('');
-      setFolderTab('annual');
       setFolderOpenTick((v) => v + 1);
     }
     setGlobalSearchOpen(false);
@@ -1044,7 +1019,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || oneNoteSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen || classroomTimerOpen || isKlasurplanActiveFile;
+  const hasModalOpen = globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen || classroomTimerOpen || isKlasurplanActiveFile;
   const hasDepthModalOpen = hasModalOpen && !isKlasurplanActiveFile;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
@@ -1085,7 +1060,7 @@ export default function App({ onLogout }) {
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Workspace navigation — preserves the original visual language without restoring archived subject navigation. */}
       <header className={`lm-tabbar${isPhone ? ' lm-phone-focus-header' : ''}${isPhone && !phoneHeaderVisible ? ' is-collapsed' : ''}`} aria-label="Hauptnavigation">
-        <button className="lm-app-brand lm-app-brand--prominent" type="button" onClick={() => { navigateToView('today'); setActivePageId(null); closeFolderView(); }} aria-label="Zu Heute">
+        <button className="lm-app-brand lm-app-brand--prominent" type="button" onClick={() => { navigateToView('today'); closeFolderView(); }} aria-label="Zu Heute">
           <BrandMark size={isPhone ? 34 : 38} />
         </button>
         {isMobile && (
@@ -1338,11 +1313,7 @@ export default function App({ onLogout }) {
               </span>
             </div>
           )}
-          {activePageId ? (
-            <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-              <PageCanvas pageId={activePageId} />
-            </div>
-          ) : activeFolder ? (
+          {activeFolder ? (
             <div
               key={`folder-open-${activeFolder.id}-${folderOpenTick}`}
               className="lm-folder-open-shell"
@@ -1453,27 +1424,7 @@ export default function App({ onLogout }) {
                   </div>
                 )}
 
-                {/* Jahresplanung is the only folder section exposed here. */}
-                {(isSystemFolder || folderTab !== 'notes') && <div style={{ display: 'flex', gap: 0, marginTop: 12, borderBottom: '1px solid var(--c-border)' }}>
-                  {!isSystemFolder && [{ key: 'annual', label: t('annual.tab') }].map(({ key, label }) => {
-                    const on = folderTab === key;
-                    return (
-                      <button
-                        className="lm-spring"
-                        key={key}
-                        onClick={() => setFolderTab(key)}
-                        style={{
-                          appearance: 'none', border: 'none', background: 'transparent',
-                          padding: '8px 16px', fontSize: 13, fontWeight: on ? 600 : 500,
-                          color: on ? accent : 'var(--c-text-2)',
-                          cursor: 'pointer', fontFamily: 'inherit',
-                          borderBottom: on ? `2px solid ${accent}` : '2px solid transparent',
-                          marginBottom: -1, transition: 'color .12s',
-                        }}
-                      >{label}</button>
-                    );
-                  })}
-                  {showFileRepository && (
+                <div style={{ display: 'flex', gap: 0, marginTop: 12, borderBottom: '1px solid var(--c-border)' }}>
                     <div style={{ marginLeft: 'auto', alignSelf: 'center', paddingRight: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
                       {!isMobile && (
                         <button
@@ -1507,14 +1458,11 @@ export default function App({ onLogout }) {
                                   : t('files.count_many', { n: files.length })))}
                       </div>
                     </div>
-                  )}
-                </div>}
+                </div>
               </div>
 
-              {/* Tab content */}
-              <div style={{ flex: 1, minHeight: 0, overflow: folderTab === 'notes' ? 'hidden' : 'auto' }}>
-                {showFileRepository ? (
-                  <div style={{ padding: '12px 20px' }}>
+              <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+                <div style={{ padding: '12px 20px' }}>
                     {/* Unterordner direkt im Inhalt — Struktur bleibt ohne Sidebar greifbar */}
                     {childFolders.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
@@ -1627,17 +1575,7 @@ export default function App({ onLogout }) {
                         onBulkRole={handleBulkSetFileRole}
                       />
                     ))}
-                  </div>
-                ) : folderTab === 'notes' ? (
-                  <NotesEditor
-                    folderId={activeFolder.id}
-                    folderName={activeFolder.name}
-                    initialContent={activeFolder.notes || ''}
-                    accent={accent}
-                  />
-                ) : (
-                  <AnnualPlanning rootFolder={planningFolder} accent={accent} onOpenLesson={(session) => { setActiveFolder(planningFolder); setSubjectId(planningFolder.subject); setStartNewLessonPlanning(false); setTeachingSessionId(session.id); setTeachingMode(true); }} />
-                )}
+                </div>
               </div>
             </div>
           ) : (
@@ -1896,7 +1834,7 @@ export default function App({ onLogout }) {
           accent={accent}
           active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'today'}
           items={[
-            { id: 'today', label: 'Heute', icon: navIcons.subjects, onClick: () => { navigateToView('today'); setActivePageId(null); closeFolderView(); } },
+            { id: 'today', label: 'Heute', icon: navIcons.subjects, onClick: () => { navigateToView('today'); closeFolderView(); } },
             { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => navigateToView('schedule') },
             { id: 'more', label: t('mobile.more'), icon: navIcons.more, onClick: () => setMoreSheetOpen(true) },
           ]}
@@ -2058,10 +1996,6 @@ export default function App({ onLogout }) {
         open={globalSearchOpen}
         onClose={() => setGlobalSearchOpen(false)}
         onNavigate={handleGlobalNavigate}
-      />
-      <SearchModal
-        open={oneNoteSearchOpen}
-        onClose={() => setOneNoteSearchOpen(false)}
       />
       {keyboardHelpOpen && <KeyboardHelp onClose={() => setKeyboardHelpOpen(false)} />}
       {examBoardOpen && <ExamBoard onDismiss={() => setExamBoardOpen(false)} />}

@@ -61,15 +61,15 @@ The semantic CSS tokens are defined in `client/src/index.css`. Components should
 | Authentication | `pages/LoginPanel.jsx`, `components/BrandMark.jsx` |
 | Workspace shell | `pages/App.jsx`, `components/Sidebar.jsx`, `components/MobileNav.jsx` |
 | Materials | `FileTable.jsx`, `FilePreview.jsx`, `FolderGallery.jsx`, upload and link modals |
-| Teaching | `TeachingMode.jsx`, `LessonDashboard.jsx`, `AnnualPlanning.jsx` |
-| Search and notes | `GlobalSearch.jsx`, `SearchModal.jsx`, notebook and canvas modules |
+| Teaching | `TeachingMode.jsx`, lesson sessions, projection, timers, and materials |
+| Search | `GlobalSearch.jsx` |
 | Documents | `PdfAnnotationViewer.jsx`, worksheet and presentation-related modules |
 
 Shared component rules live in `client/src/index.css`: dialogs, popups, inputs, lists, tables, PDF controls, media surfaces, downloads, favorites, focus states, and reduced-motion behavior share the same token system.
 
 ### JavaScript and loading
 
-`client/src/main.jsx` lazy-loads the authenticated application. `pages/App.jsx` lazy-loads feature-heavy screens such as schedule, notes, annual planning, canvas, focus mode, and exam board. QR, terminal, and related optional libraries are also loaded dynamically.
+`client/src/main.jsx` lazy-loads the authenticated application. `pages/App.jsx` lazy-loads feature-heavy screens such as schedule, teaching mode, and exam board. QR, terminal, and related optional libraries are also loaded dynamically.
 
 `client/vite.config.js` defines production chunks for React, editor, PDF, terminal, and other vendor code. CSS code splitting is enabled.
 
@@ -80,14 +80,11 @@ The backend is Node.js/Express. There is no PHP runtime and no `.php` source fil
 | API prefix | Capability |
 | --- | --- |
 | `/api/login` | Teacher authentication. |
-| `/api/folders` | Folder hierarchy, ordering, favorites, notes, colors, and moves. |
+| `/api/folders` | Folder hierarchy, ordering, favorites, colors, and moves. |
 | `/api/files` | Upload, preview, download, versioning, roles, zip export, and file search. |
 | `/api/links` | Folder-linked external resources. |
 | `/api/schedule` | Weekly schedule. |
-| `/api/plans`, `/api/plan-archives` | Annual plans, entries, materials, exports, and imports. |
 | `/api/lesson-sessions` | Teaching sessions, phases, display state, and canvas data. |
-| `/api/notebooks`, `/api/sections`, `/api/pages`, `/api/blocks` | Notebooks and rich content. |
-| `/api/search` | Global search. |
 | `/api/ai` | AI status and document/worksheet generation. |
 | `/api/exams`, `/api/today-dashboard`, `/api/bug-checklist`, `/api/backups` | Supporting teacher workflows. |
 | `/api/files/:fileId/annotations` | Document annotations and annotation history. |
