@@ -53,13 +53,13 @@ function isTeacherToken(token) {
 const SESSION_EXAMS_KEY = 'lm_exams_board_seen';
 
 function Root() {
+  const token = localStorage.getItem('lm_token');
   const [tick, setTick] = useState(0);
   const [examsDismissed, setExamsDismissed] = useState(true);
-  // This state only changes after an explicit successful login. It deliberately
-  // starts false so restoring an authenticated session never replays the welcome.
-  const [showLoginWelcome, setShowLoginWelcome] = useState(false);
+  // Each app mount with an authenticated session begins with the welcome screen,
+  // so a browser refresh replays it before the workspace is rendered.
+  const [showLoginWelcome, setShowLoginWelcome] = useState(Boolean(token));
 
-  const token = localStorage.getItem('lm_token');
   const isTeacher = token ? isTeacherToken(token) : false;
 
   const handleLogin = () => {
