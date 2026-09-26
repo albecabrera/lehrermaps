@@ -1056,7 +1056,6 @@ export default function App({ onLogout }) {
       fontFamily: '"DM Sans", -apple-system, BlinkMacSystemFont, sans-serif',
       fontFeatureSettings: '"ss01", "cv11"',
     }}>
-      <a className="lm-skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Workspace navigation — preserves the original visual language without restoring archived subject navigation. */}
       <header className={`lm-tabbar${isPhone ? ' lm-phone-focus-header' : ''}${isPhone && !phoneHeaderVisible ? ' is-collapsed' : ''}`} aria-label="Hauptnavigation">
