@@ -1457,6 +1457,19 @@ button:active {
     display: inline-flex !important;
   }
 }
+
+/* These four destinations stay icon-only on every device. Their existing
+   title/aria-label still provides the destination name for accessibility and
+   the pointer tooltip without consuming header space. */
+.lm-tabbar .lm-topbar-onenote > span:last-child,
+.lm-tabbar .lm-topbar-idoceo > span:last-child,
+.lm-tabbar .lm-topbar-notion > span:last-child,
+.lm-tabbar .lm-topbar-miro > span:last-child,
+.lm-mobile-header-app--idoceo .lm-mobile-header-app-label,
+.lm-mobile-header-app--notion .lm-mobile-header-app-label,
+.lm-mobile-header-app--miro .lm-mobile-header-app-label {
+  display: none !important;
+}
 @media (max-width: 1100px) {
   .lm-onenote-glyph,
   .lm-idoceo-glyph,
