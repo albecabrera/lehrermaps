@@ -102,8 +102,8 @@ export const getAppRailOrder = () =>
 export const saveAppRailOrder = (order) =>
   api.put('/app-rail', { order }).then((r) => r.data.order);
 
-export const getRandomizerState = () => api.get('/randomizer').then((r) => r.data.state);
-export const saveRandomizerState = (state) => api.put('/randomizer', { state }).then((r) => r.data.state);
+export const getRandomizerRosters = () => api.get('/randomizer').then((r) => r.data.rosters);
+export const saveRandomizerRosters = (rosters) => api.put('/randomizer', { rosters }).then((r) => r.data.rosters);
 
 export const toggleFolderFavorite = (id) =>
   api.put(`/folders/${id}/favorite`).then((r) => r.data);

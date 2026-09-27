@@ -79,6 +79,8 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS today_dashboard_notes (user_id INTEGER NOT NULL, note_date TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, note_date))`,
   `CREATE TABLE IF NOT EXISTS bug_checklists (user_id INTEGER PRIMARY KEY, items_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS app_preferences (user_id INTEGER PRIMARY KEY, app_rail_order_json TEXT NOT NULL DEFAULT '[]', randomizer_json TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS randomizer_rosters (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'class', last_groups_json TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS randomizer_students (id INTEGER PRIMARY KEY, roster_id INTEGER NOT NULL REFERENCES randomizer_rosters(id) ON DELETE CASCADE, name TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0)`,
   `CREATE TABLE IF NOT EXISTS user_backups (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, payload_json TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS document_annotations (id INTEGER PRIMARY KEY, file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE, user_id INTEGER NOT NULL DEFAULT 1, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS document_annotation_history (id INTEGER PRIMARY KEY, annotation_id INTEGER NOT NULL, file_id INTEGER NOT NULL, user_id INTEGER NOT NULL, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, action TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
@@ -100,6 +102,21 @@ export async function initSchema() {
   const preferenceColumns = database.prepare('PRAGMA table_info(app_preferences)').all();
   if (!preferenceColumns.some((column) => column.name === 'randomizer_json')) {
     database.exec("ALTER TABLE app_preferences ADD COLUMN randomizer_json TEXT NOT NULL DEFAULT '{}'");
+  }
+  database.exec('CREATE INDEX IF NOT EXISTS randomizer_rosters_user_order ON randomizer_rosters(user_id, sort_order, id); CREATE INDEX IF NOT EXISTS randomizer_students_roster_order ON randomizer_students(roster_id, sort_order, id);');
+  const [legacyRandomizerRows] = await pool.execute("SELECT user_id, randomizer_json FROM app_preferences WHERE randomizer_json IS NOT NULL AND randomizer_json != '{}' ");
+  for (const legacy of legacyRandomizerRows) {
+    const [existingRoster] = await pool.execute('SELECT id FROM randomizer_rosters WHERE user_id = ? LIMIT 1', [legacy.user_id]);
+    if (existingRoster.length) continue;
+    try {
+      const state = JSON.parse(legacy.randomizer_json);
+      const names = Array.isArray(state.names) ? state.names.map((name) => String(name || '').trim()).filter(Boolean) : [];
+      if (!names.length) continue;
+      const [created] = await pool.execute("INSERT INTO randomizer_rosters (user_id, name, kind, last_groups_json, sort_order) VALUES (?, 'Allgemein', 'class', ?, 0)", [legacy.user_id, JSON.stringify(Array.isArray(state.groups) ? state.groups : [])]);
+      for (const [index, name] of names.entries()) await pool.execute('INSERT INTO randomizer_students (roster_id, name, sort_order) VALUES (?, ?, ?)', [created.insertId, name, index]);
+    } catch {
+      // Keep malformed legacy JSON untouched; the new roster editor starts cleanly.
+    }
   }
   // Workspace redesign migration: legacy subject folders remain recoverable but
   // never participate in the active workspace. The exam-plan store is internal
