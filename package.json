@@ -6,6 +6,7 @@
     "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
     "dev:8090": "concurrently \"npm run build:watch\" \"npm run dev --prefix server\"",
     "build": "npm run build --prefix client",
+    "commit:deploy": "bash scripts/commit-deploy.sh",
     "build:watch": "npm run build --prefix client -- --watch",
     "test:smoke": "node scripts/lehrermaps-smoke.mjs",
     "test:pwa": "node scripts/lehrermaps-pwa-audit.mjs",

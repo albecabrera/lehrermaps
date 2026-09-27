@@ -48,8 +48,6 @@ import ClassroomTimer from '../components/ClassroomTimer';
 // and leave iPhone Safari showing a broken-image placeholder.
 const LOGINEO_LOGO_URL = '/assets/logineo-logo.jpg';
 const PLESK_TERMINAL_URL = 'https://h2953700.stratoserver.net:8443/modules/ssh-terminal/?dom_id=22&site_id=22';
-const MOBILE_HIDDEN_SUBJECT_IDS = new Set(['spanisch', 'informatik', 'sport']);
-
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'excalidraw', name: 'Excalidraw', href: 'https://excalidraw.com/', label: 'Excalidraw öffnen', iconSrc: '/assets/excalidraw-favicon.ico' },
   { id: 'ucs', name: 'UCS', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
@@ -1018,7 +1016,9 @@ export default function App({ onLogout }) {
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
   const sidebarProps = {
     subject,
-    subjects: isMobile ? SUBJECTS.filter(({ id }) => !MOBILE_HIDDEN_SUBJECT_IDS.has(id)) : SUBJECTS,
+    subjects: isMobile ? [] : SUBJECTS,
+    showSubjects: !isMobile,
+    showPrintReady: !isMobile,
     groups: subject.groups,
     folders: subjectFolders,
     loading: foldersLoading,

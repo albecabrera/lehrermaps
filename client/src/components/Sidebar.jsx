@@ -26,6 +26,7 @@ const FOLDER_COLORS = [
 
 export default function Sidebar({
   subject, subjects = [], groups, folders, loading = false, width = 260,
+  showSubjects = true, showPrintReady = true,
   activeFolderId, onFolderSelect,
   activeSubjectId, onSubjectSelect,
   onNewFolder, onNewFolderInGroup, onNewSubfolder, onNewOrdner, onNewHauptordner,
@@ -108,7 +109,7 @@ export default function Sidebar({
       overflow: 'hidden',
     }}>
       {/* Subjects */}
-      <div style={{
+      {showSubjects && <div style={{
         padding: collapsed ? '8px 4px 6px' : '10px 10px 8px',
         borderBottom: '1px solid var(--c-border)',
         flexShrink: 0,
@@ -166,9 +167,9 @@ export default function Sidebar({
             );
           })}
         </div>
-      </div>
+      </div>}
 
-      <button
+      {showPrintReady && <button
         type="button"
         onClick={onPrintReady}
         title="Druckfertig"
@@ -184,7 +185,7 @@ export default function Sidebar({
       >
         <span aria-hidden="true" style={{ fontSize: 15 }}>▣</span>
         {!collapsed && <span>Druckfertig</span>}
-      </button>
+      </button>}
 
       {/* Header */}
       <div style={{
