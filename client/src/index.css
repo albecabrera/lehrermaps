@@ -1881,6 +1881,22 @@ button[aria-pressed="true"] {
 .lm-workspace-nav-item.is-active { border-color: color-mix(in srgb, var(--c-focus) 32%, var(--c-border)); background: color-mix(in srgb, var(--c-focus) 10%, var(--c-surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-focus) 12%, transparent), var(--shadow-sm); color: var(--c-text); }
 .lm-workspace-nav-item:focus-visible, .lm-workspace-tool:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 3px; }
 
+/* Give the desktop header enough height for its hover labels to breathe. */
+@media (min-width: 1101px) {
+  .lm-tabbar {
+    min-height: 78px !important;
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+  }
+  .lm-workspace-primary-nav { gap: 8px; }
+  .lm-workspace-nav-item,
+  .lm-tabbar .lm-workspace-tool,
+  .lm-tabbar .lm-topbar-logout {
+    min-height: 46px;
+  }
+  .lm-workspace-nav-item { padding-inline: 15px; font-size: 14px; }
+}
+
 /* External apps are compact, icon-only launchers: their link labels remain
    available through aria-label and the native tooltip while the brand colour
    makes each destination scannable at a glance. */

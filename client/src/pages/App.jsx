@@ -1254,7 +1254,7 @@ export default function App({ onLogout }) {
             ['klausurplan', <svg key="exam-plan-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2.5h6l2 2V13.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M10 2.5v2h2M6 7h4M6 9.5h4M6 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Klausurplan', () => navigateToView('klausurplan')],
           ].map(([id, icon, label, onClick]) => {
             const active = viewMode === id;
-            return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
+            return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined} title={label}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
           })}
           <a href={ONE_NOTE_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-onenote" aria-label="OneNote in der installierten App öffnen" title="In OneNote-App öffnen" data-app-name="OneNote"><span className="lm-onenote-glyph" aria-hidden="true">N</span><span>OneNote</span></a>
           <a href={IDOCEO_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-idoceo" aria-label="iDoceo in der installierten App öffnen" title="In iDoceo-App öffnen" data-app-name="iDoceo"><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span>iDoceo</span></a>
@@ -1269,7 +1269,7 @@ export default function App({ onLogout }) {
             <button className="lm-spring lm-workspace-tool lm-bug-checklist-trigger" type="button" onClick={() => setBugChecklistOpen(true)} title="Bugs melden" aria-label="Bugs melden"><BugChecklistIcon size={19} /></button>
             <button className="lm-spring lm-workspace-tool" onClick={toggleTheme} title={isDark ? t('app.theme_light') : t('app.theme_dark')} aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}>{isDark ? '☀' : '◐'}</button>
           </div>
-          <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout"><span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span></button>
+          <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout" title="Logout"><span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span></button>
         </div>
       </header>}
       {!headerVisible && (
