@@ -3349,6 +3349,7 @@ button:not(:disabled):focus-visible,
   box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(245, 245, 247, .06);
 }
 [data-theme="dark"] .lm-app-rail-ucs { --lm-rail-accent: #3ec7ff; }
+[data-theme="dark"] .lm-app-rail-excalidraw { --lm-rail-accent: #6965db; }
 [data-theme="dark"] .lm-app-rail-anton { --lm-rail-accent: #72dc84; }
 [data-theme="dark"] .lm-app-rail-vamos-1,
 [data-theme="dark"] .lm-app-rail-vamos-2 { --lm-rail-accent: #ff9a53; }

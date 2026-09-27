@@ -51,6 +51,7 @@ const PLESK_TERMINAL_URL = 'https://h2953700.stratoserver.net:8443/modules/ssh-t
 const EXTERNAL_APP_RAIL_ORDER_STORAGE_KEY = 'lm-external-app-rail-order';
 
 const EXTERNAL_APP_RAIL_LAUNCHERS = [
+  { id: 'excalidraw', name: 'Excalidraw', href: 'https://excalidraw.com/', label: 'Excalidraw öffnen', iconSrc: '/assets/excalidraw-favicon.ico' },
   { id: 'ucs', name: 'UCS', href: 'https://master.schulen-bn.de/univention/management/#module=schoolusers:student:0:', label: 'UCS öffnen', iconSrc: '/assets/ucs-logo.png', iconClass: 'wide' },
   { id: 'anton', name: 'ANTON', href: 'https://anton.app/', label: 'ANTON öffnen', iconSrc: '/assets/anton-favicon.ico' },
   { id: 'click-and-teach-5-6', name: 'click & teach 5/6', href: 'https://www.click-and-teach.de/Player/id/1280/page/8', label: 'click & teach 5/6 öffnen', iconSrc: 'https://www.click-and-teach.de/img/CCBLogo.png', iconClass: 'wide' },
