@@ -31,6 +31,7 @@ export default function HeaderRandomizer() {
   const [selectedId, setSelectedId] = useState(() => rosters[0].id);
   const [groupSize, setGroupSize] = useState(3);
   const [selectedName, setSelectedName] = useState('');
+  const [studentDrafts, setStudentDrafts] = useState({});
   const [loaded, setLoaded] = useState(false);
   const [displayFullscreen, setDisplayFullscreen] = useState(false);
   const saveQueueRef = useRef(Promise.resolve());
@@ -119,7 +120,10 @@ export default function HeaderRandomizer() {
     updateRoster({ groups });
   };
 
-  const setStudentNames = (text) => updateRoster({ students: text.split('\n').map((name) => name.trim()).filter(Boolean).map((name, index) => ({ id: `local-student-${index}-${name}`, name })) });
+  const setStudentNames = (text) => {
+    setStudentDrafts((current) => ({ ...current, [roster.id]: text }));
+    updateRoster({ students: text.split('\n').map((name) => name.trim()).filter(Boolean).map((name, index) => ({ id: `local-student-${index}-${name}`, name })) });
+  };
 
   const openDisplay = async () => {
     setOpen(false);
@@ -138,7 +142,7 @@ export default function HeaderRandomizer() {
           <div className="lm-header-randomizer-roster-edit"><input value={roster.name} onChange={(event) => updateRoster({ name: event.target.value })} aria-label="Name der Klasse oder des Kurses" /><select value={roster.kind} onChange={(event) => updateRoster({ kind: event.target.value })} aria-label="Typ auswählen"><option value="class">Klasse</option><option value="course">Kurs</option></select></div>
           <div className="lm-header-randomizer-actions"><button type="button" onClick={() => persist(rosters)}>Speichern</button><button type="button" onClick={openDisplay} disabled={!roster.students.length && !roster.groups.length}>Vollbild anzeigen</button></div>
           <div className="lm-header-randomizer-tabs" role="tablist" aria-label="Zufallsgenerator-Modus"><button type="button" role="tab" aria-selected={mode === 'names'} className={mode === 'names' ? 'is-active' : ''} onClick={() => setMode('names')}>Zufallsname</button><button type="button" role="tab" aria-selected={mode === 'groups'} className={mode === 'groups' ? 'is-active' : ''} onClick={() => setMode('groups')}>Zufallsgruppen</button></div>
-          <label className="lm-header-randomizer-field"><span>Schülerinnen und Schüler (eine Person pro Zeile)</span><textarea value={roster.students.map((student) => student.name).join('\n')} onChange={(event) => setStudentNames(event.target.value)} rows={6} placeholder="Name eintragen …" /></label>
+          <label className="lm-header-randomizer-field"><span>Vornamen (eine Person pro Zeile)</span><textarea value={studentDrafts[roster.id] ?? roster.students.map((student) => student.name).join('\n')} onChange={(event) => setStudentNames(event.target.value)} rows={6} placeholder="Vorname eingeben und Enter drücken …" /></label>
           {mode === 'names' ? <div className="lm-header-randomizer-result"><span>{roster.kind === 'course' ? 'Kurs' : 'Klasse'} · {roster.name}</span><strong>{selectedName || 'Noch niemand ausgewählt'}</strong><button type="button" className="lm-header-randomizer-primary" onClick={drawName} disabled={!roster.students.length}>Namen ziehen</button></div> : <><label className="lm-header-randomizer-size"><span>Personen pro Gruppe</span><input type="number" min="2" max="20" value={groupSize} onChange={(event) => setGroupSize(Math.min(20, Math.max(2, Number.parseInt(event.target.value, 10) || 2)))} /></label><button type="button" className="lm-header-randomizer-primary" onClick={makeGroups} disabled={!roster.students.length}>Gruppen bilden</button><div className="lm-header-randomizer-groups">{roster.groups.length ? roster.groups.map((group, index) => <div className="lm-header-randomizer-group" key={`group-${index}`}><strong>Gruppe {index + 1}</strong><span>{group.join(' · ')}</span></div>) : <span className="lm-header-randomizer-empty">Noch keine Gruppen gebildet</span>}</div></>}
         </>}
       </section>}
