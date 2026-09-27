@@ -61,19 +61,25 @@ router.put('/randomizer', teacherOnly, async (req, res) => {
   const normalized = rosters.map((roster, rosterIndex) => ({
     name: String(roster?.name || '').trim().slice(0, 120) || `Gruppe ${rosterIndex + 1}`,
     kind: roster?.kind === 'course' ? 'course' : 'class',
-    groups: Array.isArray(roster?.groups) ? roster.groups.slice(0, 50).map((group) => Array.isArray(group) ? group.map((name) => String(name).slice(0, 120)).slice(0, 200) : []) : [],
-    students: Array.isArray(roster?.students) ? roster.students.map((student) => String(student?.name || '').trim().slice(0, 120)).filter(Boolean).slice(0, 200) : [],
+    groups: Array.isArray(roster?.groups) ? roster.groups.slice(0, 50).map((group) => Array.isArray(group) ? group.map((name) => String(name || '').trim().slice(0, 120)).filter(Boolean).slice(0, 200) : []) : [],
+    students: Array.isArray(roster?.students) ? [...new Map(roster.students.map((student) => String(student?.name || '').trim().slice(0, 120)).filter(Boolean).map((name) => [name.toLocaleLowerCase(), name])).values()].slice(0, 200) : [],
   }));
   try {
     const userId = userIdFor(req);
+    const persisted = [];
     pool.transaction((connection) => {
       connection.execute('DELETE FROM randomizer_rosters WHERE user_id = ?', [userId]);
       for (const [rosterIndex, roster] of normalized.entries()) {
         const [created] = connection.execute('INSERT INTO randomizer_rosters (user_id, name, kind, last_groups_json, sort_order) VALUES (?, ?, ?, ?, ?)', [userId, roster.name, roster.kind, JSON.stringify(roster.groups), rosterIndex]);
-        for (const [studentIndex, name] of roster.students.entries()) connection.execute('INSERT INTO randomizer_students (roster_id, name, sort_order) VALUES (?, ?, ?)', [created.insertId, name, studentIndex]);
+        const students = [];
+        for (const [studentIndex, name] of roster.students.entries()) {
+          const [student] = connection.execute('INSERT INTO randomizer_students (roster_id, name, sort_order) VALUES (?, ?, ?)', [created.insertId, name, studentIndex]);
+          students.push({ id: student.insertId, name });
+        }
+        persisted.push({ id: created.insertId, name: roster.name, kind: roster.kind, students, groups: roster.groups });
       }
     });
-    res.json({ ok: true, rosters: normalized });
+    res.json({ ok: true, rosters: persisted });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

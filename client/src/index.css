@@ -4535,3 +4535,25 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
   .lm-login-welcome-orbit, .lm-login-welcome-content { animation: none !important; }
   .lm-toast { animation: none !important; }
 }
+
+/* Randomizer premium workspace */
+.lm-header-randomizer-meta { display:flex; justify-content:space-between; gap:12px; margin:8px 0; color:var(--c-text-3); font-size:11px; }
+.lm-header-randomizer-save-state { font-weight:700; color:var(--c-focus); }
+.lm-header-randomizer-save-state.is-saving { color:#c98a00; }
+.lm-header-randomizer-save-state.is-error { color:#c43b3b; }
+.lm-header-randomizer-actions { margin-top:8px; }
+.lm-header-randomizer-actions button { min-height:38px; }
+.lm-header-randomizer-tabs button, .lm-header-randomizer-primary, .lm-header-randomizer-groups-toolbar button { min-height:40px; }
+.lm-header-randomizer-field textarea:focus, .lm-header-randomizer-roster-edit input:focus, .lm-header-randomizer-roster-edit select:focus, .lm-header-randomizer-roster-row select:focus, .lm-header-randomizer-size input:focus { outline:3px solid color-mix(in srgb, var(--c-focus) 35%, transparent); outline-offset:1px; }
+.lm-header-randomizer-groups-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:6px; grid-column:1 / -1; color:var(--c-text-3); font-size:11px; }
+.lm-header-randomizer-groups-toolbar span { margin-right:auto; }
+.lm-header-randomizer-groups-toolbar button { padding:0 9px; border:1px solid var(--c-border); border-radius:8px; background:var(--c-surface-2); color:var(--c-text); cursor:pointer; font:700 11px inherit; }
+.lm-header-randomizer-display-groups + .lm-header-randomizer-primary { max-width:320px; margin:28px auto 0; display:block; }
+.lm-header-randomizer-display-groups > div { min-height:120px; }
+@media (max-width:700px) {
+  .lm-header-randomizer-modal { inset:2vh 2vw; padding:18px; border-radius:16px; }
+  .lm-header-randomizer-modal .lm-header-randomizer-field textarea { min-height:150px; }
+  .lm-header-randomizer-display { padding:64px 16px 30px; }
+  .lm-header-randomizer-display-groups { grid-template-columns:1fr; }
+  .lm-header-randomizer-display-groups > div { min-height:0; }
+}

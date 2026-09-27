@@ -5,13 +5,15 @@ const DEFAULT_NAMES = ['Anna', 'Ben', 'Clara', 'David', 'Emilia', 'Felix', 'Gret
 const newRoster = (name = 'Neue Klasse', kind = 'class', students = []) => ({ id: `local-${Date.now()}-${Math.random()}`, name, kind, students, groups: [] });
 
 function normalizeRosters(value) {
-  if (!Array.isArray(value) || !value.length) return [newRoster('Allgemein', 'class', DEFAULT_NAMES)];
+  if (!Array.isArray(value) || !value.length) return [newRoster('Allgemein', 'class', DEFAULT_NAMES.map((name, index) => ({ id: `default-${index}`, name })))];
   return value.map((roster, index) => ({
     id: roster.id || `local-${index}-${Date.now()}`,
     name: String(roster.name || `Gruppe ${index + 1}`),
     kind: roster.kind === 'course' ? 'course' : 'class',
-    students: Array.isArray(roster.students) ? roster.students.map((student) => typeof student === 'string' ? { id: `local-student-${Math.random()}`, name: student } : { id: student.id || `local-student-${Math.random()}`, name: String(student.name || '') }).filter((student) => student.name) : [],
-    groups: Array.isArray(roster.groups) ? roster.groups : [],
+    students: Array.isArray(roster.students) ? roster.students.map((student, studentIndex) => typeof student === 'string'
+      ? { id: `local-student-${index}-${studentIndex}`, name: student }
+      : { id: student.id || `local-student-${index}-${studentIndex}`, name: String(student.name || '') }).filter((student) => student.name) : [],
+    groups: Array.isArray(roster.groups) ? roster.groups.filter((group) => Array.isArray(group) && group.length).map((group) => group.map(String)) : [],
   }));
 }
 
@@ -24,6 +26,21 @@ function shuffled(items) {
   return result;
 }
 
+function parseStudentNames(text) {
+  const seen = new Set();
+  const names = [];
+  let duplicateCount = 0;
+  text.split('\n').forEach((rawName) => {
+    const name = rawName.trim();
+    if (!name) return;
+    const key = name.toLocaleLowerCase();
+    if (seen.has(key)) { duplicateCount += 1; return; }
+    seen.add(key);
+    names.push(name);
+  });
+  return { names, duplicateCount };
+}
+
 export default function HeaderRandomizer() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState('names');
@@ -32,31 +49,64 @@ export default function HeaderRandomizer() {
   const [groupSize, setGroupSize] = useState(3);
   const [selectedName, setSelectedName] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [displayGroups, setDisplayGroups] = useState([]);
+  const [displayMode, setDisplayMode] = useState('name');
   const [studentDrafts, setStudentDrafts] = useState({});
+  const [duplicateCount, setDuplicateCount] = useState(0);
+  const [saveState, setSaveState] = useState('saved');
   const [loaded, setLoaded] = useState(false);
   const [displayFullscreen, setDisplayFullscreen] = useState(false);
   const saveQueueRef = useRef(Promise.resolve());
+  const saveVersionRef = useRef(0);
+  const saveTimerRef = useRef(null);
   const displayRef = useRef(null);
   const roster = rosters.find((item) => item.id === selectedId) || rosters[0];
 
   useEffect(() => {
     let active = true;
-    getRandomizerRosters()
-      .then((value) => {
-        if (!active || !Array.isArray(value) || !value.length) return;
-        const next = normalizeRosters(value);
-        setRosters(next);
-        setSelectedId(next[0].id);
-      })
-      .catch(() => {})
-      .finally(() => { if (active) setLoaded(true); });
+    getRandomizerRosters().then((value) => {
+      if (!active || !Array.isArray(value) || !value.length) return;
+      const next = normalizeRosters(value);
+      setRosters(next);
+      setSelectedId(next[0].id);
+      setStudentDrafts(Object.fromEntries(next.map((item) => [item.id, item.students.map((student) => student.name).join('\n')])));
+    }).catch(() => {}).finally(() => { if (active) setLoaded(true); });
     return () => { active = false; };
   }, []);
 
-  const persist = useCallback((nextRosters) => {
-    const payload = nextRosters.map((item) => ({ ...item, students: item.students.map((student) => ({ name: student.name })) }));
-    saveQueueRef.current = saveQueueRef.current.catch(() => {}).then(() => saveRandomizerRosters(payload));
+  const persist = useCallback((nextRosters, selectedIndex = 0) => {
+    const version = ++saveVersionRef.current;
+    setSaveState('saving');
+    const payload = nextRosters.map((item) => ({
+      name: item.name, kind: item.kind, groups: item.groups,
+      students: item.students.map((student) => ({ name: student.name })),
+    }));
+    const save = () => saveRandomizerRosters(payload).then((serverRosters) => {
+      if (version !== saveVersionRef.current) return;
+      const next = normalizeRosters(serverRosters);
+      setRosters(next);
+      setSelectedId(next[Math.min(selectedIndex, next.length - 1)]?.id || next[0].id);
+      setStudentDrafts(Object.fromEntries(next.map((item) => [item.id, item.students.map((student) => student.name).join('\n')])));
+      setSaveState('saved');
+    }).catch(() => { if (version === saveVersionRef.current) setSaveState('error'); });
+    saveQueueRef.current = saveQueueRef.current.catch(() => {}).then(save);
+    return saveQueueRef.current;
   }, []);
+
+  const updateRosters = useCallback((updater, selectedIndex = null) => {
+    setRosters((current) => {
+      const next = updater(current);
+      const index = selectedIndex === null ? Math.max(0, next.findIndex((item) => item.id === selectedId)) : selectedIndex;
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => persist(next, index), 650);
+      return next;
+    });
+  }, [persist, selectedId]);
+
+  const saveNow = useCallback(() => {
+    clearTimeout(saveTimerRef.current);
+    return persist(rosters, Math.max(0, rosters.findIndex((item) => item.id === selectedId)));
+  }, [persist, rosters, selectedId]);
 
   const closeDisplay = useCallback(async () => {
     if (document.fullscreenElement === displayRef.current) {
@@ -66,9 +116,7 @@ export default function HeaderRandomizer() {
   }, []);
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) setDisplayFullscreen(false);
-    };
+    const handleFullscreenChange = () => { if (!document.fullscreenElement) setDisplayFullscreen(false); };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
@@ -80,30 +128,27 @@ export default function HeaderRandomizer() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [closeDisplay, displayFullscreen]);
 
-  const updateRoster = useCallback((patch) => {
-    setRosters((current) => {
-      const next = current.map((item) => item.id === selectedId ? { ...item, ...patch } : item);
-      persist(next);
-      return next;
+  const openDisplay = (nextMode, name = '', groups = []) => {
+    setDisplayMode(nextMode); setDisplayName(name); setDisplayGroups(groups); setDisplayFullscreen(true);
+    requestAnimationFrame(() => {
+      const request = displayRef.current?.requestFullscreen?.();
+      request?.catch(() => {});
     });
-  }, [persist, selectedId]);
+  };
 
   const addRoster = () => {
     const next = newRoster();
-    setRosters((current) => {
-      const updated = [...current, next];
-      persist(updated);
-      return updated;
-    });
+    updateRosters((current) => [...current, next], rosters.length);
     setSelectedId(next.id);
+    setStudentDrafts((current) => ({ ...current, [next.id]: '' }));
   };
 
   const deleteRoster = () => {
     if (rosters.length === 1) return;
+    const index = rosters.findIndex((item) => item.id === selectedId);
     const next = rosters.filter((item) => item.id !== selectedId);
-    setRosters(next);
-    setSelectedId(next[0].id);
-    persist(next);
+    setSelectedId(next[Math.max(0, index - 1)].id);
+    updateRosters(() => next, Math.max(0, index - 1));
   };
 
   const drawName = () => {
@@ -111,65 +156,49 @@ export default function HeaderRandomizer() {
     const names = roster.students.map((student) => student.name);
     const candidates = names.length > 1 ? names.filter((name) => name !== selectedName) : names;
     const nextName = candidates[Math.floor(Math.random() * candidates.length)];
-    setSelectedName(nextName);
-    setDisplayName(nextName);
-    setOpen(false);
-    setDisplayFullscreen(true);
-    requestAnimationFrame(() => {
-      const request = displayRef.current?.requestFullscreen?.();
-      request?.catch(() => {});
-    });
+    setSelectedName(nextName); openDisplay('name', nextName);
+  };
+
+  const makeGroups = () => {
+    if (!roster?.students.length || groupSize < 2) return;
+    const names = shuffled(roster.students.map((student) => student.name));
+    const groups = [];
+    for (let index = 0; index < names.length; index += groupSize) groups.push(names.slice(index, index + groupSize));
+    updateRosters((current) => current.map((item) => item.id === selectedId ? { ...item, groups } : item));
+    openDisplay('groups', '', groups);
+  };
+
+  const setStudentNames = (text) => {
+    const parsed = parseStudentNames(text);
+    setDuplicateCount(parsed.duplicateCount);
+    setStudentDrafts((current) => ({ ...current, [roster.id]: text }));
+    updateRosters((current) => current.map((item) => item.id === roster.id
+      ? { ...item, groups: [], students: parsed.names.map((name, index) => ({ id: `local-student-${index}-${name}`, name })) } : item));
   };
 
   const exportRoster = () => {
     const groupByName = new Map(roster.groups.flatMap((group, index) => group.map((name) => [name, `Gruppe ${index + 1}`])));
     const rows = [['Vorname', 'Gruppe'], ...roster.students.map((student) => [student.name, groupByName.get(student.name) || ''])];
-    const csv = rows.map((row) => row.map((cell) => `\"${String(cell).replaceAll('\"', '\"\"')}\"`).join(';')).join('\n');
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(';')).join('\n');
     const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${roster.name || 'Zufallsgruppe'}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const link = document.createElement('a'); link.href = url; link.download = `${roster.name || 'Zufallsgruppe'}.csv`; link.click(); URL.revokeObjectURL(url);
   };
 
-
-  const makeGroups = () => {
-    if (!roster?.students.length) return;
-    const groups = [];
-    const names = shuffled(roster.students.map((student) => student.name));
-    for (let index = 0; index < names.length; index += groupSize) groups.push(names.slice(index, index + groupSize));
-    updateRoster({ groups });
-  };
-
-  const setStudentNames = (text) => {
-    setStudentDrafts((current) => ({ ...current, [roster.id]: text }));
-    updateRoster({ students: text.split('\n').map((name) => name.trim()).filter(Boolean).map((name, index) => ({ id: `local-student-${index}-${name}`, name })) });
-  };
-
-  return (
-    <div className="lm-header-randomizer">
-      <button type="button" className="lm-spring lm-workspace-tool lm-header-randomizer-trigger" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="dialog" title="Zufallsnamen und Zufallsgruppen">🎲</button>
-      {open && <section className="lm-header-randomizer-modal" role="dialog" aria-modal="true" aria-label="Zufallsnamen und Zufallsgruppen">
-        <div className="lm-header-randomizer-heading"><div><strong>Zufallsgenerator</strong><span>Klassen und Kurse getrennt verwalten</span></div><button type="button" className="lm-header-randomizer-close" onClick={() => setOpen(false)} aria-label="Zufallsgenerator schließen">×</button></div>
-        {!loaded ? <div className="lm-header-randomizer-loading">Wird geladen …</div> : <>
-          <div className="lm-header-randomizer-roster-row"><select value={selectedId} onChange={(event) => { setSelectedId(event.target.value); setSelectedName(''); }} aria-label="Klasse oder Kurs auswählen">{rosters.map((item) => <option value={item.id} key={item.id}>{item.kind === 'course' ? 'Kurs' : 'Klasse'} · {item.name}</option>)}</select><button type="button" onClick={addRoster} title="Klasse oder Kurs hinzufügen">＋</button><button type="button" onClick={deleteRoster} disabled={rosters.length === 1} title="Klasse oder Kurs löschen">−</button></div>
-          <div className="lm-header-randomizer-roster-edit"><input value={roster.name} onChange={(event) => updateRoster({ name: event.target.value })} aria-label="Name der Klasse oder des Kurses" /><select value={roster.kind} onChange={(event) => updateRoster({ kind: event.target.value })} aria-label="Typ auswählen"><option value="class">Klasse</option><option value="course">Kurs</option></select></div>
-          <div className="lm-header-randomizer-actions"><button type="button" onClick={() => persist(rosters)}>Speichern</button><button type="button" onClick={exportRoster} disabled={!roster.students.length}>Vornamen exportieren</button></div>
-          <div className="lm-header-randomizer-tabs" role="tablist" aria-label="Zufallsgenerator-Modus"><button type="button" role="tab" aria-selected={mode === 'names'} className={mode === 'names' ? 'is-active' : ''} onClick={() => setMode('names')}>Zufallsname</button><button type="button" role="tab" aria-selected={mode === 'groups'} className={mode === 'groups' ? 'is-active' : ''} onClick={() => setMode('groups')}>Zufallsgruppen</button></div>
-          <label className="lm-header-randomizer-field"><span>Vornamen (eine Person pro Zeile)</span><textarea value={studentDrafts[roster.id] ?? roster.students.map((student) => student.name).join('\n')} onChange={(event) => setStudentNames(event.target.value)} rows={6} placeholder="Vorname eingeben und Enter drücken …" /></label>
-          {mode === 'names' ? <div className="lm-header-randomizer-result"><span>{roster.kind === 'course' ? 'Kurs' : 'Klasse'} · {roster.name}</span><strong>{selectedName || 'Noch niemand ausgewählt'}</strong><button type="button" className="lm-header-randomizer-primary" onClick={drawName} disabled={!roster.students.length}>Zufallsnamen auswählen und anzeigen</button></div> : <><label className="lm-header-randomizer-size"><span>Personen pro Gruppe</span><input type="number" min="2" max="20" value={groupSize} onChange={(event) => setGroupSize(Math.min(20, Math.max(2, Number.parseInt(event.target.value, 10) || 2)))} /></label><button type="button" className="lm-header-randomizer-primary" onClick={makeGroups} disabled={!roster.students.length}>Gruppen bilden</button><div className="lm-header-randomizer-groups">{roster.groups.length ? roster.groups.map((group, index) => <div className="lm-header-randomizer-group" key={`group-${index}`}><strong>Gruppe {index + 1}</strong><span>{group.join(' · ')}</span></div>) : <span className="lm-header-randomizer-empty">Noch keine Gruppen gebildet</span>}</div></>}
-        </>}
-      </section>}
-      {displayFullscreen && <section ref={displayRef} className="lm-header-randomizer-display" role="dialog" aria-modal="true" aria-label={`${roster.kind === 'course' ? 'Kurs' : 'Klasse'} ${roster.name}`}>
-        <button type="button" className="lm-header-randomizer-display-close" onClick={closeDisplay}>Esc · Zurück</button>
-        <div className="lm-header-randomizer-display-content">
-          <span>{roster.kind === 'course' ? 'Kurs' : 'Klasse'} · {roster.name}</span>
-          <h1>{displayName}</h1>
-          <button type="button" className="lm-header-randomizer-display-draw" onClick={drawName} aria-label="Weiteren Zufallsnamen auswählen">🎲</button>
-          <small>Weiteren Namen auswählen</small>
-        </div>
-      </section>}
-    </div>
-  );
+  const statusLabel = saveState === 'saving' ? 'Speichert …' : saveState === 'error' ? 'Fehler beim Speichern' : 'Gespeichert';
+  return <div className="lm-header-randomizer">
+    <button type="button" className="lm-spring lm-workspace-tool lm-header-randomizer-trigger" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="dialog" title="Zufallsnamen und Zufallsgruppen">🎲</button>
+    {open && <section className="lm-header-randomizer-modal" role="dialog" aria-modal="true" aria-label="Zufallsnamen und Zufallsgruppen">
+      <div className="lm-header-randomizer-heading"><div><strong>Zufallsgenerator</strong><span>Premium-Unterrichtswerkzeug · Klassen und Kurse getrennt verwalten</span></div><button type="button" className="lm-header-randomizer-close" onClick={() => setOpen(false)} aria-label="Zufallsgenerator schließen">×</button></div>
+      {!loaded ? <div className="lm-header-randomizer-loading">Wird geladen …</div> : <>
+        <div className="lm-header-randomizer-roster-row"><select value={selectedId} onChange={(event) => { setSelectedId(event.target.value); setSelectedName(''); setDuplicateCount(0); }} aria-label="Klasse oder Kurs auswählen">{rosters.map((item) => <option value={item.id} key={item.id}>{item.kind === 'course' ? 'Kurs' : 'Klasse'} · {item.name}</option>)}</select><button type="button" onClick={addRoster} title="Klasse oder Kurs hinzufügen">＋</button><button type="button" onClick={deleteRoster} disabled={rosters.length === 1} title="Klasse oder Kurs löschen">−</button></div>
+        <div className="lm-header-randomizer-roster-edit"><input value={roster.name} onChange={(event) => updateRosters((current) => current.map((item) => item.id === roster.id ? { ...item, name: event.target.value } : item))} onBlur={saveNow} aria-label="Name der Klasse oder des Kurses" /><select value={roster.kind} onChange={(event) => updateRosters((current) => current.map((item) => item.id === roster.id ? { ...item, kind: event.target.value } : item))} aria-label="Typ auswählen"><option value="class">Klasse</option><option value="course">Kurs</option></select></div>
+        <div className="lm-header-randomizer-meta"><span className={`lm-header-randomizer-save-state is-${saveState}`}>● {statusLabel}</span><span>{roster.students.length} Personen{duplicateCount ? ` · ${duplicateCount} Duplikat${duplicateCount === 1 ? '' : 'e'} ignoriert` : ''}</span></div>
+        <div className="lm-header-randomizer-actions"><button type="button" onClick={saveNow}>Speichern</button><button type="button" onClick={exportRoster} disabled={!roster.students.length}>CSV exportieren</button></div>
+        <div className="lm-header-randomizer-tabs" role="tablist" aria-label="Zufallsgenerator-Modus"><button type="button" role="tab" aria-selected={mode === 'names'} className={mode === 'names' ? 'is-active' : ''} onClick={() => setMode('names')}>Zufallsname</button><button type="button" role="tab" aria-selected={mode === 'groups'} className={mode === 'groups' ? 'is-active' : ''} onClick={() => setMode('groups')}>Zufallsgruppen</button></div>
+        <label className="lm-header-randomizer-field"><span>Vornamen · eine Person pro Zeile</span><textarea value={studentDrafts[roster.id] ?? roster.students.map((student) => student.name).join('\n')} onChange={(event) => setStudentNames(event.target.value)} onBlur={saveNow} rows={6} placeholder="Vorname eingeben und Enter drücken …" /></label>
+        {mode === 'names' ? <div className="lm-header-randomizer-result"><span>{roster.kind === 'course' ? 'Kurs' : 'Klasse'} · {roster.name}</span><strong>{selectedName || 'Noch niemand ausgewählt'}</strong><button type="button" className="lm-header-randomizer-primary" onClick={drawName} disabled={!roster.students.length}>Zufallsnamen auswählen und anzeigen</button></div> : <><label className="lm-header-randomizer-size"><span>Personen pro Gruppe</span><input type="number" min="2" max="20" value={groupSize} onChange={(event) => setGroupSize(Math.min(20, Math.max(2, Number.parseInt(event.target.value, 10) || 2)))} /></label><button type="button" className="lm-header-randomizer-primary" onClick={makeGroups} disabled={!roster.students.length || roster.students.length < 2}>Gruppen bilden und anzeigen</button><div className="lm-header-randomizer-groups">{roster.groups.length ? <><div className="lm-header-randomizer-groups-toolbar"><span>{roster.groups.length} Gruppen · jede Person genau einmal</span><button type="button" onClick={makeGroups}>Neu mischen</button><button type="button" onClick={() => openDisplay('groups', '', roster.groups)}>Vollbild</button></div>{roster.groups.map((group, index) => <div className="lm-header-randomizer-group" key={`group-${index}`}><strong>Gruppe ${index + 1}</strong><span>{group.join(' · ')}</span></div>)}</> : <span className="lm-header-randomizer-empty">Noch keine Gruppen gebildet</span>}</div></>}
+      </>}
+    </section>}
+    {displayFullscreen && <section ref={displayRef} className="lm-header-randomizer-display" role="dialog" aria-modal="true" aria-label={`${roster.kind === 'course' ? 'Kurs' : 'Klasse'} ${roster.name}`}><button type="button" className="lm-header-randomizer-display-close" onClick={closeDisplay}>Esc · Zurück</button><div className="lm-header-randomizer-display-content"><span>{roster.kind === 'course' ? 'Kurs' : 'Klasse'} · {roster.name}</span>{displayMode === 'name' ? <><h1>{displayName}</h1><button type="button" className="lm-header-randomizer-display-draw" onClick={drawName} aria-label="Weiteren Zufallsnamen auswählen">🎲</button><small>Weiteren Namen auswählen</small></> : <><div className="lm-header-randomizer-display-groups">{displayGroups.map((group, index) => <div key={`display-group-${index}`}><strong>Gruppe ${index + 1}</strong><span>{group.join(' · ')}</span></div>)}</div><button type="button" className="lm-header-randomizer-primary" onClick={makeGroups}>Neu mischen</button></>}</div></section>}
+  </div>;
 }
