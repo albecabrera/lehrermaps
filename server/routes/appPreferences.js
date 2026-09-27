@@ -39,4 +39,30 @@ router.put('/app-rail', teacherOnly, async (req, res) => {
   }
 });
 
+router.get('/randomizer', async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT randomizer_json FROM app_preferences WHERE user_id = ?', [userIdFor(req)]);
+    let state = {};
+    try { state = rows[0]?.randomizer_json ? JSON.parse(rows[0].randomizer_json) : {}; } catch {}
+    res.json({ state: state && typeof state === 'object' ? state : {} });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/randomizer', teacherOnly, async (req, res) => {
+  const state = req.body?.state;
+  if (!state || typeof state !== 'object' || Array.isArray(state)) return res.status(400).json({ error: 'state object required' });
+  try {
+    await pool.execute(`
+      INSERT INTO app_preferences (user_id, app_rail_order_json, randomizer_json, updated_at)
+      VALUES (?, '[]', ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id) DO UPDATE SET randomizer_json = excluded.randomizer_json, updated_at = CURRENT_TIMESTAMP
+    `, [userIdFor(req), JSON.stringify(state)]);
+    res.json({ ok: true, state });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

@@ -78,7 +78,7 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS today_dashboard_tasks (user_id INTEGER PRIMARY KEY, tasks_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS today_dashboard_notes (user_id INTEGER NOT NULL, note_date TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, note_date))`,
   `CREATE TABLE IF NOT EXISTS bug_checklists (user_id INTEGER PRIMARY KEY, items_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
-  `CREATE TABLE IF NOT EXISTS app_preferences (user_id INTEGER PRIMARY KEY, app_rail_order_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS app_preferences (user_id INTEGER PRIMARY KEY, app_rail_order_json TEXT NOT NULL DEFAULT '[]', randomizer_json TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS user_backups (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, payload_json TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS document_annotations (id INTEGER PRIMARY KEY, file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE, user_id INTEGER NOT NULL DEFAULT 1, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS document_annotation_history (id INTEGER PRIMARY KEY, annotation_id INTEGER NOT NULL, file_id INTEGER NOT NULL, user_id INTEGER NOT NULL, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, action TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
@@ -97,6 +97,10 @@ function parseScheduleJson(data) {
 
 export async function initSchema() {
   for (const statement of schema) database.exec(statement);
+  const preferenceColumns = database.prepare('PRAGMA table_info(app_preferences)').all();
+  if (!preferenceColumns.some((column) => column.name === 'randomizer_json')) {
+    database.exec("ALTER TABLE app_preferences ADD COLUMN randomizer_json TEXT NOT NULL DEFAULT '{}'");
+  }
   // Workspace redesign migration: legacy subject folders remain recoverable but
   // never participate in the active workspace. The exam-plan store is internal
   // so it is available only through the Klausurplan surface.
