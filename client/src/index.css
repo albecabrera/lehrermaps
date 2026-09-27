@@ -1444,12 +1444,18 @@ button:active {
   .lm-tabbar .lm-app-brand .lm-brand-name,
   .lm-desktop-trailing-group .lm-topbar-calendar-label,
   .lm-desktop-trailing-group .lm-topbar-logout-label,
-  .lm-desktop-primary-nav .lm-topbar-notion,
-  .lm-desktop-primary-nav .lm-topbar-miro,
+  .lm-desktop-primary-nav .lm-topbar-lessons { display: none !important; }
+}
+
+/* Keep the named header links visible at compact desktop widths as well. */
+@media (min-width: 1101px) {
   .lm-desktop-primary-nav .lm-topbar-onenote,
   .lm-desktop-primary-nav .lm-topbar-idoceo,
-  .lm-desktop-primary-nav .lm-topbar-webuntis,
-  .lm-desktop-primary-nav .lm-topbar-lessons { display: none !important; }
+  .lm-desktop-primary-nav .lm-topbar-notion,
+  .lm-desktop-primary-nav .lm-topbar-miro,
+  .lm-desktop-primary-nav .lm-topbar-webuntis {
+    display: inline-flex !important;
+  }
 }
 @media (max-width: 1100px) {
   .lm-onenote-glyph,
