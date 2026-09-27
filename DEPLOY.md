@@ -74,15 +74,38 @@ cd client && npm ci && npm run build
 # Build first, then atomically sync static assets before restarting the API.
 test -f dist/index.html && test -f dist/service-worker.js
 rsync -a --delete --delay-updates dist/ /var/www/lehrermaps/client/dist/
-systemctl restart lehrermaps  # solo si cambió el backend
+systemctl restart lehrermaps
 ```
 Never restart before the static sync completes: mixed HTML/hashed assets cause a
-temporary broken application shell. Plan ZIP imports additionally require the
-system `unzip` executable. Run `npm run storage:reconcile --prefix server` first
+temporary broken application shell. Every deployment restarts the backend after
+the static sync, even when only static assets changed. Plan ZIP imports
+additionally require the system `unzip` executable. Run
+`npm run storage:reconcile --prefix server` first
 in dry-run mode before any storage cleanup; normal orphan blobs are never deleted.
 Nginx cacht `service-worker.js`/`manifest.json`/`index.html` mit `no-cache`
 (siehe deploy/nginx.conf) → neuer Build wird beim nächsten Laden aktiv, der
 SW (stale-while-revalidate, `skipWaiting`/`clients.claim`) übernimmt automatisch.
+
+### `scripts/deploy-static.sh` verifizieren
+
+Das Deployment-Skript verlangt zusätzlich zu `curl` **Node.js** und die nur für
+den Deployment-Prozess gesetzte Umgebungsvariable
+`LEHRERMAPS_DEPLOY_PASSWORD`. Sie enthält denselben Wert wie `APP_PASSWORD` in
+`server/.env`, darf nicht eingecheckt werden und wird weder ausgegeben noch
+protokolliert:
+
+```bash
+export LEHRERMAPS_DEPLOY_PASSWORD='the APP_PASSWORD value from server/.env'
+bash scripts/deploy-static.sh
+unset LEHRERMAPS_DEPLOY_PASSWORD
+```
+
+Nach dem statischen Sync startet das Skript `lehrermaps`, prüft den aktiven
+Service und `/api/health`, meldet sich dann nur für einen **lesenden** `GET
+/api/randomizer` an und erwartet `200`. Ein anonymer `401` kann die Route nicht
+nachweisen: die API-weite Auth-Middleware antwortet auch für unbekannte private
+Routen mit `401`. Der Smoke-Check schreibt keine Randomizer-Daten und führt
+keinen `PUT` aus.
 
 ## Häufige Stolpersteine
 - **Kein Install-Prompt / SW fehlt** → Seite läuft über `http` statt `https`
