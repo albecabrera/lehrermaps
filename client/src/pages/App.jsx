@@ -70,8 +70,13 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'school-home', name: 'Schul-Homepage', href: 'https://igs-bonn.de/?s=wordpress&search_404=1', label: 'Schul-Homepage öffnen', iconSrc: '/assets/icons/Logo_ESG_ohne_Schrift.svg', iconClass: 'wide' },
 ];
 
+const getDefaultAppRailOrder = () => {
+  const ids = EXTERNAL_APP_RAIL_LAUNCHERS.map((app) => app.id);
+  return ['esg-tech-help', ...ids.filter((id) => id !== 'esg-tech-help' && id !== 'excalidraw'), 'excalidraw'];
+};
+
 const normalizeAppRailOrder = (order) => {
-  const defaultOrder = EXTERNAL_APP_RAIL_LAUNCHERS.map((app) => app.id);
+  const defaultOrder = getDefaultAppRailOrder();
   if (!Array.isArray(order)) return defaultOrder;
   const valid = order.length === defaultOrder.length
     && order.every((id) => defaultOrder.includes(id))
@@ -82,13 +87,20 @@ const normalizeAppRailOrder = (order) => {
 function DesktopAppRail() {
   const [hoveredApp, setHoveredApp] = useState(null);
   const [labelTop, setLabelTop] = useState(0);
-  const [appOrder, setAppOrder] = useState(() => EXTERNAL_APP_RAIL_LAUNCHERS.map((app) => app.id));
+  const [appOrder, setAppOrder] = useState(getDefaultAppRailOrder);
   const [draggedAppId, setDraggedAppId] = useState(null);
+  const appOrderRef = useRef(appOrder);
+  const saveQueueRef = useRef(Promise.resolve());
 
   useEffect(() => {
     let active = true;
     getAppRailOrder()
-      .then((order) => { if (active) setAppOrder(normalizeAppRailOrder(order)); })
+      .then((order) => {
+        if (!active) return;
+        const normalizedOrder = normalizeAppRailOrder(order);
+        appOrderRef.current = normalizedOrder;
+        setAppOrder(normalizedOrder);
+      })
       .catch(() => {});
     return () => { active = false; };
   }, []);
@@ -99,16 +111,24 @@ function DesktopAppRail() {
 
   const moveApp = (sourceId, targetId) => {
     if (!sourceId || sourceId === targetId) return;
-    setAppOrder((currentOrder) => {
-      const nextOrder = [...currentOrder];
-      const sourceIndex = nextOrder.indexOf(sourceId);
-      const targetIndex = nextOrder.indexOf(targetId);
-      if (sourceIndex < 0 || targetIndex < 0) return currentOrder;
-      nextOrder.splice(sourceIndex, 1);
-      nextOrder.splice(targetIndex, 0, sourceId);
-      saveAppRailOrder(nextOrder).catch(() => {});
-      return nextOrder;
-    });
+    const currentOrder = appOrderRef.current;
+    const nextOrder = [...currentOrder];
+    const sourceIndex = nextOrder.indexOf(sourceId);
+    const targetIndex = nextOrder.indexOf(targetId);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+
+    nextOrder.splice(sourceIndex, 1);
+    // The target shifts one slot left when the dragged app came from before it.
+    const insertionIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    nextOrder.splice(insertionIndex, 0, sourceId);
+    appOrderRef.current = nextOrder;
+    setAppOrder(nextOrder);
+
+    // Serialize writes so a fast sequence of drops cannot let an older request
+    // finish last and overwrite the newest order on another device.
+    saveQueueRef.current = saveQueueRef.current
+      .catch(() => {})
+      .then(() => saveAppRailOrder(nextOrder));
   };
 
   const showAppLabel = (event, app) => {
