@@ -26,8 +26,50 @@ test -d client/dist/assets
 cp client/dist/index.html index.html
 rsync -a client/dist/assets/ assets/
 
-systemctl restart lehrermaps
-systemctl is-active --quiet lehrermaps
+# The production backend is a user-owned Node process (not a systemd unit).
+# Only terminate the PID recorded by this project after verifying that it is
+# actually the expected server process, then start the current sources anew.
+PID_FILE="$ROOT_DIR/.logs/server.pid"
+mkdir -p "$ROOT_DIR/.logs"
+if [ -f "$PID_FILE" ]; then
+  old_pid=$(cat "$PID_FILE")
+  if [[ "$old_pid" =~ ^[0-9]+$ ]] && kill -0 "$old_pid" 2>/dev/null; then
+    old_cwd=$(readlink "/proc/$old_pid/cwd" 2>/dev/null || true)
+    old_command=$(tr '\0' ' ' < "/proc/$old_pid/cmdline" 2>/dev/null || true)
+    if [ "$old_cwd" != "$ROOT_DIR/server" ] || [ "$old_command" != "node index.js " ]; then
+      echo "Refusing to stop unexpected PID $old_pid." >&2
+      exit 1
+    fi
+    kill -TERM "$old_pid"
+    for _ in $(seq 1 30); do
+      kill -0 "$old_pid" 2>/dev/null || break
+      sleep 1
+    done
+    if kill -0 "$old_pid" 2>/dev/null; then
+      echo "Backend PID $old_pid did not stop gracefully." >&2
+      exit 1
+    fi
+  fi
+fi
+
+(
+  cd "$ROOT_DIR/server"
+  setsid nohup node index.js > "$ROOT_DIR/.logs/server.log" 2>&1 < /dev/null &
+  echo $! > "$PID_FILE"
+)
+
+for _ in $(seq 1 30); do
+  new_pid=$(cat "$PID_FILE")
+  if kill -0 "$new_pid" 2>/dev/null && curl --fail --silent --show-error --max-time 2 http://127.0.0.1:3001/api/health >/dev/null; then
+    break
+  fi
+  sleep 1
+done
+new_pid=$(cat "$PID_FILE")
+if ! kill -0 "$new_pid" 2>/dev/null || ! curl --fail --silent --show-error --max-time 15 http://127.0.0.1:3001/api/health >/dev/null; then
+  echo "Backend failed to start; see $ROOT_DIR/.logs/server.log." >&2
+  exit 1
+fi
 
 curl --fail --silent --show-error --max-time 15 "$API_BASE_URL/health" >/dev/null
 
