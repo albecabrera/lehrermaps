@@ -5,7 +5,7 @@ import { SUPPORTED_TYPES } from '../constants/structure';
 import { useLang } from '../contexts/LangContext';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
-export default function UploadModal({ open, onClose, accent, targetFolder, onUpload, initialFiles }) {
+export default function UploadModal({ open, onClose, accent, targetFolder, onUpload, onUploadComplete, initialFiles }) {
   const { t } = useLang();
   const [dragOver, setDragOver] = useState(false);
   const [fileList, setFileList] = useState([]);
@@ -45,8 +45,11 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
     }
 
     setUploading(false);
-    if (allOk) setTimeout(() => { setFileList([]); onClose(); }, 700);
-  }, [onUpload, onClose]);
+    if (allOk) {
+      onUploadComplete?.({ count: list.length });
+      setTimeout(() => { setFileList([]); onClose(); }, 700);
+    }
+  }, [onUpload, onUploadComplete, onClose]);
 
   useEffect(() => {
     if (open && initialFiles?.length) {
@@ -136,7 +139,7 @@ export default function UploadModal({ open, onClose, accent, targetFolder, onUpl
                 background: dragOver ? `${accent}11` : 'var(--c-surface-2)',
                 borderRadius: 10, padding: '28px 16px',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                textAlign: 'center', transition: 'all .15s', cursor: 'pointer',
+                textAlign: 'center', transition: 'background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease', cursor: 'pointer',
               }}
             >
               <div style={{

@@ -385,7 +385,7 @@ export default function FileTable({
                 color: dndMode ? accent : 'var(--c-text-3)',
                 fontSize: 9, fontWeight: 700, letterSpacing: 0.6,
                 textTransform: 'uppercase', fontFamily: 'inherit',
-                transition: 'all .15s',
+                transition: 'background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease',
               }}
             >
               <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
@@ -427,7 +427,7 @@ export default function FileTable({
                       background: on ? 'var(--c-text-3)' : 'transparent',
                       color: on ? 'var(--c-surface)' : 'var(--c-text-3)',
                       fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                      letterSpacing: 0.3, transition: 'all .1s',
+                      letterSpacing: 0.3, transition: 'background .1s ease, border-color .1s ease, color .1s ease, transform .1s ease',
                     }}
                   >{label}</button>
                 );

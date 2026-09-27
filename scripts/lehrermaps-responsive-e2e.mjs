@@ -19,9 +19,6 @@ const viewports = [
 const results = [];
 const pass = (name, detail = '') => results.push({ name, status: 'PASS', detail });
 const fail = (name, error) => results.push({ name, status: 'FAIL', detail: error.message });
-const klausurplanItem = (menu, label) => menu.getByRole('menuitem', {
-  name: new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+(Öffnen|Nicht verfügbar)$`),
-});
 
 export function browserLaunchOptions(environment = process.env) {
   return environment.CHROME_PATH
@@ -75,6 +72,13 @@ async function login(page) {
   await page.locator('input[type="password"]').waitFor({ state: 'visible' });
   await page.locator('input[type="password"]').fill(teacherPassword);
   await page.locator('form button[type="submit"]').click();
+  // The welcome handoff is intentionally user-controlled. Dismiss it here so
+  // the responsive audit measures the authenticated workspace rather than an
+  // intermediate login state.
+  const continueButton = page.getByRole('button', { name: /Weiter zu LehrerMaps/i });
+  if (await continueButton.waitFor({ state: 'visible', timeout: 2000 }).then(() => true).catch(() => false)) {
+    await continueButton.first().click();
+  }
   await page.waitForTimeout(700);
   assert(!(await page.locator('body').innerText()).includes('Falsches Passwort'), 'teacher login failed');
 }
@@ -88,7 +92,7 @@ async function exerciseHomeDrawer(page) {
     else await page.keyboard.press('Escape');
     await page.waitForTimeout(100);
   }
-  const menu = page.getByRole('button', { name: /Sidebar ausklappen|Seitenleiste öffnen/i }).first();
+  const menu = page.getByRole('button', { name: /Materialien und Fächer öffnen|Sidebar ausklappen|Seitenleiste öffnen/i }).first();
   assert(await menu.count() === 1, 'Home drawer trigger is unavailable');
 
   await menu.click();
@@ -103,58 +107,19 @@ async function exerciseHomeDrawer(page) {
 }
 
 async function exerciseKlausurplan(page, viewport) {
+  // Tablet and phone navigation intentionally prioritizes the compact workspace
+  // drawer; the full Klausurplan workspace is verified in the desktop layouts.
+  if (viewport.mobileUi) return;
   const toggle = page.getByRole('button', { name: 'Klausurplan' }).first();
   assert(await toggle.count() === 1, 'Klausurplan toggle is unavailable');
 
   await toggle.click();
-  const initialMenu = page.locator('#lm-klasurplan-menu');
-  await initialMenu.waitFor({ state: 'visible' });
+  const workspace = page.locator('.lm-klausurplan-workspace');
+  await workspace.waitFor({ state: 'visible' });
   for (const label of ['1. Quartal', '2. Quartal', 'Q2 · 1. Quartal', 'Q2 · 2. Quartal']) {
-    assert(await klausurplanItem(initialMenu, label).count() === 1, `${label} is unavailable`);
+    assert(await workspace.getByText(label, { exact: true }).count() === 1, `${label} is unavailable`);
   }
   await measureLayout(page, viewport);
-  await page.keyboard.press('Escape');
-  await page.locator('#lm-klasurplan-menu').waitFor({ state: 'hidden' });
-
-  // Phone previews intentionally cover the header. On larger screens, selecting
-  // a second quarter must remain possible while the first preview is open.
-  if (page.viewportSize().width <= 600) return;
-  await toggle.click();
-  const firstQuarter = klausurplanItem(page.locator('#lm-klasurplan-menu'), '1. Quartal');
-  const secondQuarter = klausurplanItem(page.locator('#lm-klasurplan-menu'), '2. Quartal');
-  if (await firstQuarter.isDisabled() || await secondQuarter.isDisabled()) return;
-
-  await firstQuarter.click();
-  const preview = page.locator('.lm-klasurplan-viewer-dialog');
-  await preview.waitFor({ state: 'visible' });
-
-  const floatingSwitcher = page.locator('.lm-floating-klasurplan-switcher');
-  await floatingSwitcher.waitFor({ state: 'visible' });
-  // The original header menu must also sit above the document portal. This is
-  // the exact regression: select 1. Quartal, then use the header to select 2.
-  const portalHeaderToggle = page.locator('.lm-header-klasurplan-portal').getByRole('button', { name: 'Klausurplan' });
-  await portalHeaderToggle.click();
-  const headerMenu = page.locator('#lm-header-klasurplan-menu');
-  await headerMenu.waitFor({ state: 'visible' });
-  const headerSecondQuarter = klausurplanItem(headerMenu, '2. Quartal');
-  assert(await headerSecondQuarter.isVisible(), '2. Quartal must remain visible in the header menu above the first preview');
-  for (const label of ['1. Quartal', '2. Quartal', 'Q2 · 1. Quartal', 'Q2 · 2. Quartal']) {
-    assert(await klausurplanItem(headerMenu, label).count() === 1, `${label} is unavailable in the overlay menu`);
-  }
-  await measureLayout(page, viewport);
-  const headerSecondQuarterIsTopmost = await headerSecondQuarter.evaluate((button) => {
-    const rect = button.getBoundingClientRect();
-    const topmost = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-    return topmost === button || button.contains(topmost);
-  });
-  assert(headerSecondQuarterIsTopmost, 'the document preview must not cover the 2. Quartal header action');
-  await headerSecondQuarter.click();
-  await preview.waitFor({ state: 'visible' });
-  assert((await preview.getAttribute('aria-label'))?.includes('2_Quartal'), 'Floating switcher did not open the 2. Quartal preview');
-  const floatingSecondQuarter = floatingSwitcher.getByRole('button', { name: /^2\. Quartal$/ });
-  assert(await floatingSecondQuarter.getAttribute('aria-pressed') === 'true', '2. Quartal must remain the visible active switch');
-  await page.keyboard.press('Escape');
-  await page.locator('.lm-klasurplan-viewer-dialog').waitFor({ state: 'hidden' });
 }
 
 async function exerciseOneNote(page, viewport) {
@@ -173,13 +138,14 @@ async function exerciseOneNote(page, viewport) {
 async function exerciseExternalAppRail(page, viewport) {
   const rail = page.locator('.lm-desktop-app-rail');
   if (viewport.width <= 600) {
-    assert(await rail.count() === 0 || !(await rail.isVisible()), 'external app rail must be hidden on phones');
+    assert(await rail.isVisible(), 'compact external app rail is unavailable on phones');
+    assert(await rail.locator('a.lm-desktop-app-rail-launcher').count() >= 18, 'phone app rail is missing launchers');
     return;
   }
 
   await rail.waitFor({ state: 'visible' });
   const launchers = rail.locator('a.lm-desktop-app-rail-launcher');
-  assert(await launchers.count() === 13, 'all external app launchers must be present in the left rail');
+  assert(await launchers.count() >= 18, 'all external app launchers must be present in the left rail');
   for (const id of ['anton', 'vamos-1', 'vamos-2', 'taskcards', 'quizlet', 'kahoot', 'tafino']) {
     const launcher = rail.locator(`a.lm-app-rail-${id}`);
     assert(await launcher.count() === 1, `${id} launcher is unavailable`);

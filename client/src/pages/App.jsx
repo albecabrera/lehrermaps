@@ -395,7 +395,6 @@ export default function App({ onLogout }) {
   const [folderOpenTick, setFolderOpenTick] = useState(0);
   const [folderZoom, setFolderZoom] = useState(null);
   const [previewHero, setPreviewHero] = useState(null);
-  const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const [hapticPulse, setHapticPulse] = useState(null);
   const [backSwipe, setBackSwipe] = useState({ active: false, x: 0 });
   const [heroQrLink, setHeroQrLink] = useState(null);
@@ -407,6 +406,8 @@ export default function App({ onLogout }) {
   const sidebarDragState = useRef(null);
   const [newFolderParentId, setNewFolderParentId] = useState(null);
   const contentPaneRef = useRef(null);
+  const motionRegionRef = useRef(null);
+  const motionFrameRef = useRef(null);
   const previewPaneRef = useRef(null);
   const backSwipeRef = useRef({ dragging: false, startX: 0, pointerId: null });
   const pullRef = useRef({ startY: 0, pulling: false, atTop: false });
@@ -472,28 +473,48 @@ export default function App({ onLogout }) {
     if (activeFolder) setHoveredFolder(null);
   }, [activeFolder]);
 
+  // Visual handoffs advance once, then clean themselves up. Guarding the phase
+  // prevents an effect from scheduling another state update for the state it watches.
   useEffect(() => {
-    if (!folderZoom) return;
-    const raf = requestAnimationFrame(() => {
-      setFolderZoom((prev) => (prev ? { ...prev, phase: 'run' } : prev));
-    });
-    const t = setTimeout(() => setFolderZoom(null), 430);
-    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
+    if (!folderZoom) return undefined;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setFolderZoom(null);
+      return undefined;
+    }
+    if (folderZoom.phase === 'start') {
+      const raf = requestAnimationFrame(() => setFolderZoom((current) => current?.phase === 'start' ? { ...current, phase: 'run' } : current));
+      return () => cancelAnimationFrame(raf);
+    }
+    const timer = window.setTimeout(() => setFolderZoom(null), 430);
+    return () => window.clearTimeout(timer);
   }, [folderZoom]);
 
   useEffect(() => {
-    if (!previewHero) return;
-    const raf = requestAnimationFrame(() => {
-      setPreviewHero((prev) => (prev ? { ...prev, phase: 'run' } : prev));
-    });
-    const t = setTimeout(() => setPreviewHero(null), 360);
-    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
+    if (!previewHero) return undefined;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setPreviewHero(null);
+      return undefined;
+    }
+    if (previewHero.phase === 'start') {
+      const raf = requestAnimationFrame(() => setPreviewHero((current) => current?.phase === 'start' ? { ...current, phase: 'run' } : current));
+      return () => cancelAnimationFrame(raf);
+    }
+    const timer = window.setTimeout(() => setPreviewHero(null), 360);
+    return () => window.clearTimeout(timer);
   }, [previewHero]);
 
+  useEffect(() => () => {
+    if (motionFrameRef.current) cancelAnimationFrame(motionFrameRef.current);
+  }, []);
+
   useEffect(() => {
-    if (!hapticPulse) return;
-    const t = setTimeout(() => setHapticPulse(null), 240);
-    return () => clearTimeout(t);
+    if (!hapticPulse) return undefined;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setHapticPulse(null);
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setHapticPulse(null), 240);
+    return () => window.clearTimeout(timer);
   }, [hapticPulse]);
 
 
@@ -748,6 +769,13 @@ export default function App({ onLogout }) {
     }
   };
 
+  const handleUploadComplete = useCallback(({ count }) => {
+    setToast({
+      type: 'success',
+      msg: count === 1 ? 'Datei wurde hochgeladen.' : `${count} Dateien wurden hochgeladen.`,
+    });
+  }, []);
+
   const triggerHapticAt = useCallback((x, y, color = accent) => {
     setHapticPulse({ x, y, color });
   }, [accent]);
@@ -794,6 +822,7 @@ export default function App({ onLogout }) {
     if (!template || parent_id) {
       await addFolder(subjectKey, group_name, name, parent_id ?? null);
       setNewFolderParentId(null);
+      setToast({ type: 'success', msg: `Ordner „${name}“ wurde erstellt.` });
       return;
     }
     const templates = {
@@ -804,12 +833,14 @@ export default function App({ onLogout }) {
     if (!parts.length) {
       await addFolder(subjectKey, group_name, name);
       setNewFolderParentId(null);
+      setToast({ type: 'success', msg: `Ordner „${name}“ wurde erstellt.` });
       return;
     }
     for (const part of parts) {
       await addFolder(subjectKey, group_name, `${name} · ${part}`);
     }
     setNewFolderParentId(null);
+    setToast({ type: 'success', msg: `Ordnerstruktur „${name}“ wurde erstellt.` });
   };
 
   const handleDeleteFile = (file) => {
@@ -874,6 +905,7 @@ export default function App({ onLogout }) {
   const handleRenameFile = async (id, name) => {
     const updated = await renameFileHook(id, name);
     if (activeFile?.id === id) setActiveFile(updated);
+    setToast({ type: 'success', msg: 'Dateiname wurde aktualisiert.' });
   };
 
   const handleBulkDeleteFiles = async (selectedFiles) => {
@@ -949,6 +981,7 @@ export default function App({ onLogout }) {
 
   const handleAddLink = async (title, url) => {
     await addLink(title, url);
+    setToast({ type: 'success', msg: 'Link wurde gespeichert.' });
   };
 
   const handleDeleteFolder = (folder) => {
@@ -978,6 +1011,7 @@ export default function App({ onLogout }) {
   const handleRenameFolder = async (id, name) => {
     const updated = await renameFolder(id, name);
     if (activeFolder?.id === id) setActiveFolder(updated);
+    setToast({ type: 'success', msg: 'Ordnername wurde aktualisiert.' });
   };
 
   const handleDeleteLink = async (id) => {
@@ -1084,6 +1118,18 @@ export default function App({ onLogout }) {
             <button className="lm-mobile-header-app lm-mobile-bug-checklist-trigger" type="button" onClick={() => setBugChecklistOpen(true)} aria-label="Bugs melden" title="Bugs melden">
               <BugChecklistIcon size={20} />
             </button>
+            {!isPhone && (
+              <button
+                className="lm-mobile-header-app lm-mobile-materials-trigger"
+                type="button"
+                onClick={() => setSidebarDrawerOpen(true)}
+                aria-label="Materialien und Fächer öffnen"
+                title="Materialien und Fächer öffnen"
+                aria-expanded={sidebarDrawerOpen}
+              >
+                <span aria-hidden="true">☰</span>
+              </button>
+            )}
           </nav>
         )}
         {isPhone && (
@@ -1187,14 +1233,39 @@ export default function App({ onLogout }) {
 
       {/* Body */}
       <div
+        ref={motionRegionRef}
+        className="lm-motion-region"
         style={{ flex: 1, minHeight: 0, display: 'flex' }}
-        onMouseMove={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-          const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-          setParallax({ x: nx, y: ny });
+        onPointerMove={(event) => {
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || event.pointerType !== 'mouse' || event.target.closest?.('.lm-canvas-surface') || !motionRegionRef.current) return;
+          const region = motionRegionRef.current;
+          const rect = region.getBoundingClientRect();
+          const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+          const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+          if (motionFrameRef.current) cancelAnimationFrame(motionFrameRef.current);
+          motionFrameRef.current = requestAnimationFrame(() => {
+            region.style.setProperty('--lm-sidebar-x', `${x * -4}px`);
+            region.style.setProperty('--lm-sidebar-y', `${y * -2}px`);
+            region.style.setProperty('--lm-content-x', `${x * 2}px`);
+            region.style.setProperty('--lm-content-y', `${y * 1.5}px`);
+            region.style.setProperty('--lm-preview-x', `${x * 3}px`);
+            region.style.setProperty('--lm-preview-y', `${y * 1.5}px`);
+            motionFrameRef.current = null;
+          });
         }}
-        onMouseLeave={() => setParallax({ x: 0, y: 0 })}
+        onPointerLeave={() => {
+          if (motionFrameRef.current) cancelAnimationFrame(motionFrameRef.current);
+          motionFrameRef.current = requestAnimationFrame(() => {
+            const region = motionRegionRef.current;
+            region?.style.setProperty('--lm-sidebar-x', '0px');
+            region?.style.setProperty('--lm-sidebar-y', '0px');
+            region?.style.setProperty('--lm-content-x', '0px');
+            region?.style.setProperty('--lm-content-y', '0px');
+            region?.style.setProperty('--lm-preview-x', '0px');
+            region?.style.setProperty('--lm-preview-y', '0px');
+            motionFrameRef.current = null;
+          });
+        }}
       >
         {/* Keep the external app rail available on every form factor. On phones
             it becomes a compact, scrollable icon sidebar; the material/folder
@@ -1215,10 +1286,9 @@ export default function App({ onLogout }) {
             />
           </div>
         ) : <>
-        {!isMobile && <div style={{
+        {!isMobile && <div className="lm-motion-sidebar" style={{
           display: 'flex', flexShrink: 0, minHeight: 0, height: '100%',
-          transform: `translate3d(${parallax.x * -4}px, ${parallax.y * -2}px, 0)`,
-          transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
+          willChange: 'transform',
         }}>
           <Sidebar
             {...sidebarProps}
@@ -1315,13 +1385,13 @@ export default function App({ onLogout }) {
           {activeFolder ? (
             <div
               key={`folder-open-${activeFolder.id}-${folderOpenTick}`}
-              className="lm-folder-open-shell"
+              className="lm-folder-open-shell lm-motion-content"
               style={{
                 flex: 1, minHeight: 0,
                 display: 'flex',
                 flexDirection: 'column',
-                transform: `translate3d(${parallax.x * 2 + (backSwipe.active ? backSwipe.x : 0)}px, ${parallax.y * 1.5}px, 0)`,
-                transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
+                '--lm-swipe-x': `${backSwipe.active ? backSwipe.x : 0}px`,
+                willChange: 'transform',
               }}
             >
               {/* Folder header */}
@@ -1598,14 +1668,14 @@ export default function App({ onLogout }) {
         {activeFolder && !isMobile && !isKlasurplanActiveFile && (
           <div
             id="lm-file-preview-pane"
+            className="lm-motion-preview"
             aria-hidden={previewCollapsed}
             style={{
               width: previewCollapsed ? 0 : effectivePreviewWidth, flexShrink: 0, display: 'flex', overflow: 'hidden',
               // Klammer: Vorschau darf den Inhalt nie unter ~300px quetschen
               // (schmale Desktop-Fenster + 640px-Split-Vorschau)
               maxWidth: `calc(100vw - ${sidebarWidth + 300}px)`,
-              transform: `translate3d(${parallax.x * 3}px, ${parallax.y * 1.5}px, 0)`,
-              transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
+              willChange: 'transform',
             }}
           >
             {!previewCollapsed && <>
@@ -1868,6 +1938,7 @@ export default function App({ onLogout }) {
           ? (activeFolder.subject === 'system' ? activeFolder.name : `${t('subject.' + subjectId)} › ${activeFolder.group_name} › ${activeFolder.name}`)
           : undefined}
         onUpload={handleUpload}
+        onUploadComplete={handleUploadComplete}
         initialFiles={dropFiles}
       />
 
@@ -1894,7 +1965,7 @@ export default function App({ onLogout }) {
             background: `${folderZoom.accent}22`,
             border: `1px solid ${folderZoom.accent}55`,
             boxShadow: `0 18px 42px ${folderZoom.accent}33`,
-            transition: 'all .42s cubic-bezier(.2,.9,.2,1)',
+            transition: 'left .42s cubic-bezier(.2,.9,.2,1), top .42s cubic-bezier(.2,.9,.2,1), width .42s cubic-bezier(.2,.9,.2,1), height .42s cubic-bezier(.2,.9,.2,1), border-radius .42s cubic-bezier(.2,.9,.2,1), opacity .24s ease-out',
             pointerEvents: 'none',
             zIndex: 1500,
             opacity: folderZoom.phase === 'run' ? 0 : 1,
@@ -1912,7 +1983,7 @@ export default function App({ onLogout }) {
             borderRadius: 10,
             background: `${previewHero.accent}16`,
             border: `1px solid ${previewHero.accent}66`,
-            transition: 'all .34s cubic-bezier(.2,.9,.2,1)',
+            transition: 'left .34s cubic-bezier(.2,.9,.2,1), top .34s cubic-bezier(.2,.9,.2,1), width .34s cubic-bezier(.2,.9,.2,1), height .34s cubic-bezier(.2,.9,.2,1), opacity .2s ease-out',
             pointerEvents: 'none',
             zIndex: 1499,
             opacity: previewHero.phase === 'run' ? 0 : 0.96,
@@ -2000,7 +2071,7 @@ export default function App({ onLogout }) {
       {examBoardOpen && <ExamBoard onDismiss={() => setExamBoardOpen(false)} />}
 
       {toast && (
-        <div style={{
+        <div className={`lm-toast lm-toast--${toast.type || 'success'}`} role="status" aria-live="polite" style={{
           position: 'fixed', right: 18, bottom: 18, zIndex: 1300,
           minWidth: 220, maxWidth: 360, padding: '10px 12px',
           borderRadius: 8, border: '1px solid var(--c-border-soft)',

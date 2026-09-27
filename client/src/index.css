@@ -4303,3 +4303,107 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
   .lm-login-welcome-orbit,
   .lm-login-welcome-content { animation: none; }
 }
+
+/* Motion system: brief, functional feedback only. Keep geometry and classroom
+   canvas interaction direct; decorative movement is limited to shell surfaces. */
+:root {
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-enter: 240ms;
+  --motion-ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+.lm-motion-region { --lm-sidebar-x: 0px; --lm-sidebar-y: 0px; --lm-content-x: 0px; --lm-content-y: 0px; --lm-preview-x: 0px; --lm-preview-y: 0px; }
+.lm-motion-sidebar {
+  transform: translate3d(var(--lm-sidebar-x), var(--lm-sidebar-y), 0);
+  transition: transform var(--motion-enter) var(--motion-ease);
+}
+.lm-motion-content {
+  transform: translate3d(calc(var(--lm-content-x) + var(--lm-swipe-x, 0px)), var(--lm-content-y), 0);
+  transition: transform var(--motion-enter) var(--motion-ease);
+}
+.lm-motion-preview {
+  transform: translate3d(var(--lm-preview-x), var(--lm-preview-y), 0);
+  transition: transform var(--motion-enter) var(--motion-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled), .lm-button, [role="button"] {
+    transition: transform var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) ease, background-color var(--motion-base) ease, border-color var(--motion-base) ease, color var(--motion-base) ease, box-shadow var(--motion-base) ease;
+  }
+  button:not(:disabled):hover, .lm-button:hover, [role="button"]:hover { transform: translateY(-1px); }
+  button:not(:disabled):active, .lm-button:active, [role="button"]:active { transform: translateY(0) scale(.98); }
+  .lm-folder-card, .lm-editorial-card, .lm-today-content > section {
+    transition: transform var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) ease, border-color var(--motion-base) ease;
+  }
+  .lm-folder-card:hover, .lm-editorial-card:hover, .lm-today-content > section:hover { transform: translateY(-2px); }
+}
+
+.lm-sidebar button, .lm-tabbar button, .lm-mobile-bottom-nav button {
+  transition: transform var(--motion-fast) var(--motion-ease), background-color var(--motion-base) ease, color var(--motion-base) ease, border-color var(--motion-base) ease;
+}
+.lm-modal-backdrop, .lm-upload-modal-backdrop, .lm-add-link-modal-backdrop, .lm-klausurplan-preview-backdrop {
+  animation: lm-backdrop-in var(--motion-base) ease-out both;
+}
+.lm-modal-surface, .lm-checklist-modal, .lm-upload-modal, .lm-add-link-modal, .lm-klausurplan-preview-dialog, .lm-klasurplan-viewer-dialog {
+  animation: lm-panel-in var(--motion-enter) var(--motion-ease) both;
+}
+.lm-today-view, .lm-schedule-view { animation: lm-panel-in var(--motion-enter) var(--motion-ease) both; }
+@keyframes lm-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lm-panel-in { from { opacity: 0; transform: translateY(8px) scale(.992); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.lm-login-welcome-content { display: grid; justify-items: center; gap: 22px; }
+.lm-login-welcome-content p { margin: 0; color: rgba(255,255,255,.84); font-size: clamp(1rem, 1.5vw, 1.2rem); }
+.lm-login-welcome-continue {
+  min-height: 46px;
+  padding: 0 20px;
+  border: 1px solid rgba(255,255,255,.42);
+  border-radius: 10px;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  transition: transform var(--motion-fast) var(--motion-ease), background-color var(--motion-base) ease, border-color var(--motion-base) ease;
+}
+.lm-login-welcome-continue:hover { background: rgba(255,255,255,.2); border-color: #fff; }
+.lm-login-welcome-continue:active { transform: scale(.98); }
+
+/* Save confirmations are intentionally compact: they acknowledge a completed
+   action without covering the teaching canvas or delaying the next action. */
+.lm-toast {
+  display: flex;
+  align-items: center;
+  animation: lm-toast-in var(--motion-enter) var(--motion-ease) both;
+  transform-origin: bottom right;
+}
+.lm-toast > div { flex: 1; }
+.lm-toast--success::before {
+  content: '✓';
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  border-radius: 50%;
+  place-items: center;
+  background: var(--c-status-success-bg);
+  color: var(--c-success);
+  font-size: 12px;
+}
+@keyframes lm-toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-fast: 0ms; --motion-base: 0ms; --motion-enter: 0ms; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+  .lm-motion-sidebar, .lm-motion-content, .lm-motion-preview { transition: none !important; }
+  .lm-login-welcome-orbit, .lm-login-welcome-content { animation: none !important; }
+  .lm-toast { animation: none !important; }
+}

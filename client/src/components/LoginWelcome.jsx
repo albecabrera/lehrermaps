@@ -1,18 +1,28 @@
-import { useEffect } from 'react';
-
-export const LOGIN_WELCOME_DURATION_MS = 5000;
+import { useEffect, useRef } from 'react';
 
 export default function LoginWelcome({ onComplete }) {
+  const continueRef = useRef(null);
+
   useEffect(() => {
-    const timer = window.setTimeout(onComplete, LOGIN_WELCOME_DURATION_MS);
-    return () => window.clearTimeout(timer);
+    // Motion preferences also govern JavaScript-driven handoffs: do not leave a
+    // reduced-motion user on an ornamental intermediate screen.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onComplete();
+      return undefined;
+    }
+    continueRef.current?.focus();
+    return undefined;
   }, [onComplete]);
 
   return (
     <main className="lm-login-welcome" aria-labelledby="login-welcome-title">
       <div className="lm-login-welcome-orbit" aria-hidden="true" />
-      <div className="lm-login-welcome-content" role="status" aria-live="polite">
+      <div className="lm-login-welcome-content">
         <h1 id="login-welcome-title">Hallo Cabrera</h1>
+        <p>Dein Arbeitsbereich ist bereit.</p>
+        <button ref={continueRef} className="lm-login-welcome-continue" type="button" onClick={onComplete}>
+          Weiter zu LehrerMaps
+        </button>
       </div>
     </main>
   );

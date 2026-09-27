@@ -19,6 +19,7 @@
     "test:responsive-launch": "node scripts/lehrermaps-responsive-launch.mjs",
     "test:dark-theme": "node scripts/lehrermaps-dark-theme-audit.mjs",
     "test:e2e:teaching": "node scripts/lehrermaps-teaching-e2e.mjs",
+    "test:e2e:motion": "node scripts/lehrermaps-motion-e2e.mjs",
     "test:e2e:responsive": "node scripts/lehrermaps-responsive-e2e.mjs",
     "install:all": "npm install && npm install --prefix client && npm install --prefix server"
   },
