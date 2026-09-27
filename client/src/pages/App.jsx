@@ -216,6 +216,7 @@ export default function App({ onLogout }) {
   const [bugChecklistOpen, setBugChecklistOpen] = useState(false);
   const [classroomTimerOpen, setClassroomTimerOpen] = useState(false);
   const [appRailVisible, setAppRailVisible] = useState(true);
+  const [headerVisible, setHeaderVisible] = useState(true);
   const [pleskTerminalOpen, setPleskTerminalOpen] = useState(false);
 
   const [subjectId, setSubjectId] = useState('workspace');
@@ -567,6 +568,7 @@ export default function App({ onLogout }) {
       if (!isTyping && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
         setAppRailVisible((visible) => !visible);
+        setHeaderVisible((visible) => !visible);
         return;
       }
       if (!isTyping && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'j') {
@@ -1093,7 +1095,7 @@ export default function App({ onLogout }) {
     }}>
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Workspace navigation — preserves the original visual language without restoring archived subject navigation. */}
-      <header className={`lm-tabbar${isPhone ? ' lm-phone-focus-header' : ''}${isPhone && !phoneHeaderVisible ? ' is-collapsed' : ''}`} aria-label="Hauptnavigation">
+      {headerVisible && <header className={`lm-tabbar${isPhone ? ' lm-phone-focus-header' : ''}${isPhone && !phoneHeaderVisible ? ' is-collapsed' : ''}`} aria-label="Hauptnavigation">
         <button className="lm-app-brand lm-app-brand--prominent" type="button" onClick={() => { navigateToView('today'); closeFolderView(); }} aria-label="Zu Heute">
           <BrandMark size={isPhone ? 34 : 38} />
         </button>
@@ -1219,8 +1221,19 @@ export default function App({ onLogout }) {
           </div>
           <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout"><span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span></button>
         </div>
-      </header>
-      {isPhone && !phoneHeaderVisible && (
+      </header>}
+      {!headerVisible && (
+        <button
+          className="lm-header-reveal"
+          type="button"
+          onClick={() => setHeaderVisible(true)}
+          aria-label="Kopfzeile einblenden"
+          title="Kopfzeile einblenden"
+        >
+          <span aria-hidden="true">⌃</span>
+        </button>
+      )}
+      {headerVisible && isPhone && !phoneHeaderVisible && (
         <button
           className="lm-phone-header-reveal"
           type="button"

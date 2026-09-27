@@ -2829,6 +2829,32 @@ button:not(:disabled):focus-visible,
 
 .lm-phone-header-utilities { display: none; }
 
+.lm-header-reveal {
+  position: fixed;
+  top: 10px;
+  right: 16px;
+  z-index: 1210;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  min-width: var(--touch-target);
+  height: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 1px solid var(--c-border-soft);
+  border-radius: 12px;
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  box-shadow: var(--shadow-lg, 0 14px 36px rgba(15, 23, 42, .18));
+  cursor: pointer;
+  font: 700 18px/1 inherit;
+}
+.lm-header-reveal:hover,
+.lm-header-reveal:focus-visible { border-color: var(--c-focus); background: var(--c-hover); }
+.lm-header-reveal:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+[data-theme="dark"] .lm-header-reveal { background: var(--c-tab-bg); }
+
 /* iPhone keeps its essential actions visible rather than hiding them inside
    the horizontally scrollable launcher strip. Both controls remain at least
    44px tall and the supplied Logineo JPEG keeps its complete aspect ratio. */

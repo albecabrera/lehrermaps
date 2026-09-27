@@ -72,15 +72,25 @@ async function login(page) {
   await page.locator('input[type="password"]').waitFor({ state: 'visible' });
   await page.locator('input[type="password"]').fill(teacherPassword);
   await page.locator('form button[type="submit"]').click();
-  // The welcome handoff is intentionally user-controlled. Dismiss it here so
-  // the responsive audit measures the authenticated workspace rather than an
-  // intermediate login state.
-  const continueButton = page.getByRole('button', { name: /Weiter zu LehrerMaps/i });
-  if (await continueButton.waitFor({ state: 'visible', timeout: 2000 }).then(() => true).catch(() => false)) {
-    await continueButton.first().click();
-  }
+  const welcome = page.locator('.lm-login-welcome');
+  await welcome.waitFor({ state: 'visible' });
+  const startedAt = Date.now();
+  await welcome.waitFor({ state: 'hidden', timeout: 3000 });
+  const elapsed = Date.now() - startedAt;
+  assert(elapsed >= 1800 && elapsed <= 2700, `welcome must auto-close at about 2 seconds (received ${elapsed}ms)`);
   await page.waitForTimeout(700);
   assert(!(await page.locator('body').innerText()).includes('Falsches Passwort'), 'teacher login failed');
+}
+
+async function exerciseWorkspaceVisibilityShortcut(page) {
+  for (const shortcut of ['Meta+s', 'Control+s']) {
+    await page.keyboard.press(shortcut);
+    assert(!(await page.locator('.lm-desktop-app-rail').isVisible().catch(() => false)), `${shortcut} must hide the app rail`);
+    assert(!(await page.locator('.lm-tabbar').isVisible().catch(() => false)), `${shortcut} must hide the header`);
+    await page.keyboard.press(shortcut);
+    assert(await page.locator('.lm-desktop-app-rail').isVisible(), `${shortcut} must restore the app rail`);
+    assert(await page.locator('.lm-tabbar').isVisible(), `${shortcut} must restore the header`);
+  }
 }
 
 async function exerciseHomeDrawer(page) {
@@ -178,6 +188,7 @@ async function run() {
         page.on('pageerror', (error) => consoleErrors.push(error.message));
         try {
           await login(page);
+          await exerciseWorkspaceVisibilityShortcut(page);
           await measureLayout(page, viewport);
           if (viewport.mobileUi && role === 'teacher') await exerciseHomeDrawer(page);
           await exerciseKlausurplan(page, viewport);

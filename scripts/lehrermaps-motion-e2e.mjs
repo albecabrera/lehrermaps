@@ -46,9 +46,20 @@ async function runCase(browser, { name, reducedMotion }) {
     await welcome.waitFor({ state: 'visible' });
     await continueButton.waitFor({ state: 'visible' });
     assert(await continueButton.evaluate((node) => document.activeElement === node), 'continue action must receive focus immediately');
-    await continueButton.click();
+    const startedAt = Date.now();
+    await welcome.waitFor({ state: 'hidden', timeout: 3000 });
+    const elapsed = Date.now() - startedAt;
+    assert(elapsed >= 1800 && elapsed <= 2700, `welcome must auto-close at about 2 seconds (received ${elapsed}ms)`);
     await page.locator('.lm-app-shell').waitFor({ state: 'visible' });
-    pass(name, 'continue action is immediately visible and opens the workspace');
+    for (const shortcut of ['Meta+s', 'Control+s']) {
+      await page.keyboard.press(shortcut);
+      assert(!(await page.locator('.lm-desktop-app-rail').isVisible().catch(() => false)), `${shortcut} must hide the app rail`);
+      assert(!(await page.locator('.lm-tabbar').isVisible().catch(() => false)), `${shortcut} must hide the header`);
+      await page.keyboard.press(shortcut);
+      assert(await page.locator('.lm-desktop-app-rail').isVisible(), `${shortcut} must restore the app rail`);
+      assert(await page.locator('.lm-tabbar').isVisible(), `${shortcut} must restore the header`);
+    }
+    pass(name, 'welcome auto-closes after about 2 seconds and Cmd/Ctrl+S toggles the workspace chrome');
   } catch (error) {
     fail(name, error);
   } finally {

@@ -11,7 +11,8 @@ export default function LoginWelcome({ onComplete }) {
       return undefined;
     }
     continueRef.current?.focus();
-    return undefined;
+    const timeout = window.setTimeout(onComplete, 2000);
+    return () => window.clearTimeout(timeout);
   }, [onComplete]);
 
   return (
