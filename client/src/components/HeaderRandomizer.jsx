@@ -65,6 +65,8 @@ export default function HeaderRandomizer() {
   const displayRef = useRef(null);
   const loadRequestRef = useRef(0);
   const localChangeVersionRef = useRef(0);
+  const rostersRef = useRef(rosters);
+  rostersRef.current = rosters;
   const roster = rosters.find((item) => item.id === selectedId) || rosters[0];
 
   const loadRosters = useCallback(async () => {
@@ -118,8 +120,9 @@ export default function HeaderRandomizer() {
   const saveNow = useCallback(() => {
     localChangeVersionRef.current += 1;
     clearTimeout(saveTimerRef.current);
-    return persist(rosters, Math.max(0, rosters.findIndex((item) => item.id === selectedId)));
-  }, [persist, rosters, selectedId]);
+    const latestRosters = rostersRef.current;
+    return persist(latestRosters, Math.max(0, latestRosters.findIndex((item) => item.id === selectedId)));
+  }, [persist, selectedId]);
 
   const closeDisplay = useCallback(async () => {
     if (document.fullscreenElement === displayRef.current) {
