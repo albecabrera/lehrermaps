@@ -72,7 +72,7 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
 
 const getDefaultAppRailOrder = () => {
   const ids = EXTERNAL_APP_RAIL_LAUNCHERS.map((app) => app.id);
-  return ['esg-tech-help', ...ids.filter((id) => id !== 'esg-tech-help' && id !== 'excalidraw'), 'excalidraw'];
+  return ['school-home', ...ids.filter((id) => id !== 'school-home' && id !== 'excalidraw'), 'excalidraw'];
 };
 
 const normalizeAppRailOrder = (order) => {
@@ -229,6 +229,10 @@ const isMacDesktopPlatform = () => (
   && navigator.maxTouchPoints <= 1
 );
 
+const getHeaderNavigationItems = () => Array.from(document.querySelectorAll(
+  '.lm-workspace-primary-nav > button, .lm-workspace-primary-nav > a, .lm-desktop-trailing-group button'
+));
+
 export default function App({ onLogout }) {
   const { isDark, toggle: toggleTheme } = useTheme();
   const { t } = useLang();
@@ -261,6 +265,7 @@ export default function App({ onLogout }) {
   const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
   const [toast, setToast] = useState(null);
+  const headerAppIndexRef = useRef(-1);
   const [pendingDeleteIds, setPendingDeleteIds] = useState(new Set());
   const deleteTimersRef = useRef(new Map());
   const [viewMode, setViewMode] = useState(() => parseAppHash(window.location.hash)?.view || 'today');
@@ -586,6 +591,23 @@ export default function App({ onLogout }) {
         return;
       }
       if (globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!confirmModal || keyboardHelpOpen || classroomTimerOpen) return;
+      const headerNavigationItems = getHeaderNavigationItems();
+      if (!isTyping && e.ctrlKey && e.altKey && e.metaKey && !e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        if (!headerNavigationItems.length) return;
+        const focusedIndex = headerNavigationItems.indexOf(document.activeElement);
+        const currentIndex = focusedIndex >= 0 ? focusedIndex : headerAppIndexRef.current;
+        const offset = e.key === 'ArrowRight' ? 1 : -1;
+        const nextIndex = (currentIndex + offset + headerNavigationItems.length) % headerNavigationItems.length;
+        headerAppIndexRef.current = nextIndex;
+        headerNavigationItems[nextIndex].focus({ preventScroll: true });
+        return;
+      }
+      // Let the focused header control handle Enter natively: buttons execute
+      // their action and links open their configured URL/target.
+      if (!isTyping && e.key === 'Enter' && headerNavigationItems.includes(document.activeElement)) {
+        return;
+      }
       if (!isTyping && (e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'l') {
         e.preventDefault();
         toggleTheme();

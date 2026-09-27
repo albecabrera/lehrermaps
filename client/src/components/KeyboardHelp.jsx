@@ -7,6 +7,7 @@ const SHORTCUTS = [
   { keys: ['⌘/Ctrl', 'J'], label: 'Plesk-Terminal öffnen/schließen' },
   { keys: ['⌘/Ctrl', 'S'], label: 'App-Seitenleiste ein-/ausblenden' },
   { keys: ['⌘/Ctrl', '⇧', 'L'], label: 'Hell-/Dunkelmodus wechseln' },
+  { keys: ['⌃', '⌥', '⌘', '←/→'], label: 'Header-Apps/URLs fokussieren' },
   { keys: ['?'], label: 'Diese Hilfe anzeigen' },
   { keys: ['J'], label: 'Nächste Datei auswählen' },
   { keys: ['K'], label: 'Vorherige Datei auswählen' },
