@@ -96,6 +96,12 @@ export const deleteLink = (id) => api.delete(`/links/${id}`);
 export const reorderFolders = (items) =>
   api.put('/folders/reorder', { items });
 
+export const getAppRailOrder = () =>
+  api.get('/app-rail').then((r) => r.data.order);
+
+export const saveAppRailOrder = (order) =>
+  api.put('/app-rail', { order }).then((r) => r.data.order);
+
 export const toggleFolderFavorite = (id) =>
   api.put(`/folders/${id}/favorite`).then((r) => r.data);
 export const setFolderColor = (id, color) =>

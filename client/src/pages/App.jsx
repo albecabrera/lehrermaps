@@ -15,7 +15,7 @@ import { useFolders } from '../hooks/useFolders';
 import { useFiles } from '../hooks/useFiles';
 import { useLinks } from '../hooks/useLinks';
 import { useRecentFiles } from '../hooks/useRecentFiles';
-import { downloadFolderZip, downloadFilesZip, getLessonSessions, viewFile } from '../lib/api';
+import { downloadFolderZip, downloadFilesZip, getLessonSessions, viewFile, getAppRailOrder, saveAppRailOrder } from '../lib/api';
 import AddLinkModal from '../components/AddLinkModal';
 import LinkPreview from '../components/LinkPreview';
 import RenameFolderModal from '../components/RenameFolderModal';
@@ -70,10 +70,46 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'school-home', name: 'Schul-Homepage', href: 'https://igs-bonn.de/?s=wordpress&search_404=1', label: 'Schul-Homepage öffnen', iconSrc: '/assets/icons/Logo_ESG_ohne_Schrift.svg', iconClass: 'wide' },
 ];
 
+const normalizeAppRailOrder = (order) => {
+  const defaultOrder = EXTERNAL_APP_RAIL_LAUNCHERS.map((app) => app.id);
+  if (!Array.isArray(order)) return defaultOrder;
+  const valid = order.length === defaultOrder.length
+    && order.every((id) => defaultOrder.includes(id))
+    && new Set(order).size === defaultOrder.length;
+  return valid ? order : defaultOrder;
+};
+
 function DesktopAppRail() {
   const [hoveredApp, setHoveredApp] = useState(null);
   const [labelTop, setLabelTop] = useState(0);
-  const orderedApps = EXTERNAL_APP_RAIL_LAUNCHERS;
+  const [appOrder, setAppOrder] = useState(() => EXTERNAL_APP_RAIL_LAUNCHERS.map((app) => app.id));
+  const [draggedAppId, setDraggedAppId] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    getAppRailOrder()
+      .then((order) => { if (active) setAppOrder(normalizeAppRailOrder(order)); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const orderedApps = appOrder
+    .map((id) => EXTERNAL_APP_RAIL_LAUNCHERS.find((app) => app.id === id))
+    .filter(Boolean);
+
+  const moveApp = (sourceId, targetId) => {
+    if (!sourceId || sourceId === targetId) return;
+    setAppOrder((currentOrder) => {
+      const nextOrder = [...currentOrder];
+      const sourceIndex = nextOrder.indexOf(sourceId);
+      const targetIndex = nextOrder.indexOf(targetId);
+      if (sourceIndex < 0 || targetIndex < 0) return currentOrder;
+      nextOrder.splice(sourceIndex, 1);
+      nextOrder.splice(targetIndex, 0, sourceId);
+      saveAppRailOrder(nextOrder).catch(() => {});
+      return nextOrder;
+    });
+  };
 
   const showAppLabel = (event, app) => {
     const rail = event.currentTarget.closest('.lm-desktop-app-rail');
@@ -97,6 +133,22 @@ function DesktopAppRail() {
           data-app-name={app.name}
           aria-label={`${app.label} (öffnet in neuem Tab)`}
           title={`${app.label} (öffnet in neuem Tab)`}
+          draggable
+          onDragStart={(event) => {
+            setDraggedAppId(app.id);
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', app.id);
+          }}
+          onDragOver={(event) => {
+            if (draggedAppId && draggedAppId !== app.id) event.preventDefault();
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            moveApp(event.dataTransfer.getData('text/plain') || draggedAppId, app.id);
+            setDraggedAppId(null);
+          }}
+          onDragEnd={() => setDraggedAppId(null)}
+          style={draggedAppId === app.id ? { opacity: 0.45 } : undefined}
           onMouseEnter={(event) => showAppLabel(event, app)}
           onFocus={(event) => showAppLabel(event, app)}
           onBlur={(event) => {

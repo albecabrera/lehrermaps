@@ -20,6 +20,6 @@ git diff --check
 npm run build
 bash scripts/deploy-static.sh
 
-git add client/src client/dist index.html assets scripts/commit-deploy.sh scripts/deploy-static.sh .githooks/post-commit package.json
+git add client/src client/dist server index.html assets scripts/commit-deploy.sh scripts/deploy-static.sh .githooks/post-commit package.json
 git diff --cached --check
 git commit -m "$COMMIT_MESSAGE"

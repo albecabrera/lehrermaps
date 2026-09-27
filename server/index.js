@@ -21,6 +21,7 @@ import lessonSessionsRouter, { displaySession, displayPage } from './routes/less
 import documentAnnotationsRouter from './routes/documentAnnotations.js';
 import todayDashboardRouter from './routes/todayDashboard.js';
 import bugChecklistRouter from './routes/bugChecklist.js';
+import appPreferencesRouter from './routes/appPreferences.js';
 import backupsRouter from './routes/backups.js';
 import widgetRouter from './routes/widget.js';
 
@@ -103,6 +104,7 @@ app.use('/api/exams', examsRouter);
 app.use('/api', documentAnnotationsRouter);
 app.use('/api', todayDashboardRouter);
 app.use('/api', bugChecklistRouter);
+app.use('/api', appPreferencesRouter);
 app.use('/api/backups', backupsRouter);
 app.use('/api/widget', widgetRouter);
 app.use('/api', lessonSessionsRouter);
