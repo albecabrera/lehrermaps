@@ -46,7 +46,7 @@ function parseStudentNames(text) {
   return { names, duplicateCount };
 }
 
-export default function HeaderRandomizer() {
+export default function HeaderRandomizer({ openRequest = 0 }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState('names');
   const [rosters, setRosters] = useState(() => normalizeRosters([]));
@@ -75,6 +75,10 @@ export default function HeaderRandomizer() {
   const rostersRef = useRef(rosters);
   rostersRef.current = rosters;
   const roster = rosters.find((item) => item.id === selectedId) || rosters[0];
+
+  useEffect(() => {
+    if (openRequest > 0) setOpen(true);
+  }, [openRequest]);
 
   const loadRosters = useCallback(async () => {
     const request = ++loadRequestRef.current;

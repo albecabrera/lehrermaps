@@ -66,8 +66,9 @@ test('close exits only the randomizer native fullscreen and Escape closes the ap
 
 test('renders the fallback through a body portal above the randomizer modal', async () => {
   const componentPath = fileURLToPath(new URL('../../components/HeaderRandomizer.jsx', import.meta.url));
+  const appPath = fileURLToPath(new URL('../../pages/App.jsx', import.meta.url));
   const cssPath = fileURLToPath(new URL('../../index.css', import.meta.url));
-  const [component, css] = await Promise.all([readFile(componentPath, 'utf8'), readFile(cssPath, 'utf8')]);
+  const [component, app, css] = await Promise.all([readFile(componentPath, 'utf8'), readFile(appPath, 'utf8'), readFile(cssPath, 'utf8')]);
 
   assert.match(component, /createPortal\(<section ref=\{displayRef\}/);
   assert.match(component, /<\/section>, document\.body\)}/);
@@ -75,4 +76,7 @@ test('renders the fallback through a body portal above the randomizer modal', as
   assert.match(css, /\.lm-header-randomizer-display \{[^}]*z-index:6000/);
   assert.match(css, /height: 100dvh/);
   assert.match(css, /safe-area-inset-top/);
+  assert.match(app, /className="lm-phone-randomizer-trigger"/);
+  assert.match(app, /setRandomizerOpenRequest\(\(request\) => request \+ 1\)/);
+  assert.equal((app.match(/<HeaderRandomizer\b/g) || []).length, 1, 'the mobile trigger must reuse the single HeaderRandomizer instance');
 });

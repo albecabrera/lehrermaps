@@ -249,6 +249,9 @@ export default function App({ onLogout }) {
   const [appRailVisible, setAppRailVisible] = useState(true);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [pleskTerminalOpen, setPleskTerminalOpen] = useState(false);
+  // The randomizer owns its modal state; this monotonic signal lets the phone
+  // header open that same mounted instance without rendering a second one.
+  const [randomizerOpenRequest, setRandomizerOpenRequest] = useState(0);
 
   const [subjectId, setSubjectId] = useState('workspace');
   const [activeFolder, setActiveFolder] = useState(null);
@@ -1199,6 +1202,16 @@ export default function App({ onLogout }) {
               <span aria-hidden="true">☰</span>
             </button>
             <button
+              className="lm-phone-randomizer-trigger"
+              type="button"
+              onClick={() => setRandomizerOpenRequest((request) => request + 1)}
+              aria-label="Zufallsgenerator öffnen"
+              aria-haspopup="dialog"
+              title="Zufallsgenerator öffnen"
+            >
+              <span aria-hidden="true">🎲</span>
+            </button>
+            <button
               className="lm-phone-app-rail-toggle"
               type="button"
               onClick={() => setAppRailVisible((visible) => !visible)}
@@ -1265,7 +1278,7 @@ export default function App({ onLogout }) {
           <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-logineo" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail öffnen" data-app-name="Logineo Mail"><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /></a>
         </nav>
         <div className="lm-desktop-trailing-group">
-          <HeaderRandomizer />
+          <HeaderRandomizer openRequest={randomizerOpenRequest} />
           <div className="lm-topbar-tools">
             <button className="lm-spring lm-workspace-tool lm-classroom-timer-trigger" type="button" onClick={() => setClassroomTimerOpen(true)} title="Klassenzeit" aria-label="Klassenzeit öffnen"><span className="lm-classroom-timer-trigger-icon" aria-hidden="true">◷</span><span className="lm-classroom-timer-trigger-label">Timer</span></button>
             <button className="lm-spring lm-workspace-tool lm-bug-checklist-trigger" type="button" onClick={() => setBugChecklistOpen(true)} title="Bugs melden" aria-label="Bugs melden"><BugChecklistIcon size={19} /></button>

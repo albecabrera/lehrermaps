@@ -2987,6 +2987,7 @@ button:not(:disabled):focus-visible,
     margin-left: 2px;
   }
   .lm-phone-menu-trigger,
+  .lm-phone-randomizer-trigger,
   .lm-phone-header-toggle,
   .lm-phone-header-reveal {
     display: inline-flex;
@@ -3006,8 +3007,10 @@ button:not(:disabled):focus-visible,
     font: 700 18px/1 inherit;
   }
   .lm-phone-menu-trigger:hover,
+  .lm-phone-randomizer-trigger:hover,
   .lm-phone-header-toggle:hover,
   .lm-phone-menu-trigger:focus-visible,
+  .lm-phone-randomizer-trigger:focus-visible,
   .lm-phone-header-toggle:focus-visible,
   .lm-phone-header-reveal:hover,
   .lm-phone-header-reveal:focus-visible {
@@ -3016,6 +3019,7 @@ button:not(:disabled):focus-visible,
   }
   .lm-phone-menu-trigger:focus-visible,
   .lm-phone-header-toggle:focus-visible,
+  .lm-phone-randomizer-trigger:focus-visible,
   .lm-phone-header-reveal:focus-visible {
     outline: 3px solid var(--c-focus);
     outline-offset: 2px;
@@ -3029,6 +3033,7 @@ button:not(:disabled):focus-visible,
     box-shadow: var(--shadow-lg, 0 14px 36px rgba(15, 23, 42, .18));
   }
   [data-theme="dark"] .lm-phone-menu-trigger,
+  [data-theme="dark"] .lm-phone-randomizer-trigger,
   [data-theme="dark"] .lm-phone-header-toggle,
   [data-theme="dark"] .lm-phone-header-reveal {
     background: var(--c-tab-bg);
