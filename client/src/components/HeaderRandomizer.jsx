@@ -94,6 +94,7 @@ export default function HeaderRandomizer() {
   useEffect(() => () => {
     clearTimeout(drawTimerRef.current);
     audioContextRef.current?.close?.().catch(() => {});
+    window.speechSynthesis?.cancel?.();
   }, []);
 
   const persist = useCallback((nextRosters, selectedIndex = 0) => {
@@ -198,6 +199,18 @@ export default function HeaderRandomizer() {
     } catch {}
   };
 
+  const speakName = (name) => {
+    try {
+      const synthesis = window.speechSynthesis;
+      const Utterance = window.SpeechSynthesisUtterance;
+      if (!synthesis || !Utterance || !name) return;
+      synthesis.cancel();
+      const utterance = new Utterance(name);
+      utterance.lang = 'de-DE';
+      synthesis.speak(utterance);
+    } catch {}
+  };
+
   const drawName = () => {
     if (!roster?.students.length || isRolling) return;
     const names = roster.students.map((student) => student.name);
@@ -211,6 +224,7 @@ export default function HeaderRandomizer() {
       setSelectedName(nextName);
       setDisplayName(nextName);
       setIsRolling(false);
+      speakName(nextName);
     }, NAME_DRAW_DURATION_MS);
   };
 
