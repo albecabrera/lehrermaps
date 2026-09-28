@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getRandomizerRosters, saveRandomizerRosters } from '../lib/api';
+import { closeRandomizerDisplayOnEscape, exitNativeRandomizerFullscreen, requestNativeRandomizerFullscreen } from '../lib/randomizerFullscreen';
 
 const DEFAULT_NAMES = ['Anna', 'Ben', 'Clara', 'David', 'Emilia', 'Felix', 'Greta', 'Hassan', 'Ida', 'Jonas', 'Lea', 'Milan'];
 const NAME_DRAW_DURATION_MS = 650;
@@ -60,6 +61,7 @@ export default function HeaderRandomizer() {
   const [saveState, setSaveState] = useState('saved');
   const [loadState, setLoadState] = useState('loading');
   const [displayFullscreen, setDisplayFullscreen] = useState(false);
+  const [nativeDisplayFullscreen, setNativeDisplayFullscreen] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const saveQueueRef = useRef(Promise.resolve());
   const saveVersionRef = useRef(0);
@@ -69,6 +71,7 @@ export default function HeaderRandomizer() {
   const localChangeVersionRef = useRef(0);
   const drawTimerRef = useRef(null);
   const audioContextRef = useRef(null);
+  const displayOpenRef = useRef(false);
   const rostersRef = useRef(rosters);
   rostersRef.current = rosters;
   const roster = rosters.find((item) => item.id === selectedId) || rosters[0];
@@ -135,30 +138,53 @@ export default function HeaderRandomizer() {
   }, [persist, selectedId]);
 
   const closeDisplay = useCallback(async () => {
-    if (document.fullscreenElement === displayRef.current) {
-      try { await document.exitFullscreen(); } catch {}
-    }
+    displayOpenRef.current = false;
     setDisplayFullscreen(false);
+    setNativeDisplayFullscreen(false);
+    await exitNativeRandomizerFullscreen({ element: displayRef.current });
   }, []);
 
   useEffect(() => {
-    const handleFullscreenChange = () => { if (!document.fullscreenElement) setDisplayFullscreen(false); };
+    const handleFullscreenChange = () => {
+      const isNativeFullscreen = document.fullscreenElement === displayRef.current;
+      setNativeDisplayFullscreen(isNativeFullscreen);
+      // Escaping native fullscreen closes the display rather than unexpectedly
+      // dropping into the app-level fallback.
+      if (!isNativeFullscreen && displayOpenRef.current) {
+        displayOpenRef.current = false;
+        setDisplayFullscreen(false);
+      }
+    };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
   useEffect(() => {
     if (!displayFullscreen) return undefined;
-    const handleKeyDown = (event) => { if (event.key === 'Escape') closeDisplay(); };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    const handleKeyDown = (event) => closeRandomizerDisplayOnEscape(event, () => { void closeDisplay(); });
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [closeDisplay, displayFullscreen]);
 
   const openDisplay = (nextMode, name = '', groups = []) => {
-    setDisplayMode(nextMode); setDisplayName(name); setDisplayGroups(groups); setDisplayFullscreen(true);
-    requestAnimationFrame(() => {
-      const request = displayRef.current?.requestFullscreen?.();
-      request?.catch(() => {});
+    setDisplayMode(nextMode); setDisplayName(name); setDisplayGroups(groups);
+    displayOpenRef.current = true;
+    setDisplayFullscreen(true);
+    setNativeDisplayFullscreen(false);
+    if (document.fullscreenElement === displayRef.current) {
+      setNativeDisplayFullscreen(true);
+      return;
+    }
+    requestNativeRandomizerFullscreen({
+      element: displayRef.current,
+      onNative: () => {
+        if (displayOpenRef.current) setNativeDisplayFullscreen(true);
+      },
+      // The display is already visible as an app-level fullscreen surface. This
+      // callback only records that the native API was unavailable or declined.
+      onFallback: () => {
+        if (displayOpenRef.current) setNativeDisplayFullscreen(false);
+      },
     });
   };
 
@@ -269,6 +295,6 @@ export default function HeaderRandomizer() {
         <label className="lm-header-randomizer-field"><span>Vornamen · eine Person pro Zeile</span><textarea value={studentDrafts[roster.id] ?? roster.students.map((student) => student.name).join('\n')} onChange={(event) => setStudentNames(event.target.value)} onBlur={saveNow} rows={6} placeholder="Vorname eingeben und Enter drücken …" /></label>
         {mode === 'names' ? <div className="lm-header-randomizer-result"><span>{roster.kind === 'course' ? 'Kurs' : 'Klasse'} · {roster.name}</span><strong>{selectedName || 'Noch niemand ausgewählt'}</strong><button type="button" className="lm-header-randomizer-primary" onClick={drawName} disabled={!roster.students.length || isRolling}>Zufallsnamen auswählen und anzeigen</button></div> : <><label className="lm-header-randomizer-size"><span>Personen pro Gruppe</span><input type="number" min="2" max="20" value={groupSize} onChange={(event) => setGroupSize(Math.min(20, Math.max(2, Number.parseInt(event.target.value, 10) || 2)))} /></label><button type="button" className="lm-header-randomizer-primary" onClick={makeGroups} disabled={!roster.students.length || roster.students.length < 2}>Gruppen bilden und anzeigen</button><div className="lm-header-randomizer-groups">{roster.groups.length ? <><div className="lm-header-randomizer-groups-toolbar"><span>{roster.groups.length} Gruppen · jede Person genau einmal</span><button type="button" onClick={makeGroups}>Neu mischen</button><button type="button" onClick={() => openDisplay('groups', '', roster.groups)}>Vollbild</button></div>{roster.groups.map((group, index) => <div className="lm-header-randomizer-group" key={`group-${index}`}><strong>Gruppe {index + 1}</strong><span>{group.join(' · ')}</span></div>)}</> : <span className="lm-header-randomizer-empty">Noch keine Gruppen gebildet</span>}</div></>}
     </section></div>, document.body)}
-    {displayFullscreen && <section ref={displayRef} className="lm-header-randomizer-display" role="dialog" aria-modal="true" aria-label={`${roster.kind === 'course' ? 'Kurs' : 'Klasse'} ${roster.name}`}><button type="button" className="lm-header-randomizer-display-close" onClick={closeDisplay}>Esc · Zurück</button><div className="lm-header-randomizer-display-content"><span>{roster.kind === 'course' ? 'Kurs' : 'Klasse'} · {roster.name}</span>{displayMode === 'name' ? <><h1 aria-live="polite">{isRolling ? '🎲' : displayName}</h1><button type="button" className={`lm-header-randomizer-display-draw${isRolling ? ' is-rolling' : ''}`} onClick={drawName} disabled={isRolling} aria-label={isRolling ? 'Würfel rollt' : 'Weiteren Zufallsnamen auswählen'}>🎲</button><small>{isRolling ? 'Würfel rollt …' : 'Weiteren Namen auswählen'}</small></> : <><div className="lm-header-randomizer-display-groups">{displayGroups.map((group, index) => <div key={`display-group-${index}`}><strong>Gruppe {index + 1}</strong><span>{group.join(' · ')}</span></div>)}</div><button type="button" className="lm-header-randomizer-primary" onClick={makeGroups}>Neu mischen</button></>}</div></section>}
+    {createPortal(<section ref={displayRef} className={`lm-header-randomizer-display${displayFullscreen ? ' is-app-fullscreen' : ' is-inactive'}${nativeDisplayFullscreen ? ' is-native-fullscreen' : ''}`} role="dialog" aria-modal={displayFullscreen ? 'true' : undefined} aria-hidden={!displayFullscreen} aria-label={`${roster.kind === 'course' ? 'Kurs' : 'Klasse'} ${roster.name}`}><button type="button" className="lm-header-randomizer-display-close" onClick={closeDisplay}>Esc · Zurück</button><div className="lm-header-randomizer-display-content"><span>{roster.kind === 'course' ? 'Kurs' : 'Klasse'} · {roster.name}</span>{displayMode === 'name' ? <><h1 aria-live="polite">{isRolling ? '🎲' : displayName}</h1><button type="button" className={`lm-header-randomizer-display-draw${isRolling ? ' is-rolling' : ''}`} onClick={drawName} disabled={isRolling} aria-label={isRolling ? 'Würfel rollt' : 'Weiteren Zufallsnamen auswählen'}>🎲</button><small>{isRolling ? 'Würfel rollt …' : 'Weiteren Namen auswählen'}</small></> : <><div className="lm-header-randomizer-display-groups">{displayGroups.map((group, index) => <div key={`display-group-${index}`}><strong>Gruppe {index + 1}</strong><span>{group.join(' · ')}</span></div>)}</div><button type="button" className="lm-header-randomizer-primary" onClick={makeGroups}>Neu mischen</button></>}</div></section>, document.body)}
   </div>;
 }
