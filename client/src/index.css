@@ -2024,6 +2024,10 @@ button[aria-pressed="true"] {
 .lm-header-randomizer-display-content h1 { margin: 10px 0 34px; font-size: clamp(36px, 8vw, 86px); line-height: 1; }
 .lm-header-randomizer-display-draw { display: block; width: 72px; height: 72px; margin: 0 auto 10px; border: 1px solid var(--c-border); border-radius: 50%; background: var(--c-surface-2); color: var(--c-text); cursor: pointer; font-size: 34px; box-shadow: var(--shadow-sm); }
 .lm-header-randomizer-display-draw:hover { transform: scale(1.06); }
+.lm-header-randomizer-display-draw.is-rolling { animation: lm-randomizer-die-roll 650ms cubic-bezier(.2, .75, .25, 1); cursor: wait; }
+.lm-header-randomizer-display-draw:disabled { opacity: 1; }
+@keyframes lm-randomizer-die-roll { from { transform: rotate(0) scale(1); } to { transform: rotate(1080deg) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .lm-header-randomizer-display-draw.is-rolling { animation: none; } }
 .lm-header-randomizer-display-content small { color: var(--c-text-3); font-size: 13px; }
 .lm-header-randomizer-display-students { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .lm-header-randomizer-display-students span, .lm-header-randomizer-display-groups > div { padding: 16px; border: 1px solid var(--c-border-soft); border-radius: 14px; background: var(--c-surface-2); font-size: clamp(16px, 2.4vw, 25px); }
