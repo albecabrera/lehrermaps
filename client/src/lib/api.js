@@ -174,6 +174,15 @@ export const saveTodayDashboardTasks = (tasks) =>
 export const saveTodayDashboardNote = (date, content) =>
   api.put('/today-dashboard/note', { date, content }).then((r) => r.data);
 
+export const getReflectionBoard = () => api.get('/reflection-board').then((r) => r.data);
+export const updateReflectionBoard = (data) => api.put('/reflection-board', data).then((r) => r.data);
+export const createReflectionItem = (data) => api.post('/reflection-board/items', data).then((r) => r.data);
+export const updateReflectionItem = (id, data) => api.patch(`/reflection-board/items/${id}`, data).then((r) => r.data);
+export const deleteReflectionItem = (id) => api.delete(`/reflection-board/items/${id}`);
+export const likeReflectionItem = (id) => api.post(`/reflection-board/items/${id}/like`).then((r) => r.data);
+export const resetReflectionBoard = (data) => api.post('/reflection-board/reset', data).then((r) => r.data);
+export const downloadReflectionPdf = () => api.get('/reflection-board/export.pdf', { responseType: 'blob' }).then((r) => r.data);
+
 export const getBugChecklist = () => api.get('/bug-checklist').then((r) => r.data);
 export const saveBugChecklist = (items) => api.put('/bug-checklist', { items }).then((r) => r.data);
 

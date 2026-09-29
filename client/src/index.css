@@ -4376,6 +4376,103 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
 @media (max-width: 767px) { .lm-today-watermark { width: 112vw; left: 50%; opacity: .09; } }
 @media (prefers-reduced-motion: reduce) { a:not(.lm-button):not(.lm-mobile-brand-link), button, [role="button"] { transition: none !important; } }
 
+/* Koffer oder Müllkorb? — classroom reflection board. It uses the existing
+   tokens so the smartboard, tablet and dark-mode surfaces stay in one system. */
+.lm-reflection-board { flex: 1; min-width: 0; overflow: auto; padding: clamp(22px, 4vw, 56px) clamp(18px, 4vw, 64px) 36px; color: var(--c-text); background: radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--c-turquoise) 8%, transparent), transparent 42%), var(--c-bg); }
+.lm-reflection-hero, .lm-reflection-meta, .lm-reflection-question, .lm-reflection-columns, .lm-reflection-summary { width: min(1440px, 100%); margin-inline: auto; }
+.lm-reflection-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; margin-bottom: 22px; }
+.lm-reflection-kicker { display: block; margin-bottom: 5px; color: var(--c-turquoise); font-size: 12px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+.lm-reflection-hero h1 { margin: 0; font: 650 clamp(32px, 4vw, 58px)/1.02 var(--font-editorial); letter-spacing: -.045em; }
+.lm-reflection-hero p { margin: 10px 0 0; color: var(--c-text-2); font-size: clamp(15px, 1.6vw, 19px); }
+.lm-reflection-toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.lm-reflection-toolbar .lm-button, .lm-reflection-exit-presentation { min-height: var(--touch-target); }
+.lm-reflection-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+.lm-reflection-meta label { display: grid; gap: 4px; color: var(--c-text-2); font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.lm-reflection-meta input { width: 100%; min-height: var(--touch-target); padding: 8px 11px; border: 1px solid var(--c-border); border-radius: 10px; background: var(--c-input-bg); color: var(--c-text); font: 600 14px inherit; text-transform: none; }
+.lm-reflection-question { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; padding: 16px 18px; border: 1px solid color-mix(in srgb, var(--c-turquoise) 25%, var(--c-border)); border-radius: 15px; background: color-mix(in srgb, var(--c-turquoise) 7%, var(--c-surface)); box-shadow: var(--shadow-sm); }
+.lm-reflection-question div { display: grid; gap: 2px; min-width: 0; }
+.lm-reflection-question span { color: var(--c-turquoise); font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }
+.lm-reflection-question strong { font-size: clamp(18px, 2vw, 26px); line-height: 1.25; }
+.lm-reflection-columns { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(220px, .76fr); align-items: start; gap: 16px; }
+.lm-reflection-column { min-width: 0; min-height: 310px; padding: 18px; border: 1px solid var(--c-border); border-radius: 18px; background: color-mix(in srgb, var(--c-surface) 96%, transparent); box-shadow: var(--shadow-md); transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease; }
+.lm-reflection-column--koffer { border-top: 4px solid #d6a72a; }
+.lm-reflection-column--muellkorb { border-top: 4px solid #e87824; }
+.lm-reflection-column--unklar { border-top: 4px solid var(--c-turquoise); }
+.lm-reflection-column.is-drop-target { border-color: var(--c-focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-focus) 16%, transparent), var(--shadow-md); transform: translateY(-2px); }
+.lm-reflection-column-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.lm-reflection-column-header > div { display: flex; gap: 10px; min-width: 0; }
+.lm-reflection-column-icon { font-size: clamp(26px, 3vw, 38px); line-height: 1; }
+.lm-reflection-column h2 { margin: 0; font-size: clamp(18px, 2vw, 25px); line-height: 1.15; }
+.lm-reflection-column p { margin: 4px 0 0; color: var(--c-text-2); font-size: 12px; line-height: 1.35; }
+.lm-reflection-count { display: grid; min-width: 32px; height: 32px; place-items: center; border-radius: 999px; background: var(--c-surface-2); color: var(--c-text-2); font-size: 12px; font-weight: 800; }
+.lm-reflection-add { width: 100%; min-height: 48px; margin-bottom: 12px; border: 1px dashed color-mix(in srgb, var(--c-focus) 50%, var(--c-border)); border-radius: 11px; background: color-mix(in srgb, var(--c-focus) 6%, transparent); color: var(--c-focus); cursor: pointer; font: 800 14px inherit; }
+.lm-reflection-add:hover { background: var(--c-hover); border-style: solid; }
+.lm-reflection-card-list { display: grid; gap: 10px; }
+.lm-reflection-empty { padding: 24px 8px !important; color: var(--c-text-3) !important; text-align: center; }
+.lm-reflection-card { position: relative; padding: 14px; border: 1px solid var(--c-border-soft); border-radius: 13px; background: var(--c-surface); box-shadow: var(--shadow-sm); }
+.lm-reflection-card[draggable="true"] { cursor: grab; }
+.lm-reflection-card[draggable="true"]:active { cursor: grabbing; }
+.lm-reflection-card-topline, .lm-reflection-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lm-reflection-card-category { color: var(--c-text-3); font-size: 11px; font-weight: 800; }
+.lm-reflection-card p { margin: 10px 0 14px; color: var(--c-text); font-size: clamp(15px, 1.5vw, 19px); line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.lm-reflection-icon-button { display: inline-grid; width: var(--touch-target); min-width: var(--touch-target); height: var(--touch-target); place-items: center; padding: 0; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--c-text-2); cursor: pointer; font: 800 21px/1 inherit; }
+.lm-reflection-icon-button:hover { background: var(--c-hover); color: var(--c-text); }
+.lm-reflection-card-menu-wrap { position: relative; }
+.lm-reflection-card-menu { position: absolute; z-index: 10; top: calc(100% + 4px); right: 0; display: grid; min-width: 190px; padding: 5px; border: 1px solid var(--c-border); border-radius: 11px; background: var(--c-surface-elevated); box-shadow: var(--c-shadow-pop); }
+.lm-reflection-card-menu button { min-height: 40px; padding: 7px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--c-text); cursor: pointer; font: 600 12px inherit; text-align: left; }
+.lm-reflection-card-menu button:hover, .lm-reflection-card-menu button:focus-visible { background: var(--c-hover); }
+.lm-reflection-card-menu button.is-danger { color: var(--c-danger-text); }
+.lm-reflection-like { min-height: var(--touch-target); padding: 0 10px; border: 1px solid var(--c-border-soft); border-radius: 999px; background: color-mix(in srgb, var(--c-surface-2) 70%, transparent); color: var(--c-text-2); cursor: pointer; font: 800 13px inherit; }
+.lm-reflection-like:hover:not(:disabled) { border-color: var(--c-danger); color: var(--c-danger-text); background: var(--c-danger-bg); }
+.lm-reflection-like:disabled { cursor: wait; }
+.lm-reflection-drag-hint { color: var(--c-text-3); font-size: 15px; }
+.lm-reflection-footnote { width: min(1440px, 100%); margin: 18px auto 0; color: var(--c-text-3); font-size: 11px; text-align: center; }
+.lm-reflection-error { width: min(1440px, 100%); margin: 0 auto 14px; padding: 10px 12px; border: 1px solid var(--c-danger-border); border-radius: 10px; background: var(--c-danger-bg); color: var(--c-danger-text); font-size: 13px; }
+.lm-reflection-error button { float: right; border: 0; background: transparent; color: inherit; cursor: pointer; font-weight: 800; }
+.lm-reflection-summary { padding: clamp(20px, 4vw, 40px); border: 1px solid var(--c-border); border-radius: 20px; background: var(--c-surface); box-shadow: var(--shadow-md); }
+.lm-reflection-summary-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.lm-reflection-summary h2 { margin: 0; font: 650 clamp(28px, 4vw, 46px)/1 var(--font-editorial); }
+.lm-reflection-summary-heading > strong { padding: 8px 12px; border-radius: 999px; background: var(--c-surface-2); color: var(--c-text-2); font-size: 13px; }
+.lm-reflection-summary-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 26px; }
+.lm-reflection-summary-groups section, .lm-reflection-supported { padding: 16px; border: 1px solid var(--c-border-soft); border-radius: 13px; background: var(--c-surface-2); }
+.lm-reflection-summary h3 { margin: 0 0 10px; font-size: 16px; }
+.lm-reflection-summary ul, .lm-reflection-summary ol { display: grid; gap: 8px; margin: 0; padding-left: 21px; }
+.lm-reflection-summary li { color: var(--c-text); font-size: 14px; line-height: 1.4; }
+.lm-reflection-summary li span, .lm-reflection-summary li strong { color: var(--c-text-2); font-size: 12px; }
+.lm-reflection-summary p { margin: 0; color: var(--c-text-3); font-size: 13px; }
+.lm-reflection-supported { margin-top: 14px; }
+.lm-reflection-supported li { display: flex; justify-content: space-between; gap: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--c-border-soft); }
+.lm-reflection-supported li:last-child { padding-bottom: 0; border-bottom: 0; }
+.lm-reflection-supported li strong { flex: 0 0 auto; color: var(--c-focus); }
+.lm-reflection-state { display: grid; place-content: center; min-height: 100%; text-align: center; }
+.lm-reflection-editor-backdrop { z-index: 2600; }
+.lm-reflection-editor { width: min(680px, 100%); padding: 24px; border-radius: 17px; }
+.lm-reflection-editor-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.lm-reflection-editor h2, .lm-reflection-reset-dialog h2 { margin: 0; font: 650 28px/1.1 var(--font-editorial); }
+.lm-reflection-editor textarea { width: 100%; min-height: 140px; margin: 18px 0 12px; padding: 13px; resize: vertical; border: 1px solid var(--c-border); border-radius: 11px; color: var(--c-text); font: 17px/1.5 inherit; }
+.lm-reflection-editor-categories { display: flex; flex-wrap: wrap; gap: 7px; }
+.lm-reflection-editor-categories button { min-height: var(--touch-target); padding: 0 12px; border: 1px solid var(--c-border); border-radius: 999px; background: var(--c-surface-2); color: var(--c-text-2); cursor: pointer; font: 700 13px inherit; }
+.lm-reflection-editor-categories button.is-active { border-color: var(--c-focus); background: color-mix(in srgb, var(--c-focus) 12%, var(--c-surface)); color: var(--c-text); }
+.lm-reflection-editor-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.lm-reflection-editor-actions > span { flex: 1; color: var(--c-text-3); font-size: 11px; }
+.lm-reflection-reset-dialog { width: min(500px, 100%); padding: 26px; border-radius: 17px; }
+.lm-reflection-reset-dialog p { margin: 13px 0 18px; color: var(--c-text-2); font-size: 14px; }
+.lm-reflection-check { display: flex; align-items: center; gap: 9px; color: var(--c-text); font-size: 14px; }
+.lm-reflection-check input { width: 20px; height: 20px; accent-color: var(--c-focus); }
+.lm-app-shell.is-presentation .lm-tabbar,
+.lm-app-shell.is-presentation .lm-desktop-app-rail,
+.lm-app-shell.is-presentation .lm-mobile-bottom-nav,
+.lm-app-shell.is-presentation .lm-header-reveal,
+.lm-app-shell.is-presentation .lm-phone-header-reveal { display: none !important; }
+.is-presentation .lm-reflection-hero { align-items: center; }
+.is-presentation .lm-reflection-hero h1 { font-size: clamp(38px, 5vw, 70px); }
+.is-presentation .lm-reflection-columns { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.35fr) minmax(230px, .8fr); }
+.is-presentation .lm-reflection-column { min-height: 400px; }
+.is-presentation .lm-reflection-exit-presentation { min-height: 36px; padding: 0 12px; font-size: 12px; }
+@media (max-width: 1000px) { .lm-reflection-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lm-reflection-column--unklar { grid-column: 1 / -1; } .lm-reflection-summary-groups { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .lm-reflection-board { padding: 18px 14px 28px; } .lm-reflection-hero { display: block; } .lm-reflection-toolbar { justify-content: flex-start; margin-top: 16px; } .lm-reflection-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lm-reflection-question { align-items: flex-start; flex-direction: column; } .lm-reflection-columns { grid-template-columns: 1fr; } .lm-reflection-column--unklar { grid-column: auto; } .lm-reflection-editor-actions { flex-wrap: wrap; } .lm-reflection-editor-actions > span { flex-basis: 100%; } .lm-reflection-summary-heading { display: block; } .lm-reflection-summary-heading > strong { display: inline-block; margin-top: 12px; } }
+@media (prefers-reduced-motion: reduce) { .lm-reflection-column, .lm-reflection-card { transition: none !important; } }
+
 /* One-time post-login welcome. The app stays unmounted until this short handoff
    finishes, while a restored token bypasses it entirely. */
 .lm-login-welcome {

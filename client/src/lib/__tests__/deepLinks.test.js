@@ -6,6 +6,7 @@ test('maps only supported semantic hashes to rendered views', () => {
   assert.deepEqual(parseAppHash('#today'), { hash: '#today', view: 'today', focusId: null });
   assert.deepEqual(parseAppHash('#schedule'), { hash: '#schedule', view: 'schedule', focusId: null });
   assert.deepEqual(parseAppHash('#appointments'), { hash: '#appointments', view: 'appointments', focusId: null });
+  assert.deepEqual(parseAppHash('#reflection'), { hash: '#reflection', view: 'reflection', focusId: null });
   assert.deepEqual(parseAppHash('#tasks'), { hash: '#tasks', view: 'today', focusId: 'tasks' });
 });
 
@@ -19,6 +20,7 @@ test('returns canonical hashes only for public app views', () => {
   assert.equal(hashForView('today'), '#today');
   assert.equal(hashForView('schedule'), '#schedule');
   assert.equal(hashForView('appointments'), '#appointments');
+  assert.equal(hashForView('reflection'), '#reflection');
   assert.equal(hashForView('subjects'), '');
   assert.equal(hashForView('klausurplan'), '');
 });

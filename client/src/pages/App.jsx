@@ -44,6 +44,7 @@ import BugChecklist, { BugChecklistIcon } from '../components/BugChecklist';
 import KlausurplanWorkspace from '../components/KlausurplanWorkspace';
 import ClassroomTimer from '../components/ClassroomTimer';
 import HeaderRandomizer from '../components/HeaderRandomizer';
+import ReflectionBoard from '../components/ReflectionBoard';
 
 // Keep the logo local: remote image hosts can be blocked by mobile content blockers
 // and leave iPhone Safari showing a broken-image placeholder.
@@ -248,6 +249,7 @@ export default function App({ onLogout }) {
   const [classroomTimerOpen, setClassroomTimerOpen] = useState(false);
   const [appRailVisible, setAppRailVisible] = useState(true);
   const [headerVisible, setHeaderVisible] = useState(true);
+  const [presentationMode, setPresentationMode] = useState(false);
   const [pleskTerminalOpen, setPleskTerminalOpen] = useState(false);
   // The randomizer owns its modal state; this monotonic signal lets the phone
   // header open that same mounted instance without rendering a second one.
@@ -323,6 +325,7 @@ export default function App({ onLogout }) {
     schedule: 'Stundenplan',
     appointments: 'Termine',
     klausurplan: 'Klausurplan',
+    reflection: 'Koffer oder Müllkorb?',
   }[viewMode] || activeFolder?.name || 'Arbeitsbereich';
   const { folders, loading: foldersLoading, add: addFolder, remove: removeFolder, rename: renameFolder, reorder: reorderFolders, toggleFavorite, setColor: setFolderColor, moveToParent: moveFolderToParent, reload: reloadFolders } = useFolders();
   const { files, loading: filesLoading, upload, remove: removeFile, rename: renameFileHook, move: moveFileHook, setRole: setFileRole, setBulkRole: setFilesRole, commitVersion: commitFileVersion } = useFiles(activeFolder?.id);
@@ -1014,6 +1017,55 @@ export default function App({ onLogout }) {
   const [bulkMoveFiles, setBulkMoveFiles] = useState(null); // array of files to move
   const [bulkMoveTarget, setBulkMoveTarget] = useState('');
 
+  const closePresentationOverlays = useCallback(() => {
+    setSidebarDrawerOpen(false);
+    setMoreSheetOpen(false);
+    setSchoolCalendarOpen(false);
+    setBugChecklistOpen(false);
+    setClassroomTimerOpen(false);
+    setPleskTerminalOpen(false);
+    setUploadOpen(false);
+    setDropFiles(null);
+    setDropOver(false);
+    setDropUploading(null);
+    setNewFolderOpen(false);
+    setNewFolderParentId(null);
+    setAddLinkOpen(false);
+    setRenamingFolder(null);
+    setRenamingFile(null);
+    setGlobalSearchOpen(false);
+    setKeyboardHelpOpen(false);
+    setConfirmModal(null);
+    setExamBoardOpen(false);
+    setKlasurplanOpen(false);
+    setActiveFile(null);
+    setActiveFile2(null);
+    setActiveLink(null);
+    setTeachingMode(false);
+    setStartNewLessonPlanning(false);
+    setTeachingSessionId(null);
+    setBulkMoveFiles(null);
+    setBulkMoveTarget('');
+    setHeroQrLink(null);
+    setFolderZoom(null);
+    setPreviewHero(null);
+    setHapticPulse(null);
+    setQuery('');
+    setToast(null);
+  }, []);
+
+  const handleReflectionPresentationChange = useCallback((isPresented) => {
+    closePresentationOverlays();
+    setPresentationMode(isPresented);
+  }, [closePresentationOverlays]);
+
+  useEffect(() => {
+    if (viewMode !== 'reflection' && presentationMode) {
+      closePresentationOverlays();
+      setPresentationMode(false);
+    }
+  }, [closePresentationOverlays, presentationMode, viewMode]);
+
   const handleBulkMoveFiles = (selectedFiles) => {
     setBulkMoveFiles(selectedFiles);
     setBulkMoveTarget('');
@@ -1140,7 +1192,7 @@ export default function App({ onLogout }) {
 
   return (
     <Suspense fallback={null}>
-    <div className={`lm-app-shell${isMacDesktop ? ' lm-platform-mac-desktop' : ''}`} style={{
+    <div className={`lm-app-shell${isMacDesktop ? ' lm-platform-mac-desktop' : ''}${presentationMode ? ' is-presentation' : ''}`} style={{
       position: 'fixed', inset: 0,
       display: 'flex', flexDirection: 'column',
       background: 'var(--c-bg)', color: 'var(--c-text)',
@@ -1149,7 +1201,7 @@ export default function App({ onLogout }) {
     }}>
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Workspace navigation — preserves the original visual language without restoring archived subject navigation. */}
-      {headerVisible && <header className={`lm-tabbar${isPhone ? ' lm-phone-focus-header' : ''}${isPhone && !phoneHeaderVisible ? ' is-collapsed' : ''}`} aria-label="Hauptnavigation">
+      {!presentationMode && headerVisible && <header className={`lm-tabbar${isPhone ? ' lm-phone-focus-header' : ''}${isPhone && !phoneHeaderVisible ? ' is-collapsed' : ''}`} aria-label="Hauptnavigation">
         <button className="lm-app-brand lm-app-brand--prominent" type="button" onClick={() => { navigateToView('today'); closeFolderView(); }} aria-label="Zu Heute">
           <BrandMark size={isPhone ? 34 : 38} />
         </button>
@@ -1266,6 +1318,7 @@ export default function App({ onLogout }) {
             ['schedule', <svg key="schedule-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3M5 9h2M9 9h2M5 11.5h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Stundenplan', () => navigateToView('schedule')],
             ['appointments', <svg key="appointments-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/><circle cx="10.5" cy="10" r="1" fill="currentColor"/></svg>, 'Termine', () => navigateToView('appointments')],
             ['klausurplan', <svg key="exam-plan-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2.5h6l2 2V13.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M10 2.5v2h2M6 7h4M6 9.5h4M6 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Klausurplan', () => navigateToView('klausurplan')],
+            ['reflection', '🧳', 'Koffer oder Müllkorb?', () => navigateToView('reflection')],
           ].map(([id, icon, label, onClick]) => {
             const active = viewMode === id;
             return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined} title={label}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
@@ -1287,7 +1340,7 @@ export default function App({ onLogout }) {
           <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout" title="Logout"><span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span></button>
         </div>
       </header>}
-      {!headerVisible && (
+      {!presentationMode && !headerVisible && (
         <button
           className="lm-header-reveal"
           type="button"
@@ -1298,7 +1351,7 @@ export default function App({ onLogout }) {
           <span aria-hidden="true">⌃</span>
         </button>
       )}
-      {headerVisible && isPhone && !phoneHeaderVisible && (
+      {!presentationMode && headerVisible && isPhone && !phoneHeaderVisible && (
         <button
           className="lm-phone-header-reveal"
           type="button"
@@ -1349,9 +1402,11 @@ export default function App({ onLogout }) {
         {/* Keep the external app rail available on every form factor. On phones
             it becomes a compact, scrollable icon sidebar; the material/folder
             sidebar remains in its existing drawer. */}
-        {appRailVisible && <DesktopAppRail />}
+        {!presentationMode && appRailVisible && <DesktopAppRail />}
         {viewMode === 'today' ? (
           <TodayDashboard onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} onOpenSchedule={() => navigateToView('schedule')} />
+        ) : viewMode === 'reflection' ? (
+          <ReflectionBoard onPresentationChange={handleReflectionPresentationChange} />
         ) : viewMode === 'klausurplan' ? (
           <KlausurplanWorkspace />
         ) : viewMode === 'appointments' ? (
@@ -1953,7 +2008,7 @@ export default function App({ onLogout }) {
 
       {/* Keep the mobile drawer independent of the active content view so it
           remains available from Home as well as subject content. */}
-      {isMobile && sidebarDrawerOpen && createPortal(
+      {!presentationMode && isMobile && sidebarDrawerOpen && createPortal(
         <>
           <div
             onClick={() => setSidebarDrawerOpen(false)}
@@ -1977,13 +2032,14 @@ export default function App({ onLogout }) {
       )}
 
       {/* Mobile Bottom-Navigation — Daumen-Zone. Flex-Kind, verdeckt nie Inhalt. */}
-      {isMobile && (
+      {!presentationMode && isMobile && (
         <MobileBottomNav
           accent={accent}
-          active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : 'today'}
+          active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : viewMode === 'reflection' ? 'reflection' : 'today'}
           items={[
             { id: 'today', label: 'Heute', icon: navIcons.subjects, onClick: () => { navigateToView('today'); closeFolderView(); } },
             { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => navigateToView('schedule') },
+            { id: 'reflection', label: 'Reflexion', icon: <span aria-hidden="true">🧳</span>, onClick: () => navigateToView('reflection') },
             { id: 'more', label: t('mobile.more'), icon: navIcons.more, onClick: () => setMoreSheetOpen(true) },
           ]}
         />
@@ -1991,7 +2047,7 @@ export default function App({ onLogout }) {
       </div>
 
       <MobileMoreSheet
-        open={isMobile && moreSheetOpen}
+        open={isMobile && !presentationMode && moreSheetOpen}
         onClose={() => setMoreSheetOpen(false)}
         t={t}
         accent={accent}

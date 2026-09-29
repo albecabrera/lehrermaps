@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'lehrermaps-v62';
+const CACHE_VERSION = 'lehrermaps-v64';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -33,17 +33,51 @@ async function cacheAppShell() {
   // hard-coding filenames that become stale after every deployment.
   const indexResponse = await fetch('/index.html', { cache: 'no-store' });
   const indexHtml = await indexResponse.text();
-  const assets = [...indexHtml.matchAll(/(?:src|href)=["'](\/assets\/[^"']+)["']/g)]
-    .map((match) => match[1]);
-  await cache.addAll(assets);
+  await cacheReferencedAssets(
+    cache,
+    extractReferencedAssets(indexHtml, new URL('/index.html', self.location.origin)),
+  );
+}
 
-  // Cache code-split chunks referenced by the entry bundle as well.
-  for (const asset of assets.filter((url) => url.endsWith('.js'))) {
-    const response = await fetch(asset, { cache: 'no-store' });
-    const source = await response.text();
-    const chunks = [...source.matchAll(/["'](\/assets\/[^"']+\.js)["']/g)]
-      .map((match) => match[1]);
-    await cache.addAll(chunks);
+function extractReferencedAssets(source, baseUrl) {
+  const assets = new Set();
+  const strings = /["'`]([^"'`]+)["'`]/g;
+  let match;
+  while ((match = strings.exec(source))) {
+    const value = match[1];
+    if (!/\.(?:js|css)(?:[?#].*)?$/.test(value)) continue;
+    let url;
+    try {
+      url = new URL(value.startsWith('assets/') ? `/${value}` : value, baseUrl);
+    } catch {
+      continue;
+    }
+    if (url.origin !== self.location.origin || !url.pathname.startsWith('/assets/')) continue;
+    assets.add(`${url.pathname}${url.search}`);
+  }
+  return assets;
+}
+
+async function cacheReferencedAssets(cache, initialAssets) {
+  const queue = initialAssets.map((asset) => new URL(asset, self.location.origin));
+  const visited = new Set();
+
+  while (queue.length) {
+    const assetUrl = queue.shift();
+    const cacheKey = assetUrl.href;
+    if (visited.has(cacheKey)) continue;
+    visited.add(cacheKey);
+
+    const response = await fetch(assetUrl, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Unable to precache ${assetUrl.pathname}`);
+    await cache.put(assetUrl, response.clone());
+
+    if (assetUrl.pathname.endsWith('.js')) {
+      const source = await response.text();
+      for (const referencedAsset of extractReferencedAssets(source, assetUrl)) {
+        queue.push(new URL(referencedAsset, self.location.origin));
+      }
+    }
   }
 }
 

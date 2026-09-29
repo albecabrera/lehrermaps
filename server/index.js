@@ -24,6 +24,7 @@ import bugChecklistRouter from './routes/bugChecklist.js';
 import appPreferencesRouter from './routes/appPreferences.js';
 import backupsRouter from './routes/backups.js';
 import widgetRouter from './routes/widget.js';
+import reflectionBoardRouter from './routes/reflectionBoard.js';
 
 // Load the production configuration next to this module.  The service may be
 // started from the project root by a process manager, so relying on cwd would
@@ -108,6 +109,7 @@ app.use('/api', appPreferencesRouter);
 app.use('/api/backups', backupsRouter);
 app.use('/api/widget', widgetRouter);
 app.use('/api', lessonSessionsRouter);
+app.use('/api', reflectionBoardRouter);
 app.get('/display/:token', displayPage);
 
 app.use('/api', (req, res) => {

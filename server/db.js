@@ -82,6 +82,8 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS randomizer_rosters (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'class', last_groups_json TEXT NOT NULL DEFAULT '[]', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS randomizer_students (id INTEGER PRIMARY KEY, roster_id INTEGER NOT NULL REFERENCES randomizer_rosters(id) ON DELETE CASCADE, name TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0)`,
   `CREATE TABLE IF NOT EXISTS user_backups (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, payload_json TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS reflection_boards (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL UNIQUE, subject TEXT NOT NULL DEFAULT '', class_name TEXT NOT NULL DEFAULT '', topic TEXT NOT NULL DEFAULT '', reflection_date TEXT NOT NULL DEFAULT '', current_question TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS reflection_items (id INTEGER PRIMARY KEY, board_id INTEGER NOT NULL REFERENCES reflection_boards(id) ON DELETE CASCADE, category TEXT NOT NULL CHECK (category IN ('koffer', 'muellkorb', 'unklar')), content TEXT NOT NULL, likes INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS document_annotations (id INTEGER PRIMARY KEY, file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE, user_id INTEGER NOT NULL DEFAULT 1, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS document_annotation_history (id INTEGER PRIMARY KEY, annotation_id INTEGER NOT NULL, file_id INTEGER NOT NULL, user_id INTEGER NOT NULL, page_number INTEGER NOT NULL, type TEXT NOT NULL, data_json TEXT NOT NULL, style_json TEXT, action TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS exams (id INTEGER PRIMARY KEY, title TEXT NOT NULL, class_name TEXT NOT NULL, subject TEXT, exam_date TEXT NOT NULL, exam_time TEXT, notes TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
@@ -207,8 +209,12 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS today_dashboard_notes_user_date ON today_dashboard_notes(user_id, note_date);
     CREATE UNIQUE INDEX IF NOT EXISTS schedule_user_unique ON schedule(user_id);
     CREATE INDEX IF NOT EXISTS user_backups_user_created ON user_backups(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS reflection_items_board_order ON reflection_items(board_id, sort_order, id);
+    CREATE INDEX IF NOT EXISTS reflection_items_board_likes ON reflection_items(board_id, likes DESC, id);
   `);
   for (const table of ['schedule', 'document_annotations', 'lesson_sessions', 'lesson_phases', 'lesson_phase_canvases', 'lesson_phase_elements']) database.exec(`CREATE TRIGGER IF NOT EXISTS ${table}_touch_updated_at AFTER UPDATE ON ${table} FOR EACH ROW BEGIN UPDATE ${table} SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;`);
+  database.exec(`CREATE TRIGGER IF NOT EXISTS reflection_boards_touch_updated_at AFTER UPDATE ON reflection_boards FOR EACH ROW BEGIN UPDATE reflection_boards SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;`);
+  database.exec(`CREATE TRIGGER IF NOT EXISTS reflection_items_touch_updated_at AFTER UPDATE ON reflection_items FOR EACH ROW BEGIN UPDATE reflection_items SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; END;`);
   await pool.execute("UPDATE folders SET group_name = 'Klasse 9' WHERE subject = 'spanisch' AND group_name = 'es-9'");
   await pool.execute("UPDATE folders SET group_name = 'Q1' WHERE subject = 'spanisch' AND group_name IN ('Klasse 12', 'es-12')");
   await pool.execute("UPDATE folders SET group_name = 'WP Klasse 6–7' WHERE subject = 'informatik' AND group_name = 'inf-67'");

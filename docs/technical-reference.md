@@ -62,6 +62,7 @@ The semantic CSS tokens are defined in `client/src/index.css`. Components should
 | Workspace shell | `pages/App.jsx`, `components/Sidebar.jsx`, `components/MobileNav.jsx` |
 | Materials | `FileTable.jsx`, `FilePreview.jsx`, `FolderGallery.jsx`, upload and link modals |
 | Teaching | `TeachingMode.jsx`, lesson sessions, projection, timers, and materials |
+| Reflection | `components/ReflectionBoard.jsx`, `lib/reflectionBoard.js` |
 | Search | `GlobalSearch.jsx` |
 | Documents | `PdfAnnotationViewer.jsx`, worksheet and presentation-related modules |
 
@@ -85,6 +86,7 @@ The backend is Node.js/Express. There is no PHP runtime and no `.php` source fil
 | `/api/links` | Folder-linked external resources. |
 | `/api/schedule` | Weekly schedule. |
 | `/api/lesson-sessions` | Teaching sessions, phases, display state, and canvas data. |
+| `/api/reflection-board` | Authenticated Koffer-or-Müllkorb board, cards, support counts, reset, and PDF export. |
 | `/api/ai` | AI status and document/worksheet generation. |
 | `/api/exams`, `/api/today-dashboard`, `/api/bug-checklist`, `/api/backups` | Supporting teacher workflows. |
 | `/api/files/:fileId/annotations` | Document annotations and annotation history. |
