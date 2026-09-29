@@ -31,25 +31,46 @@ rsync -a client/dist/assets/ assets/
 # actually the expected server process, then start the current sources anew.
 PID_FILE="$ROOT_DIR/.logs/server.pid"
 mkdir -p "$ROOT_DIR/.logs"
-if [ -f "$PID_FILE" ]; then
-  old_pid=$(cat "$PID_FILE")
-  if [[ "$old_pid" =~ ^[0-9]+$ ]] && kill -0 "$old_pid" 2>/dev/null; then
-    old_cwd=$(readlink "/proc/$old_pid/cwd" 2>/dev/null || true)
-    old_command=$(tr '\0' ' ' < "/proc/$old_pid/cmdline" 2>/dev/null || true)
-    if [ "$old_cwd" != "$ROOT_DIR/server" ] || [ "$old_command" != "node index.js " ]; then
-      echo "Refusing to stop unexpected PID $old_pid." >&2
-      exit 1
-    fi
-    kill -TERM "$old_pid"
-    for _ in $(seq 1 30); do
-      kill -0 "$old_pid" 2>/dev/null || break
-      sleep 1
-    done
-    if kill -0 "$old_pid" 2>/dev/null; then
-      echo "Backend PID $old_pid did not stop gracefully." >&2
-      exit 1
-    fi
+
+is_expected_backend_pid() {
+  local pid=$1
+  [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null || return 1
+
+  local process_cwd process_command
+  process_cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null || true)
+  process_command=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)
+  [ "$process_cwd" = "$ROOT_DIR/server" ] && [ "$process_command" = "node index.js " ]
+}
+
+stop_expected_backend_pid() {
+  local pid=$1
+  if ! is_expected_backend_pid "$pid"; then
+    echo "Refusing to stop unexpected PID $pid." >&2
+    exit 1
   fi
+
+  kill -TERM "$pid"
+  for _ in $(seq 1 30); do
+    kill -0 "$pid" 2>/dev/null || return 0
+    sleep 1
+  done
+  echo "Backend PID $pid did not stop gracefully." >&2
+  exit 1
+}
+
+if [ -f "$PID_FILE" ]; then
+  recorded_pid=$(cat "$PID_FILE")
+  if [[ "$recorded_pid" =~ ^[0-9]+$ ]] && kill -0 "$recorded_pid" 2>/dev/null; then
+    stop_expected_backend_pid "$recorded_pid"
+  fi
+fi
+
+# A stale PID file must never make a deploy appear successful while an older
+# LehrerMaps server still owns the port. Discover that listener, but only stop
+# it after the same cwd and command validation as the recorded PID.
+listener_pid=$(ss -ltnp "sport = :3001" 2>/dev/null | sed -nE 's/.*pid=([0-9]+).*/\1/p' | head -n 1)
+if [ -n "$listener_pid" ]; then
+  stop_expected_backend_pid "$listener_pid"
 fi
 
 (
