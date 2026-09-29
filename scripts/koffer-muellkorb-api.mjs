@@ -48,8 +48,8 @@ try {
   assert.equal(initial.metadata.subject, '');
   await request('/api/reflection-board', { token, method: 'PUT', body: { metadata: { subject: 'Informatik', className: '6d', topic: 'Zustände', date: '2026-09-29' }, question: 'Was bleibt?' } });
   const item = await request('/api/reflection-board/items', { token, method: 'POST', body: { category: 'koffer', content: 'Kara macht Zustände verständlich.' }, expected: 201 });
-  const moved = await request(`/api/reflection-board/items/${item.id}`, { token, method: 'PATCH', body: { category: 'unklar' } });
-  assert.equal(moved.category, 'unklar');
+  const moved = await request(`/api/reflection-board/items/${item.id}`, { token, method: 'PATCH', body: { category: 'muellkorb' } });
+  assert.equal(moved.category, 'muellkorb');
   assert.equal((await request(`/api/reflection-board/items/${item.id}/like`, { token, method: 'POST' })).likes, 1);
   const pdf = await request('/api/reflection-board/export.pdf', { token });
   assert.ok(pdf.byteLength > 100, 'PDF export returns content');

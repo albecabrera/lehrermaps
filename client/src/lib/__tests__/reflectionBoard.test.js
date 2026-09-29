@@ -32,15 +32,16 @@ test('normalizes metadata and keeps invalid dates empty', () => {
   });
 });
 
-test('groups all three categories and ranks supported statements', () => {
+test('groups the two reflection categories and ranks supported statements', () => {
   const items = [
     { id: 1, category: 'muellkorb', content: 'Mehr Zeit', likes: 3, sortOrder: 1 },
     { id: 2, category: 'koffer', content: 'Kara hilft', likes: 5, sortOrder: 0 },
-    { id: 3, category: 'unklar', content: 'Frage', likes: 1, sortOrder: 0 },
+    { id: 3, category: 'muellkorb', content: 'Frage', likes: 1, sortOrder: 0 },
   ];
   const groups = groupReflectionItems(items);
   assert.equal(groups.koffer.length, 1);
-  assert.equal(groups.muellkorb[0].content, 'Mehr Zeit');
+  assert.equal(groups.muellkorb.length, 2);
+  assert.equal(groups.muellkorb[0].content, 'Frage');
   assert.equal(buildReflectionSummary(items).mostSupported[0].id, 2);
 });
 

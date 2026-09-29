@@ -4677,3 +4677,53 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
 .lm-header-randomizer-display { z-index:6000; background:var(--c-surface-elevated); }
 .lm-header-randomizer-display:fullscreen { background:var(--c-surface-elevated); }
 @media (max-width:700px) { .lm-header-randomizer-backdrop { align-items:end; padding:0; } .lm-header-randomizer-modal { width:100%; min-height:0; max-height:88dvh; border-right:0; border-bottom:0; border-left:0; border-radius:18px 18px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); } .lm-header-randomizer-notice { align-items:flex-start; flex-direction:column; } .lm-header-randomizer-notice button { width:100%; } .lm-header-randomizer-meta { align-items:flex-start; flex-direction:column; gap:4px; } .lm-header-randomizer-actions { grid-template-columns:1fr; } }
+
+/* Reflection is deliberately a binary choice: large, touch-first destinations make
+   the activity readable from the back of a classroom as well as on a tablet. */
+.lm-reflection-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(16px, 2.6vw, 34px); }
+.lm-reflection-column {
+  min-height: 460px;
+  padding: clamp(22px, 3vw, 42px);
+  border-width: 1px;
+  border-top-width: 6px;
+  border-radius: 28px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--c-surface) 97%, white), var(--c-surface));
+  box-shadow: 0 18px 45px color-mix(in srgb, var(--c-text) 10%, transparent), var(--shadow-sm);
+}
+.lm-reflection-column--koffer { border-top-color: #d6a72a; background: radial-gradient(circle at 50% 0%, rgba(214, 167, 42, .16), transparent 41%), var(--c-surface); }
+.lm-reflection-column--muellkorb { border-top-color: #e87824; background: radial-gradient(circle at 50% 0%, rgba(232, 120, 36, .16), transparent 41%), var(--c-surface); }
+.lm-reflection-column-header { display: block; margin-bottom: 20px; text-align: center; }
+.lm-reflection-column-header > div { display: block; }
+.lm-reflection-column-icon { display: grid; width: clamp(116px, 13vw, 174px); aspect-ratio: 1; margin: 0 auto 17px; place-items: center; border: 1px solid color-mix(in srgb, currentColor 15%, transparent); border-radius: 38%; background: color-mix(in srgb, var(--c-surface) 72%, transparent); box-shadow: inset 0 1px rgba(255, 255, 255, .5), 0 12px 30px color-mix(in srgb, var(--c-text) 10%, transparent); font-size: clamp(70px, 9vw, 126px); line-height: 1; }
+.lm-reflection-column h2 { font: 700 clamp(24px, 2.7vw, 39px)/1.08 var(--font-editorial); letter-spacing: -.035em; }
+.lm-reflection-column p { max-width: 380px; margin: 9px auto 0; font-size: 14px; }
+.lm-reflection-count { position: absolute; top: 20px; right: 20px; min-width: 38px; height: 38px; background: var(--c-surface); box-shadow: var(--shadow-sm); }
+.lm-reflection-column { position: relative; }
+.lm-reflection-add { min-height: 58px; border-radius: 15px; font-size: 15px; }
+.lm-reflection-card-list { max-width: 620px; margin-inline: auto; }
+.lm-reflection-summary-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.is-presentation.lm-reflection-board {
+  display: flex;
+  min-height: 100%;
+  padding: clamp(28px, 5vw, 84px);
+  background: radial-gradient(circle at 10% 8%, rgba(30, 179, 181, .18), transparent 32%), radial-gradient(circle at 91% 94%, rgba(232, 120, 36, .15), transparent 37%), var(--c-bg);
+}
+.is-presentation .lm-reflection-hero { width: min(1600px, 100%); align-self: flex-start; }
+.is-presentation .lm-reflection-hero p, .is-presentation .lm-reflection-kicker { display: none; }
+.is-presentation .lm-reflection-summary { align-self: center; width: min(1600px, 100%); padding: clamp(28px, 5vw, 76px); border-radius: 32px; }
+.is-presentation .lm-reflection-summary-heading h2 { font-size: clamp(42px, 6vw, 84px); }
+.is-presentation .lm-reflection-summary-heading > strong { padding: 12px 18px; font-size: clamp(14px, 1.4vw, 19px); }
+.is-presentation .lm-reflection-summary-groups { gap: clamp(18px, 3vw, 40px); margin-top: clamp(28px, 5vh, 62px); }
+.is-presentation .lm-reflection-summary-groups section { min-height: clamp(240px, 35vh, 500px); padding: clamp(20px, 3vw, 42px); border-radius: 24px; }
+.is-presentation .lm-reflection-summary h3 { font-size: clamp(23px, 2.5vw, 38px); }
+.is-presentation .lm-reflection-summary li { font-size: clamp(17px, 1.8vw, 27px); }
+.is-presentation .lm-reflection-summary li span, .is-presentation .lm-reflection-summary li strong { font-size: .72em; }
+.is-presentation .lm-reflection-supported { display: none; }
+@media (max-width: 700px) {
+  .lm-reflection-column { min-height: 370px; }
+  .lm-reflection-column-icon { width: 116px; }
+  .lm-reflection-summary-groups { grid-template-columns: 1fr; }
+  .is-presentation.lm-reflection-board { padding: 20px 14px; }
+  .is-presentation .lm-reflection-summary-groups { grid-template-columns: 1fr; }
+  .is-presentation .lm-reflection-summary-groups section { min-height: auto; }
+}

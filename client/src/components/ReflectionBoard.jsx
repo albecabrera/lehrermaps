@@ -122,6 +122,7 @@ export default function ReflectionBoard({ onPresentationChange }) {
   const [preserveMetadata, setPreserveMetadata] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [presentationMode, setPresentationMode] = useState(false);
+  const boardRef = useRef(null);
   const [draggedId, setDraggedId] = useState(null);
   const [pendingLikes, setPendingLikes] = useState(() => new Set());
   const editorInputRef = useRef(null);
@@ -159,8 +160,16 @@ export default function ReflectionBoard({ onPresentationChange }) {
   useEffect(() => () => onPresentationChange?.(false), [onPresentationChange]);
 
   useEffect(() => {
+    const syncFullscreen = () => {
+      if (!document.fullscreenElement) setPresentationMode(false);
+    };
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreen);
+  }, []);
+
+  useEffect(() => {
     if (!presentationMode) return;
-    setSummaryOpen(false);
+    setSummaryOpen(true);
     setEditor(null);
     setNewReflectionOpen(false);
     setPendingDelete(null);
@@ -242,6 +251,23 @@ export default function ReflectionBoard({ onPresentationChange }) {
     try { await updateReflectionBoard({ question }); } catch { setError('Die Frage konnte nicht gespeichert werden.'); }
   };
 
+  const openPresentation = async () => {
+    setSummaryOpen(true);
+    setPresentationMode(true);
+    try {
+      await boardRef.current?.requestFullscreen?.();
+    } catch {
+      // Fullscreen can be blocked by the browser; the distraction-free view still works.
+    }
+  };
+
+  const closePresentation = async () => {
+    if (document.fullscreenElement) {
+      try { await document.exitFullscreen(); } catch { /* Keep the in-app exit available. */ }
+    }
+    setPresentationMode(false);
+  };
+
   const exportPdf = async () => {
     try {
       const blob = await downloadReflectionPdf();
@@ -262,11 +288,11 @@ export default function ReflectionBoard({ onPresentationChange }) {
         <div><span className="lm-reflection-kicker">Unterrichtsreflexion</span><h1>Koffer oder Müllkorb?</h1><p>Was nehmen wir aus der heutigen Stunde mit?</p></div>
         {!presentationMode && <div className="lm-reflection-toolbar">
           <button type="button" className="lm-button lm-button-secondary" onClick={() => setSummaryOpen((open) => !open)}>{summaryOpen ? 'Tafel' : 'Zusammenfassung'}</button>
-          <button type="button" className="lm-button lm-button-secondary" onClick={() => setPresentationMode(true)}>Präsentation</button>
+          <button type="button" className="lm-button lm-button-secondary" onClick={openPresentation}>Zusammenfassung präsentieren</button>
           <button type="button" className="lm-button lm-button-secondary" onClick={exportPdf}>PDF exportieren</button>
           <button type="button" className="lm-button lm-button-primary" onClick={() => setNewReflectionOpen(true)}>Neue Reflexion</button>
         </div>}
-        {presentationMode && <button type="button" className="lm-button lm-button-secondary lm-reflection-exit-presentation" onClick={() => setPresentationMode(false)}>Steuerung einblenden</button>}
+        {presentationMode && <button type="button" className="lm-button lm-button-secondary lm-reflection-exit-presentation" onClick={closePresentation}>Präsentation beenden</button>}
       </header>
 
       <section className="lm-reflection-meta" aria-label="Reflexions-Metadaten">

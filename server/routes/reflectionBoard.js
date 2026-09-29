@@ -7,7 +7,8 @@ const router = Router();
 router.use(auth);
 router.use(teacherOnly);
 
-const CATEGORIES = new Set(['koffer', 'muellkorb', 'unklar']);
+// The database still permits the former `unklar` value so existing boards remain readable.
+const CATEGORIES = new Set(['koffer', 'muellkorb']);
 const MAX_CONTENT_LENGTH = 2000;
 const REFLECTION_BOARD_ERROR = 'Unable to process the reflection board request';
 
@@ -164,7 +165,7 @@ router.post('/reflection-board/reset', async (req, res) => {
 router.get('/reflection-board/export.pdf', async (req, res) => {
   try {
     const board = await readBoard(getUserId(req));
-    const labels = { koffer: 'Koffer · Das nehme ich mit', muellkorb: 'Müllkorb · Das können wir verbessern', unklar: 'Noch unklar' };
+    const labels = { koffer: 'Koffer · Das nehme ich mit', muellkorb: 'Müllkorb · Das können wir nicht gebrauchen' };
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="koffer-oder-muellkorb.pdf"');
     const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: 'Koffer oder Müllkorb?', Author: 'Lehrermaps' } });
@@ -174,8 +175,8 @@ router.get('/reflection-board/export.pdf', async (req, res) => {
     const meta = Object.entries({ Fach: board.metadata.subject, Klasse: board.metadata.className, Thema: board.metadata.topic, Datum: board.metadata.date }).filter(([, value]) => value);
     if (meta.length) doc.moveDown(.8).fontSize(10).fillColor('#13283d').text(meta.map(([key, value]) => `${key}: ${value}`).join('   '));
     if (board.question) doc.moveDown(.8).fontSize(12).fillColor('#087f7c').text(`Reflexionsfrage: ${board.question}`);
-    for (const category of ['koffer', 'muellkorb', 'unklar']) {
-      const items = board.items.filter((item) => item.category === category);
+    for (const category of ['koffer', 'muellkorb']) {
+      const items = board.items.filter((item) => item.category === category || (category === 'muellkorb' && item.category === 'unklar'));
       if (!items.length) continue;
       doc.moveDown(1).fontSize(15).fillColor('#173b66').text(labels[category]);
       items.forEach((item) => doc.fontSize(10.5).fillColor('#13283d').text(`• ${item.content}   (${item.likes} ${item.likes === 1 ? 'Unterstützung' : 'Unterstützungen'})`, { indent: 10, paragraphGap: 4 }));

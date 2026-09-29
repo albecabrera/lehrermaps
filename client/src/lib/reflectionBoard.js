@@ -1,7 +1,6 @@
 export const REFLECTION_CATEGORIES = Object.freeze([
   { id: 'koffer', label: 'Koffer', title: 'Das nehme ich mit', description: 'Hilfreiches, Verstandenes und Merkwürdiges' },
-  { id: 'muellkorb', label: 'Müllkorb', title: 'Das können wir verbessern', description: 'Was wir beim nächsten Mal anders machen können' },
-  { id: 'unklar', label: 'Noch unklar', title: 'Noch unklar', description: 'Fragen und offene Punkte' },
+  { id: 'muellkorb', label: 'Müllkorb', title: 'Das können wir nicht gebrauchen', description: 'Was wir loslassen oder beim nächsten Mal anders machen wollen' },
 ]);
 
 export const REFLECTION_QUESTIONS = Object.freeze([
@@ -36,7 +35,9 @@ export function normalizeReflectionMetadata(metadata = {}) {
 }
 
 export function normalizeReflectionItem(item) {
-  const category = REFLECTION_CATEGORIES.some((entry) => entry.id === item?.category) ? item.category : 'koffer';
+  // Older boards may still contain the retired "unklar" category. Keep those
+  // contributions visible by folding them into the reflection's discard column.
+  const category = item?.category === 'muellkorb' || item?.category === 'unklar' ? 'muellkorb' : 'koffer';
   return {
     id: item?.id,
     category,
