@@ -4727,3 +4727,97 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
   .is-presentation .lm-reflection-summary-groups { grid-template-columns: 1fr; }
   .is-presentation .lm-reflection-summary-groups section { min-height: auto; }
 }
+
+/* Presentation mode is intentionally separate from the editable board: the
+   reflection prompt leads the room, while the two destinations remain the
+   only large choices at the bottom of the screen. */
+.is-presentation.lm-reflection-board { flex-direction: column; min-height: 100dvh; }
+.is-presentation .lm-reflection-hero { flex: 0 0 auto; }
+.is-presentation .lm-reflection-presentation {
+  display: grid;
+  width: min(1600px, 100%);
+  flex: 1 1 auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(24px, 4vh, 56px);
+  margin: 0 auto;
+  align-content: stretch;
+}
+.lm-reflection-presentation-phase {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(26px, 4vw, 58px) clamp(24px, 5vw, 82px);
+  border: 1px solid color-mix(in srgb, var(--c-turquoise) 36%, var(--c-border));
+  border-radius: clamp(22px, 2.5vw, 34px);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--c-turquoise) 16%, var(--c-surface)), var(--c-surface));
+  box-shadow: 0 20px 55px color-mix(in srgb, var(--c-turquoise) 12%, transparent), var(--shadow-sm);
+  animation: lm-reflection-presentation-in 500ms var(--motion-ease, cubic-bezier(.22, 1, .36, 1)) both;
+}
+.lm-reflection-presentation-phase::after {
+  position: absolute;
+  right: clamp(-80px, -5vw, -30px);
+  bottom: clamp(-110px, -8vw, -40px);
+  width: clamp(180px, 26vw, 380px);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--c-turquoise) 24%, transparent);
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+}
+.lm-reflection-presentation-label {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--c-turquoise);
+  font-size: clamp(12px, 1.2vw, 17px);
+  font-weight: 850;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.lm-reflection-presentation-phase h2 {
+  max-width: 1100px;
+  margin: 0;
+  font: 650 clamp(30px, 4.6vw, 72px)/1.08 var(--font-editorial);
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+.lm-reflection-presentation-phase p {
+  max-width: 800px;
+  margin: 16px 0 0;
+  color: var(--c-text-2);
+  font-size: clamp(15px, 1.6vw, 24px);
+  line-height: 1.4;
+}
+.lm-reflection-presentation-destinations {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 2.6vw, 34px);
+}
+.lm-reflection-presentation-destinations .lm-reflection-column {
+  min-height: 0;
+  animation: lm-reflection-presentation-destination-in 600ms var(--motion-ease, cubic-bezier(.22, 1, .36, 1)) both;
+}
+.lm-reflection-presentation-destinations .lm-reflection-column:nth-child(2) { animation-delay: 120ms; }
+.is-presentation .lm-reflection-presentation-destinations .lm-reflection-column-header { margin-bottom: clamp(14px, 2vh, 24px); }
+.is-presentation .lm-reflection-presentation-destinations .lm-reflection-card-list { overflow: auto; max-height: min(34vh, 430px); }
+@keyframes lm-reflection-presentation-in {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes lm-reflection-presentation-destination-in {
+  from { opacity: 0; transform: translateY(22px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (max-width: 700px) {
+  .is-presentation.lm-reflection-board { min-height: 100dvh; padding: 18px 14px 24px; }
+  .is-presentation .lm-reflection-hero h1 { font-size: clamp(32px, 10vw, 48px); }
+  .is-presentation .lm-reflection-presentation { gap: 18px; }
+  .lm-reflection-presentation-phase { padding: 22px 20px; }
+  .lm-reflection-presentation-phase h2 { font-size: clamp(28px, 8vw, 44px); }
+  .lm-reflection-presentation-destinations { grid-template-columns: 1fr; }
+  .is-presentation .lm-reflection-presentation-destinations .lm-reflection-column { min-height: 300px; }
+  .is-presentation .lm-reflection-presentation-destinations .lm-reflection-card-list { max-height: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lm-reflection-presentation-phase,
+  .lm-reflection-presentation-destinations .lm-reflection-column { animation: none !important; }
+}

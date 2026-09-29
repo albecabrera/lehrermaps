@@ -281,6 +281,31 @@ export default function ReflectionBoard({ onPresentationChange }) {
 
   const summary = buildReflectionSummary(board.items);
   const closeEditor = () => setEditor(null);
+  const renderColumn = (category) => <ReflectionColumn
+    key={category.id}
+    category={category}
+    items={summary.groups[category.id]}
+    presentationMode={presentationMode}
+    draggedId={draggedId}
+    onAdd={(categoryId) => setEditor({ category: categoryId, content: '' })}
+    onDrop={(categoryId) => {
+      const item = board.items.find((candidate) => candidate.id === draggedId);
+      if (item && item.category !== categoryId) moveItem(item, categoryId);
+      setDraggedId(null);
+    }}
+    onDragStart={(event, itemId) => {
+      if (event) {
+        setDraggedId(itemId);
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', String(itemId));
+      } else setDraggedId(null);
+    }}
+    pendingLike={(item) => pendingLikes.has(item.id)}
+    onLike={likeItem}
+    onEdit={(item) => setEditor({ id: item.id, category: item.category, content: item.content })}
+    onDelete={setPendingDelete}
+    onMove={moveItem}
+  />;
 
   return (
     <main className={`lm-reflection-board${presentationMode ? ' is-presentation' : ''}`}>
@@ -295,21 +320,30 @@ export default function ReflectionBoard({ onPresentationChange }) {
         {presentationMode && <button type="button" className="lm-button lm-button-secondary lm-reflection-exit-presentation" onClick={closePresentation}>Präsentation beenden</button>}
       </header>
 
-      <section className="lm-reflection-meta" aria-label="Reflexions-Metadaten">
+      {!presentationMode && <section className="lm-reflection-meta" aria-label="Reflexions-Metadaten">
         {[
           ['subject', 'Fach'], ['className', 'Klasse'], ['topic', 'Thema'], ['date', 'Datum'],
-        ].map(([key, label]) => <label key={key}>{label}<input type={key === 'date' ? 'date' : 'text'} value={metadata[key]} readOnly={presentationMode} onChange={(event) => setMetadata((current) => ({ ...current, [key]: event.target.value }))} placeholder={label} /></label>)}
-      </section>
+        ].map(([key, label]) => <label key={key}>{label}<input type={key === 'date' ? 'date' : 'text'} value={metadata[key]} onChange={(event) => setMetadata((current) => ({ ...current, [key]: event.target.value }))} placeholder={label} /></label>)}
+      </section>}
 
-      <section className="lm-reflection-question" aria-live="polite"><div><span>💬 Reflexionsfrage</span><strong>{board.question}</strong></div>{!presentationMode && <button type="button" className="lm-button lm-button-secondary" onClick={randomizeQuestion}>Neue Frage</button>}</section>
+      {!presentationMode && <section className="lm-reflection-question" aria-live="polite"><div><span>💬 Reflexionsfrage</span><strong>{board.question}</strong></div><button type="button" className="lm-button lm-button-secondary" onClick={randomizeQuestion}>Neue Frage</button></section>}
 
       {error && !presentationMode && <div className="lm-reflection-error" role="status">{error} <button type="button" onClick={() => setError('')}>Schließen</button></div>}
 
-      {summaryOpen ? <section className="lm-reflection-summary" aria-label="Reflexionszusammenfassung">
+      {presentationMode ? <section className="lm-reflection-presentation" aria-label="Reflexionszusammenfassung">
+        <div className="lm-reflection-presentation-phase">
+          <span className="lm-reflection-presentation-label">Reflexionsphase</span>
+          <h2>{board.question}</h2>
+          <p>Was möchtest du aus der heutigen Stunde mitnehmen – und was darf zurückbleiben?</p>
+        </div>
+        <div className="lm-reflection-presentation-destinations" aria-label="Reflexionsziele">
+          {REFLECTION_CATEGORIES.filter((category) => category.id !== 'unklar').map(renderColumn)}
+        </div>
+      </section> : summaryOpen ? <section className="lm-reflection-summary" aria-label="Reflexionszusammenfassung">
         <div className="lm-reflection-summary-heading"><div><span className="lm-reflection-kicker">Abschluss</span><h2>Das nehmen wir mit</h2></div><strong>{summary.total} Beiträge</strong></div>
         <div className="lm-reflection-summary-groups">{REFLECTION_CATEGORIES.map((category) => <section key={category.id}><h3>{categoryIcon(category.id)} {category.title}</h3>{summary.groups[category.id].length ? <ul>{summary.groups[category.id].map((item) => <li key={item.id}>{item.content} <span>♥ {item.likes}</span></li>)}</ul> : <p>Noch keine Beiträge</p>}</section>)}</div>
         <section className="lm-reflection-supported"><h3>Am meisten unterstützt</h3>{summary.mostSupported.length ? <ol>{summary.mostSupported.map((item) => <li key={item.id}><span>{item.content}</span><strong>♥ {item.likes}</strong></li>)}</ol> : <p>Noch keine Unterstützungen.</p>}</section>
-      </section> : <section className="lm-reflection-columns">{REFLECTION_CATEGORIES.map((category) => <ReflectionColumn key={category.id} category={category} items={summary.groups[category.id]} presentationMode={presentationMode} draggedId={draggedId} onAdd={(categoryId) => setEditor({ category: categoryId, content: '' })} onDrop={(categoryId) => { const item = board.items.find((candidate) => candidate.id === draggedId); if (item && item.category !== categoryId) moveItem(item, categoryId); setDraggedId(null); }} onDragStart={(event, itemId) => { if (event) { setDraggedId(itemId); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(itemId)); } else setDraggedId(null); }} pendingLike={(item) => pendingLikes.has(item.id)} onLike={likeItem} onEdit={(item) => setEditor({ id: item.id, category: item.category, content: item.content })} onDelete={setPendingDelete} onMove={moveItem} />)}</section>}
+      </section> : <section className="lm-reflection-columns">{REFLECTION_CATEGORIES.map(renderColumn)}</section>}
 
       {!presentationMode && <p className="lm-reflection-footnote">Beiträge bleiben in deiner geschützten Lehrermaps-Arbeitsumgebung. PNG-Export ist bewusst nicht enthalten, weil dafür keine neue Abhängigkeit ergänzt wird.</p>}
 
