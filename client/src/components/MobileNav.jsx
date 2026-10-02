@@ -84,18 +84,27 @@ export function WorkspaceToolsMenu({ onRandomizer, onReflection, onClassroomTime
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const focusMenuOnOpenRef = useRef(true);
   const menuId = useId();
 
   useEffect(() => {
     if (!open) return undefined;
-    rootRef.current?.querySelector('[role="menuitem"]')?.focus();
+    if (focusMenuOnOpenRef.current) {
+      rootRef.current?.querySelector('[role="menuitem"]')?.focus();
+    }
+    focusMenuOnOpenRef.current = true;
     const closeOnOutsidePointer = (event) => {
-      if (!rootRef.current?.contains(event.target)) setOpen(false);
+      if (!rootRef.current?.contains(event.target)) {
+        window.clearTimeout(closeTimerRef.current);
+        setOpen(false);
+      }
     };
     const closeOnEscape = (event) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
       event.stopPropagation();
+      window.clearTimeout(closeTimerRef.current);
       setOpen(false);
       triggerRef.current?.focus();
     };
@@ -107,7 +116,34 @@ export function WorkspaceToolsMenu({ onRandomizer, onReflection, onClassroomTime
     };
   }, [open]);
 
+  useEffect(() => () => window.clearTimeout(closeTimerRef.current), []);
+
+  const handlePointerEnter = (event) => {
+    if (mobile || !['mouse', 'pen'].includes(event.pointerType)) return;
+    window.clearTimeout(closeTimerRef.current);
+    focusMenuOnOpenRef.current = false;
+    setOpen(true);
+  };
+
+  const handlePointerLeave = (event) => {
+    if (mobile || !['mouse', 'pen'].includes(event.pointerType)) return;
+    if (rootRef.current?.querySelector('[role="menu"]')?.contains(document.activeElement)) return;
+    window.clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = window.setTimeout(() => setOpen(false), 180);
+  };
+
+  const handleTriggerClick = () => {
+    window.clearTimeout(closeTimerRef.current);
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    focusMenuOnOpenRef.current = true;
+    setOpen(true);
+  };
+
   const selectItem = (action) => {
+    window.clearTimeout(closeTimerRef.current);
     setOpen(false);
     action();
     onSelection?.();
@@ -124,12 +160,17 @@ export function WorkspaceToolsMenu({ onRandomizer, onReflection, onClassroomTime
   };
 
   return (
-    <div ref={rootRef} className={`lm-workspace-tools-menu${mobile ? ' lm-mobile-tools-menu' : ''}`}>
+    <div
+      ref={rootRef}
+      className={`lm-workspace-tools-menu${mobile ? ' lm-mobile-tools-menu' : ''}`}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+    >
       <button
         ref={triggerRef}
         className="lm-workspace-tool lm-workspace-tools-trigger"
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={handleTriggerClick}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={menuId}
