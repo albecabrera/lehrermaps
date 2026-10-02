@@ -75,6 +75,9 @@ const schema = [
   `CREATE TABLE IF NOT EXISTS links (id INTEGER PRIMARY KEY, folder_id INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE, title TEXT NOT NULL, url TEXT NOT NULL, is_shared INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS file_edit_copies (id INTEGER PRIMARY KEY, file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE, copy_name TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS schedule (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL DEFAULT 1, data TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS hub_contacts (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, category TEXT NOT NULL, name TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', class_name TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', is_favorite INTEGER NOT NULL DEFAULT 0, last_used_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS hub_documents (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, name TEXT NOT NULL, category TEXT NOT NULL DEFAULT '', current_version INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+  `CREATE TABLE IF NOT EXISTS hub_document_versions (id INTEGER PRIMARY KEY, document_id INTEGER NOT NULL REFERENCES hub_documents(id) ON DELETE CASCADE, version_number INTEGER NOT NULL, stored_name TEXT NOT NULL UNIQUE, mime_type TEXT NOT NULL, size_bytes INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(document_id, version_number))`,
   `CREATE TABLE IF NOT EXISTS today_dashboard_tasks (user_id INTEGER PRIMARY KEY, tasks_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS today_dashboard_notes (user_id INTEGER NOT NULL, note_date TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, note_date))`,
   `CREATE TABLE IF NOT EXISTS bug_checklists (user_id INTEGER PRIMARY KEY, items_json TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
@@ -209,6 +212,8 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS today_dashboard_notes_user_date ON today_dashboard_notes(user_id, note_date);
     CREATE UNIQUE INDEX IF NOT EXISTS schedule_user_unique ON schedule(user_id);
     CREATE INDEX IF NOT EXISTS user_backups_user_created ON user_backups(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS hub_contacts_user_category ON hub_contacts(user_id, category, is_favorite);
+    CREATE INDEX IF NOT EXISTS hub_documents_user ON hub_documents(user_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS reflection_items_board_order ON reflection_items(board_id, sort_order, id);
     CREATE INDEX IF NOT EXISTS reflection_items_board_likes ON reflection_items(board_id, likes DESC, id);
   `);

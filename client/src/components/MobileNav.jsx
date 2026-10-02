@@ -77,7 +77,7 @@ export function MobileBottomNav({ accent, items, active }) {
 export function MobileMoreSheet({
   open, onClose, t, accent,
   isDark, toggleTheme,
-  onExams, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onIdoceo, onUntis, onLogout,
+  onExams, onQuickAccess, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onIdoceo, onUntis, onLogout,
   showTeacherLinks = false,
 }) {
   useEscapeKey(open, onClose);
@@ -133,6 +133,7 @@ export function MobileMoreSheet({
         {/* Grabber */}
         <div style={{ width: 36, height: 4, borderRadius: 999, background: 'var(--c-border)', margin: '2px auto 10px' }} />
 
+        {onQuickAccess && row('Schnellzugriff & Dokumente', onQuickAccess, { icon: '▣' })}
         {onExams && row('Termine', onExams, {
           icon: (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

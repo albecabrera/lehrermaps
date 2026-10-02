@@ -224,6 +224,7 @@ function PleskTerminalPanel({ onClose }) {
 // Opened views are split into on-demand chunks without changing their layout.
 const Schedule = lazy(() => import('../components/Schedule'));
 const ExamBoard = lazy(() => import('../components/ExamBoard'));
+const QuickAccess = lazy(() => import('../components/QuickAccess'));
 
 const isMacDesktopPlatform = () => (
   typeof navigator !== 'undefined'
@@ -1316,6 +1317,7 @@ export default function App({ onLogout }) {
           {[
             ['today', '⌂', 'Heute', () => navigateToView('today')],
             ['schedule', <svg key="schedule-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3M5 9h2M9 9h2M5 11.5h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Stundenplan', () => navigateToView('schedule')],
+            ['quick-access', '▣', 'Schnellzugriff', () => navigateToView('quick-access')],
             ['appointments', <svg key="appointments-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/><circle cx="10.5" cy="10" r="1" fill="currentColor"/></svg>, 'Termine', () => navigateToView('appointments')],
             ['klausurplan', <svg key="exam-plan-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2.5h6l2 2V13.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M10 2.5v2h2M6 7h4M6 9.5h4M6 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Klausurplan', () => navigateToView('klausurplan')],
             ['reflection', '🧳', 'Koffer oder Müllkorb?', () => navigateToView('reflection')],
@@ -1405,6 +1407,8 @@ export default function App({ onLogout }) {
         {!presentationMode && appRailVisible && <DesktopAppRail />}
         {viewMode === 'today' ? (
           <TodayDashboard onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} onOpenSchedule={() => navigateToView('schedule')} />
+        ) : viewMode === 'quick-access' ? (
+          <Suspense fallback={<div style={{ padding: 24 }}>Laden…</div>}><QuickAccess /></Suspense>
         ) : viewMode === 'reflection' ? (
           <ReflectionBoard onPresentationChange={handleReflectionPresentationChange} />
         ) : viewMode === 'klausurplan' ? (
@@ -2035,7 +2039,7 @@ export default function App({ onLogout }) {
       {!presentationMode && isMobile && (
         <MobileBottomNav
           accent={accent}
-          active={moreSheetOpen ? 'more' : viewMode === 'schedule' ? 'schedule' : viewMode === 'reflection' ? 'reflection' : 'today'}
+          active={moreSheetOpen || viewMode === 'quick-access' ? 'more' : viewMode === 'schedule' ? 'schedule' : viewMode === 'reflection' ? 'reflection' : 'today'}
           items={[
             { id: 'today', label: 'Heute', icon: navIcons.subjects, onClick: () => { navigateToView('today'); closeFolderView(); } },
             { id: 'schedule', label: t('schedule.title'), icon: navIcons.schedule, onClick: () => navigateToView('schedule') },
@@ -2054,6 +2058,7 @@ export default function App({ onLogout }) {
         isDark={isDark}
         toggleTheme={toggleTheme}
         onExams={() => setExamBoardOpen(true)}
+        onQuickAccess={() => navigateToView('quick-access')}
         onWorksheet={() => setWorksheetGenOpen(true)}
         onUpload={() => setUploadOpen(true)}
         uploadDisabled={!activeFolder}
