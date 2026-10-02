@@ -140,13 +140,13 @@ export function WorkspaceToolsMenu({ onRandomizer, onReflection, onClassroomTime
       </button>
       {open && (
         <div id={menuId} className="lm-workspace-tools-panel" role="menu" aria-label="Tools" onKeyDown={handleMenuKeyDown}>
-          <button type="button" role="menuitem" aria-label="Zufallsgenerator" title="Zufallsgenerator" onClick={() => selectItem(onRandomizer)}>{toolIcons.randomizer}</button>
-          <button type="button" role="menuitem" aria-label="Koffer und Müllkorb" title="Koffer und Müllkorb" onClick={() => selectItem(onReflection)}>{toolIcons.reflection}</button>
-          {onClassroomTimer && <button type="button" role="menuitem" aria-label="Klassenzeit" title="Klassenzeit" onClick={() => selectItem(onClassroomTimer)}>{toolIcons.timer}</button>}
-          {onHangman && <button type="button" role="menuitem" aria-label="Hangman" title="Hangman" onClick={() => selectItem(onHangman)}>{toolIcons.hangman}</button>}
-          {onQrCode && <button type="button" role="menuitem" aria-label="QR-Code-Generator" title="QR-Code-Generator" onClick={() => selectItem(onQrCode)}>{toolIcons.qrCode}</button>}
-          {onBugChecklist && <button type="button" role="menuitem" aria-label="Bugs-Checkliste" title="Bugs-Checkliste" onClick={() => selectItem(onBugChecklist)}><BugChecklistIcon size={20} /></button>}
-          {onLogout && <button type="button" role="menuitem" className="lm-workspace-tools-logout" aria-label="Abmelden" title="Abmelden" onClick={() => selectItem(onLogout)}>{toolIcons.logout}</button>}
+          <button type="button" role="menuitem" aria-label="Zufallsgenerator" title="Zufallsgenerator" onClick={() => selectItem(onRandomizer)}>{toolIcons.randomizer}<span className="lm-workspace-tools-label">Zufallsgenerator</span></button>
+          <button type="button" role="menuitem" aria-label="Koffer und Müllkorb" title="Koffer und Müllkorb" onClick={() => selectItem(onReflection)}>{toolIcons.reflection}<span className="lm-workspace-tools-label">Koffer &amp; Müllkorb</span></button>
+          {onClassroomTimer && <button type="button" role="menuitem" aria-label="Klassenzeit" title="Klassenzeit" onClick={() => selectItem(onClassroomTimer)}>{toolIcons.timer}<span className="lm-workspace-tools-label">Klassenzeit</span></button>}
+          {onHangman && <button type="button" role="menuitem" aria-label="Hangman" title="Hangman" onClick={() => selectItem(onHangman)}>{toolIcons.hangman}<span className="lm-workspace-tools-label">Hangman</span></button>}
+          {onQrCode && <button type="button" role="menuitem" aria-label="QR-Code-Generator" title="QR-Code-Generator" onClick={() => selectItem(onQrCode)}>{toolIcons.qrCode}<span className="lm-workspace-tools-label">QR-Code</span></button>}
+          {onBugChecklist && <button type="button" role="menuitem" aria-label="Bugs-Checkliste" title="Bugs-Checkliste" onClick={() => selectItem(onBugChecklist)}><BugChecklistIcon size={20} /><span className="lm-workspace-tools-label">Bugs-Checkliste</span></button>}
+          {onLogout && <button type="button" role="menuitem" className="lm-workspace-tools-logout" aria-label="Abmelden" title="Abmelden" onClick={() => selectItem(onLogout)}>{toolIcons.logout}<span className="lm-workspace-tools-label">Abmelden</span></button>}
         </div>
       )}
     </div>

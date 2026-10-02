@@ -1989,10 +1989,10 @@ button[aria-pressed="true"] {
   top: calc(100% + 8px);
   right: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(44px, 1fr));
-  min-width: 212px;
-  gap: 4px;
-  padding: 7px;
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
+  min-width: 264px;
+  gap: 6px;
+  padding: 8px;
   border: 1px solid var(--c-border);
   border-radius: 12px;
   background: var(--c-surface);
@@ -2000,22 +2000,25 @@ button[aria-pressed="true"] {
   animation: lmWorkspaceToolsIn .16s var(--ease-out);
 }
 .lm-workspace-tools-panel button {
-  min-height: 44px;
+  min-height: 68px;
   display: grid;
-  place-items: center;
-  padding: 8px;
+  align-content: center;
+  justify-items: center;
+  gap: 5px;
+  padding: 8px 5px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: var(--c-text);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
   cursor: pointer;
 }
 .lm-workspace-tools-panel button > svg { width: 24px; height: 24px; }
+.lm-workspace-tools-label { max-width: 100%; font-size: 10px; font-weight: 600; line-height: 1.2; }
 
 /* Link-to-QR tool: keep the code legible on phones and projectors. */
 .lm-qr-tool-backdrop { position: fixed; inset: 0; z-index: 2200; display: grid; place-items: center; padding: 12px; background: var(--c-overlay); backdrop-filter: blur(8px); }
@@ -2111,7 +2114,19 @@ button[aria-pressed="true"] {
 .lm-workspace-tools-panel button:hover,
 .lm-workspace-tools-panel button:focus-visible { background: var(--c-hover); }
 .lm-workspace-tools-panel button:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
-.lm-workspace-tools-panel .lm-workspace-tools-logout { color: var(--c-danger-text); }
+.lm-workspace-tools-panel .lm-workspace-tools-logout {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 2px;
+  border-top: 1px solid var(--c-border-soft);
+  border-radius: 0 0 8px 8px;
+  color: var(--c-danger-text);
+}
+.lm-workspace-tools-panel .lm-workspace-tools-logout .lm-workspace-tools-label { font-size: 12px; }
 .lm-workspace-tools-panel .lm-workspace-tools-logout:hover,
 .lm-workspace-tools-panel .lm-workspace-tools-logout:focus-visible { background: var(--c-danger-bg); }
 .lm-mobile-tools-menu { display: block; margin: 4px 0; }
@@ -2119,7 +2134,7 @@ button[aria-pressed="true"] {
 .lm-mobile-tools-menu .lm-workspace-tools-trigger:hover,
 .lm-mobile-tools-menu .lm-workspace-tools-trigger:focus-visible,
 .lm-mobile-tools-menu .lm-workspace-tools-trigger[aria-expanded="true"] { border-color: transparent; background: var(--c-hover); color: var(--c-text); }
-.lm-mobile-tools-menu .lm-workspace-tools-panel { position: static; min-width: 0; margin: 2px 6px 6px; }
+.lm-mobile-tools-menu .lm-workspace-tools-panel { position: static; min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 2px 6px 6px; }
 .lm-tablet-sidebar-tools {
   flex: 0 0 auto;
   padding: 8px 10px;
