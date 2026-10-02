@@ -45,6 +45,7 @@ import KlausurplanWorkspace from '../components/KlausurplanWorkspace';
 import ClassroomTimer from '../components/ClassroomTimer';
 import HangmanTool from '../components/HangmanTool';
 import QrCodeTool from '../components/QrCodeTool';
+import BrainstormingBoard from '../components/BrainstormingBoard';
 import HeaderRandomizer from '../components/HeaderRandomizer';
 import ReflectionBoard from '../components/ReflectionBoard';
 
@@ -344,6 +345,7 @@ export default function App({ onLogout }) {
   const [classroomTimerOpen, setClassroomTimerOpen] = useState(false);
   const [hangmanOpen, setHangmanOpen] = useState(false);
   const [qrCodeOpen, setQrCodeOpen] = useState(false);
+  const [brainstormingBoardOpen, setBrainstormingBoardOpen] = useState(false);
   const [appRailVisible, setAppRailVisible] = useState(true);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [presentationMode, setPresentationMode] = useState(false);
@@ -1420,6 +1422,7 @@ export default function App({ onLogout }) {
               onClassroomTimer={() => setClassroomTimerOpen(true)}
               onHangman={() => setHangmanOpen(true)}
               onQrCode={() => setQrCodeOpen(true)}
+              onBrainstormingBoard={() => setBrainstormingBoardOpen(true)}
               onBugChecklist={() => setBugChecklistOpen(true)}
               onLogout={onLogout}
             />
@@ -2117,6 +2120,7 @@ export default function App({ onLogout }) {
                   onClassroomTimer={() => setClassroomTimerOpen(true)}
                   onHangman={() => setHangmanOpen(true)}
                   onQrCode={() => setQrCodeOpen(true)}
+                  onBrainstormingBoard={() => setBrainstormingBoardOpen(true)}
                   onBugChecklist={() => setBugChecklistOpen(true)}
                   onLogout={onLogout}
                   onSelection={() => setSidebarDrawerOpen(false)}
@@ -2166,6 +2170,7 @@ export default function App({ onLogout }) {
         onClassroomTimer={() => setClassroomTimerOpen(true)}
         onHangman={() => setHangmanOpen(true)}
         onQrCode={() => setQrCodeOpen(true)}
+        onBrainstormingBoard={() => setBrainstormingBoardOpen(true)}
         showWorkspaceTools={isPhone}
         onRandomizer={() => setRandomizerOpenRequest((request) => request + 1)}
         onReflection={() => navigateToView('reflection')}
@@ -2199,6 +2204,7 @@ export default function App({ onLogout }) {
       <ClassroomTimer open={classroomTimerOpen} onClose={() => setClassroomTimerOpen(false)} />
       <HangmanTool open={hangmanOpen} onClose={() => setHangmanOpen(false)} />
       <QrCodeTool open={qrCodeOpen} onClose={() => setQrCodeOpen(false)} />
+      <BrainstormingBoard open={brainstormingBoardOpen} onClose={() => setBrainstormingBoardOpen(false)} />
       {pleskTerminalOpen && <PleskTerminalPanel onClose={() => setPleskTerminalOpen(false)} />}
       {folderZoom && (
         <div
