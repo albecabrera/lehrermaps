@@ -37,12 +37,14 @@ const KLASURPLAN_DOCUMENTS = [
 const normalizeFileName = (name) => String(name || '').normalize('NFKC').trim().toLocaleLowerCase();
 import { useLang } from '../contexts/LangContext';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { MobileBottomNav, MobileMoreSheet, navIcons } from '../components/MobileNav';
+import { MobileBottomNav, MobileMoreSheet, WorkspaceToolsMenu, navIcons } from '../components/MobileNav';
 import TeachingMode from '../components/TeachingMode';
 import SchoolCalendarPdf from '../components/SchoolCalendarPdf';
-import BugChecklist, { BugChecklistIcon } from '../components/BugChecklist';
+import BugChecklist from '../components/BugChecklist';
 import KlausurplanWorkspace from '../components/KlausurplanWorkspace';
 import ClassroomTimer from '../components/ClassroomTimer';
+import HangmanTool from '../components/HangmanTool';
+import QrCodeTool from '../components/QrCodeTool';
 import HeaderRandomizer from '../components/HeaderRandomizer';
 import ReflectionBoard from '../components/ReflectionBoard';
 
@@ -60,7 +62,7 @@ const EXTERNAL_APP_RAIL_LAUNCHERS = [
   { id: 'vamos-1', name: 'Vamos adelante 1', href: 'https://bridge.klett.de/DUA-W9ISFVJLTT/?page=1', label: 'Vamos adelante 1 öffnen', iconSrc: '/assets/klett-favicon.ico' },
   { id: 'vamos-2', name: 'Vamos adelante 2', href: 'https://bridge.klett.de/DUA-CD68AUVZY1/?page=9', label: 'Vamos adelante 2 öffnen', iconSrc: '/assets/klett-favicon.ico' },
   { id: 'taskcards', name: 'TaskCards', href: 'https://www.taskcards.de/', label: 'TaskCards öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
-  { id: 'esg-tech-help', name: 'TaskCards ESG-Technikhilfe', href: 'https://www.taskcards.de/#/board/77bc3933-9659-4ce7-86f0-f6ef26ad9ede/view', label: 'TaskCards ESG-Technikhilfe öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
+  { id: 'esg-tech-help', name: 'Technikhilfe', href: 'https://www.taskcards.de/#/board/77bc3933-9659-4ce7-86f0-f6ef26ad9ede/view', label: 'Technikhilfe öffnen', iconSrc: '/assets/taskcards-favicon.ico' },
   { id: 'quizlet', name: 'Quizlet', href: 'https://quizlet.com/de/9b-vokabeln-unidad-3', label: 'Quizlet öffnen', iconSrc: '/assets/quizlet-logo.png', iconClass: 'wide' },
   { id: 'eduki', name: 'Eduki', href: 'https://eduki.com/de', label: 'Eduki öffnen', iconSrc: '/assets/eduki-favicon.ico' },
   { id: 'kahoot', name: 'Kahoot!', href: 'https://create.kahoot.it/', label: 'Kahoot! öffnen', iconSrc: '/assets/kahoot-favicon.ico' },
@@ -182,6 +184,7 @@ function DesktopAppRail() {
           ) : (
             <img className={`lm-app-rail-icon${app.iconClass ? ` lm-app-rail-icon--${app.iconClass}` : ''}`} src={app.iconSrc} alt="" aria-hidden="true" />
           )}
+          <span className="lm-app-rail-touch-name" aria-hidden="true">{app.name}</span>
         </a>
       ))}
       </div>
@@ -237,9 +240,35 @@ const getHeaderNavigationItems = () => Array.from(document.querySelectorAll(
 ));
 
 export default function App({ onLogout }) {
+  const [tabletTooltip, setTabletTooltip] = useState(null);
+  const tooltipTargetRef = useRef(null);
+  const showTabletTooltip = (target) => {
+    if (!window.matchMedia('(min-width: 768px) and (max-width: 1100px) and (any-hover: hover) and (any-pointer: fine)').matches) return;
+    const label = target.dataset.appName || target.getAttribute('title');
+    if (!label) return;
+    const rect = target.getBoundingClientRect();
+    const rail = target.closest('.lm-desktop-app-rail, .lm-sidebar');
+    const width = Math.min(240, window.innerWidth - 16);
+    const left = rail
+      ? Math.min(rect.right + 10, window.innerWidth - width - 8)
+      : Math.max(8, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 8));
+    const top = rail
+      ? Math.max(24, Math.min(rect.top + rect.height / 2, window.innerHeight - 24))
+      : Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - 44));
+    tooltipTargetRef.current = target;
+    setTabletTooltip({ label, left, top, side: Boolean(rail) });
+  };
+  const tooltipTarget = (element) => element?.closest?.('.lm-tabbar [title], .lm-desktop-app-rail-launcher, .lm-sidebar button[title]');
+  const hideTabletTooltip = (target, nextTarget) => {
+    if (target && target === tooltipTargetRef.current && !target.contains(nextTarget)) {
+      tooltipTargetRef.current = null;
+      setTabletTooltip(null);
+    }
+  };
   const { isDark, toggle: toggleTheme } = useTheme();
   const { t } = useLang();
-  const isMobile = useIsMobile(1100);
+  // Tablets keep the desktop workspace; only phone-sized screens use drawers.
+  const isMobile = useIsMobile(767);
   const isPhone = useIsMobile(600);
   const isMacDesktop = isMacDesktopPlatform();
   const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
@@ -248,6 +277,8 @@ export default function App({ onLogout }) {
   const [schoolCalendarOpen, setSchoolCalendarOpen] = useState(false);
   const [bugChecklistOpen, setBugChecklistOpen] = useState(false);
   const [classroomTimerOpen, setClassroomTimerOpen] = useState(false);
+  const [hangmanOpen, setHangmanOpen] = useState(false);
+  const [qrCodeOpen, setQrCodeOpen] = useState(false);
   const [appRailVisible, setAppRailVisible] = useState(true);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [presentationMode, setPresentationMode] = useState(false);
@@ -562,6 +593,7 @@ export default function App({ onLogout }) {
   // Keyboard shortcuts: Cmd/Ctrl combinations, j/k navigation, space preview toggle
   useEffect(() => {
     const handler = (e) => {
+      if (hangmanOpen) return;
       const target = e.target;
       const tag = target?.tagName?.toLowerCase();
       const isTyping = tag === 'input' || tag === 'textarea' || target?.isContentEditable;
@@ -699,7 +731,7 @@ export default function App({ onLogout }) {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [activeFile, activeLink, activeFolder, files, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, classroomTimerOpen, klasurplanOpen, isMobile, sidebarDrawerOpen, viewMode, pleskTerminalOpen, toggleTheme]);
+  }, [activeFile, activeLink, activeFolder, files, showFileRepository, hoveredFile, hoveredFolder, kbdMarkedFileId, kbdMarkedFolderId, subjectRootFolders, globalSearchOpen, uploadOpen, addLinkOpen, newFolderOpen, confirmModal, keyboardHelpOpen, classroomTimerOpen, hangmanOpen, klasurplanOpen, isMobile, sidebarDrawerOpen, viewMode, pleskTerminalOpen, toggleTheme]);
 
   const onSidebarResizeMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -1161,7 +1193,7 @@ export default function App({ onLogout }) {
     ? files.filter((f) => f.original_name.toLowerCase().includes(query.toLowerCase())).length
     : null;
 
-  const hasModalOpen = globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen || classroomTimerOpen || isKlasurplanActiveFile;
+  const hasModalOpen = globalSearchOpen || uploadOpen || addLinkOpen || newFolderOpen || !!renamingFolder || !!renamingFile || !!bulkMoveFiles || !!confirmModal || keyboardHelpOpen || schoolCalendarOpen || bugChecklistOpen || classroomTimerOpen || hangmanOpen || isKlasurplanActiveFile;
   const hasDepthModalOpen = hasModalOpen && !isKlasurplanActiveFile;
 
   // Props geteilt zwischen der festen Desktop-Sidebar und der mobilen Drawer-Variante
@@ -1193,7 +1225,22 @@ export default function App({ onLogout }) {
 
   return (
     <Suspense fallback={null}>
-    <div className={`lm-app-shell${isMacDesktop ? ' lm-platform-mac-desktop' : ''}${presentationMode ? ' is-presentation' : ''}`} style={{
+    <div className={`lm-app-shell${isMacDesktop ? ' lm-platform-mac-desktop' : ''}${presentationMode ? ' is-presentation' : ''}`} onPointerOverCapture={(event) => {
+      if (event.pointerType !== 'mouse') return;
+      const target = tooltipTarget(event.target);
+      if (target && target !== tooltipTargetRef.current) showTabletTooltip(target);
+    }} onPointerOutCapture={(event) => hideTabletTooltip(tooltipTarget(event.target), event.relatedTarget)} onPointerDownCapture={() => {
+      tooltipTargetRef.current = null;
+      setTabletTooltip(null);
+    }} onFocusCapture={(event) => {
+      const target = tooltipTarget(event.target);
+      if (target?.matches(':focus-visible')) showTabletTooltip(target);
+    }} onBlurCapture={(event) => hideTabletTooltip(tooltipTarget(event.target), event.relatedTarget)} onScrollCapture={() => {
+      if (tooltipTargetRef.current) {
+        tooltipTargetRef.current = null;
+        setTabletTooltip(null);
+      }
+    }} style={{
       position: 'fixed', inset: 0,
       display: 'flex', flexDirection: 'column',
       background: 'var(--c-bg)', color: 'var(--c-text)',
@@ -1225,9 +1272,6 @@ export default function App({ onLogout }) {
             <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-mobile-header-app lm-mobile-header-app--webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen" data-app-name="WebUntis">
               <span className="lm-webuntis-glyph" aria-hidden="true">W</span><span className="lm-mobile-header-app-label">WebUntis</span>
             </a>
-            <button className="lm-mobile-header-app lm-mobile-bug-checklist-trigger" type="button" onClick={() => setBugChecklistOpen(true)} aria-label="Bugs melden" title="Bugs melden">
-              <BugChecklistIcon size={20} />
-            </button>
             {!isPhone && (
               <button
                 className="lm-mobile-header-app lm-mobile-materials-trigger"
@@ -1255,16 +1299,6 @@ export default function App({ onLogout }) {
               <span aria-hidden="true">☰</span>
             </button>
             <button
-              className="lm-phone-randomizer-trigger"
-              type="button"
-              onClick={() => setRandomizerOpenRequest((request) => request + 1)}
-              aria-label="Zufallsgenerator öffnen"
-              aria-haspopup="dialog"
-              title="Zufallsgenerator öffnen"
-            >
-              <span aria-hidden="true">🎲</span>
-            </button>
-            <button
               className="lm-phone-app-rail-toggle"
               type="button"
               onClick={() => setAppRailVisible((visible) => !visible)}
@@ -1273,15 +1307,6 @@ export default function App({ onLogout }) {
               aria-expanded={appRailVisible}
             >
               <span aria-hidden="true">▦</span>
-            </button>
-            <button
-              className="lm-phone-bug-checklist-trigger"
-              type="button"
-              onClick={() => setBugChecklistOpen(true)}
-              aria-label="Bugs melden"
-              title="Bugs melden"
-            >
-              <BugChecklistIcon size={20} />
             </button>
             <button
               className="lm-phone-header-toggle"
@@ -1297,20 +1322,11 @@ export default function App({ onLogout }) {
               target="_blank"
               rel="noopener noreferrer"
               className="lm-phone-logineo"
-              aria-label="Logineo Mail in neuem Tab öffnen"
-              title="Logineo Mail öffnen"
+              aria-label="Logineo-Schulportal in neuem Tab öffnen"
+              title="Logineo-Schulportal öffnen"
             >
               <img src={LOGINEO_LOGO_URL} className="lm-logineo-logo" alt="" aria-hidden="true" />
             </a>
-            <button
-              className="lm-phone-theme-toggle"
-              type="button"
-              onClick={toggleTheme}
-              aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}
-              title={isDark ? t('app.theme_light') : t('app.theme_dark')}
-            >
-              <span aria-hidden="true">{isDark ? '☀' : '◐'}</span>
-            </button>
           </nav>
         )}
         <nav className="lm-desktop-primary-nav lm-workspace-primary-nav" aria-label="Primäre Navigation">
@@ -1320,7 +1336,6 @@ export default function App({ onLogout }) {
             ['quick-access', '▣', 'Schnellzugriff', () => navigateToView('quick-access')],
             ['appointments', <svg key="appointments-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2 6.5h12M5 1.5v3M11 1.5v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="5.5" cy="10" r="1" fill="currentColor"/><circle cx="10.5" cy="10" r="1" fill="currentColor"/></svg>, 'Termine', () => navigateToView('appointments')],
             ['klausurplan', <svg key="exam-plan-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2.5h6l2 2V13.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M10 2.5v2h2M6 7h4M6 9.5h4M6 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Klausurplan', () => navigateToView('klausurplan')],
-            ['reflection', '🧳', 'Koffer oder Müllkorb?', () => navigateToView('reflection')],
           ].map(([id, icon, label, onClick]) => {
             const active = viewMode === id;
             return <button key={id} type="button" onClick={onClick} className={`lm-spring lm-workspace-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined} title={label}><span aria-hidden="true">{icon}</span><span>{label}</span></button>;
@@ -1329,19 +1344,24 @@ export default function App({ onLogout }) {
           <a href={IDOCEO_APP_URL} className="lm-spring lm-workspace-nav-item lm-topbar-idoceo" aria-label="iDoceo in der installierten App öffnen" title="In iDoceo-App öffnen" data-app-name="iDoceo"><img src="/assets/idoceo-icon.png" className="lm-idoceo-glyph" alt="" aria-hidden="true" /><span>iDoceo</span></a>
           <a href="https://www.notion.so/acabreraes/Q1-Apuntes-36d29f35ce65804bb227ea3b08dbfc0e?source=copy_link" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-notion" aria-label="Notion in neuem Tab öffnen" title="Notion in neuem Tab öffnen" data-app-name="Notion"><img src="/assets/icons/notion.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Notion</span></a>
           <a href="https://miro.com/app/board/uXjVHNOkJ6I=/?share_link_id=189842556230" target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-miro" aria-label="Miro in neuem Tab öffnen" title="Miro in neuem Tab öffnen" data-app-name="Miro"><img src="/assets/icons/miro.png" alt="" aria-hidden="true" className="lm-topbar-brand-icon" /><span>Miro</span></a>
-          <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen" data-app-name="WebUntis"><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span>WebUntis</span></a>
-          <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-logineo" aria-label="Logineo Mail in neuem Tab öffnen" title="Logineo Mail öffnen" data-app-name="Logineo Mail"><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /></a>
+          <a href={WEB_UNTIS_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-webuntis" aria-label="WebUntis in neuem Tab öffnen" title="WebUntis in neuem Tab öffnen" data-app-name="WebUntis"><span className="lm-webuntis-glyph" aria-hidden="true">W</span><span className="lm-topbar-webuntis-label">WebUntis</span></a>
+          <a href={LOGINEO_URL} target="_blank" rel="noopener noreferrer" className="lm-spring lm-workspace-nav-item lm-topbar-logineo" aria-label="Logineo-Schulportal in neuem Tab öffnen" title="Logineo-Schulportal öffnen" data-app-name="Logineo-Schulportal"><img src={LOGINEO_LOGO_URL} className="lm-topbar-brand-icon lm-logineo-logo" alt="" aria-hidden="true" /><span className="lm-topbar-logineo-label" aria-hidden="true">Logineo</span></a>
         </nav>
         <div className="lm-desktop-trailing-group">
-          <HeaderRandomizer openRequest={randomizerOpenRequest} />
           <div className="lm-topbar-tools">
-            <button className="lm-spring lm-workspace-tool lm-classroom-timer-trigger" type="button" onClick={() => setClassroomTimerOpen(true)} title="Klassenzeit" aria-label="Klassenzeit öffnen"><span className="lm-classroom-timer-trigger-icon" aria-hidden="true">◷</span><span className="lm-classroom-timer-trigger-label">Timer</span></button>
-            <button className="lm-spring lm-workspace-tool lm-bug-checklist-trigger" type="button" onClick={() => setBugChecklistOpen(true)} title="Bugs melden" aria-label="Bugs melden"><BugChecklistIcon size={19} /></button>
-            <button className="lm-spring lm-workspace-tool" onClick={toggleTheme} title={isDark ? t('app.theme_light') : t('app.theme_dark')} aria-label={isDark ? t('app.theme_light') : t('app.theme_dark')}>{isDark ? '☀' : '◐'}</button>
+            <WorkspaceToolsMenu
+              onRandomizer={() => setRandomizerOpenRequest((request) => request + 1)}
+              onReflection={() => navigateToView('reflection')}
+              onClassroomTimer={() => setClassroomTimerOpen(true)}
+              onHangman={() => setHangmanOpen(true)}
+              onQrCode={() => setQrCodeOpen(true)}
+              onBugChecklist={() => setBugChecklistOpen(true)}
+              onLogout={onLogout}
+            />
           </div>
-          <button className="lm-global-logout lm-topbar-logout" type="button" onClick={onLogout} aria-label="Logout" title="Logout"><span aria-hidden="true">↪</span><span className="lm-topbar-logout-label">Logout</span></button>
         </div>
       </header>}
+      <HeaderRandomizer openRequest={randomizerOpenRequest} showTrigger={false} />
       {!presentationMode && !headerVisible && (
         <button
           className="lm-header-reveal"
@@ -1406,7 +1426,7 @@ export default function App({ onLogout }) {
             sidebar remains in its existing drawer. */}
         {!presentationMode && appRailVisible && <DesktopAppRail />}
         {viewMode === 'today' ? (
-          <TodayDashboard onOpenMaterials={openScheduleTarget} onOpenOneNote={openOneNoteInApp} onOpenTimer={() => setClassroomTimerOpen(true)} onOpenSchedule={() => navigateToView('schedule')} />
+          <TodayDashboard />
         ) : viewMode === 'quick-access' ? (
           <Suspense fallback={<div style={{ padding: 24 }}>Laden…</div>}><QuickAccess /></Suspense>
         ) : viewMode === 'reflection' ? (
@@ -2018,12 +2038,27 @@ export default function App({ onLogout }) {
             onClick={() => setSidebarDrawerOpen(false)}
             style={{ position: 'fixed', inset: 0, zIndex: 1220, background: 'var(--c-overlay)', backdropFilter: 'blur(4px)', animation: 'lmFadeIn .15s ease-out' }}
           />
-          <div className="lm-drawer" style={{
+          <div className="lm-drawer lm-tablet-tools-drawer" style={{
             position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 1221,
             width: 'min(84vw, 300px)', boxShadow: 'var(--c-shadow-modal)',
-            display: 'flex', alignItems: 'stretch',
+            display: 'flex', flexDirection: 'column', alignItems: 'stretch',
             animation: 'lmSlideInLeft .22s cubic-bezier(.4,.7,.3,1)',
           }}>
+            {!isPhone && (
+              <div className="lm-tablet-sidebar-tools">
+                <WorkspaceToolsMenu
+                  onRandomizer={() => setRandomizerOpenRequest((request) => request + 1)}
+                  onReflection={() => navigateToView('reflection')}
+                  onClassroomTimer={() => setClassroomTimerOpen(true)}
+                  onHangman={() => setHangmanOpen(true)}
+                  onQrCode={() => setQrCodeOpen(true)}
+                  onBugChecklist={() => setBugChecklistOpen(true)}
+                  onLogout={onLogout}
+                  onSelection={() => setSidebarDrawerOpen(false)}
+                  mobile
+                />
+              </div>
+            )}
             <Sidebar
               {...sidebarProps}
               width={280}
@@ -2064,6 +2099,11 @@ export default function App({ onLogout }) {
         uploadDisabled={!activeFolder}
         onBugChecklist={() => setBugChecklistOpen(true)}
         onClassroomTimer={() => setClassroomTimerOpen(true)}
+        onHangman={() => setHangmanOpen(true)}
+        onQrCode={() => setQrCodeOpen(true)}
+        showWorkspaceTools={isPhone}
+        onRandomizer={() => setRandomizerOpenRequest((request) => request + 1)}
+        onReflection={() => navigateToView('reflection')}
         onIdoceo={() => { window.location.href = IDOCEO_APP_URL; }}
         onUntis={() => window.open(WEB_UNTIS_URL, '_blank', 'noopener,noreferrer')}
         onLogout={onLogout}
@@ -2092,6 +2132,8 @@ export default function App({ onLogout }) {
       {schoolCalendarOpen && <SchoolCalendarPdf onClose={() => setSchoolCalendarOpen(false)} />}
       <BugChecklist open={bugChecklistOpen} onClose={() => setBugChecklistOpen(false)} t={t} />
       <ClassroomTimer open={classroomTimerOpen} onClose={() => setClassroomTimerOpen(false)} />
+      <HangmanTool open={hangmanOpen} onClose={() => setHangmanOpen(false)} />
+      <QrCodeTool open={qrCodeOpen} onClose={() => setQrCodeOpen(false)} />
       {pleskTerminalOpen && <PleskTerminalPanel onClose={() => setPleskTerminalOpen(false)} />}
       {folderZoom && (
         <div
@@ -2147,6 +2189,10 @@ export default function App({ onLogout }) {
             zIndex: 1700,
           }}
         />
+      )}
+      {tabletTooltip && createPortal(
+        <span className={`lm-tablet-hover-tooltip${tabletTooltip.side ? ' is-side' : ''}`} style={{ left: tabletTooltip.left, top: tabletTooltip.top }} aria-hidden="true">{tabletTooltip.label}</span>,
+        document.body,
       )}
       {heroQrLink && (
         <HeroQrOverlay

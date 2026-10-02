@@ -75,6 +75,6 @@ test('maps WP Informatik 8abcdef to its exact OneNote target', () => {
   assert.equal(SCHEDULE_WP_INFORMATIK_8_ONENOTE.webUrl, 'https://onedrive.live.com/view.aspx?resid=D4ACB07AA3091664%21scac53b33955c4c9989ae58fe8044acdf&id=documents&wd=target%2826-27-IF-WP8%2FKapitel5-Automaten.one%7CB75DA203-AB73-BE4A-91E3-C61A7FD385E0%2FInhaltsverzeichnis%7CD99C7E7E-7D6C-5D4A-A26B-E39347862BF6%2F%29&wdpartid={076C0CA6-4875-0B47-974C-99D510A3C3EF}{1}&wdsectionfileid=D4ACB07AA3091664!s7404bffcc52c4da988c4734f595a550c&end');
 });
 
-test('uses the direct Logineo Mail URL while leaving authentication to Logineo', () => {
-  assert.equal(LOGINEO_URL, 'https://groupware.logineo.nrw.schule/SOGo/so/3d317fac-5441-4491-8ae4-d5512881ada1/Mail/view#!/Mail/0/INBOX');
+test('opens the school portal rather than a session-specific Logineo Mail URL', () => {
+  assert.equal(LOGINEO_URL, 'https://esg.nrw.schule/public/start');
 });

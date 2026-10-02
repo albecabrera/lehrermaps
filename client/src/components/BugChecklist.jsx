@@ -76,6 +76,13 @@ export default function BugChecklist({ open, onClose, t }) {
   }, [items, open]);
 
   useEffect(() => {
+    for (const input of inputRefs.current.values()) {
+      input.style.height = 'auto';
+      input.style.height = `${input.scrollHeight}px`;
+    }
+  }, [items, open]);
+
+  useEffect(() => {
     if (open) closeButtonRef.current?.focus();
   }, [open]);
 
@@ -118,7 +125,7 @@ export default function BugChecklist({ open, onClose, t }) {
           {items.length === 0 ? <p className="lm-checklist-empty">{t('bug_checklist.empty')}</p> : items.map((item, index) => (
             <div className="lm-checklist-item" key={item.id}>
               <input className="lm-checklist-toggle" type="checkbox" disabled={!hydrated} checked={item.completed} onChange={() => updateItem(item.id, { completed: !item.completed })} aria-label={t(item.completed ? 'bug_checklist.reopen' : 'bug_checklist.toggle', { text: item.text || t('bug_checklist.untitled') })} />
-              <input ref={(node) => { if (node) inputRefs.current.set(item.id, node); else inputRefs.current.delete(item.id); }} className="lm-checklist-input" disabled={!hydrated} value={item.text} onChange={(event) => updateItem(item.id, { text: event.target.value })} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addItem(index + 1); } }} aria-label={t('bug_checklist.item_label', { number: index + 1 })} placeholder={t('bug_checklist.placeholder')} />
+              <textarea ref={(node) => { if (node) inputRefs.current.set(item.id, node); else inputRefs.current.delete(item.id); }} className="lm-checklist-input" disabled={!hydrated} rows={1} value={item.text} onChange={(event) => updateItem(item.id, { text: event.target.value })} onInput={(event) => { event.currentTarget.style.height = 'auto'; event.currentTarget.style.height = `${event.currentTarget.scrollHeight}px`; }} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addItem(index + 1); } }} aria-label={t('bug_checklist.item_label', { number: index + 1 })} placeholder={t('bug_checklist.placeholder')} />
               <button className="lm-checklist-delete" type="button" disabled={!hydrated} onClick={() => deleteItem(item.id, index)} aria-label={t('bug_checklist.delete', { text: item.text || t('bug_checklist.untitled') })}><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 4h10M6 4V2.5h4V4m-5.5 0 .6 9h5.8l.6-9M6.5 7v3.5M9.5 7v3.5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
             </div>
           ))}

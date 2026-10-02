@@ -10,7 +10,15 @@ import { scheduleOneNoteTarget } from '../lib/externalApps';
 const STORAGE_KEY = 'lm_schedule';
 const DAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
 const DAYS_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi'];
+const DAY_NAMES_DE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+const DAY_NAMES_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 const PERIODS = 6;
+const WEEKDAYS = [0, 1, 2, 3, 4];
+
+function initialScheduleDay() {
+  const weekday = new Date().getDay();
+  return weekday >= 1 && weekday <= 5 ? weekday - 1 : 0;
+}
 
 const STUNDENPLAN_SUBJECTS = [
   { id: 'unterricht', label: 'Unterricht', color: '#2563EB' },
@@ -80,6 +88,8 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
   const [editAnnouncement, setEditAnnouncement] = useState('');
   const [dragOverKey, setDragOverKey] = useState(null);
   const isMobile = useIsMobile(860);
+  const isPhone = useIsMobile(600);
+  const [selectedDay, setSelectedDay] = useState(initialScheduleDay);
 
   useEscapeKey(isMobile && !!onClose, onClose);
 
@@ -92,6 +102,8 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
   }, []);
 
   const DAYS = lang === 'es' ? DAYS_ES : DAYS_DE;
+  const DAY_NAMES = lang === 'es' ? DAY_NAMES_ES : DAY_NAMES_DE;
+  const visibleDays = isPhone ? [selectedDay] : WEEKDAYS;
   const fileDate = new Date().toISOString().slice(0, 10);
   const scheduleSettings = getScheduleSettings(schedule);
 
@@ -274,27 +286,43 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
 
       <ScheduleTimeSettings schedule={schedule} onSave={(periods, breaks) => persist(withScheduleSettings(schedule, periods, breaks))} />
 
+      {isPhone && (
+        <nav className="lm-schedule-day-selector" aria-label={lang === 'es' ? 'Día del horario' : 'Stundenplantag'}>
+          {WEEKDAYS.map((day) => (
+            <button
+              key={day}
+              type="button"
+              aria-label={DAY_NAMES[day]}
+              aria-pressed={selectedDay === day}
+              onClick={() => { setSelectedDay(day); setPicker(null); setSupervisionPicker(null); }}
+            >
+              {DAYS[day]}
+            </button>
+          ))}
+        </nav>
+      )}
+
       <div className="lm-schedule-grid-wrap">
-      <div className="lm-schedule-grid" style={{
+      <div className={`lm-schedule-grid${isPhone ? ' is-phone' : ''}`} style={{
         display: 'grid',
-        gridTemplateColumns: `44px repeat(5, 1fr)`,
+        gridTemplateColumns: isPhone ? '72px minmax(0, 1fr)' : '44px repeat(5, 1fr)',
         gap: 4,
       }}>
         {/* Header row */}
         <div />
-        {DAYS.map((d) => (
-          <div key={d} style={{
+        {visibleDays.map((day) => (
+          <div key={day} className="lm-schedule-day-heading" style={{
             textAlign: 'center', fontSize: 11, fontWeight: 700,
             letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--c-text-3)',
             padding: '6px 0',
-          }}>{d}</div>
+          }}>{isPhone ? DAY_NAMES[day] : DAYS[day]}</div>
         ))}
 
         {/* Period rows */}
         {Array.from({ length: PERIODS }, (_, p) => (
           [
-            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Pause" time={formatScheduleTime(scheduleSettings.breaks[0])} value={schedule['break-fruehstueck'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-fruehstueck', day, rect: element.getBoundingClientRect() })} onNavigate={onNavigate} folders={folders} />,
-            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Pause" time={formatScheduleTime(scheduleSettings.breaks[1])} value={schedule['break-mittag'] || {}} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-mittag', day, rect: element.getBoundingClientRect() })} onNavigate={onNavigate} folders={folders} />,
+            p === 2 && <BreakRow key="break-fruehstueck" breakKey="break-fruehstueck" label="Pause" time={formatScheduleTime(scheduleSettings.breaks[0])} value={schedule['break-fruehstueck'] || {}} days={visibleDays} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-fruehstueck', day, rect: element.getBoundingClientRect() })} onNavigate={onNavigate} folders={folders} />,
+            p === 4 && <BreakRow key="break-mittag" breakKey="break-mittag" label="Pause" time={formatScheduleTime(scheduleSettings.breaks[1])} value={schedule['break-mittag'] || {}} days={visibleDays} onEditDay={(day, element) => setSupervisionPicker({ breakKey: 'break-mittag', day, rect: element.getBoundingClientRect() })} onNavigate={onNavigate} folders={folders} />,
             <div key={`label-${p}`} className="lm-schedule-period-label" style={{
               fontSize: 10, color: 'var(--c-text-3)', textAlign: 'right',
               paddingRight: 8, paddingTop: 10, fontFamily: '"DM Mono", monospace',
@@ -302,7 +330,7 @@ export default function Schedule({ onNavigate, folders = [], onClose }) {
               <div>{t('schedule.period')}{p + 1}</div>
               {formatScheduleTime(scheduleSettings.periods[p]) && <div className="lm-schedule-period-time">{formatScheduleTime(scheduleSettings.periods[p])}</div>}
             </div>,
-            ...Array.from({ length: 5 }, (_, d) => {
+            ...visibleDays.map((d) => {
               const key = `${d}-${p}`;
               const cell = schedule[key];
               return (
@@ -602,16 +630,16 @@ function formatScheduleTime(range) {
   return range?.start && range?.end ? `${range.start}–${range.end}` : '';
 }
 
-function BreakRow({ breakKey, label, time, value, onEditDay, onNavigate, folders }) {
+function BreakRow({ breakKey, label, time, value, days, onEditDay, onNavigate, folders }) {
   return [
-    <div key={`${breakKey}-label`} style={{
+    <div key={`${breakKey}-label`} className="lm-schedule-break-row-label" style={{
       display: 'flex', alignItems: 'center',
       fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
       textTransform: 'uppercase', color: 'var(--c-text-3)',
       justifyContent: 'flex-end', paddingRight: 6,
       minHeight: 76,
     }}><span>{label}</span>{time && <span className="lm-schedule-break-row-time">{time}</span>}</div>,
-    ...[0, 1, 2, 3, 4].map((d) => (
+    ...days.map((d) => (
       <BreakDayCell key={`${breakKey}-${d}`} entry={value[d]} onEdit={(element) => onEditDay(d, element)} onNavigate={onNavigate} folders={folders} />
     )),
   ];

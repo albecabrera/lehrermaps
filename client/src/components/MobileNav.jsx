@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { BugChecklistIcon } from './BugChecklist';
 import { ONE_NOTE_APP_URL } from '../lib/externalApps';
@@ -69,6 +70,89 @@ export function MobileBottomNav({ accent, items, active }) {
   );
 }
 
+const toolIcons = {
+  tools: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14.6 5.1a5 5 0 0 0-6.5 6.5l-5.4 5.4a2 2 0 0 0 2.8 2.8l5.4-5.4a5 5 0 0 0 6.5-6.5l-3.3 3.3-3.3-3.3 3.8-2.8Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/></svg>,
+  randomizer: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.8"/><circle cx="8" cy="8" r="1.25" fill="currentColor"/><circle cx="16" cy="8" r="1.25" fill="currentColor"/><circle cx="12" cy="12" r="1.25" fill="currentColor"/><circle cx="8" cy="16" r="1.25" fill="currentColor"/><circle cx="16" cy="16" r="1.25" fill="currentColor"/></svg>,
+  reflection: <span className="lm-workspace-tools-dual-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.7"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v6m4-6v6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg></span>,
+  timer: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="13" r="8" stroke="currentColor" strokeWidth="1.8"/><path d="M12 13V8m0 5 3 2M9 2h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  hangman: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h15M6 21V3h10v4"/><circle cx="16" cy="10" r="2"/><path d="M16 12v4m0-3-3 2m3-2 3 2m-3 1-2 3m2-3 2 3"/></svg>,
+  qrCode: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.7"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM5.5 5.5h2v2h-2zM16.5 5.5h2v2h-2zM5.5 16.5h2v2h-2zM14 14h3v3h-3zM20 14v3M14 20h3M20 20h1"/></svg>,
+  logout: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M13 7l5 5-5 5m-9-5h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+};
+
+export function WorkspaceToolsMenu({ onRandomizer, onReflection, onClassroomTimer, onHangman, onQrCode, onBugChecklist, onLogout, onSelection, mobile = false }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return undefined;
+    rootRef.current?.querySelector('[role="menuitem"]')?.focus();
+    const closeOnOutsidePointer = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape, true);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape, true);
+    };
+  }, [open]);
+
+  const selectItem = (action) => {
+    setOpen(false);
+    action();
+    onSelection?.();
+  };
+
+  const handleMenuKeyDown = (event) => {
+    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const items = [...event.currentTarget.querySelectorAll('[role="menuitem"]')];
+    const current = items.indexOf(document.activeElement);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
+      : (current + (event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    event.preventDefault();
+    items[next]?.focus();
+  };
+
+  return (
+    <div ref={rootRef} className={`lm-workspace-tools-menu${mobile ? ' lm-mobile-tools-menu' : ''}`}>
+      <button
+        ref={triggerRef}
+        className="lm-workspace-tool lm-workspace-tools-trigger"
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={menuId}
+        aria-label="Tools"
+        title="Tools"
+      >
+        {toolIcons.tools}
+      </button>
+      {open && (
+        <div id={menuId} className="lm-workspace-tools-panel" role="menu" aria-label="Tools" onKeyDown={handleMenuKeyDown}>
+          <button type="button" role="menuitem" aria-label="Zufallsgenerator" title="Zufallsgenerator" onClick={() => selectItem(onRandomizer)}>{toolIcons.randomizer}</button>
+          <button type="button" role="menuitem" aria-label="Koffer und Müllkorb" title="Koffer und Müllkorb" onClick={() => selectItem(onReflection)}>{toolIcons.reflection}</button>
+          {onClassroomTimer && <button type="button" role="menuitem" aria-label="Klassenzeit" title="Klassenzeit" onClick={() => selectItem(onClassroomTimer)}>{toolIcons.timer}</button>}
+          {onHangman && <button type="button" role="menuitem" aria-label="Hangman" title="Hangman" onClick={() => selectItem(onHangman)}>{toolIcons.hangman}</button>}
+          {onQrCode && <button type="button" role="menuitem" aria-label="QR-Code-Generator" title="QR-Code-Generator" onClick={() => selectItem(onQrCode)}>{toolIcons.qrCode}</button>}
+          {onBugChecklist && <button type="button" role="menuitem" aria-label="Bugs-Checkliste" title="Bugs-Checkliste" onClick={() => selectItem(onBugChecklist)}><BugChecklistIcon size={20} /></button>}
+          {onLogout && <button type="button" role="menuitem" className="lm-workspace-tools-logout" aria-label="Abmelden" title="Abmelden" onClick={() => selectItem(onLogout)}>{toolIcons.logout}</button>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // „Mehr"-Bottom-Sheet: alles, was auf Desktop in der Kopfleiste wohnt,
 // aber mobil zu selten gebraucht wird, um Platz zu verdienen.
 // Lehrer-Einträge (Termine/Upload/Arbeitsblatt/Notion/Miro) erscheinen nur,
@@ -77,7 +161,9 @@ export function MobileBottomNav({ accent, items, active }) {
 export function MobileMoreSheet({
   open, onClose, t, accent,
   isDark, toggleTheme,
-  onExams, onQuickAccess, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onIdoceo, onUntis, onLogout,
+  onExams, onQuickAccess, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onHangman, onQrCode, onIdoceo, onUntis, onLogout,
+  onRandomizer, onReflection,
+  showWorkspaceTools = true,
   showTeacherLinks = false,
 }) {
   useEscapeKey(open, onClose);
@@ -104,7 +190,7 @@ export function MobileMoreSheet({
   );
 
   const divider = <div style={{ height: 1, background: 'var(--c-border)', margin: '8px 6px' }} />;
-  const hasActions = onExams || onUpload || onWorksheet || onBugChecklist || onClassroomTimer;
+  const hasActions = onExams || onUpload || onWorksheet || (showWorkspaceTools && onRandomizer && onReflection);
 
   return createPortal(
     <div
@@ -151,10 +237,7 @@ export function MobileMoreSheet({
           ),
         })}
         {onWorksheet && row('✦ Arbeitsblatt', onWorksheet)}
-        {onClassroomTimer && row('Klassenzeit', onClassroomTimer, {
-          icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.8" stroke="currentColor" strokeWidth="1.4"/><path d="M8 4.8V8l2.3 1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-        })}
-        {onBugChecklist && row(t('bug_checklist.title'), onBugChecklist, { icon: <BugChecklistIcon /> })}
+        {showWorkspaceTools && onRandomizer && onReflection && <WorkspaceToolsMenu onRandomizer={onRandomizer} onReflection={onReflection} onClassroomTimer={onClassroomTimer} onHangman={onHangman} onQrCode={onQrCode} onBugChecklist={onBugChecklist} onLogout={onLogout} onSelection={onClose} mobile />}
 
         {hasActions && divider}
 
@@ -198,7 +281,7 @@ export function MobileMoreSheet({
 
         {divider}
 
-        {row(t('app.logout'), onLogout, {
+        {!(showWorkspaceTools && onRandomizer && onReflection) && row(t('app.logout'), onLogout, {
           danger: true,
           icon: (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

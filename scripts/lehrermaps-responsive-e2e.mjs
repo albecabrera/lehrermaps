@@ -10,8 +10,8 @@ const baseUrl = process.env.LEHRERMAPS_URL || 'http://localhost:8090';
 const teacherPassword = process.env.LEHRERMAPS_TEACHER_PASSWORD || 'lehrer';
 const viewports = [
   { name: 'iPhone 13', width: 390, height: 844, deviceScaleFactor: 3, touch: true, mobileUi: true },
-  { name: 'iPad Pro 13 M5 portrait', width: 1032, height: 1376, deviceScaleFactor: 2, touch: true, mobileUi: true },
-  // The app intentionally switches to its desktop header above 1100px.
+  { name: 'iPad mini portrait', width: 768, height: 1024, deviceScaleFactor: 2, touch: true, mobileUi: false },
+  { name: 'iPad Pro 13 M5 portrait', width: 1032, height: 1376, deviceScaleFactor: 2, touch: true, mobileUi: false },
   { name: 'iPad Pro 13 M5 landscape', width: 1376, height: 1032, deviceScaleFactor: 2, touch: true, mobileUi: false },
   { name: 'MacBook Pro 16 M1', width: 1728, height: 1117, deviceScaleFactor: 2, touch: false, mobileUi: false },
 ];
@@ -117,8 +117,7 @@ async function exerciseHomeDrawer(page) {
 }
 
 async function exerciseKlausurplan(page, viewport) {
-  // Tablet and phone navigation intentionally prioritizes the compact workspace
-  // drawer; the full Klausurplan workspace is verified in the desktop layouts.
+  // Phones use the compact drawer; tablets use the same workspace as laptops.
   if (viewport.mobileUi) return;
   const toggle = page.getByRole('button', { name: 'Klausurplan' }).first();
   assert(await toggle.count() === 1, 'Klausurplan toggle is unavailable');
@@ -165,6 +164,14 @@ async function exerciseExternalAppRail(page, viewport) {
   }
 }
 
+async function exerciseTabletWorkspace(page, viewport) {
+  if (viewport.width < 768 || viewport.width > 1100) return;
+  assert(await page.locator('.lm-desktop-primary-nav').isVisible(), 'tablet desktop header is unavailable');
+  assert(await page.locator('.lm-mobile-header-apps').count() === 0, 'tablet must not render the compact mobile header');
+  const label = page.locator('.lm-desktop-app-rail-launcher .lm-app-rail-touch-name').first();
+  assert(await label.isVisible(), 'touch tablet app names must remain visible without hover');
+}
+
 async function run() {
   let browser;
   try {
@@ -194,6 +201,7 @@ async function run() {
           await exerciseKlausurplan(page, viewport);
           await exerciseOneNote(page, viewport);
           await exerciseExternalAppRail(page, viewport);
+          await exerciseTabletWorkspace(page, viewport);
           await measureLayout(page, viewport);
           assert(!consoleErrors.length, `console errors: ${consoleErrors.join('; ')}`);
           pass(`${viewport.name} · ${role}`, 'login, layout, interaction, console');

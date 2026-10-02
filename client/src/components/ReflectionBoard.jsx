@@ -21,6 +21,7 @@ import {
 } from '../lib/api';
 
 const EMPTY_METADATA = { subject: '', className: '', topic: '', date: todayIsoDate() };
+const SUITCASE_PLAYBACK_DURATION = 2600;
 
 function normalizeBoard(data) {
   return {
@@ -33,6 +34,21 @@ function normalizeBoard(data) {
 
 function categoryIcon(category) {
   return category === 'koffer' ? '🧳' : category === 'muellkorb' ? '🗑️' : '💡';
+}
+
+function SuitcaseScene({ playback = false }) {
+  return (
+    <div className={`lm-reflection-suitcase-scene${playback ? ' lm-reflection-suitcase-scene--playback' : ' lm-reflection-suitcase-scene--intro'}`} aria-hidden="true">
+      <span className="lm-reflection-suitcase-handle" />
+      <span className="lm-reflection-suitcase-lid" />
+      <span className="lm-reflection-suitcase-base" />
+      <span className="lm-reflection-suitcase-strap lm-reflection-suitcase-strap--left" />
+      <span className="lm-reflection-suitcase-strap lm-reflection-suitcase-strap--right" />
+      <span className="lm-reflection-suitcase-tag">LM</span>
+      <span className="lm-reflection-suitcase-wheel lm-reflection-suitcase-wheel--left" />
+      <span className="lm-reflection-suitcase-wheel lm-reflection-suitcase-wheel--right" />
+    </div>
+  );
 }
 
 function ReflectionCard({ item, presentationMode, pendingLike, onLike, onEdit, onDelete, onMove, onDragStart }) {
@@ -122,7 +138,11 @@ export default function ReflectionBoard({ onPresentationChange }) {
   const [preserveMetadata, setPreserveMetadata] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [presentationMode, setPresentationMode] = useState(false);
+  const [presentationStep, setPresentationStep] = useState(-1);
+  const [presentationAnimating, setPresentationAnimating] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const boardRef = useRef(null);
+  const presentationTimerRef = useRef(null);
   const [draggedId, setDraggedId] = useState(null);
   const [pendingLikes, setPendingLikes] = useState(() => new Set());
   const editorInputRef = useRef(null);
@@ -175,6 +195,16 @@ export default function ReflectionBoard({ onPresentationChange }) {
     setPendingDelete(null);
     setError('');
   }, [presentationMode]);
+
+  useEffect(() => () => window.clearTimeout(presentationTimerRef.current), []);
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReducedMotion(media.matches);
+    update();
+    media.addEventListener?.('change', update);
+    return () => media.removeEventListener?.('change', update);
+  }, []);
 
   useEffect(() => {
     if (!editor) return undefined;
@@ -253,19 +283,15 @@ export default function ReflectionBoard({ onPresentationChange }) {
 
   const openPresentation = async () => {
     setSummaryOpen(true);
+    setPresentationStep(-1);
+    setPresentationAnimating(false);
+    window.clearTimeout(presentationTimerRef.current);
     setPresentationMode(true);
     try {
       await boardRef.current?.requestFullscreen?.();
     } catch {
       // Fullscreen can be blocked by the browser; the distraction-free view still works.
     }
-  };
-
-  const closePresentation = async () => {
-    if (document.fullscreenElement) {
-      try { await document.exitFullscreen(); } catch { /* Keep the in-app exit available. */ }
-    }
-    setPresentationMode(false);
   };
 
   const exportPdf = async () => {
@@ -280,6 +306,22 @@ export default function ReflectionBoard({ onPresentationChange }) {
   if (!board) return <main className="lm-reflection-board lm-reflection-state"><p>{error || 'Keine Reflexion verfügbar.'}</p><button type="button" className="lm-button lm-button-primary" onClick={load}>Erneut laden</button></main>;
 
   const summary = buildReflectionSummary(board.items);
+  const presentationQueue = ['koffer', 'muellkorb'].flatMap((category) => summary.groups[category].map((item) => ({ ...item, category })));
+  const presentationItem = presentationQueue[presentationStep];
+  const presentationIsTrash = presentationItem?.category === 'muellkorb';
+  const playPresentationStep = (nextStep) => {
+    if (nextStep < 0 || nextStep >= presentationQueue.length || presentationAnimating) return;
+    setPresentationStep(nextStep);
+    if (!reducedMotion) {
+      setPresentationAnimating(true);
+      window.clearTimeout(presentationTimerRef.current);
+      presentationTimerRef.current = window.setTimeout(() => setPresentationAnimating(false), presentationQueue[nextStep].category === 'muellkorb' ? 3850 : SUITCASE_PLAYBACK_DURATION);
+    }
+  };
+  const restartPresentation = () => {
+    if (presentationAnimating) return;
+    setPresentationStep(-1);
+  };
   const closeEditor = () => setEditor(null);
   const renderColumn = (category) => <ReflectionColumn
     key={category.id}
@@ -317,7 +359,6 @@ export default function ReflectionBoard({ onPresentationChange }) {
           <button type="button" className="lm-button lm-button-secondary" onClick={exportPdf}>PDF exportieren</button>
           <button type="button" className="lm-button lm-button-primary" onClick={() => setNewReflectionOpen(true)}>Neue Reflexion</button>
         </div>}
-        {presentationMode && <button type="button" className="lm-button lm-button-secondary lm-reflection-exit-presentation" onClick={closePresentation}>Präsentation beenden</button>}
       </header>
 
       {!presentationMode && <section className="lm-reflection-meta" aria-label="Reflexions-Metadaten">
@@ -330,15 +371,24 @@ export default function ReflectionBoard({ onPresentationChange }) {
 
       {error && !presentationMode && <div className="lm-reflection-error" role="status">{error} <button type="button" onClick={() => setError('')}>Schließen</button></div>}
 
-      {presentationMode ? <section className="lm-reflection-presentation" aria-label="Reflexionszusammenfassung">
-        <div className="lm-reflection-presentation-phase">
-          <span className="lm-reflection-presentation-label">Reflexionsphase</span>
-          <h2>{board.question}</h2>
-          <p>Was möchtest du aus der heutigen Stunde mitnehmen – und was darf zurückbleiben?</p>
+      {presentationMode ? <section className="lm-reflection-presentation" aria-label="Reflexionspräsentation">
+        <div className="lm-reflection-presentation-stage" aria-live="polite">
+          {presentationItem ? <article key={presentationItem.id} className={`lm-reflection-presentation-item lm-reflection-presentation-item--${presentationItem.category}${reducedMotion ? ' is-reduced-motion' : ''}`}>
+            {presentationIsTrash ? <div className="lm-reflection-trash-scene"><p className="lm-reflection-presentation-sentence">{presentationItem.content}</p><span className="lm-reflection-trash-lid" aria-hidden="true">▰</span><span className="lm-reflection-trash-bin" aria-hidden="true">🗑️</span><span className="lm-reflection-trash-pop" aria-hidden="true">✦<i>★</i><b>✦</b></span></div> : <><p className="lm-reflection-presentation-sentence lm-reflection-presentation-sentence--suitcase">{presentationItem.content}</p><SuitcaseScene playback /></>}
+          </article> : <div className="lm-reflection-presentation-intro">
+            <div className="lm-reflection-presentation-intro-destinations" aria-hidden="true">
+              <SuitcaseScene />
+              <div className="lm-reflection-trash-scene"><span className="lm-reflection-trash-lid">▰</span><span className="lm-reflection-trash-bin">🗑️</span></div>
+            </div>
+            <p>Was nehme ich aus der heutigen Stunde mit?</p>
+            <p>Was lasse ich hier?</p>
+          </div>}
         </div>
-        <div className="lm-reflection-presentation-destinations" aria-label="Reflexionsziele">
-          {REFLECTION_CATEGORIES.filter((category) => category.id !== 'unklar').map(renderColumn)}
-        </div>
+        <nav className="lm-reflection-presentation-controls" aria-label="Präsentationssteuerung">
+          <button type="button" className="lm-button lm-button-secondary" onClick={() => playPresentationStep(presentationStep - 1)} disabled={presentationAnimating || presentationStep < 0}>Zurück</button>
+          <button type="button" className="lm-button lm-button-secondary" onClick={restartPresentation} disabled={presentationAnimating || presentationStep < 0}>Neu starten</button>
+          <button type="button" className="lm-button lm-button-primary" onClick={() => playPresentationStep(presentationStep + 1)} disabled={presentationAnimating || presentationStep >= presentationQueue.length - 1 || !presentationQueue.length}>{presentationStep < 0 ? 'Start' : 'Weiter'}</button>
+        </nav>
       </section> : summaryOpen ? <section className="lm-reflection-summary" aria-label="Reflexionszusammenfassung">
         <div className="lm-reflection-summary-heading"><div><span className="lm-reflection-kicker">Abschluss</span><h2>Das nehmen wir mit</h2></div><strong>{summary.total} Beiträge</strong></div>
         <div className="lm-reflection-summary-groups">{REFLECTION_CATEGORIES.map((category) => <section key={category.id}><h3>{categoryIcon(category.id)} {category.title}</h3>{summary.groups[category.id].length ? <ul>{summary.groups[category.id].map((item) => <li key={item.id}>{item.content} <span>♥ {item.likes}</span></li>)}</ul> : <p>Noch keine Beiträge</p>}</section>)}</div>

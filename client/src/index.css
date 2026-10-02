@@ -284,15 +284,17 @@ html, body, #root {
   z-index: 1800;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: clamp(12px, 3vw, 32px);
+  overflow: auto;
   background: var(--c-overlay);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   animation: lmFadeIn .14s ease-out;
 }
 .lm-checklist-modal {
-  width: min(560px, 100%);
-  max-height: min(680px, calc(100vh - 40px));
+  width: min(720px, 100%);
+  max-width: 100%;
+  max-height: min(680px, calc(100dvh - 40px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -314,17 +316,18 @@ html, body, #root {
 .lm-checklist-close { width: 32px; height: 32px; border-radius: 8px; font-size: 24px; line-height: 1; }
 .lm-checklist-close:hover,
 .lm-checklist-delete:hover { color: var(--c-danger-text); background: var(--c-danger-bg); }
-.lm-checklist-items { display: grid; gap: 6px; overflow-y: auto; padding: 12px 16px; }
+.lm-checklist-items { display: grid; min-height: 0; gap: 6px; overflow-y: auto; padding: 12px 16px; }
 .lm-checklist-empty { margin: 12px 0; color: var(--c-text-3); font-size: 13px; text-align: center; }
-.lm-checklist-item { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 5px 4px; border-radius: 8px; }
+.lm-checklist-item { display: flex; align-items: flex-start; gap: 10px; min-width: 0; padding: 5px 4px; border-radius: 8px; }
 .lm-checklist-item:focus-within { background: var(--c-hover-2); }
-.lm-checklist-toggle { width: 16px; height: 16px; flex: 0 0 16px; margin: 0; accent-color: var(--c-focus); cursor: pointer; }
-.lm-checklist-input { width: 100%; min-width: 0; height: 34px; border: 1px solid transparent; border-radius: 7px; outline: none; background: transparent; color: var(--c-text); font: inherit; font-size: 14px; padding: 0 8px; }
+.lm-checklist-toggle { width: 16px; height: 16px; flex: 0 0 16px; margin: 9px 0 0; accent-color: var(--c-focus); cursor: pointer; }
+.lm-checklist-input { flex: 1 1 auto; width: 100%; min-width: 0; min-height: 34px; height: auto; border: 1px solid transparent; border-radius: 7px; outline: none; background: transparent; color: var(--c-text); font: inherit; font-size: 14px; line-height: 1.4; padding: 6px 8px; resize: none; overflow-wrap: anywhere; }
 .lm-checklist-input::placeholder { color: var(--c-text-3); }
 .lm-checklist-input:focus { border-color: var(--c-focus); background: var(--c-input-bg); }
 .lm-checklist-toggle:checked + .lm-checklist-input { color: var(--c-text-3); text-decoration: line-through; }
-.lm-checklist-delete { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 7px; }
-.lm-checklist-footer { border-top: 1px solid var(--c-border); color: var(--c-text-3); font-size: 11px; }
+.lm-checklist-delete { width: 30px; height: 30px; flex: 0 0 30px; margin-top: 2px; border-radius: 7px; }
+.lm-checklist-footer { min-width: 0; border-top: 1px solid var(--c-border); color: var(--c-text-3); font-size: 11px; }
+.lm-checklist-footer > span { min-width: 0; overflow-wrap: anywhere; }
 .lm-checklist-add { height: 32px; padding: 0 10px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-surface-2); color: var(--c-text); cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; }
 .lm-checklist-add:hover { border-color: var(--c-focus); background: var(--c-hover); }
 .lm-checklist-add:disabled,
@@ -1462,9 +1465,8 @@ button:active {
   }
 }
 
-/* These four destinations stay icon-only on every device. Their existing
-   title/aria-label still provides the destination name for accessibility and
-   the pointer tooltip without consuming header space. */
+/* Start with compact icon-only launchers for phones. Tablet and laptop
+   overrides below restore visible names where the layout has room. */
 .lm-tabbar .lm-topbar-onenote > span:last-child,
 .lm-tabbar .lm-topbar-idoceo > span:last-child,
 .lm-tabbar .lm-topbar-notion > span:last-child,
@@ -1970,6 +1972,166 @@ button[aria-pressed="true"] {
   background: color-mix(in srgb, var(--launcher-color) 14%, var(--c-surface));
 }
 .lm-topbar-tools { display: inline-flex; gap: 6px; align-items: center; }
+.lm-workspace-tools-menu { position: relative; display: inline-flex; align-items: center; }
+.lm-workspace-tools-trigger {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+.lm-workspace-tools-trigger > svg { width: 24px; height: 24px; }
+.lm-workspace-tools-trigger[aria-expanded="true"] { border-color: var(--c-focus); background: var(--c-hover); color: var(--c-text); }
+.lm-workspace-tools-panel {
+  position: absolute;
+  z-index: 1100;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(44px, 1fr));
+  min-width: 212px;
+  gap: 4px;
+  padding: 7px;
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  background: var(--c-surface);
+  box-shadow: var(--shadow-lg, 0 14px 36px rgba(15, 23, 42, .18));
+  animation: lmWorkspaceToolsIn .16s var(--ease-out);
+}
+.lm-workspace-tools-panel button {
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--c-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+.lm-workspace-tools-panel button > svg { width: 24px; height: 24px; }
+
+/* Link-to-QR tool: keep the code legible on phones and projectors. */
+.lm-qr-tool-backdrop { position: fixed; inset: 0; z-index: 2200; display: grid; place-items: center; padding: 12px; background: var(--c-overlay); backdrop-filter: blur(8px); }
+.lm-qr-tool { width: min(560px, 100%); max-height: calc(100dvh - 24px); overflow: auto; border: 1px solid var(--c-border); border-radius: 20px; background: var(--c-surface); color: var(--c-text); box-shadow: var(--c-shadow-modal); }
+.lm-qr-tool-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px clamp(18px, 4vw, 30px); border-bottom: 1px solid var(--c-border-soft); }
+.lm-qr-tool-eyebrow { color: var(--c-turquoise); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.lm-qr-tool h2 { margin: 3px 0 0; font: 650 clamp(24px, 4vw, 34px)/1.1 var(--font-editorial); }
+.lm-qr-tool button, .lm-qr-tool input, .lm-qr-tool a { font: inherit; }
+.lm-qr-tool-header button { flex: 0 0 44px; min-height: 44px; border: 1px solid var(--c-border); border-radius: 10px; background: var(--c-surface-2); color: var(--c-text); font-size: 27px; line-height: 1; cursor: pointer; }
+.lm-qr-tool-content { display: grid; gap: 12px; padding: clamp(18px, 4vw, 30px); }
+.lm-qr-tool-content label { font-size: 14px; font-weight: 700; }
+.lm-qr-tool-content input { width: 100%; min-height: 52px; padding: 10px 14px; border: 1px solid var(--c-border); border-radius: 11px; background: var(--c-input-bg); color: var(--c-text); font-size: 16px; }
+.lm-qr-tool button:focus-visible, .lm-qr-tool input:focus-visible, .lm-qr-tool a:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+.lm-qr-tool-status { min-height: 20px; margin: 0; color: var(--c-text-2); font-size: 13px; }
+.lm-qr-tool-result { display: grid; justify-items: center; gap: 16px; padding: 16px; border: 1px solid var(--c-border-soft); border-radius: 16px; background: var(--c-surface-2); }
+.lm-qr-tool-result img { display: block; width: min(100%, 320px); height: auto; padding: 8px; border-radius: 8px; background: #fff; }
+.lm-qr-tool-result a { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 10px; background: var(--c-turquoise); color: #fff; font-size: 14px; font-weight: 700; text-align: center; text-decoration: none; }
+.lm-qr-tool-result a:hover { filter: brightness(.93); }
+
+/* Hangman: local, touch-first classroom game. */
+.lm-hangman-backdrop { position: fixed; inset: 0; z-index: 2200; display: grid; place-items: center; padding: 12px; background: var(--c-overlay); backdrop-filter: blur(8px); }
+.lm-hangman { width: min(1080px, 100%); max-height: min(940px, calc(100dvh - 24px)); overflow: auto; border: 1px solid var(--c-border); border-radius: 22px; background: var(--c-surface); color: var(--c-text); box-shadow: var(--c-shadow-modal); font-family: inherit; }
+.lm-hangman:fullscreen, .lm-hangman.is-smartboard { width: 100%; max-width: none; height: 100%; max-height: none; border: 0; border-radius: 0; }
+.lm-hangman.is-smartboard { position: fixed; inset: 0; z-index: 2201; }
+.lm-hangman-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px clamp(18px, 4vw, 36px); border-bottom: 1px solid var(--c-border-soft); }
+.lm-hangman-eyebrow { color: var(--c-turquoise); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.lm-hangman h2 { margin: 3px 0 0; font: 650 clamp(27px, 4vw, 40px)/1.1 var(--font-editorial); }
+.lm-hangman-header-actions { display: flex; gap: 8px; }
+.lm-hangman button, .lm-hangman input, .lm-hangman select { font: inherit; }
+.lm-hangman button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--c-border); border-radius: 11px; background: var(--c-surface-2); color: var(--c-text); cursor: pointer; }
+.lm-hangman button:hover:not(:disabled) { background: var(--c-hover); }
+.lm-hangman button:focus-visible, .lm-hangman input:focus-visible, .lm-hangman select:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+.lm-hangman-header-actions button:last-child { min-width: 44px; padding: 0; font-size: 27px; line-height: 1; }
+.lm-hangman-setup { width: min(570px, 100%); display: grid; gap: 18px; margin: 0 auto; padding: clamp(20px, 4vw, 44px); }
+.lm-hangman-setup p { margin: 0; color: var(--c-text-2); }
+.lm-hangman-setup label { display: grid; gap: 7px; font-size: 14px; font-weight: 700; }
+.lm-hangman-setup input:not([type="checkbox"]), .lm-hangman-setup select { width: 100%; min-height: 52px; padding: 10px 14px; border: 1px solid var(--c-border); border-radius: 11px; background: var(--c-input-bg); color: var(--c-text); font-size: 17px; }
+.lm-hangman-setup .lm-hangman-checkbox { display: flex; align-items: center; gap: 9px; font-weight: 500; }
+.lm-hangman-checkbox input { width: 20px; height: 20px; }
+.lm-hangman-options { display: grid; grid-template-columns: 1fr 140px; gap: 14px; }
+.lm-hangman .lm-hangman-primary { border-color: var(--c-turquoise); background: var(--c-turquoise); color: #fff; font-weight: 750; }
+.lm-hangman .lm-hangman-primary:hover { filter: brightness(.93); background: var(--c-turquoise); }
+.lm-hangman-error { color: var(--c-danger-text) !important; }
+.lm-hangman-game { display: grid; gap: 20px; padding: clamp(18px, 3vw, 32px); }
+.lm-hangman-game-top { display: grid; grid-template-columns: minmax(170px, 230px) minmax(0, 1fr); align-items: center; gap: clamp(20px, 4vw, 48px); }
+.lm-hangman-visual { position: relative; min-height: 205px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; overflow: hidden; border: 1px solid var(--c-border-soft); border-radius: 18px; background: var(--c-surface-2); color: var(--c-turquoise); text-align: center; }
+.lm-hangman-visual.is-classic { min-height: 240px; background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--c-turquoise) 8%, var(--c-surface)), var(--c-surface-2) 80%); }
+.lm-hangman-visual svg { width: min(100%, 210px); height: 200px; overflow: visible; }
+.lm-hangman-stage { fill: none; stroke-width: 5; }
+.lm-hangman-stage.is-wood { stroke: color-mix(in srgb, #a87952 72%, var(--c-text)); stroke-width: 7; }
+.lm-hangman-stage.is-rope { stroke: color-mix(in srgb, #c09a63 72%, var(--c-text)); stroke-width: 3.5; }
+.lm-hangman-stage.is-ink { stroke: var(--c-navy); stroke-width: 5; }
+.lm-hangman-stage.is-new > * { stroke-dasharray: 1; stroke-dashoffset: 1; animation: lmHangmanDraw .62s cubic-bezier(.2,.7,.15,1) var(--stage-delay) forwards; }
+.lm-hangman-stage-caption { color: var(--c-text-2); font-size: 11px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
+.lm-hangman-miss-flash { position: absolute; inset: 0; border: 2px solid var(--c-danger-text); border-radius: inherit; pointer-events: none; animation: lmHangmanMiss .55s ease-out both; }
+@keyframes lmHangmanDraw { to { stroke-dashoffset: 0; } }
+@keyframes lmHangmanMiss { from { opacity: .48; box-shadow: inset 0 0 24px color-mix(in srgb, var(--c-danger-text) 15%, transparent); } to { opacity: 0; box-shadow: inset 0 0 0 transparent; } }
+.lm-hangman-neutral-icon { font-size: 35px; }
+.lm-hangman-visual strong { color: var(--c-text); font-size: 64px; line-height: 1; }
+.lm-hangman-visual > span:last-of-type { color: var(--c-text-2); font-size: 13px; font-weight: 700; }
+.lm-hangman-progress { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 180px; margin-top: 8px; }
+.lm-hangman-progress i { width: 14px; height: 14px; border: 2px solid var(--c-border); border-radius: 50%; }
+.lm-hangman-progress i.is-left { border-color: var(--c-turquoise); background: var(--c-turquoise); }
+.lm-hangman-answer { min-width: 0; }
+.lm-hangman-hint { min-height: 24px; margin: 0 0 14px; color: var(--c-text-2); font-size: 15px; }
+.lm-hangman-word { display: flex; flex-wrap: wrap; gap: 6px; align-items: end; font-size: clamp(25px, 4vw, 46px); font-weight: 800; line-height: 1.2; }
+.lm-hangman-word span { min-width: .75em; min-height: 1.2em; border-bottom: 3px solid var(--c-text); text-align: center; }
+.lm-hangman-word span.is-space { min-width: .45em; border: 0; }
+.lm-hangman-word span.is-punctuation { border: 0; }
+.lm-hangman-count { margin: 18px 0 3px; font-size: 18px; font-weight: 750; }
+.lm-hangman-used { margin: 0; color: var(--c-text-2); font-size: 14px; }
+.lm-hangman-keyboard { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 7px; }
+.lm-hangman-keyboard button { position: relative; min-width: 0; min-height: 60px; padding: 8px 2px; font-size: clamp(18px, 2.7vw, 25px); font-weight: 800; touch-action: manipulation; }
+.lm-hangman-keyboard button:disabled { cursor: default; opacity: 1; }
+.lm-hangman-keyboard button.is-correct { border-color: var(--c-turquoise); background: color-mix(in srgb, var(--c-turquoise) 18%, var(--c-surface)); }
+.lm-hangman-keyboard button.is-wrong { border-color: var(--c-danger-text); background: var(--c-danger-bg); }
+.lm-hangman-keyboard small { position: absolute; top: 2px; right: 6px; font-size: 11px; }
+.lm-hangman-result { display: grid; gap: 7px; justify-items: center; padding: 18px; border: 1px solid var(--c-border-soft); border-radius: 16px; background: var(--c-surface-2); text-align: center; }
+.lm-hangman-result strong { font-size: clamp(26px, 4vw, 38px); }
+.lm-hangman-result > div { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
+.lm-hangman-teacher { justify-self: end; }
+.lm-hangman-teacher-panel { display: flex; flex-wrap: wrap; justify-content: end; gap: 7px; margin-top: 8px; }
+.lm-hangman-teacher-panel label { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 8px; font-size: 13px; font-weight: 700; }
+.lm-hangman-teacher-panel input { width: 62px; min-height: 40px; padding: 4px 7px; border: 1px solid var(--c-border); border-radius: 8px; background: var(--c-input-bg); color: var(--c-text); }
+.lm-hangman.is-smartboard .lm-hangman-keyboard button { min-height: 78px; font-size: clamp(25px, 3vw, 37px); }
+.lm-hangman.is-smartboard .lm-hangman-word { font-size: clamp(40px, 6vw, 82px); }
+.lm-hangman.is-smartboard .lm-hangman-game { gap: clamp(24px, 5vh, 55px); }
+@media (max-width: 700px) { .lm-hangman-game-top { grid-template-columns: 1fr; } .lm-hangman-visual { min-height: 130px; } .lm-hangman-visual svg { height: 150px; } .lm-hangman-keyboard { grid-template-columns: repeat(7, minmax(0, 1fr)); } .lm-hangman-keyboard button { min-height: 55px; } .lm-hangman-header-actions button span { display: none; } }
+@media (max-width: 430px) { .lm-hangman-options { grid-template-columns: 1fr; } .lm-hangman-keyboard { grid-template-columns: repeat(5, minmax(0, 1fr)); } .lm-hangman-word { font-size: 27px; } }
+@media (prefers-reduced-motion: reduce) { .lm-hangman-stage.is-new > * { animation: none; stroke-dashoffset: 0; } .lm-hangman-miss-flash { animation: none; display: none; } }
+.lm-workspace-tools-dual-icon { display: inline-flex; align-items: center; gap: 2px; }
+.lm-workspace-tools-dual-icon svg { width: 19px; height: 19px; }
+.lm-workspace-tools-panel button:hover,
+.lm-workspace-tools-panel button:focus-visible { background: var(--c-hover); }
+.lm-workspace-tools-panel button:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
+.lm-workspace-tools-panel .lm-workspace-tools-logout { color: var(--c-danger-text); }
+.lm-workspace-tools-panel .lm-workspace-tools-logout:hover,
+.lm-workspace-tools-panel .lm-workspace-tools-logout:focus-visible { background: var(--c-danger-bg); }
+.lm-mobile-tools-menu { display: block; margin: 4px 0; }
+.lm-mobile-tools-menu .lm-workspace-tools-trigger { width: 46px; min-height: 46px; border-color: transparent; background: transparent; color: var(--c-text); box-shadow: none; }
+.lm-mobile-tools-menu .lm-workspace-tools-trigger:hover,
+.lm-mobile-tools-menu .lm-workspace-tools-trigger:focus-visible,
+.lm-mobile-tools-menu .lm-workspace-tools-trigger[aria-expanded="true"] { border-color: transparent; background: var(--c-hover); color: var(--c-text); }
+.lm-mobile-tools-menu .lm-workspace-tools-panel { position: static; min-width: 0; margin: 2px 6px 6px; }
+.lm-tablet-sidebar-tools {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-tab-bg);
+}
+.lm-tablet-sidebar-tools .lm-workspace-tools-menu { display: block; }
+.lm-tablet-tools-drawer > .lm-sidebar { height: auto !important; min-height: 0 !important; flex: 1 1 auto; }
+@keyframes lmWorkspaceToolsIn {
+  from { opacity: 0; transform: translateY(-5px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 .lm-header-randomizer { position: relative; display: inline-flex; align-items: center; }
 .lm-header-randomizer-trigger { font-size: 18px; }
 .lm-header-randomizer-panel {
@@ -2777,9 +2939,8 @@ button:not(:disabled):focus-visible,
   [role="button"]:not([aria-disabled="true"]):hover { transform: none !important; }
 }
 
-/* External app rail: it complements the material sidebar instead of replacing
-   it. App names are deliberately available to assistive technology and native
-   tooltips only, keeping the rail compact and immediately scannable. */
+/* External app rail complements the material sidebar. Phones keep compact
+   icons; tablet and laptop layouts show the names beside them. */
 .lm-desktop-app-rail {
   width: 60px;
   min-width: 60px;
@@ -2979,8 +3140,7 @@ button:not(:disabled):focus-visible,
     display: none !important;
   }
   .lm-phone-focus-header .lm-mobile-header-apps,
-  .lm-phone-focus-header .lm-phone-logineo,
-  .lm-phone-focus-header .lm-phone-theme-toggle {
+  .lm-phone-focus-header .lm-phone-logineo {
     display: none !important;
   }
   .lm-phone-focus-header .lm-mobile-header-context {
@@ -3060,8 +3220,7 @@ button:not(:disabled):focus-visible,
     gap: 4px;
     min-width: 0;
   }
-  .lm-phone-logineo,
-  .lm-phone-theme-toggle {
+  .lm-phone-logineo {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3092,26 +3251,16 @@ button:not(:disabled):focus-visible,
     filter: none !important;
     object-fit: contain;
   }
-  .lm-phone-theme-toggle {
-    width: 44px;
-    min-width: 44px;
-    cursor: pointer;
-    font: 700 18px/1 inherit;
-  }
   .lm-phone-logineo:hover,
-  .lm-phone-logineo:focus-visible,
-  .lm-phone-theme-toggle:hover,
-  .lm-phone-theme-toggle:focus-visible {
+  .lm-phone-logineo:focus-visible {
     border-color: var(--c-focus);
     background: var(--c-hover);
   }
-  .lm-phone-logineo:focus-visible,
-  .lm-phone-theme-toggle:focus-visible {
+  .lm-phone-logineo:focus-visible {
     outline: 3px solid var(--c-focus);
     outline-offset: 2px;
   }
   [data-theme="dark"] .lm-phone-logineo { background: var(--c-surface); }
-  [data-theme="dark"] .lm-phone-theme-toggle { background: var(--c-surface); }
 }
 
 /* Apple-inspired Liquid Glass refinement. The existing palette remains the
@@ -4708,8 +4857,7 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
   padding: clamp(28px, 5vw, 84px);
   background: radial-gradient(circle at 10% 8%, rgba(30, 179, 181, .18), transparent 32%), radial-gradient(circle at 91% 94%, rgba(232, 120, 36, .15), transparent 37%), var(--c-bg);
 }
-.is-presentation .lm-reflection-hero { width: min(1600px, 100%); align-self: flex-start; }
-.is-presentation .lm-reflection-hero p, .is-presentation .lm-reflection-kicker { display: none; }
+.is-presentation .lm-reflection-hero { display: none; }
 .is-presentation .lm-reflection-summary { align-self: center; width: min(1600px, 100%); padding: clamp(28px, 5vw, 76px); border-radius: 32px; }
 .is-presentation .lm-reflection-summary-heading h2 { font-size: clamp(42px, 6vw, 84px); }
 .is-presentation .lm-reflection-summary-heading > strong { padding: 12px 18px; font-size: clamp(14px, 1.4vw, 19px); }
@@ -4728,96 +4876,552 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
   .is-presentation .lm-reflection-summary-groups section { min-height: auto; }
 }
 
-/* Presentation mode is intentionally separate from the editable board: the
-   reflection prompt leads the room, while the two destinations remain the
-   only large choices at the bottom of the screen. */
+/* Presentation is a teacher-controlled, one-item-at-a-time playback queue. */
 .is-presentation.lm-reflection-board { flex-direction: column; min-height: 100dvh; }
-.is-presentation .lm-reflection-hero { flex: 0 0 auto; }
 .is-presentation .lm-reflection-presentation {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   width: min(1600px, 100%);
   flex: 1 1 auto;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: clamp(24px, 4vh, 56px);
+  min-height: 0;
+  gap: clamp(18px, 3vh, 36px);
   margin: 0 auto;
-  align-content: stretch;
 }
-.lm-reflection-presentation-phase {
-  position: relative;
+.lm-reflection-presentation-stage {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: min(62vh, 760px);
+  place-items: center;
   overflow: hidden;
-  padding: clamp(26px, 4vw, 58px) clamp(24px, 5vw, 82px);
+  padding: clamp(24px, 5vw, 76px);
   border: 1px solid color-mix(in srgb, var(--c-turquoise) 36%, var(--c-border));
   border-radius: clamp(22px, 2.5vw, 34px);
   background: linear-gradient(120deg, color-mix(in srgb, var(--c-turquoise) 16%, var(--c-surface)), var(--c-surface));
   box-shadow: 0 20px 55px color-mix(in srgb, var(--c-turquoise) 12%, transparent), var(--shadow-sm);
-  animation: lm-reflection-presentation-in 500ms var(--motion-ease, cubic-bezier(.22, 1, .36, 1)) both;
 }
-.lm-reflection-presentation-phase::after {
-  position: absolute;
-  right: clamp(-80px, -5vw, -30px);
-  bottom: clamp(-110px, -8vw, -40px);
-  width: clamp(180px, 26vw, 380px);
-  aspect-ratio: 1;
-  border: 1px solid color-mix(in srgb, var(--c-turquoise) 24%, transparent);
-  border-radius: 50%;
-  content: '';
-  pointer-events: none;
+.lm-reflection-presentation-item,
+.lm-reflection-presentation-intro {
+  position: relative;
+  display: grid;
+  width: min(1100px, 100%);
+  min-height: min(50vh, 580px);
+  place-items: center;
+  align-content: center;
+  text-align: center;
+}
+.lm-reflection-presentation-item {
+  overflow: hidden;
+}
+.lm-reflection-presentation-intro { gap: clamp(18px, 3vh, 32px); }
+.lm-reflection-presentation-intro-destinations {
+  display: flex;
+  width: min(820px, 100%);
+  justify-content: center;
+  align-items: end;
+  gap: clamp(32px, 10vw, 130px);
+}
+.lm-reflection-presentation-intro .lm-reflection-suitcase-scene,
+.lm-reflection-presentation-intro .lm-reflection-trash-scene {
+  width: min(300px, 34vw);
+  height: clamp(150px, 18vw, 220px);
+  margin: 0;
+}
+.lm-reflection-presentation-intro p {
+  max-width: 900px;
+  margin: 0;
+  font: 700 clamp(25px, 3.8vw, 58px)/1.08 var(--font-editorial);
+  letter-spacing: -.04em;
+  text-wrap: balance;
 }
 .lm-reflection-presentation-label {
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: clamp(18px, 3vh, 30px);
   color: var(--c-turquoise);
   font-size: clamp(12px, 1.2vw, 17px);
   font-weight: 850;
   letter-spacing: .14em;
   text-transform: uppercase;
 }
-.lm-reflection-presentation-phase h2 {
-  max-width: 1100px;
+.lm-reflection-presentation-sentence,
+.lm-reflection-presentation-empty h2 {
+  z-index: 1;
+  max-width: 1000px;
   margin: 0;
-  font: 650 clamp(30px, 4.6vw, 72px)/1.08 var(--font-editorial);
+  font: 700 clamp(34px, 5.8vw, 86px)/1.08 var(--font-editorial);
   letter-spacing: -.04em;
   text-wrap: balance;
 }
-.lm-reflection-presentation-phase p {
-  max-width: 800px;
-  margin: 16px 0 0;
+.lm-reflection-presentation-empty > span { font-size: clamp(72px, 12vw, 150px); }
+.lm-reflection-presentation-empty p {
+  max-width: 720px;
+  margin: 18px 0 0;
   color: var(--c-text-2);
   font-size: clamp(15px, 1.6vw, 24px);
   line-height: 1.4;
 }
-.lm-reflection-presentation-destinations {
-  display: grid;
-  min-height: 0;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(16px, 2.6vw, 34px);
+.lm-reflection-presentation-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.lm-reflection-presentation-destinations .lm-reflection-column {
-  min-height: 0;
-  animation: lm-reflection-presentation-destination-in 600ms var(--motion-ease, cubic-bezier(.22, 1, .36, 1)) both;
+.lm-reflection-presentation-controls .lm-button { min-width: 132px; min-height: 52px; }
+.lm-reflection-suitcase-scene,
+.lm-reflection-trash-scene { position: relative; width: min(500px, 72vw); height: clamp(180px, 24vw, 270px); margin-top: clamp(26px, 5vh, 52px); }
+.lm-reflection-suitcase-scene { perspective: 900px; filter: drop-shadow(0 18px 16px rgba(62, 31, 10, .23)); }
+.lm-reflection-suitcase-base {
+  position: absolute; z-index: 2; inset: 38% 3% 5%; overflow: hidden; border: clamp(7px, 1vw, 12px) solid #4f2e18; border-radius: 30px 30px 42px 42px; background: linear-gradient(135deg, #d59448 0 18%, #a95227 48%, #783717 100%); box-shadow: inset 0 9px rgba(255,255,255,.22), inset 0 -14px rgba(66, 28, 9, .2), 0 18px 24px rgba(75,42,20,.24);
 }
-.lm-reflection-presentation-destinations .lm-reflection-column:nth-child(2) { animation-delay: 120ms; }
-.is-presentation .lm-reflection-presentation-destinations .lm-reflection-column-header { margin-bottom: clamp(14px, 2vh, 24px); }
-.is-presentation .lm-reflection-presentation-destinations .lm-reflection-card-list { overflow: auto; max-height: min(34vh, 430px); }
-@keyframes lm-reflection-presentation-in {
-  from { opacity: 0; transform: translateY(-14px); }
-  to { opacity: 1; transform: translateY(0); }
+.lm-reflection-suitcase-base::before { content: ''; position: absolute; inset: 15% 6%; border: 2px solid rgba(255,239,198,.28); border-radius: 20px 20px 30px 30px; }
+.lm-reflection-suitcase-base::after { content: ''; position: absolute; left: 0; right: 0; top: 22%; height: 9%; background: rgba(73,37,17,.2); box-shadow: 0 5px rgba(255,230,173,.16); }
+.lm-reflection-suitcase-lid { position: absolute; z-index: 5; inset: 7% 3% 48%; border: clamp(7px, 1vw, 12px) solid #4f2e18; border-bottom: 0; border-radius: 34px 34px 10px 10px; background: linear-gradient(135deg, #e4a95d, #bc6b32 55%, #8f421d); transform: rotateX(0); transform-origin: bottom center; box-shadow: inset 0 8px rgba(255,255,255,.24), inset 0 -10px rgba(69,29,10,.17); }
+.lm-reflection-suitcase-lid::after { content: ''; position: absolute; inset: 22% 12%; border: 2px solid rgba(255,239,198,.3); border-radius: 22px 22px 6px 6px; }
+.lm-reflection-suitcase-handle { position: absolute; z-index: 1; top: 0; left: 35%; width: 30%; height: 18%; border: clamp(7px, 1vw, 11px) solid #4f2e18; border-bottom: 0; border-radius: 18px 18px 0 0; background: linear-gradient(90deg, #a65a2b, #d68c44, #93451f); }
+.lm-reflection-suitcase-strap { position: absolute; z-index: 4; top: 33%; bottom: 7%; width: 7%; border: 2px solid rgba(67,31,12,.45); background: linear-gradient(90deg, #6c3517, #b26b31, #6c3517); }
+.lm-reflection-suitcase-strap::after { content: ''; position: absolute; top: 43%; left: -55%; width: 210%; aspect-ratio: 1; border: 3px solid #f3c261; border-radius: 4px; background: #794017; box-shadow: inset 0 0 0 2px #d89342; }
+.lm-reflection-suitcase-strap--left { left: 21%; }.lm-reflection-suitcase-strap--right { right: 21%; }
+.lm-reflection-suitcase-wheel { position: absolute; z-index: 1; bottom: 0; width: 12%; aspect-ratio: 1; border: 5px solid #392518; border-radius: 50%; background: radial-gradient(circle at 42% 38%, #9ba7a8 0 10%, #455358 13% 42%, #232d31 45%); }
+.lm-reflection-suitcase-wheel--left { left: 12%; }.lm-reflection-suitcase-wheel--right { right: 12%; }
+.lm-reflection-suitcase-tag { position: absolute; z-index: 6; right: 9%; bottom: 18%; display: grid; width: 13%; aspect-ratio: .76; place-items: center; border: 2px solid #8e5425; border-radius: 5px; background: #fff4c8; color: #75421b; font-size: clamp(9px, 1vw, 13px); font-weight: 900; transform: rotate(8deg); }
+.lm-reflection-suitcase-scene--playback .lm-reflection-suitcase-lid { animation: lm-reflection-suitcase-open 420ms var(--motion-ease, cubic-bezier(.22, 1, .36, 1)) forwards; }
+.lm-reflection-presentation-sentence--suitcase {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  width: min(92%, 1000px);
+  padding: .24em .45em;
+  border-radius: .3em;
+  background: color-mix(in srgb, var(--c-surface) 90%, transparent);
+  box-shadow: 0 5px 15px rgba(7,26,47,.16);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.72);
+  animation: lm-reflection-suitcase-text-emerge 650ms 1420ms var(--motion-ease, cubic-bezier(.22, 1, .36, 1)) forwards;
 }
-@keyframes lm-reflection-presentation-destination-in {
-  from { opacity: 0; transform: translateY(22px) scale(.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes lm-reflection-suitcase-open { from { transform: rotateX(0); } to { transform: rotateX(-62deg) translateY(-5%); } }
+@keyframes lm-reflection-suitcase-text-emerge {
+  from { top: 50%; opacity: 0; transform: translate(-50%, -50%) scale(.72); }
+  18% { opacity: 1; }
+  to { top: 20%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
+.lm-reflection-trash-scene { display: grid; place-items: end center; }
+.lm-reflection-trash-scene .lm-reflection-presentation-sentence { position: absolute; z-index: 4; top: 10%; width: min(92%, 760px); padding: .24em .45em; border-radius: .3em; background: color-mix(in srgb, var(--c-surface) 90%, transparent); box-shadow: 0 5px 15px rgba(7,26,47,.16); font-size: clamp(24px, 4vw, 58px); }
+.lm-reflection-trash-bin { z-index: 2; font-size: clamp(125px, 18vw, 220px); line-height: .8; filter: drop-shadow(0 14px 9px rgba(7,26,47,.24)); }
+.lm-reflection-trash-lid { position: absolute; z-index: 3; bottom: 72%; width: 50%; height: 12px; border-radius: 8px; background: #506776; transform: rotate(-5deg); }
+.lm-reflection-presentation-item--muellkorb .lm-reflection-presentation-sentence { animation: lm-reflection-trash-drop 650ms var(--motion-ease, cubic-bezier(.22, 1, .36, 1)) both, lm-reflection-trash-explode 700ms 3150ms cubic-bezier(.2,.9,.25,1.35) both; }
+.lm-reflection-trash-pop { position: absolute; z-index: 4; bottom: 15%; display: grid; width: 180px; aspect-ratio: 1; place-items: center; color: #ffcc31; font-size: 90px; line-height: 1; opacity: 0; text-shadow: 0 3px #d04a21; animation: lm-reflection-trash-pop 700ms 3150ms cubic-bezier(.2,.9,.25,1.35) both; }
+.lm-reflection-trash-pop i, .lm-reflection-trash-pop b { position: absolute; font-style: normal; font-size: .48em; }.lm-reflection-trash-pop i { top: 4%; left: 12%; }.lm-reflection-trash-pop b { right: 7%; bottom: 14%; }
+@keyframes lm-reflection-trash-drop { from { opacity: 0; transform: translateY(-140px) rotate(-3deg); } to { opacity: 1; transform: translateY(82px); } }
+@keyframes lm-reflection-trash-explode { from { opacity: 1; transform: translateY(82px) scale(1); } to { opacity: 0; transform: translateY(-34px) scale(1.32) rotate(8deg); } }
+@keyframes lm-reflection-trash-pop { 0% { opacity: 0; transform: scale(.1) rotate(-20deg); } 45% { opacity: 1; transform: scale(1.2) rotate(8deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
 @media (max-width: 700px) {
   .is-presentation.lm-reflection-board { min-height: 100dvh; padding: 18px 14px 24px; }
-  .is-presentation .lm-reflection-hero h1 { font-size: clamp(32px, 10vw, 48px); }
-  .is-presentation .lm-reflection-presentation { gap: 18px; }
-  .lm-reflection-presentation-phase { padding: 22px 20px; }
-  .lm-reflection-presentation-phase h2 { font-size: clamp(28px, 8vw, 44px); }
-  .lm-reflection-presentation-destinations { grid-template-columns: 1fr; }
-  .is-presentation .lm-reflection-presentation-destinations .lm-reflection-column { min-height: 300px; }
-  .is-presentation .lm-reflection-presentation-destinations .lm-reflection-card-list { max-height: none; }
+  .lm-reflection-presentation-stage { min-height: 58vh; padding: 20px 16px; }
+  .lm-reflection-presentation-item, .lm-reflection-presentation-intro { min-height: 48vh; }
+  .lm-reflection-presentation-intro-destinations { gap: 20px; }
+  .lm-reflection-presentation-intro .lm-reflection-suitcase-scene,
+  .lm-reflection-presentation-intro .lm-reflection-trash-scene { width: min(260px, 42vw); }
+  .lm-reflection-presentation-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lm-reflection-presentation-controls .lm-button:last-child { grid-column: span 2; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lm-reflection-presentation-phase,
-  .lm-reflection-presentation-destinations .lm-reflection-column { animation: none !important; }
+  .lm-reflection-suitcase-scene--playback .lm-reflection-suitcase-lid,
+  .lm-reflection-presentation-sentence--suitcase,
+  .lm-reflection-presentation-item--muellkorb .lm-reflection-presentation-sentence,
+  .lm-reflection-trash-pop { animation: none !important; }
+  .lm-reflection-suitcase-scene--playback .lm-reflection-suitcase-lid { transform: rotateX(-62deg) translateY(-5%); }
+  .lm-reflection-presentation-sentence--suitcase { top: 20%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .lm-reflection-trash-pop { display: none; }
+}
+
+/* The tablet keeps the same workspace destinations and material sidebar as a
+   laptop. Split the dense header into two rows rather than hiding its tools. */
+.lm-app-rail-touch-name,
+.lm-topbar-logineo-label { display: none; }
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  .lm-tabbar {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: 46px minmax(48px, auto);
+    gap: 4px 10px !important;
+    min-height: 104px !important;
+    padding: max(8px, env(safe-area-inset-top)) 14px 8px !important;
+    align-items: center !important;
+    overflow: visible !important;
+  }
+  .lm-tabbar .lm-app-brand { grid-column: 1; grid-row: 1; }
+  .lm-desktop-trailing-group {
+    grid-column: 3;
+    grid-row: 1;
+    display: inline-flex !important;
+    justify-self: end;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .lm-desktop-primary-nav.lm-workspace-primary-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+    width: 100%;
+    white-space: nowrap;
+  }
+  .lm-desktop-primary-nav .lm-workspace-nav-item {
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 46px;
+    margin: 0 !important;
+    padding: 4px 2px;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+  .lm-desktop-primary-nav .lm-topbar-onenote,
+  .lm-desktop-primary-nav .lm-topbar-idoceo,
+  .lm-desktop-primary-nav .lm-topbar-notion,
+  .lm-desktop-primary-nav .lm-topbar-miro,
+  .lm-desktop-primary-nav .lm-topbar-webuntis,
+  .lm-desktop-primary-nav .lm-topbar-logineo { display: inline-flex !important; }
+  .lm-tabbar .lm-topbar-logineo .lm-logineo-logo { width: 30px; height: 28px; object-fit: cover; }
+  .lm-desktop-trailing-group .lm-topbar-logout,
+  .lm-desktop-trailing-group .lm-workspace-tool { min-width: 44px; min-height: 44px; }
+  .lm-desktop-trailing-group .lm-classroom-timer-trigger-label,
+  .lm-desktop-trailing-group .lm-topbar-logout-label { display: none; }
+  .lm-desktop-trailing-group .lm-classroom-timer-trigger { min-width: 44px; width: 44px; padding: 0; justify-content: center; }
+  .lm-desktop-trailing-group .lm-workspace-tools-trigger { min-width: 44px; }
+  .lm-motion-sidebar > .lm-sidebar { width: clamp(205px, 27vw, 260px) !important; }
+  .lm-desktop-app-rail { width: 58px; min-width: 58px; }
+  /* Keep Safari's opaque header, but allow the focus/hover feedback that its
+     earlier compositing reset suppresses for every descendant. */
+  .lm-tabbar .lm-workspace-nav-item:hover,
+  .lm-tabbar .lm-workspace-nav-item:focus-visible { background: var(--c-hover) !important; }
+  [data-theme="dark"] .lm-tabbar,
+  [data-theme="dark"] .lm-sidebar { background: var(--c-bg-secondary) !important; border-color: var(--c-border) !important; }
+  [data-theme="dark"] .lm-desktop-primary-nav .lm-workspace-nav-item { color: var(--c-text-2); }
+  [data-theme="dark"] .lm-desktop-primary-nav .lm-workspace-nav-item:hover,
+  [data-theme="dark"] .lm-desktop-primary-nav .lm-workspace-nav-item:focus-visible { color: var(--c-text) !important; border-color: var(--c-focus) !important; }
+}
+
+/* A trackpad supplies genuine hover even when touch remains the primary
+   pointer. Keep the laptop-style label available in that hybrid setup. */
+.lm-tablet-hover-tooltip {
+  position: fixed;
+  z-index: 1700;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(240px, calc(100vw - 16px));
+  padding: 7px 10px;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  background: var(--c-surface-elevated);
+  color: var(--c-text);
+  box-shadow: var(--c-shadow-pop);
+  font: 700 11px/1.25 "DM Sans", sans-serif;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  animation: lm-tablet-tooltip-in 180ms ease both;
+}
+.lm-tablet-hover-tooltip.is-side { transform: translateY(-50%); }
+@keyframes lm-tablet-tooltip-in { from { opacity: 0; } to { opacity: 1; } }
+@media (min-width: 768px) and (any-hover: hover) and (any-pointer: fine) {
+  .lm-desktop-app-rail-label {
+    position: absolute;
+    z-index: 80;
+    left: calc(100% + 8px);
+    right: auto;
+    display: block;
+    max-width: 240px;
+    padding: 8px 11px;
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    background: var(--c-surface-elevated);
+    color: var(--c-text);
+    box-shadow: var(--c-shadow-pop);
+    font: 700 12px/1.25 "DM Sans", sans-serif;
+    white-space: nowrap;
+    transform: translateY(-50%);
+    pointer-events: none;
+    animation: lm-tablet-label-in 180ms cubic-bezier(.22, 1, .36, 1) both;
+  }
+  .lm-desktop-app-rail-launcher::after { display: none !important; }
+  .lm-tabbar .lm-workspace-nav-item[data-app-name]::after,
+  .lm-tabbar .lm-workspace-nav-item[title]::after,
+  .lm-tabbar .lm-workspace-tool[title]::after,
+  .lm-tabbar .lm-topbar-logout[title]::after {
+    transform: translateX(-50%) translateY(-5px) scale(.96) !important;
+  }
+  .lm-tabbar .lm-workspace-nav-item[data-app-name]:hover::after,
+  .lm-tabbar .lm-workspace-nav-item[data-app-name]:focus-visible::after,
+  .lm-tabbar .lm-workspace-nav-item[title]:hover::after,
+  .lm-tabbar .lm-workspace-nav-item[title]:focus-visible::after,
+  .lm-tabbar .lm-workspace-tool[title]:hover::after,
+  .lm-tabbar .lm-workspace-tool[title]:focus-visible::after,
+  .lm-tabbar .lm-topbar-logout[title]:hover::after,
+  .lm-tabbar .lm-topbar-logout[title]:focus-visible::after {
+    transform: translateX(-50%) translateY(0) scale(1) !important;
+  }
+}
+
+/* Sidebar scrolling and Safari's composited header clip descendant pseudo
+   elements. The tablet label is portaled above both surfaces instead. */
+@media (min-width: 768px) and (max-width: 1100px) and (any-hover: hover) and (any-pointer: fine) {
+  .lm-desktop-app-rail-label,
+  .lm-tabbar [title]::after,
+  .lm-sidebar button[title]::after { display: none !important; }
+}
+
+/* iPad navigation names must not depend on hover capability: Safari can
+   report hover for a trackpad even while the page is used by touch. */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .lm-desktop-primary-nav .lm-workspace-nav-item {
+    flex-direction: column;
+    gap: 1px;
+    min-height: 52px;
+  }
+  .lm-desktop-primary-nav .lm-workspace-nav-item > span:last-child:not(.lm-onenote-glyph):not(.lm-webuntis-glyph),
+  .lm-tabbar .lm-topbar-onenote > span:last-child,
+  .lm-tabbar .lm-topbar-idoceo > span:last-child,
+  .lm-tabbar .lm-topbar-notion > span:last-child,
+  .lm-tabbar .lm-topbar-miro > span:last-child,
+  .lm-tabbar .lm-topbar-webuntis-label,
+  .lm-tabbar .lm-topbar-logineo-label {
+    display: block !important;
+    max-width: 100%;
+    color: var(--c-text-2);
+    font-size: 9px;
+    line-height: 1.1;
+    text-align: center;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+
+/* Portrait iPads also render the compact direct-app strip in the header. */
+@media (min-width: 601px) and (max-width: 860px) {
+  .lm-mobile-header-app {
+    flex-basis: 72px;
+    width: 72px;
+    height: 52px;
+    grid-template-rows: 22px auto;
+    gap: 2px;
+  }
+  .lm-mobile-header-app .lm-mobile-header-app-label {
+    display: block !important;
+    position: static;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    clip: auto;
+    overflow: visible;
+    font-size: 9px;
+    line-height: 1.1;
+  }
+}
+
+/* App names remain visible beside their icons on tablets and laptops. */
+@media (min-width: 768px) {
+  .lm-desktop-app-rail { width: max-content; min-width: 118px; max-width: min(220px, 30vw); padding-inline: 7px; }
+  .lm-desktop-app-rail-scroll { width: max-content; max-width: 100%; align-items: stretch; }
+  .lm-desktop-app-rail-launcher {
+    width: 100%;
+    min-width: 0;
+    height: 48px;
+    min-height: 48px;
+    flex-basis: 48px;
+    display: flex;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 4px;
+  }
+  .lm-desktop-app-rail-launcher .lm-app-rail-icon { width: 26px; min-width: 26px; height: 26px; }
+  .lm-app-rail-touch-name {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--c-text);
+    font: 700 10px/1.15 "DM Sans", sans-serif;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lm-desktop-app-rail-label { display: none; }
+}
+
+/* Give laptop navigation a full-width row before reducing destination names.
+   The content panels do not control header width. */
+@media (min-width: 1101px) and (max-width: 1600px) {
+  .lm-tabbar {
+    grid-template-rows: 48px minmax(58px, auto);
+    min-height: 130px !important;
+    padding: 8px 14px !important;
+  }
+  .lm-tabbar .lm-app-brand { grid-column: 1; grid-row: 1; }
+  .lm-desktop-trailing-group { grid-column: 3; grid-row: 1; }
+  .lm-desktop-primary-nav.lm-workspace-primary-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: stretch;
+    justify-content: space-between;
+    width: 100%;
+    gap: 4px;
+  }
+  .lm-app-shell.lm-platform-mac-desktop .lm-desktop-primary-nav .lm-workspace-nav-item,
+  .lm-desktop-primary-nav .lm-workspace-nav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
+    padding-inline: 3px;
+    justify-content: center;
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 1101px) {
+  .lm-tabbar .lm-topbar-onenote > span:last-child,
+  .lm-tabbar .lm-topbar-idoceo > span:last-child,
+  .lm-tabbar .lm-topbar-notion > span:last-child,
+  .lm-tabbar .lm-topbar-miro > span:last-child { display: inline !important; }
+}
+
+/* The Logineo mark previously occupied its entire tile and pushed its name
+   below the header, despite the label being present in the DOM. */
+@media (min-width: 768px) and (max-width: 1600px) {
+  .lm-tabbar .lm-topbar-logineo {
+    width: auto;
+    min-width: 0;
+    height: 52px;
+    min-height: 52px;
+    padding: 3px !important;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .lm-tabbar .lm-topbar-logineo .lm-logineo-logo,
+  .lm-app-shell.lm-platform-mac-desktop .lm-tabbar .lm-topbar-logineo .lm-logineo-logo {
+    width: 42px;
+    height: 29px;
+    flex-basis: 29px;
+    object-fit: contain;
+  }
+  .lm-tabbar .lm-topbar-logineo-label {
+    display: block !important;
+    color: var(--c-text-2);
+    font-size: 9px;
+    line-height: 1.1;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1100px) and (any-hover: none) {
+  .lm-desktop-app-rail-launcher::after,
+  .lm-tabbar .lm-workspace-nav-item::after,
+  .lm-tabbar .lm-workspace-tool::after,
+  .lm-tabbar .lm-topbar-logout::after { display: none !important; }
+}
+
+@keyframes lm-tablet-label-in {
+  from { opacity: 0; transform: translate(-4px, -50%) scale(.96); }
+  to { opacity: 1; transform: translate(0, -50%) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-desktop-app-rail-label { animation: none !important; }
+  .lm-tabbar .lm-workspace-nav-item,
+  .lm-desktop-app-rail-launcher,
+  .lm-app-rail-icon { transition: none !important; }
+}
+
+/* On phones, one readable day replaces five compressed columns. */
+.lm-schedule-day-selector { display: none; }
+@media (max-width: 600px) {
+  .lm-schedule-view { padding-left: 10px !important; padding-right: 10px !important; }
+  .lm-schedule-day-selector {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+  .lm-schedule-day-selector button {
+    min-width: 0;
+    min-height: var(--touch-target);
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    background: var(--c-surface);
+    color: var(--c-text-2);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .lm-schedule-day-selector button[aria-pressed="true"] {
+    border-color: var(--c-turquoise);
+    background: var(--c-turquoise);
+    color: #fff;
+  }
+  .lm-schedule-day-selector button:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+  .lm-schedule-grid-wrap { padding: 10px; overflow-x: hidden; }
+  .lm-schedule-grid.is-phone {
+    width: 100%;
+    min-width: 0 !important;
+    grid-template-columns: 72px minmax(0, 1fr) !important;
+    gap: 7px !important;
+  }
+  .lm-schedule-grid.is-phone > .lm-schedule-day-heading {
+    text-align: left !important;
+    padding: 5px 8px !important;
+    color: var(--c-text) !important;
+    font-size: 14px !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
+  .lm-schedule-grid.is-phone .lm-schedule-period-label {
+    font-size: 12px !important;
+    line-height: 1.3;
+    padding: 12px 2px 0 0 !important;
+  }
+  .lm-schedule-grid.is-phone > .lm-schedule-break-row-label {
+    flex-direction: column;
+    justify-content: center !important;
+    align-items: flex-end !important;
+    gap: 3px;
+    padding-right: 2px !important;
+    font-size: 10px !important;
+  }
+  .lm-schedule-grid.is-phone .lm-schedule-period-time,
+  .lm-schedule-grid.is-phone .lm-schedule-break-row-time {
+    font-size: 10px;
+    line-height: 1.25;
+    overflow-wrap: normal;
+  }
+  .lm-schedule-grid.is-phone .lm-schedule-cell,
+  .lm-schedule-grid.is-phone .lm-schedule-cell > div { min-height: 80px !important; }
+  .lm-schedule-grid.is-phone .lm-schedule-cell > div { padding: 10px 12px !important; }
+  .lm-schedule-grid.is-phone .lm-schedule-cell-main > div {
+    min-height: 80px !important;
+    padding: 10px 12px !important;
+  }
+  .lm-schedule-grid.is-phone .lm-schedule-cell-label {
+    font-size: 16px !important;
+    line-height: 1.25;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+  .lm-schedule-grid.is-phone .lm-schedule-cell-location {
+    font-size: 13px;
+    line-height: 1.25;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+  .lm-schedule-grid.is-phone .lm-schedule-break-details { gap: 5px; padding: 10px 12px; }
+  .lm-schedule-grid.is-phone .lm-schedule-break-label { font-size: 14px; }
+  .lm-schedule-grid.is-phone .lm-schedule-break-location { font-size: 13px; }
+  .lm-schedule-grid.is-phone .lm-schedule-cell-add { opacity: .6; }
 }

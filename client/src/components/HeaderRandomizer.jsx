@@ -46,7 +46,7 @@ function parseStudentNames(text) {
   return { names, duplicateCount };
 }
 
-export default function HeaderRandomizer({ openRequest = 0 }) {
+export default function HeaderRandomizer({ openRequest = 0, showTrigger = true }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState('names');
   const [rosters, setRosters] = useState(() => normalizeRosters([]));
@@ -285,7 +285,7 @@ export default function HeaderRandomizer({ openRequest = 0 }) {
 
   const statusLabel = saveState === 'saving' ? 'Speichert …' : saveState === 'error' ? 'Fehler beim Speichern' : 'Gespeichert';
   return <div className="lm-header-randomizer">
-    <button type="button" className="lm-spring lm-workspace-tool lm-header-randomizer-trigger" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="dialog" title="Zufallsnamen und Zufallsgruppen">🎲</button>
+    {showTrigger && <button type="button" className="lm-spring lm-workspace-tool lm-header-randomizer-trigger" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="dialog" title="Zufallsnamen und Zufallsgruppen">🎲</button>}
     {open && createPortal(<div className="lm-header-randomizer-backdrop" onMouseDown={() => setOpen(false)}><section className="lm-header-randomizer-modal" role="dialog" aria-modal="true" aria-label="Zufallsnamen und Zufallsgruppen" onMouseDown={(event) => event.stopPropagation()}>
       <div className="lm-header-randomizer-heading"><div><strong>Zufallsgenerator</strong><span>Premium-Unterrichtswerkzeug · Klassen und Kurse getrennt verwalten</span></div><button type="button" className="lm-header-randomizer-close" onClick={() => setOpen(false)} aria-label="Zufallsgenerator schließen">×</button></div>
       {loadState === 'loading' && <div className="lm-header-randomizer-notice is-loading" role="status">Gespeicherte Klassen werden geladen … Du kannst bereits arbeiten.</div>}
