@@ -2975,6 +2975,7 @@ button:not(:disabled):focus-visible,
 .lm-desktop-app-rail-label {
   display: none;
 }
+.lm-desktop-app-rail-resize { display: none; }
 .lm-desktop-app-rail-launcher {
   width: 44px;
   min-width: 44px;
@@ -5225,8 +5226,40 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
 
 /* App names remain visible beside their icons on tablets and laptops. */
 @media (min-width: 768px) {
-  .lm-desktop-app-rail { width: max-content; min-width: 118px; max-width: min(220px, 30vw); padding-inline: 7px; }
-  .lm-desktop-app-rail-scroll { width: max-content; max-width: 100%; align-items: stretch; }
+  .lm-desktop-app-rail {
+    width: var(--app-rail-width, 180px);
+    min-width: var(--app-rail-width, 180px);
+    max-width: 320px;
+    padding-inline: 7px;
+  }
+  .lm-desktop-app-rail.is-resizing { transition: none; }
+  .lm-desktop-app-rail-scroll { width: calc(100% + 16px); max-width: none; align-items: stretch; }
+  .lm-desktop-app-rail-resize {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    right: -8px;
+    bottom: 0;
+    display: block;
+    width: 20px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+  .lm-desktop-app-rail-resize::after {
+    position: absolute;
+    top: 50%;
+    left: 9px;
+    width: 2px;
+    height: 40px;
+    border-radius: 2px;
+    background: var(--c-border);
+    transform: translateY(-50%);
+    content: '';
+  }
+  .lm-desktop-app-rail-resize:hover::after,
+  .lm-desktop-app-rail-resize:focus-visible::after,
+  .lm-desktop-app-rail.is-resizing .lm-desktop-app-rail-resize::after { background: var(--c-focus); }
+  .lm-desktop-app-rail-resize:focus-visible { outline: 2px solid var(--c-focus); outline-offset: -4px; }
   .lm-desktop-app-rail-launcher {
     width: 100%;
     min-width: 0;
@@ -5244,7 +5277,7 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
     min-width: 0;
     overflow: hidden;
     color: var(--c-text);
-    font: 700 10px/1.15 "DM Sans", sans-serif;
+    font: 700 11px/1.15 "DM Sans", sans-serif;
     text-overflow: ellipsis;
     white-space: nowrap;
   }

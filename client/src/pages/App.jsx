@@ -88,6 +88,11 @@ const normalizeAppRailOrder = (order) => {
   return valid ? order : defaultOrder;
 };
 
+const APP_RAIL_WIDTH_KEY = 'lm-external-app-rail-width';
+const APP_RAIL_MIN_WIDTH = 118;
+const APP_RAIL_MAX_WIDTH = 320;
+const clampAppRailWidth = (width) => Math.max(APP_RAIL_MIN_WIDTH, Math.min(APP_RAIL_MAX_WIDTH, width));
+
 function DesktopAppRail() {
   const [hoveredApp, setHoveredApp] = useState(null);
   const [labelTop, setLabelTop] = useState(0);
@@ -95,6 +100,45 @@ function DesktopAppRail() {
   const [draggedAppId, setDraggedAppId] = useState(null);
   const appOrderRef = useRef(appOrder);
   const saveQueueRef = useRef(Promise.resolve());
+  const [railWidth, setRailWidth] = useState(() => {
+    try {
+      const saved = Number(window.localStorage.getItem(APP_RAIL_WIDTH_KEY));
+      return Number.isFinite(saved) && saved > 0 ? clampAppRailWidth(saved) : 180;
+    } catch {
+      return 180;
+    }
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeStartRef = useRef(null);
+
+  const saveRailWidth = (width) => {
+    try { window.localStorage.setItem(APP_RAIL_WIDTH_KEY, String(width)); } catch { /* Storage may be unavailable. */ }
+  };
+  const onRailResizeMove = (event) => {
+    if (resizeStartRef.current?.pointerId !== event.pointerId) return;
+    const { x, width } = resizeStartRef.current;
+    const nextWidth = clampAppRailWidth(width + event.clientX - x);
+    resizeStartRef.current.currentWidth = nextWidth;
+    setRailWidth(nextWidth);
+  };
+  const onRailResizeEnd = (event) => {
+    if (resizeStartRef.current?.pointerId !== event.pointerId) return;
+    saveRailWidth(resizeStartRef.current.currentWidth);
+    resizeStartRef.current = null;
+    setIsResizing(false);
+  };
+  const onRailResizeKeyDown = (event) => {
+    const step = event.shiftKey ? 20 : 10;
+    const nextWidth = event.key === 'ArrowRight' ? railWidth + step
+      : event.key === 'ArrowLeft' ? railWidth - step
+        : event.key === 'Home' ? APP_RAIL_MIN_WIDTH
+          : event.key === 'End' ? APP_RAIL_MAX_WIDTH : null;
+    if (nextWidth === null) return;
+    event.preventDefault();
+    const clamped = clampAppRailWidth(nextWidth);
+    setRailWidth(clamped);
+    saveRailWidth(clamped);
+  };
 
   useEffect(() => {
     let active = true;
@@ -145,7 +189,7 @@ function DesktopAppRail() {
   };
 
   return (
-    <nav className="lm-desktop-app-rail" aria-label="Externe Unterrichts-Apps" onMouseLeave={() => setHoveredApp(null)}>
+    <nav className={`lm-desktop-app-rail${isResizing ? ' is-resizing' : ''}`} style={{ '--app-rail-width': `${railWidth}px` }} aria-label="Externe Unterrichts-Apps" onMouseLeave={() => setHoveredApp(null)}>
       <div className="lm-desktop-app-rail-scroll">
       {orderedApps.map((app) => (
         <a
@@ -188,6 +232,27 @@ function DesktopAppRail() {
         </a>
       ))}
       </div>
+      <div
+        className="lm-desktop-app-rail-resize"
+        role="separator"
+        tabIndex={0}
+        aria-label="Breite der App-Seitenleiste ändern"
+        aria-orientation="vertical"
+        aria-valuemin={APP_RAIL_MIN_WIDTH}
+        aria-valuemax={APP_RAIL_MAX_WIDTH}
+        aria-valuenow={railWidth}
+        onPointerDown={(event) => {
+          if (event.pointerType === 'mouse' && event.button !== 0) return;
+          event.preventDefault();
+          resizeStartRef.current = { pointerId: event.pointerId, x: event.clientX, width: railWidth, currentWidth: railWidth };
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setIsResizing(true);
+        }}
+        onPointerMove={onRailResizeMove}
+        onPointerUp={onRailResizeEnd}
+        onPointerCancel={onRailResizeEnd}
+        onKeyDown={onRailResizeKeyDown}
+      />
       {hoveredApp && <span className="lm-desktop-app-rail-label" style={{ top: labelTop }} aria-hidden="true">{hoveredApp.name}</span>}
     </nav>
   );

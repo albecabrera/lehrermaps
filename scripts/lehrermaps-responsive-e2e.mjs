@@ -164,6 +164,38 @@ async function exerciseExternalAppRail(page, viewport) {
   }
 }
 
+async function exerciseResizableAppRail(page, viewport) {
+  if (!viewport.name.startsWith('iPad') && !viewport.name.startsWith('MacBook')) return;
+  const rail = page.locator('.lm-desktop-app-rail');
+  const handle = rail.locator('.lm-desktop-app-rail-resize');
+  await handle.waitFor({ state: 'visible' });
+  const startWidth = (await rail.boundingBox()).width;
+  assert(Math.abs(startWidth - 180) <= 2, `app rail must start at 180px (received ${startWidth}px)`);
+
+  const handleBox = await handle.boundingBox();
+  const x = handleBox.x + handleBox.width / 2;
+  const y = handleBox.y + handleBox.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 48, y, { steps: 6 });
+  await page.mouse.up();
+  const resizedWidth = (await rail.boundingBox()).width;
+  assert(resizedWidth >= startWidth + 40, `drag must widen app rail (from ${startWidth}px to ${resizedWidth}px)`);
+
+  for (const id of ['click-and-teach-9-10', 'netcologne-ticket', 'school-home']) {
+    const label = rail.locator(`.lm-app-rail-${id} .lm-app-rail-touch-name`);
+    const sizes = await label.evaluate((element) => ({ scrollWidth: element.scrollWidth, clientWidth: element.clientWidth }));
+    assert(sizes.scrollWidth <= sizes.clientWidth, `${id} label is ellipsized: ${JSON.stringify(sizes)}`);
+  }
+
+  const savedWidth = await page.evaluate(() => Number(localStorage.getItem('lm-external-app-rail-width')));
+  assert(savedWidth >= startWidth + 40, `app rail width was not saved (received ${savedWidth}px)`);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await rail.waitFor({ state: 'visible' });
+  const restoredWidth = (await rail.boundingBox()).width;
+  assert(Math.abs(restoredWidth - savedWidth) <= 2, `app rail width did not persist after reload (${savedWidth}px saved, ${restoredWidth}px restored)`);
+}
+
 async function exerciseTabletWorkspace(page, viewport) {
   if (viewport.width < 768 || viewport.width > 1100) return;
   assert(await page.locator('.lm-desktop-primary-nav').isVisible(), 'tablet desktop header is unavailable');
@@ -201,6 +233,7 @@ async function run() {
           await exerciseKlausurplan(page, viewport);
           await exerciseOneNote(page, viewport);
           await exerciseExternalAppRail(page, viewport);
+          await exerciseResizableAppRail(page, viewport);
           await exerciseTabletWorkspace(page, viewport);
           await measureLayout(page, viewport);
           assert(!consoleErrors.length, `console errors: ${consoleErrors.join('; ')}`);
