@@ -26,6 +26,7 @@ import backupsRouter from './routes/backups.js';
 import widgetRouter from './routes/widget.js';
 import reflectionBoardRouter from './routes/reflectionBoard.js';
 import teacherHubRouter from './routes/teacherHub.js';
+import shortLinksRouter from './routes/shortLinks.js';
 
 // Load the production configuration next to this module.  The service may be
 // started from the project root by a process manager, so relying on cwd would
@@ -92,6 +93,8 @@ app.use('/api', corsMiddleware);
 // the access capability. This must precede every router that installs auth
 // middleware on the /api mount.
 app.get('/api/display/:token', displaySession);
+// Short-link resolution is public; its creation endpoint applies teacher auth itself.
+app.use('/api', shortLinksRouter);
 // A broad private router is mounted at /api below. Reserve the removed student
 // login path as a genuine missing resource instead of letting that middleware
 // turn it into an authentication response.

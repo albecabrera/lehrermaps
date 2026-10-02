@@ -15,6 +15,7 @@
     "test:widget": "node --test server/lib/__tests__/widgetToday.test.js && node scripts/lehrermaps-widget-api.mjs",
     "test:deep-links": "node --test client/src/lib/__tests__/deepLinks.test.js",
     "test:reflection": "node --test client/src/lib/__tests__/reflectionBoard.test.js && node scripts/koffer-muellkorb-api.mjs",
+    "test:short-links": "node --test client/src/lib/__tests__/shortLinkUrl.test.js server/lib/__tests__/shortLinks.test.js && node scripts/short-links-api.mjs",
     "test:bug-checklist": "node scripts/lehrermaps-bug-checklist-api.mjs",
     "test:pending-sync": "node scripts/lehrermaps-pending-sync.mjs",
     "test:removed-features-migration": "node scripts/lehrermaps-removed-features-migration.mjs",

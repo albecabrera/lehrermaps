@@ -93,6 +93,7 @@ export const setFilesRole = (ids, material_role) => api.put('/files/roles/bulk',
 export const getLinks = (folderId) => api.get(`/links/${folderId}`).then((r) => r.data);
 export const createLink = (data) => api.post('/links', data).then((r) => r.data);
 export const deleteLink = (id) => api.delete(`/links/${id}`);
+export const createShortLink = (url) => api.post('/short-links', { url }).then((r) => r.data);
 export const reorderFolders = (items) =>
   api.put('/folders/reorder', { items });
 

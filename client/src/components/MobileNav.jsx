@@ -78,10 +78,11 @@ const toolIcons = {
   hangman: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h15M6 21V3h10v4"/><circle cx="16" cy="10" r="2"/><path d="M16 12v4m0-3-3 2m3-2 3 2m-3 1-2 3m2-3 2 3"/></svg>,
   qrCode: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.7"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM5.5 5.5h2v2h-2zM16.5 5.5h2v2h-2zM5.5 16.5h2v2h-2zM14 14h3v3h-3zM20 14v3M14 20h3M20 20h1"/></svg>,
   brainstorm: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6m-5 3h4m-2-19a7 7 0 0 0-4 12.75c.7.48 1 1.03 1 1.75h6c0-.72.3-1.27 1-1.75A7 7 0 0 0 12 2Z"/><path d="M12 5v2m-4 1 1.5 1m5-1L13 9"/></svg>,
+  shortLink: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l2.5-2.5a5 5 0 0 0-7.07-7.07l-1.44 1.44"/><path d="M14 11a5 5 0 0 0-7.07 0l-2.5 2.5a5 5 0 0 0 7.07 7.07l1.44-1.44"/></svg>,
   logout: <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M13 7l5 5-5 5m-9-5h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
 };
 
-export function WorkspaceToolsMenu({ onRandomizer, onReflection, onClassroomTimer, onHangman, onQrCode, onBrainstormingBoard, onBugChecklist, onLogout, onSelection, mobile = false }) {
+export function WorkspaceToolsMenu({ onRandomizer, onReflection, onClassroomTimer, onHangman, onQrCode, onBrainstormingBoard, onShortLink, onBugChecklist, onLogout, onSelection, mobile = false }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -188,6 +189,7 @@ export function WorkspaceToolsMenu({ onRandomizer, onReflection, onClassroomTime
           {onHangman && <button type="button" role="menuitem" aria-label="Hangman" title="Hangman" onClick={() => selectItem(onHangman)}>{toolIcons.hangman}<span className="lm-workspace-tools-label">Hangman</span></button>}
           {onQrCode && <button type="button" role="menuitem" aria-label="QR-Code-Generator" title="QR-Code-Generator" onClick={() => selectItem(onQrCode)}>{toolIcons.qrCode}<span className="lm-workspace-tools-label">QR-Code</span></button>}
           {onBrainstormingBoard && <button type="button" role="menuitem" aria-label="Brainstorming-Board" title="Brainstorming-Board" onClick={() => selectItem(onBrainstormingBoard)}>{toolIcons.brainstorm}<span className="lm-workspace-tools-label">Brainstorming</span></button>}
+          {onShortLink && <button type="button" role="menuitem" aria-label="Kurzlink erstellen" title="Kurzlink erstellen" onClick={() => selectItem(onShortLink)}>{toolIcons.shortLink}<span className="lm-workspace-tools-label">Kurzlink</span></button>}
           {onBugChecklist && <button type="button" role="menuitem" aria-label="Bugs-Checkliste" title="Bugs-Checkliste" onClick={() => selectItem(onBugChecklist)}><BugChecklistIcon size={20} /><span className="lm-workspace-tools-label">Bugs-Checkliste</span></button>}
           {onLogout && <button type="button" role="menuitem" className="lm-workspace-tools-logout" aria-label="Abmelden" title="Abmelden" onClick={() => selectItem(onLogout)}>{toolIcons.logout}<span className="lm-workspace-tools-label">Abmelden</span></button>}
         </div>
@@ -204,7 +206,7 @@ export function WorkspaceToolsMenu({ onRandomizer, onReflection, onClassroomTime
 export function MobileMoreSheet({
   open, onClose, t, accent,
   isDark, toggleTheme,
-  onExams, onQuickAccess, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onHangman, onQrCode, onBrainstormingBoard, onIdoceo, onUntis, onLogout,
+  onExams, onQuickAccess, onWorksheet, onUpload, uploadDisabled, onBugChecklist, onClassroomTimer, onHangman, onQrCode, onBrainstormingBoard, onShortLink, onIdoceo, onUntis, onLogout,
   onRandomizer, onReflection,
   showWorkspaceTools = true,
   showTeacherLinks = false,
@@ -280,7 +282,7 @@ export function MobileMoreSheet({
           ),
         })}
         {onWorksheet && row('✦ Arbeitsblatt', onWorksheet)}
-        {showWorkspaceTools && onRandomizer && onReflection && <WorkspaceToolsMenu onRandomizer={onRandomizer} onReflection={onReflection} onClassroomTimer={onClassroomTimer} onHangman={onHangman} onQrCode={onQrCode} onBrainstormingBoard={onBrainstormingBoard} onBugChecklist={onBugChecklist} onLogout={onLogout} onSelection={onClose} mobile />}
+        {showWorkspaceTools && onRandomizer && onReflection && <WorkspaceToolsMenu onRandomizer={onRandomizer} onReflection={onReflection} onClassroomTimer={onClassroomTimer} onHangman={onHangman} onQrCode={onQrCode} onBrainstormingBoard={onBrainstormingBoard} onShortLink={onShortLink} onBugChecklist={onBugChecklist} onLogout={onLogout} onSelection={onClose} mobile />}
 
         {hasActions && divider}
 

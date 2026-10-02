@@ -46,6 +46,7 @@ import ClassroomTimer from '../components/ClassroomTimer';
 import HangmanTool from '../components/HangmanTool';
 import QrCodeTool from '../components/QrCodeTool';
 import BrainstormingBoard from '../components/BrainstormingBoard';
+import ShortLinkTool from '../components/ShortLinkTool';
 import HeaderRandomizer from '../components/HeaderRandomizer';
 import ReflectionBoard from '../components/ReflectionBoard';
 
@@ -346,6 +347,7 @@ export default function App({ onLogout }) {
   const [hangmanOpen, setHangmanOpen] = useState(false);
   const [qrCodeOpen, setQrCodeOpen] = useState(false);
   const [brainstormingBoardOpen, setBrainstormingBoardOpen] = useState(false);
+  const [shortLinkOpen, setShortLinkOpen] = useState(false);
   const [appRailVisible, setAppRailVisible] = useState(true);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [presentationMode, setPresentationMode] = useState(false);
@@ -1423,6 +1425,7 @@ export default function App({ onLogout }) {
               onHangman={() => setHangmanOpen(true)}
               onQrCode={() => setQrCodeOpen(true)}
               onBrainstormingBoard={() => setBrainstormingBoardOpen(true)}
+              onShortLink={() => setShortLinkOpen(true)}
               onBugChecklist={() => setBugChecklistOpen(true)}
               onLogout={onLogout}
             />
@@ -2121,6 +2124,7 @@ export default function App({ onLogout }) {
                   onHangman={() => setHangmanOpen(true)}
                   onQrCode={() => setQrCodeOpen(true)}
                   onBrainstormingBoard={() => setBrainstormingBoardOpen(true)}
+                  onShortLink={() => setShortLinkOpen(true)}
                   onBugChecklist={() => setBugChecklistOpen(true)}
                   onLogout={onLogout}
                   onSelection={() => setSidebarDrawerOpen(false)}
@@ -2171,6 +2175,7 @@ export default function App({ onLogout }) {
         onHangman={() => setHangmanOpen(true)}
         onQrCode={() => setQrCodeOpen(true)}
         onBrainstormingBoard={() => setBrainstormingBoardOpen(true)}
+        onShortLink={() => setShortLinkOpen(true)}
         showWorkspaceTools={isPhone}
         onRandomizer={() => setRandomizerOpenRequest((request) => request + 1)}
         onReflection={() => navigateToView('reflection')}
@@ -2205,6 +2210,7 @@ export default function App({ onLogout }) {
       <HangmanTool open={hangmanOpen} onClose={() => setHangmanOpen(false)} />
       <QrCodeTool open={qrCodeOpen} onClose={() => setQrCodeOpen(false)} />
       <BrainstormingBoard open={brainstormingBoardOpen} onClose={() => setBrainstormingBoardOpen(false)} />
+      <ShortLinkTool open={shortLinkOpen} onClose={() => setShortLinkOpen(false)} />
       {pleskTerminalOpen && <PleskTerminalPanel onClose={() => setPleskTerminalOpen(false)} />}
       {folderZoom && (
         <div

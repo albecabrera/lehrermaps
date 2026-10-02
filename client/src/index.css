@@ -2061,8 +2061,24 @@ button[aria-pressed="true"] {
 .lm-brainstorm-empty { display: grid; min-height: 130px; place-items: center; margin: 0; padding: 16px; border: 1px dashed var(--c-border); border-radius: 14px; color: var(--c-text-3); font-size: 13px; text-align: center; }
 .lm-brainstorm-board button:focus-visible,
 .lm-brainstorm-board input:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
+.lm-short-link-intro { margin: 0; color: var(--c-text-2); font-size: 14px; line-height: 1.5; }
+.lm-short-link-form { display: grid; gap: 8px; }
+.lm-short-link-form label,
+.lm-short-link-result label { font-size: 14px; font-weight: 700; }
+.lm-short-link-form input,
+.lm-short-link-result input { width: 100%; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--c-border); border-radius: 10px; background: var(--c-surface); color: var(--c-text); font: inherit; }
+.lm-short-link-form button,
+.lm-short-link-result button { min-height: 44px; padding: 0 16px; border: 1px solid transparent; border-radius: 10px; background: var(--c-turquoise); color: #fff; font-size: 14px; font-weight: 650; cursor: pointer; }
+.lm-short-link-form button:disabled { cursor: not-allowed; opacity: .48; }
+.lm-short-link-result { display: grid; gap: 8px; margin-top: 12px; }
+.lm-short-link-result > div { display: flex; gap: 8px; }
+.lm-short-link-result a { width: fit-content; color: var(--c-turquoise); font-size: 13px; }
+.lm-short-link-tool button:focus-visible,
+.lm-short-link-tool input:focus-visible,
+.lm-short-link-tool a:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 2px; }
 @media (max-width: 480px) {
   .lm-brainstorm-board-entry { flex-direction: column; }
+  .lm-short-link-result > div { flex-direction: column; }
 }
 
 /* Hangman: local, touch-first classroom game. */
