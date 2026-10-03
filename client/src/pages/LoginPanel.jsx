@@ -64,6 +64,14 @@ export default function LoginPanel({ onLogin }) {
   const isTeacher = true;
   return (
     <div className="lm-login-stable lm-login-shell">
+      <img
+        className="lm-esg-backdrop lm-esg-backdrop--login"
+        src="/assets/icons/esg-logo-overlay.svg"
+        alt=""
+        aria-hidden="true"
+        tabIndex={-1}
+        draggable={false}
+      />
 
       <div className="lm-login-topbrand"><BrandMark size={36} /></div>
 

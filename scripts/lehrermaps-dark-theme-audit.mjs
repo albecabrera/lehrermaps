@@ -35,7 +35,7 @@ const LIGHT_REFERENCE_TOKENS = {
   '--c-text': '#13283d',
   '--c-text-2': '#52677b',
   '--c-text-3': '#718397',
-  '--c-turquoise': '#0f9e9a',
+  '--c-turquoise': '#514bb6',
   '--c-orange': '#e87824',
 };
 
@@ -115,7 +115,7 @@ async function run() {
     '.lm-sidebar',
     '.lm-modal-surface',
     '.lm-editorial-card',
-    '.lm-annual-entry-card',
+    '.lm-schedule-grid-wrap',
     '.lm-classroom-timer',
   ]) {
     assert.match(css, new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^{}]*\\{[^}]*var\\(--c-(?:surface|surface-elevated|glass-bg|bg)`), `${selector} must consume central surface tokens`);

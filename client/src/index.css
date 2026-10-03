@@ -3,9 +3,11 @@
 @tailwind utilities;
 
 :root {
+  --c-brand: #312f80;
+  --c-brand-bright: #5b56c7;
   --c-navy: #173b66;
   --c-navy-deep: #0b2545;
-  --c-turquoise: #0f9e9a;
+  --c-turquoise: #514bb6;
   --c-orange: #e87824;
   --c-bg: #eef3f6;
   --c-surface: #ffffff;
@@ -22,7 +24,7 @@
   --c-input-bg: #fffefa;
   --c-scrollbar: rgba(23, 59, 102, .24);
   --c-overlay: rgba(7, 26, 47, .62);
-  --c-focus: #087f7c;
+  --c-focus: #49449f;
   --c-shadow-modal: 0 28px 72px rgba(7, 26, 47, .28), 0 2px 8px rgba(7, 26, 47, .1);
   --c-shadow-pop: var(--shadow-md);
   --c-danger: #b42318;
@@ -49,12 +51,15 @@
 }
 
 [data-theme="dark"] {
+  --lm-brand: #8f8bed; --lm-brand-bright: #b4b1ff; --lm-brand-soft: color-mix(in srgb, var(--lm-brand) 14%, transparent);
+  --lm-premium-border: color-mix(in srgb, var(--lm-brand) 31%, var(--c-border));
+  --lm-premium-shadow: 0 20px 52px rgba(0, 0, 0, .34), 0 0 0 1px color-mix(in srgb, var(--lm-brand) 12%, transparent);
   --c-bg: #0B0B0D; --c-bg-secondary: #111113; --c-surface: #161619; --c-surface-2: #142a45; --c-surface-elevated: #1D1D21;
   --c-tab-bg: rgba(9,21,38,.92); --c-input-bg: #141416;
   --c-border: #2A2A2F; --c-border-soft: rgba(201,218,231,.12);
   --c-text: #F5F5F7; --c-text-2: #B6B6BD; --c-text-3: #77777F;
   --c-hover: #232329; --c-hover-2: rgba(201,218,231,.07); --c-active: #2B2B32; --c-scrollbar: #98adbc;
-  --c-overlay: rgba(2,10,20,.76); --c-focus: #5ad4cd; --c-accent: #45c4bd; --c-turquoise: #45c4bd; --c-orange: #f09a4b;
+  --c-overlay: rgba(2,10,20,.76); --c-focus: #aaa7ff; --c-accent: #8f8bed; --c-turquoise: #8f8bed; --c-orange: #f09a4b;
   --c-danger: #FF5C5C; --c-success: #4CD97B; --c-warning: #FFC857;
   --c-danger-bg: rgba(180,35,24,.22); --c-danger-border: rgba(255,120,109,.58); --c-danger-text: #ff9b92;
   --c-status-success-bg: rgba(69,196,189,.16); --c-status-warning-bg: color-mix(in srgb, #ffc857 15%, #10223a);
@@ -2360,6 +2365,7 @@ body,
 }
 
 .lm-editorial-card,
+.lm-today-content > section,
 .lm-schedule-grid-wrap,
 .lm-klausurplan-document,
 .lm-checklist-modal,
@@ -2760,7 +2766,7 @@ textarea:focus {
 /* Visual refresh — this final layer deliberately owns the shared motion and
    high-contrast dark-theme tokens so older component rules cannot dilute them. */
 :root {
-  --c-accent: #0f9e9a;
+  --c-accent: #514bb6;
   --lm-motion-fast: 140ms;
   --lm-motion-enter: 220ms;
   --lm-motion-ease: cubic-bezier(.22, 1, .36, 1);
@@ -3916,13 +3922,6 @@ button:not(:disabled):focus-visible,
   [data-theme="dark"] .lm-phone-theme-toggle:hover { border-color: var(--c-focus); background: var(--c-hover) !important; }
 }
 
-/* Today: a calm school-branded workspace. The logo is deliberately a local
-   decorative layer so the operational content remains the only reading focus. */
-@keyframes lm-today-school-logo-breathe {
-  0%, 100% { transform: translate3d(-50%, -50%, 0) scale(1); }
-  50% { transform: translate3d(-50%, -50%, 0) scale(1.012); }
-}
-
 .lm-today-view {
   position: relative;
   isolation: isolate;
@@ -3933,23 +3932,6 @@ button:not(:disabled):focus-visible,
 .lm-today-content {
   position: relative;
   isolation: isolate;
-}
-.lm-today-content::before {
-  content: '';
-  position: absolute;
-  z-index: 2;
-  width: min(840px, 76vw);
-  aspect-ratio: 1;
-  left: 50%;
-  top: 50%;
-  pointer-events: none;
-  background: url('/assets/icons/esg-logo-overlay.svg') center / contain no-repeat;
-  /* The transparent derived SVG contains only the logo paths, so multiply
-     keeps the coloured and dark mark visible on pale cards without a canvas. */
-  opacity: .074;
-  mix-blend-mode: multiply;
-  transform-origin: center;
-  animation: lm-today-school-logo-breathe 22s ease-in-out infinite;
 }
 .lm-today-content > section {
   position: relative;
@@ -4020,38 +4002,13 @@ button:not(:disabled):focus-visible,
 }
 
 [data-theme="dark"] .lm-today-view { background: var(--c-bg); }
-[data-theme="dark"] .lm-today-content::before {
-  opacity: .052;
-  mix-blend-mode: screen;
-  filter: saturate(.8) contrast(1.08);
-}
 [data-theme="dark"] .lm-today-tasks {
   background-color: var(--c-surface) !important;
   border-color: var(--c-border) !important;
 }
 
-@media (max-width: 1100px) {
-  .lm-today-content::before {
-    width: min(720px, 92vw);
-    top: 50%;
-  }
-}
 @media (max-width: 760px) {
   .lm-today-header { padding-bottom: 12px; }
-  .lm-today-content::before {
-    width: min(620px, 122vw);
-    top: 50%;
-    opacity: .052;
-  }
-  [data-theme="dark"] .lm-today-content::before { opacity: .042; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .lm-today-content::before {
-    animation: none;
-    opacity: .074;
-    transform: translate3d(-50%, -50%, 0);
-  }
-  [data-theme="dark"] .lm-today-content::before { opacity: .052; }
 }
 
 /* Premium Black status feedback keeps state legible without reintroducing
@@ -4576,12 +4533,8 @@ input, select, textarea { background: var(--c-input-bg) !important; border-color
 input:focus, select:focus, textarea:focus { border-color: var(--c-focus) !important; }
 thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-hover); } th { color: var(--c-text-2); }
 .lm-today-view { isolation: isolate; background: linear-gradient(115deg, color-mix(in srgb, var(--c-bg) 92%, transparent), color-mix(in srgb, var(--c-bg) 74%, transparent)), var(--c-bg); }
-.lm-today-content::before { display: none; }
-.lm-today-watermark { position: fixed; z-index: 0; width: min(820px, 76vw); height: auto; top: 50%; left: 58%; pointer-events: none; user-select: none; opacity: .13; transform: translate(-50%, -50%); filter: saturate(.72) contrast(.9); }
 .lm-today-shell { position: relative; z-index: 1; }
 .lm-today-content > section { background: color-mix(in srgb, var(--c-surface) 94%, transparent) !important; }
-[data-theme="dark"] .lm-today-watermark { opacity: .12; filter: saturate(.65) brightness(1.5); mix-blend-mode: screen; }
-@media (max-width: 767px) { .lm-today-watermark { width: 112vw; left: 50%; opacity: .09; } }
 @media (prefers-reduced-motion: reduce) { a:not(.lm-button):not(.lm-mobile-brand-link), button, [role="button"] { transition: none !important; } }
 
 /* Koffer oder Müllkorb? — classroom reflection board. It uses the existing
@@ -5515,4 +5468,258 @@ thead { background: var(--c-surface-2); } tbody tr:hover { background: var(--c-h
   .lm-schedule-grid.is-phone .lm-schedule-break-label { font-size: 14px; }
   .lm-schedule-grid.is-phone .lm-schedule-break-location { font-size: 13px; }
   .lm-schedule-grid.is-phone .lm-schedule-cell-add { opacity: .6; }
+}
+
+/* ESG premium layer -------------------------------------------------------
+   This final cascade is intentionally token-led. It refreshes visual depth
+   without changing component geometry or any interaction contract. */
+:root {
+  --lm-brand: #312f80;
+  --lm-brand-bright: #5b56c7;
+  --lm-brand-soft: color-mix(in srgb, var(--lm-brand) 10%, transparent);
+  --lm-premium-border: color-mix(in srgb, var(--lm-brand) 22%, var(--c-border));
+  --lm-premium-shadow: 0 18px 46px color-mix(in srgb, var(--lm-brand) 12%, transparent), var(--shadow-sm);
+  --motion-fast: 140ms;
+  --motion-base: 210ms;
+  --motion-enter: 320ms;
+  --motion-ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+.lm-app-shell,
+.lm-login-shell {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 82% 6%, color-mix(in srgb, var(--lm-brand) 15%, transparent), transparent 34rem),
+    radial-gradient(circle at 2% 96%, color-mix(in srgb, var(--lm-brand-bright) 8%, transparent), transparent 30rem),
+    var(--c-bg) !important;
+}
+.lm-app-shell { overflow: hidden; }
+.lm-login-shell { overflow: auto; }
+
+.lm-esg-backdrop {
+  position: absolute;
+  z-index: 0;
+  width: min(920px, 75vw);
+  max-width: none;
+  height: auto;
+  inset: 50% auto auto 62%;
+  opacity: .16;
+  pointer-events: none;
+  user-select: none;
+  transform: translate3d(-50%, -50%, 0);
+  transform-origin: 50% 50%;
+  animation: lm-esg-backdrop-drift 20s var(--motion-ease) infinite alternate;
+}
+
+.lm-esg-backdrop--login {
+  position: fixed;
+  width: min(860px, 70vw);
+  inset: 53% auto auto 22%;
+  opacity: .12;
+  animation-duration: 24s;
+}
+
+.lm-app-shell .lm-motion-region,
+.lm-login-topbrand,
+.lm-login-controls,
+.lm-login-content,
+.lm-login-password-card {
+  position: relative;
+  z-index: 1;
+}
+
+.lm-login-topbrand { position: absolute; }
+.lm-login-controls { position: fixed; }
+.lm-app-shell.is-presentation .lm-esg-backdrop {
+  opacity: .045;
+  animation: none;
+}
+
+@keyframes lm-esg-backdrop-drift {
+  from { transform: translate3d(-51.2%, -50.4%, 0) rotate(-.65deg) scale(.99); }
+  to { transform: translate3d(-48.8%, -49.6%, 0) rotate(.65deg) scale(1.018); }
+}
+
+/* Surfaces retain their layout while gaining a coherent institutional depth. */
+.lm-tabbar,
+.lm-sidebar,
+.lm-drawer,
+.lm-editorial-card,
+.lm-schedule-grid-wrap,
+.lm-klausurplan-document {
+  background: color-mix(in srgb, var(--c-surface) 86%, transparent) !important;
+  box-shadow: var(--lm-premium-shadow) !important;
+}
+
+.lm-modal-surface,
+.lm-checklist-modal,
+.lm-upload-modal,
+.lm-add-link-modal,
+.lm-klausurplan-preview-dialog,
+.lm-klasurplan-viewer-dialog {
+  border-color: var(--lm-premium-border) !important;
+}
+
+.lm-editorial-card,
+.lm-schedule-grid-wrap,
+.lm-klausurplan-document,
+.lm-modal-surface,
+.lm-checklist-modal,
+.lm-upload-modal,
+.lm-add-link-modal,
+.lm-klausurplan-preview-dialog,
+.lm-klasurplan-viewer-dialog {
+  background: color-mix(in srgb, var(--c-surface) 97%, transparent) !important;
+  box-shadow: var(--lm-premium-shadow) !important;
+}
+
+.lm-tabbar {
+  background: color-mix(in srgb, var(--c-tab-bg) 90%, var(--lm-brand-soft)) !important;
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--lm-brand) 9%, transparent) !important;
+}
+
+.lm-workspace-nav-item {
+  border-color: transparent !important;
+  transition: transform var(--motion-fast) var(--motion-ease), background-color var(--motion-base) ease, border-color var(--motion-base) ease, color var(--motion-base) ease, box-shadow var(--motion-base) ease !important;
+}
+.lm-workspace-nav-item:hover,
+.lm-workspace-nav-item:focus-visible {
+  border-color: color-mix(in srgb, var(--lm-brand) 34%, transparent) !important;
+  background: var(--lm-brand-soft) !important;
+  color: var(--lm-brand) !important;
+}
+.lm-workspace-nav-item.is-active {
+  border-color: color-mix(in srgb, var(--lm-brand) 72%, white) !important;
+  background: linear-gradient(135deg, #312f80, #5b56c7) !important;
+  color: #fff !important;
+  box-shadow: 0 9px 24px rgba(49, 47, 128, .28) !important;
+}
+.lm-workspace-nav-item.is-active > span { color: inherit !important; }
+
+.lm-button-primary,
+.lm-login-submit {
+  border-color: transparent !important;
+  background: linear-gradient(135deg, #312f80, #5b56c7) !important;
+  color: #fff !important;
+  box-shadow: 0 10px 24px rgba(49, 47, 128, .26) !important;
+}
+.lm-button-primary:hover:not(:disabled),
+.lm-login-submit:hover:not(:disabled) {
+  box-shadow: 0 14px 30px rgba(49, 47, 128, .34) !important;
+}
+
+input,
+select,
+textarea {
+  transition: border-color var(--motion-base) ease, box-shadow var(--motion-base) ease, background-color var(--motion-base) ease;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--lm-brand) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lm-brand) 16%, transparent);
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-color: color-mix(in srgb, var(--lm-brand) 70%, white) !important;
+}
+
+.lm-welcome-shell {
+  border-color: color-mix(in srgb, var(--lm-brand) 38%, transparent) !important;
+  box-shadow: 0 28px 80px rgba(25, 22, 82, .24), 0 8px 24px rgba(15, 23, 42, .1) !important;
+}
+.lm-welcome-banner {
+  background: linear-gradient(135deg, rgba(23, 22, 79, .94) 0%, rgba(49, 47, 128, .93) 54%, rgba(87, 82, 186, .92) 100%) !important;
+}
+.lm-welcome-eyebrow { color: #d8d6ff !important; }
+.lm-welcome-login button:hover,
+.lm-welcome-login button:focus-visible {
+  border-color: var(--lm-brand-bright) !important;
+  box-shadow: 0 22px 52px rgba(15, 13, 66, .34), 0 0 0 4px rgba(180, 177, 255, .2) !important;
+}
+.lm-login-password-card {
+  border-color: var(--lm-premium-border) !important;
+  background: color-mix(in srgb, var(--c-surface-elevated) 93%, transparent) !important;
+}
+
+/* View entrances are bounded to page-level surfaces. Canvas, drag targets,
+   scrolling rails, swipe shells and resize handles are deliberately excluded. */
+.lm-home-view,
+.lm-today-view,
+.lm-klausurplan-workspace {
+  animation: lm-esg-view-enter var(--motion-enter) var(--motion-ease) both;
+}
+.lm-folder-overview,
+.lm-schedule-view,
+.lm-reflection-board {
+  animation: lm-esg-view-fade var(--motion-enter) ease-out both;
+}
+.lm-today-content > section,
+.lm-klausurplan-document {
+  animation: lm-esg-card-enter var(--motion-enter) var(--motion-ease) both;
+}
+.lm-today-content > section:nth-child(2),
+.lm-klausurplan-document:nth-child(2) { animation-delay: 55ms; }
+.lm-klausurplan-document:nth-child(3) { animation-delay: 90ms; }
+
+@keyframes lm-esg-view-enter {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes lm-esg-view-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes lm-esg-card-enter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0) scale(.992); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lm-editorial-card:hover,
+  .lm-klausurplan-document:hover {
+    border-color: color-mix(in srgb, var(--lm-brand) 36%, var(--c-border)) !important;
+    box-shadow: 0 22px 52px color-mix(in srgb, var(--lm-brand) 16%, transparent), var(--shadow-sm) !important;
+  }
+  .lm-workspace-nav-item:not(.is-active):hover { transform: translateY(-2px); }
+  .lm-workspace-nav-item:active { transform: translateY(0) scale(.98); }
+}
+
+@media (max-width: 767px) {
+  .lm-esg-backdrop { width: 125vw; inset-inline-start: 55%; opacity: .075; }
+  .lm-esg-backdrop--login { width: 132vw; inset-inline-start: 24%; opacity: .09; }
+}
+
+/* Arc and reduced-motion users get identical hierarchy without decorative
+   compositor work or delayed state changes. */
+.lm-arc .lm-esg-backdrop { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-fast: 0ms; --motion-base: 0ms; --motion-enter: 0ms; }
+  .lm-esg-backdrop,
+  .lm-home-view,
+  .lm-folder-overview,
+  .lm-today-view,
+  .lm-schedule-view,
+  .lm-klausurplan-workspace,
+  .lm-reflection-board,
+  .lm-today-content > section,
+  .lm-klausurplan-document,
+  .lm-modal-surface,
+  .lm-checklist-modal,
+  .lm-upload-modal,
+  .lm-add-link-modal,
+  .lm-klausurplan-preview-dialog,
+  .lm-klasurplan-viewer-dialog {
+    animation: none !important;
+  }
+  .lm-esg-backdrop { transform: translate3d(-50%, -50%, 0); }
+  .lm-workspace-nav-item,
+  input,
+  select,
+  textarea { transition: none !important; }
 }

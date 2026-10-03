@@ -19,10 +19,33 @@ function fail(name, error) { results.push({ name, status: 'FAIL', detail: error.
 
 async function submitLogin(page) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+  const loginBackdrop = page.locator('.lm-login-shell > .lm-esg-backdrop--login');
+  await loginBackdrop.waitFor({ state: 'visible' });
+  assert(await loginBackdrop.getAttribute('aria-hidden') === 'true', 'login ESG logo must be hidden from assistive technology');
+  assert(await loginBackdrop.getAttribute('tabindex') === '-1', 'login ESG logo must not be focusable');
+  assert(await loginBackdrop.evaluate((node) => getComputedStyle(node).pointerEvents === 'none'), 'login ESG logo must not intercept input');
   const teacherButton = page.getByRole('button', { name: /Lehrer/i });
   if (await teacherButton.count()) await teacherButton.first().click();
   await page.locator('input[type="password"]').fill(teacherPassword);
   await page.locator('form button[type="submit"]').click();
+}
+
+async function assertWorkspaceMotion(page, reducedMotion) {
+  const workspaceBackdrop = page.locator('.lm-app-shell > .lm-esg-backdrop--workspace');
+  await workspaceBackdrop.waitFor({ state: 'visible' });
+  assert(await page.locator('.lm-app-shell .lm-esg-backdrop').count() === 1, 'workspace must render one centralized ESG logo');
+  assert(await page.locator('.lm-today-watermark').count() === 0, 'Today must not render a duplicate ESG logo');
+  assert(await workspaceBackdrop.getAttribute('aria-hidden') === 'true', 'workspace ESG logo must be hidden from assistive technology');
+  assert(await workspaceBackdrop.evaluate((node) => getComputedStyle(node).pointerEvents === 'none'), 'workspace ESG logo must not intercept input');
+
+  if (reducedMotion === 'reduce') {
+    assert(await workspaceBackdrop.evaluate((node) => getComputedStyle(node).animationName === 'none'), 'reduced motion must disable decorative ESG logo animation');
+  }
+
+  await page.locator('button[title="Stundenplan"]').click();
+  await page.locator('.lm-schedule-view').waitFor({ state: 'visible' });
+  await page.locator('button[title="Heute"]').click();
+  await page.locator('.lm-today-view').waitFor({ state: 'visible' });
 }
 
 async function runCase(browser, { name, reducedMotion }) {
@@ -37,15 +60,13 @@ async function runCase(browser, { name, reducedMotion }) {
     if (reducedMotion === 'reduce') {
       await page.locator('.lm-app-shell').waitFor({ state: 'visible' });
       assert(!(await page.locator('.lm-login-welcome').isVisible().catch(() => false)), 'reduced motion must bypass the welcome screen');
-      pass(name, 'welcome bypassed immediately');
+      await assertWorkspaceMotion(page, reducedMotion);
+      pass(name, 'welcome bypassed; decorative motion disabled and view navigation remained functional');
       return;
     }
 
     const welcome = page.locator('.lm-login-welcome');
-    const continueButton = page.getByRole('button', { name: 'Weiter zu LehrerMaps' });
     await welcome.waitFor({ state: 'visible' });
-    await continueButton.waitFor({ state: 'visible' });
-    assert(await continueButton.evaluate((node) => document.activeElement === node), 'continue action must receive focus immediately');
     const startedAt = Date.now();
     await welcome.waitFor({ state: 'hidden', timeout: 3000 });
     const elapsed = Date.now() - startedAt;
@@ -59,7 +80,8 @@ async function runCase(browser, { name, reducedMotion }) {
       assert(await page.locator('.lm-desktop-app-rail').isVisible(), `${shortcut} must restore the app rail`);
       assert(await page.locator('.lm-tabbar').isVisible(), `${shortcut} must restore the header`);
     }
-    pass(name, 'welcome auto-closes after about 2 seconds and Cmd/Ctrl+S toggles the workspace chrome');
+    await assertWorkspaceMotion(page, reducedMotion);
+    pass(name, 'welcome auto-closes, chrome shortcuts work, and centralized ESG branding preserves view navigation');
   } catch (error) {
     fail(name, error);
   } finally {

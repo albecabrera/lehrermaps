@@ -1316,6 +1316,14 @@ export default function App({ onLogout }) {
       fontFamily: '"DM Sans", -apple-system, BlinkMacSystemFont, sans-serif',
       fontFeatureSettings: '"ss01", "cv11"',
     }}>
+      <img
+        className="lm-esg-backdrop lm-esg-backdrop--workspace"
+        src="/assets/icons/esg-logo-overlay.svg"
+        alt=""
+        aria-hidden="true"
+        tabIndex={-1}
+        draggable={false}
+      />
       <div className={hasDepthModalOpen ? 'lm-depth-scene' : ''} style={{ display: 'contents' }}>
       {/* Workspace navigation — preserves the original visual language without restoring archived subject navigation. */}
       {!presentationMode && headerVisible && <header className={`lm-tabbar${isPhone ? ' lm-phone-focus-header' : ''}${isPhone && !phoneHeaderVisible ? ' is-collapsed' : ''}`} aria-label="Hauptnavigation">
