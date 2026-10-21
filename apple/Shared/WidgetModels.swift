@@ -6,23 +6,37 @@ struct WidgetSnapshot: Codable, Equatable {
     let generatedAt: String
     let schedule: WidgetSchedule
     let openTaskCount: Int
+    let openTasks: [WidgetTask]?
     let nextAppointment: WidgetAppointment?
+
+    init(version: Int, date: String, generatedAt: String, schedule: WidgetSchedule, openTaskCount: Int,
+         nextAppointment: WidgetAppointment?, openTasks: [WidgetTask]? = nil) {
+        self.version = version
+        self.date = date
+        self.generatedAt = generatedAt
+        self.schedule = schedule
+        self.openTaskCount = openTaskCount
+        self.openTasks = openTasks
+        self.nextAppointment = nextAppointment
+    }
 
     func sanitized() throws -> WidgetSnapshot {
         guard version == 1, Self.isDate(date), Self.parseTimestamp(generatedAt) != nil else {
             throw WidgetDataError.invalidSnapshot
         }
-        let slots = try schedule.slots.prefix(3).map { try $0.sanitized() }
+        let slots = try schedule.slots.prefix(8).map { try $0.sanitized() }
         let current = try schedule.current?.sanitized()
         let next = try schedule.next?.sanitized()
         let appointment = try nextAppointment?.sanitized()
+        let tasks = try (openTasks ?? []).prefix(20).map { try $0.sanitized() }
         return WidgetSnapshot(
             version: 1,
             date: date,
             generatedAt: generatedAt,
             schedule: WidgetSchedule(configured: schedule.configured, current: current, next: next, slots: slots),
             openTaskCount: min(max(openTaskCount, 0), 20),
-            nextAppointment: appointment
+            nextAppointment: appointment,
+            openTasks: tasks
         )
     }
 
@@ -52,6 +66,16 @@ struct WidgetSnapshot: Codable, Equatable {
     }()
 
     private static let timestampFormatterWithoutFraction = ISO8601DateFormatter()
+}
+
+struct WidgetTask: Codable, Equatable {
+    let text: String
+
+    func sanitized() throws -> WidgetTask {
+        let normalized = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        guard !normalized.isEmpty else { throw WidgetDataError.invalidSnapshot }
+        return WidgetTask(text: String(normalized.prefix(120)))
+    }
 }
 
 struct WidgetSchedule: Codable, Equatable {
@@ -128,15 +152,49 @@ enum BlockValue: Codable, Equatable {
 }
 
 struct WidgetAppointment: Codable, Equatable {
+    let title: String?
     let date: String
     let time: String?
+
+    init(date: String, time: String?, title: String? = nil) {
+        self.title = title
+        self.date = date
+        self.time = time
+    }
 
     func sanitized() throws -> WidgetAppointment {
         guard WidgetSnapshot.isDate(date) else { throw WidgetDataError.invalidSnapshot }
         if let time, time.range(of: #"^(?:[01]\d|2[0-3]):[0-5]\d$"#, options: .regularExpression) == nil {
             throw WidgetDataError.invalidSnapshot
         }
-        return self
+        let normalizedTitle = title?.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        return WidgetAppointment(date: date, time: time,
+                                 title: normalizedTitle.map { String($0.prefix(80)) }.flatMap { $0.isEmpty ? nil : $0 })
+    }
+}
+
+enum WidgetContentSize {
+    case small
+    case medium
+    case large
+    case extraLarge
+}
+
+enum WidgetLayoutPolicy {
+    static func visibleRows(for size: WidgetContentSize, accessibilitySize: Bool) -> Int {
+        switch size {
+        case .small: 1
+        case .medium: accessibilitySize ? 1 : 2
+        case .large: accessibilitySize ? 3 : 6
+        case .extraLarge: accessibilitySize ? 8 : 12
+        }
+    }
+
+    static func showsAppointment(for size: WidgetContentSize) -> Bool {
+        switch size {
+        case .small, .medium: true
+        case .large, .extraLarge: false
+        }
     }
 }
 

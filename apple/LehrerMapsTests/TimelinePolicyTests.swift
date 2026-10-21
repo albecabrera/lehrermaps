@@ -27,3 +27,29 @@ final class TimelinePolicyTests: XCTestCase {
         XCTAssertEqual(TimelinePolicy.nextRefresh(snapshot: nil, now: now, retrySoon: true), now.addingTimeInterval(1_800))
     }
 }
+
+final class WidgetDestinationTests: XCTestCase {
+    func testAllowsOnlyKnownSectionsOnConfiguredOrigin() {
+        for section in ["schedule", "appointments", "tasks", "tasks-new"] {
+            let url = URL(string: "https://lehrermaps.albertocabrera.de/#\(section)")!
+            XCTAssertEqual(WidgetDestination.webURL(for: url), url)
+        }
+    }
+
+    func testRejectsUntrustedOrUnexpectedRoutes() {
+        let rejected = [
+            "https://example.com/#schedule",
+            "http://lehrermaps.albertocabrera.de/#schedule",
+            "https://lehrermaps.albertocabrera.de.evil.test/#schedule",
+            "https://user@lehrermaps.albertocabrera.de/#schedule",
+            "https://lehrermaps.albertocabrera.de:444/#schedule",
+            "https://lehrermaps.albertocabrera.de/other#schedule",
+            "https://lehrermaps.albertocabrera.de/?next=https://example.com/#schedule",
+            "https://lehrermaps.albertocabrera.de/#settings",
+            "https://lehrermaps.albertocabrera.de/"
+        ]
+        for rawURL in rejected {
+            XCTAssertNil(WidgetDestination.webURL(for: URL(string: rawURL)!), rawURL)
+        }
+    }
+}
