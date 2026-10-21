@@ -2,7 +2,6 @@ name: Apple widget CI
 
 on:
   push:
-    branches: [fix/widget-three-devices]
     paths:
       - "apple/**"
       - ".github/workflows/apple-widget-ci.yml"
