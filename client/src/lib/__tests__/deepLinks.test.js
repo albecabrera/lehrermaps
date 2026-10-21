@@ -9,6 +9,7 @@ test('maps only supported semantic hashes to rendered views', () => {
   assert.deepEqual(parseAppHash('#reflection'), { hash: '#reflection', view: 'reflection', focusId: null });
   assert.deepEqual(parseAppHash('#quick-access'), { hash: '#quick-access', view: 'quick-access', focusId: null });
   assert.deepEqual(parseAppHash('#tasks'), { hash: '#tasks', view: 'today', focusId: 'tasks' });
+  assert.deepEqual(parseAppHash('#tasks-new'), { hash: '#tasks-new', view: 'today', focusId: 'new-task' });
 });
 
 test('ignores paths, query strings, tokens, fragments with parameters, and unknown anchors', () => {

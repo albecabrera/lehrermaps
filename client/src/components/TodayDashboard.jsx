@@ -50,6 +50,7 @@ export default function TodayDashboard() {
   const [taskAnnouncement, setTaskAnnouncement] = useState('');
   const [notificationPermission, setNotificationPermission] = useState(() => globalThis.Notification?.permission || 'unsupported');
   const editInputRef = useRef(null);
+  const newTaskInputRef = useRef(null);
   const lastTaskTouchRef = useRef({ id: null, at: 0 });
   const [tasks, setTasks, tasksSync, retryTasksSync] = usePendingSync({
     storageKey: 'lm_pending_today_tasks', initialValue: [], load: () => getTodayDashboard(date),
@@ -66,6 +67,11 @@ export default function TodayDashboard() {
   }, []);
 
   const loaded = tasksSync.hydrated;
+  useEffect(() => {
+    if (loaded && window.location.hash === '#tasks-new') {
+      newTaskInputRef.current?.focus({ preventScroll: true });
+    }
+  }, [loaded]);
   const openTasks = tasks.filter((task) => !task.done).length;
   const dueTaskIds = new Set(tasks.filter((task) => isTaskReminderEligible(task, now)).map((task) => task.id));
   const addTask = () => {
@@ -150,7 +156,7 @@ export default function TodayDashboard() {
         <div className="lm-today-content">
           <section id="tasks" className="lm-editorial-card lm-today-tasks" aria-busy={!loaded}>
             <div className="lm-today-section-header"><div><h2><span className="lm-today-task-kicker">FOKUS</span>Meine Aufgaben</h2></div><span className="lm-task-count">{openTasks}</span></div>
-            <div className="lm-today-task-entry"><input value={taskText} disabled={!loaded} onChange={(e) => setTaskText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder="Neue Aufgabe…" aria-label="Neue Aufgabe" /><button disabled={!loaded} onClick={addTask} className="lm-button lm-button-primary" aria-label="Aufgabe hinzufügen">+</button></div>
+            <div className="lm-today-task-entry"><input ref={newTaskInputRef} id="new-task" value={taskText} disabled={!loaded} onChange={(e) => setTaskText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder="Neue Aufgabe…" aria-label="Neue Aufgabe" /><button disabled={!loaded} onClick={addTask} className="lm-button lm-button-primary" aria-label="Aufgabe hinzufügen">+</button></div>
             {notificationPermission === 'default' && <button type="button" className="lm-text-button lm-task-notification-button" onClick={requestNotifications}>Benachrichtigungen aktivieren</button>}
             <p className="lm-task-reminder-disclosure">Erinnerungen funktionieren bestmöglich, solange LehrerMaps geöffnet und sichtbar ist. Bei geschlossener oder pausierter App können sie verspätet sein.</p>
             {tasks.length === 0 && <div className="lm-today-empty">Noch keine Aufgaben. Alles bereit.</div>}

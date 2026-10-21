@@ -410,7 +410,11 @@ export default function App({ onLogout }) {
       if (!route) return;
       setViewMode(route.view);
       if (route.focusId) {
-        window.requestAnimationFrame(() => document.getElementById(route.focusId)?.scrollIntoView({ block: 'start' }));
+        window.requestAnimationFrame(() => {
+          const target = document.getElementById(route.focusId);
+          target?.scrollIntoView({ block: 'start' });
+          if (target instanceof HTMLInputElement) target.focus({ preventScroll: true });
+        });
       }
     };
     applyHashRoute();

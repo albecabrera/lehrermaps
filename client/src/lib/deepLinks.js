@@ -5,6 +5,7 @@ const HASH_ROUTES = Object.freeze({
   '#quick-access': Object.freeze({ hash: '#quick-access', view: 'quick-access', focusId: null }),
   '#reflection': Object.freeze({ hash: '#reflection', view: 'reflection', focusId: null }),
   '#tasks': Object.freeze({ hash: '#tasks', view: 'today', focusId: 'tasks' }),
+  '#tasks-new': Object.freeze({ hash: '#tasks-new', view: 'today', focusId: 'new-task' }),
 });
 
 const VIEW_HASHES = Object.freeze({
