@@ -137,19 +137,20 @@ try {
     ]));
   database.prepare('INSERT INTO today_dashboard_notes (user_id, note_date, content) VALUES (1, ?, ?)').run('2099-09-08', 'Private dashboard note');
   database.prepare('INSERT INTO exams (title, class_name, subject, exam_date, exam_time, notes) VALUES (?, ?, ?, ?, ?, ?)')
-    .run('Private appointment title', 'Private class', 'Private subject', '2099-09-09', '14:30', 'Private appointment note');
+    .run('  Klassenarbeit   6a  ', 'Private class', 'Private subject', '2099-09-09', '14:30', 'Private appointment note');
 
   snapshot = await request('/api/widget/today?date=2099-09-08', { token });
   assert.equal(snapshot.openTaskCount, 1);
-  assert.deepEqual(snapshot.nextAppointment, { date: '2099-09-09', time: '14:30' });
-  for (const secret of ['Private task text', 'Private completed text', 'Private dashboard note', 'Private appointment title', 'Private class', 'Private subject', 'Private appointment note']) {
+  assert.deepEqual(snapshot.openTasks, [{ text: 'Private task text' }], 'only bounded open task titles leave the widget endpoint');
+  assert.deepEqual(snapshot.nextAppointment, { title: 'Klassenarbeit 6a', date: '2099-09-09', time: '14:30' });
+  for (const secret of ['Private completed text', 'Private dashboard note', 'Private class', 'Private subject', 'Private appointment note']) {
     assert.equal(JSON.stringify(snapshot).includes(secret), false, `${secret} must not leave the widget endpoint`);
   }
   database.close();
 
   console.log(JSON.stringify({
     status: 'PASS',
-    checks: ['Bearer-only authentication', 'strict date validation', 'empty state', 'v1 periods', 'v2 configured breaks', 'no invented break times', 'task privacy', 'appointment privacy', 'isolated SQLite'],
+    checks: ['Bearer-only authentication', 'strict date validation', 'empty state', 'v1 periods', 'v2 configured breaks', 'no invented break times', 'task privacy', 'bounded appointment title and privacy', 'isolated SQLite'],
   }));
 } catch (error) {
   console.error(JSON.stringify({ status: 'FAIL', error: error.stack || error.message }));

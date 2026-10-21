@@ -130,26 +130,34 @@ export function scheduleSummary(schedule, date, now = new Date()) {
   const next = requestedIsToday
     ? result.slots.find((slot) => slot.start > time) || null
     : (requestedIsFuture ? result.slots[0] || null : null);
-  const firstRelevantIndex = current
-    ? result.slots.indexOf(current)
-    : next ? result.slots.indexOf(next) : 0;
   return {
     configured: true,
     current,
     next,
-    slots: result.slots.slice(firstRelevantIndex, firstRelevantIndex + 3),
+    slots: result.slots,
   };
 }
 
-export function openTaskCount(value) {
-  if (typeof value !== 'string' || value.length > 32_768) return 0;
+function parsedTasks(value) {
+  if (typeof value !== 'string' || value.length > 32_768) return [];
   try {
     const tasks = JSON.parse(value);
-    if (!Array.isArray(tasks) || tasks.length > 20) return 0;
-    return tasks.filter((task) => task && task.done === false).length;
+    return Array.isArray(tasks) && tasks.length <= 20 ? tasks : [];
   } catch {
-    return 0;
+    return [];
   }
+}
+
+export function openTaskCount(value) {
+  return parsedTasks(value).filter((task) => task && task.done === false).length;
+}
+
+export function openTaskTitles(value) {
+  return parsedTasks(value)
+    .filter((task) => task && task.done === false && typeof task.text === 'string')
+    .map((task) => normalizeText(task.text, 120))
+    .filter(Boolean)
+    .map((text) => ({ text }));
 }
 
 export function safeAppointment(rows) {
@@ -158,5 +166,9 @@ export function safeAppointment(rows) {
   const time = TIME_PATTERN.test(String(row.exam_time || '').slice(0, 5))
     ? String(row.exam_time).slice(0, 5)
     : null;
-  return { date: String(row.exam_date).slice(0, 10), time };
+  return {
+    title: normalizeText(row.title, 80),
+    date: String(row.exam_date).slice(0, 10),
+    time,
+  };
 }

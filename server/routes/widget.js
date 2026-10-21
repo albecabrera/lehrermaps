@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import pool from '../db.js';
 import auth, { teacherOnly } from '../middleware/auth.js';
-import { openTaskCount, parseSchedule, safeAppointment, scheduleSummary, validDate } from '../lib/widgetToday.js';
+import { openTaskCount, openTaskTitles, parseSchedule, safeAppointment, scheduleSummary, validDate } from '../lib/widgetToday.js';
 
 const router = Router();
 const MAX_SCHEDULE_BYTES = 256 * 1024;
@@ -41,7 +41,7 @@ router.get('/today', async (req, res) => {
       [userId]
     );
     const [appointmentRows] = await pool.execute(
-      `SELECT exam_date, exam_time FROM exams
+      `SELECT title, exam_date, exam_time FROM exams
        WHERE exam_date > ? OR (exam_date = ? AND (? = '' OR exam_time IS NULL OR exam_time = '' OR substr(exam_time, 1, 5) >= ?))
        ORDER BY exam_date ASC, CASE WHEN exam_time IS NULL OR exam_time = '' THEN 1 ELSE 0 END ASC, exam_time ASC LIMIT 10`,
       [date, date, appointmentCutoff, appointmentCutoff]
@@ -56,6 +56,7 @@ router.get('/today', async (req, res) => {
       generatedAt: generatedAt.toISOString(),
       schedule: scheduleSummary(scheduleData, date, generatedAt),
       openTaskCount: openTaskCount(taskRows[0]?.tasks_json || '[]'),
+      openTasks: openTaskTitles(taskRows[0]?.tasks_json || '[]'),
       nextAppointment: safeAppointment(appointmentRows),
     });
   } catch {

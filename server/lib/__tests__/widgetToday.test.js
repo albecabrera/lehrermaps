@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { openTaskCount, scheduleSummary } from '../widgetToday.js';
+import { openTaskCount, openTaskTitles, safeAppointment, scheduleSummary } from '../widgetToday.js';
 
 const schedule = {
   __lehrermaps_schedule_meta_v1: {
@@ -17,11 +17,11 @@ const schedule = {
   '0-3': { label: '9c', location: 'B12' },
 };
 
-test('selects current and next slots and bounds the widget timeline', () => {
+test('selects current and next slots while retaining the full day for widget paging', () => {
   const result = scheduleSummary(schedule, '2026-09-07', new Date(2026, 8, 7, 8, 20));
   assert.equal(result.current?.label, '6a');
   assert.equal(result.next?.label, '7b');
-  assert.deepEqual(result.slots.map((slot) => slot.label), ['6a', '7b', 'Q1']);
+  assert.deepEqual(result.slots.map((slot) => slot.label), ['6a', '7b', 'Q1', '9c']);
 });
 
 test('rejects v2 metadata with missing or overlapping explicit break times', () => {
@@ -48,4 +48,40 @@ test('counts only open task state without exposing or trusting unbounded task da
   ])), 1);
   assert.equal(openTaskCount(JSON.stringify(Array.from({ length: 21 }, (_, index) => ({ id: String(index), text: 'private', done: false })))), 0);
   assert.equal(openTaskCount('not-json'), 0);
+});
+
+test('exposes only bounded open-task titles for widget paging', () => {
+  const tasks = JSON.stringify([
+    { id: '1', text: '  Prepare   lesson  ', dueDate: '2026-10-21', done: false },
+    { id: '2', text: 'Private completed task', done: true },
+    { id: '3', text: 'x'.repeat(200), done: false },
+    { id: '4', text: { private: 'payload' }, done: false },
+  ]);
+  assert.deepEqual(openTaskTitles(tasks), [
+    { text: 'Prepare lesson' },
+    { text: 'x'.repeat(120) },
+  ]);
+  assert.deepEqual(openTaskTitles('not-json'), []);
+  assert.deepEqual(openTaskTitles(JSON.stringify(Array.from({ length: 21 }, () => ({ text: 'private', done: false })))), []);
+});
+
+test('exposes only a normalized bounded appointment title, date, and valid time', () => {
+  const title = `  Parent   evening ${'x'.repeat(100)} `;
+  assert.deepEqual(safeAppointment([{
+    title,
+    exam_date: '2026-10-22T00:00:00.000Z',
+    exam_time: '14:30:00',
+    class_name: 'private class',
+    subject: 'private subject',
+    notes: 'private notes',
+  }]), {
+    title: (`Parent evening ${'x'.repeat(100)}`).slice(0, 80),
+    date: '2026-10-22',
+    time: '14:30',
+  });
+  assert.deepEqual(safeAppointment([{ title: '  ', exam_date: '2026-10-22', exam_time: 'bad' }]), {
+    title: null,
+    date: '2026-10-22',
+    time: null,
+  });
 });
