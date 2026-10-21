@@ -66,21 +66,19 @@ final class WidgetSnapshotTests: XCTestCase {
         XCTAssertEqual(longTitle.title?.count, 80)
     }
 
-    func testWidgetRowLimitsScaleWithFamilyAndAccessibilitySize() {
+    func testWidgetRowLimitsSupportReadableVerticalSections() {
         XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .small, accessibilitySize: false), 1)
         XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .small, accessibilitySize: true), 1)
-        XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .medium, accessibilitySize: false), 2)
+        XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .medium, accessibilitySize: false), 1)
         XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .medium, accessibilitySize: true), 1)
-        XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .large, accessibilitySize: false), 6)
-        XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .large, accessibilitySize: true), 3)
-        XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .extraLarge, accessibilitySize: false), 12)
-        XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .extraLarge, accessibilitySize: true), 8)
+        XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .large, accessibilitySize: false), 3)
+        XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .large, accessibilitySize: true), 2)
+        XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .extraLarge, accessibilitySize: false), 6)
+        XCTAssertEqual(WidgetLayoutPolicy.visibleRows(for: .extraLarge, accessibilitySize: true), 3)
+        XCTAssertEqual(WidgetLayoutPolicy.sectionOrder, [.schedule, .tasks])
     }
 
-    func testAppointmentsAreHiddenOnlyInLargeFamilies() {
-        XCTAssertTrue(WidgetLayoutPolicy.showsAppointment(for: .small))
-        XCTAssertTrue(WidgetLayoutPolicy.showsAppointment(for: .medium))
-        XCTAssertFalse(WidgetLayoutPolicy.showsAppointment(for: .large))
-        XCTAssertFalse(WidgetLayoutPolicy.showsAppointment(for: .extraLarge))
+    func testAppointmentsAreHiddenInEveryFamily() {
+        XCTAssertFalse(WidgetLayoutPolicy.showsAppointments)
     }
 }

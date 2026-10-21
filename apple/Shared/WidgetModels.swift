@@ -180,22 +180,24 @@ enum WidgetContentSize {
     case extraLarge
 }
 
+enum WidgetSection: Equatable {
+    case schedule
+    case tasks
+}
+
 enum WidgetLayoutPolicy {
+    static let sectionOrder: [WidgetSection] = [.schedule, .tasks]
+
     static func visibleRows(for size: WidgetContentSize, accessibilitySize: Bool) -> Int {
         switch size {
         case .small: 1
-        case .medium: accessibilitySize ? 1 : 2
-        case .large: accessibilitySize ? 3 : 6
-        case .extraLarge: accessibilitySize ? 8 : 12
+        case .medium: 1
+        case .large: accessibilitySize ? 2 : 3
+        case .extraLarge: accessibilitySize ? 3 : 6
         }
     }
 
-    static func showsAppointment(for size: WidgetContentSize) -> Bool {
-        switch size {
-        case .small, .medium: true
-        case .large, .extraLarge: false
-        }
-    }
+    static let showsAppointments = false
 }
 
 enum WidgetDataError: LocalizedError {

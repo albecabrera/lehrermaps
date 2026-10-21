@@ -116,45 +116,29 @@ private struct LehrerMapsWidgetView: View {
         WidgetLayoutPolicy.visibleRows(for: contentSize, accessibilitySize: dynamicTypeSize.isAccessibilitySize)
     }
 
-    private var showsAppointment: Bool {
-        WidgetLayoutPolicy.showsAppointment(for: contentSize)
-    }
-
     private var showsScheduleRoom: Bool {
         (contentSize == .large || contentSize == .extraLarge) && !dynamicTypeSize.isAccessibilitySize
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 4) {
                 Label("MEIN SCHULTAG", systemImage: "map.fill")
-                    .font(.caption.bold())
+                    .font(.subheadline.bold())
                     .foregroundStyle(Color("BrandTeal"))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .minimumScaleFactor(0.85)
                 Spacer(minLength: 2)
                 Text(entry.snapshot?.date ?? "Heute")
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
 
-            if family == .systemSmall {
-                VStack(alignment: .leading, spacing: 7) {
-                    scheduleSection(compact: true)
-                    Divider()
-                    tasksSection(compact: true)
-                }
-            } else {
-                HStack(alignment: .top, spacing: 10) {
-                    scheduleSection(compact: false)
-                    Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 1)
-                    tasksSection(compact: false)
-                }
-            }
-
-            if showsAppointment, let appointment = entry.snapshot?.nextAppointment {
-                appointmentRow(appointment, compact: family == .systemSmall)
+            VStack(alignment: .leading, spacing: family == .systemSmall ? 5 : 8) {
+                scheduleSection(compact: family == .systemSmall)
+                Divider()
+                tasksSection(compact: family == .systemSmall)
             }
 
             Spacer(minLength: 0)
@@ -167,13 +151,14 @@ private struct LehrerMapsWidgetView: View {
         VStack(alignment: .leading, spacing: compact ? 3 : 5) {
             Link(destination: DeepLinks.schedule) {
                 Label("Stundenplan", systemImage: "calendar")
-                    .font(.caption.bold())
+                    .font(.headline.bold())
                     .foregroundStyle(Color("BrandTeal"))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.82)
             }
             if lessons.isEmpty {
                 Text(entry.snapshot?.schedule.configured == false ? "Zeiten einrichten" : "Kein Unterricht")
-                    .font(.caption2)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             } else {
@@ -181,18 +166,16 @@ private struct LehrerMapsWidgetView: View {
                     Link(destination: DeepLinks.schedule) {
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
                             Text(slot.start)
-                                .font(.caption2.monospacedDigit())
+                                .font(compact ? .caption.monospacedDigit() : .subheadline.monospacedDigit())
                                 .foregroundStyle(Color("BrandTeal"))
                             Text(slot.label)
-                                .font(compact ? .caption2.bold() : .caption.bold())
-                                .lineLimit(compact ? 2 : 1)
-                                .minimumScaleFactor(0.75)
+                                .font(compact ? .subheadline.bold() : .body.bold())
+                                .lineLimit(2)
                             if showsScheduleRoom, let room = slot.room {
                                 Text(room)
-                                    .font(.caption2)
+                                    .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
-                                    .minimumScaleFactor(0.75)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -210,10 +193,10 @@ private struct LehrerMapsWidgetView: View {
             HStack(spacing: 4) {
                 Link(destination: DeepLinks.tasks) {
                     Label("Meine Aufgaben", systemImage: "checklist")
-                        .font(.caption.bold())
+                        .font(.headline.bold())
                         .foregroundStyle(Color("BrandOrange"))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                        .minimumScaleFactor(0.82)
                 }
                 Spacer(minLength: 0)
                 Link(destination: DeepLinks.newTask) {
@@ -227,16 +210,15 @@ private struct LehrerMapsWidgetView: View {
             }
             if tasks.isEmpty {
                 Text("Keine offenen Aufgaben")
-                    .font(.caption2)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             } else {
                 ForEach(Array(tasks.prefix(visibleCount).enumerated()), id: \.offset) { _, task in
                     Link(destination: DeepLinks.tasks) {
                         Text(task.text)
-                            .font(compact ? .caption2 : .caption)
-                            .lineLimit(compact ? 2 : 1)
-                            .minimumScaleFactor(0.75)
+                            .font(compact ? .subheadline : .body)
+                            .lineLimit(2)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .privacySensitive()
@@ -259,31 +241,12 @@ private struct LehrerMapsWidgetView: View {
         }
     }
 
-    private func appointmentRow(_ appointment: WidgetAppointment, compact: Bool) -> some View {
-        Link(destination: DeepLinks.appointments) {
-            HStack(spacing: 4) {
-                Image(systemName: "calendar.badge.clock")
-                    .foregroundStyle(Color("BrandOrange"))
-                Text(appointment.title ?? "Nächster Termin")
-                    .fontWeight(.semibold)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                Text("· \(appointment.date)\(appointment.time.map { " · \($0)" } ?? "")")
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            .font(compact ? .caption2 : .caption)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .privacySensitive()
-    }
-
     private var sourceLabel: some View {
         Label(sourceText, systemImage: sourceIcon)
-            .font(.caption2)
+            .font(.caption)
             .foregroundStyle(.secondary)
             .lineLimit(1)
-            .minimumScaleFactor(0.8)
+            .minimumScaleFactor(0.85)
     }
 
     private var sourceText: String {
